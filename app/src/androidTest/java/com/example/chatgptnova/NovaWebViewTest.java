@@ -13,6 +13,7 @@ import android.webkit.CookieManager;
 import android.webkit.PermissionRequest;
 import android.webkit.WebResourceError;
 import android.webkit.WebResourceRequest;
+import android.webkit.WebView;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -145,15 +146,13 @@ public final class NovaWebViewTest extends FixtureActivity {
     }
 
     @Test public void networkErrorsHaveAUsableRetryAndMicrosoftIsNotPreemptivelyBlocked() throws Exception {
-        WebResourceRequest request=new WebResourceRequest() {
-            public Uri getUrl(){return Uri.parse(PAGE);} public boolean isForMainFrame(){return true;}
-            public boolean isRedirect(){return false;} public boolean hasGesture(){return true;}
-            public String getMethod(){return "GET";} public Map<String,String> getRequestHeaders(){return Collections.emptyMap();}
-        };
-        WebResourceError error=new WebResourceError() {
-            public int getErrorCode(){return -2;} public CharSequence getDescription(){return "synthetic DNS failure";}
-        };
-        main(() -> web.getWebViewClient().onReceivedError(web,request,error));
+        main(() -> web.loadUrl("https://127.0.0.1:9/network-error"));
+        waitFor("real connection error", () -> {
+            AtomicReference<Boolean> visible=new AtomicReference<>(false);
+            main(() -> { View retry=text(activity.getWindow().getDecorView(),"重试加载"); visible.set(retry!=null && retry.isShown()); });
+            return visible.get();
+        });
+        retryFixture = true;
         main(() -> { View retry=text(activity.getWindow().getDecorView(),"重试加载"); assertNotNull(retry); assertTrue(retry.isShown()); retry.performClick(); });
         waitFor("retry loaded", () -> "ready".equals(js("document.getElementById('ready')?.textContent")));
         Method handle=MainActivity.class.getDeclaredMethod("handleUri",Uri.class); handle.setAccessible(true);

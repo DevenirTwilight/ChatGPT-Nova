@@ -61,6 +61,7 @@ public class MainActivity extends Activity {
     private LinearLayout errorPanel;
     private TextView errorMessage;
     private String failedUrl;
+    private String loadingUrl;
     private boolean clearing;
     private boolean oauthDialogVisible;
 
@@ -211,6 +212,7 @@ public class MainActivity extends Activity {
                 if (view != webView || clearing) return;
                 cancelPageRequests();
                 failedUrl = null;
+                loadingUrl = url;
                 errorContainer().setVisibility(View.GONE);
                 displayOrigin(url);
                 progress.setVisibility(View.VISIBLE);
@@ -234,7 +236,8 @@ public class MainActivity extends Activity {
             @Override
             public void onReceivedSslError(WebView view, SslErrorHandler handler, SslError error) {
                 handler.cancel();
-                if (view == webView) showLoadError(error.getUrl(), "无法安全连接此页面。请检查设备时间和网络后重试。");
+                if (view == webView && (error.getUrl().equals(loadingUrl) || error.getUrl().equals(view.getUrl())))
+                    showLoadError(error.getUrl(), "无法安全连接此页面。请检查设备时间和网络后重试。");
             }
 
             @Override
@@ -441,8 +444,10 @@ public class MainActivity extends Activity {
             else Toast.makeText(this, "无法下载此类型链接。", Toast.LENGTH_LONG).show();
             return;
         }
+        String saveType = mime == null ? "" : mime.split(";", 2)[0].trim();
+        if (!saveType.matches("[a-zA-Z0-9!#$&^_.+*-]+/[a-zA-Z0-9!#$&^_.+*-]+")) saveType = "application/octet-stream";
         Intent save = new Intent(Intent.ACTION_CREATE_DOCUMENT).addCategory(Intent.CATEGORY_OPENABLE)
-                .setType(mime == null || mime.isEmpty() ? "application/octet-stream" : mime)
+                .setType(saveType)
                 .putExtra(Intent.EXTRA_TITLE, DownloadNames.guess(url, disposition, mime));
         try { startActivityForResult(save, SAVE_BLOB); }
         catch (RuntimeException error) { cancelDownloads();
