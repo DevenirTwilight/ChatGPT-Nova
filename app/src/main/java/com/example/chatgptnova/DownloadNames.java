@@ -16,6 +16,10 @@ final class DownloadNames {
                 name = URLDecoder.decode(match.group(1).trim().replace("+", "%2B"), StandardCharsets.UTF_8.name());
             } catch (Exception ignored) { }
         }
+        return sanitize(name);
+    }
+
+    static String sanitize(String name) {
         name = name.replaceAll("[\\\\/\\p{Cntrl}]", "_").trim();
         if (name.isEmpty() || name.equals(".") || name.equals("..")) name = "Nova-download";
         if (name.length() > 160) name = name.substring(0, 160);

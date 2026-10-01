@@ -38,6 +38,8 @@ import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowCompat;
 import androidx.core.view.WindowInsetsCompat;
 import java.util.ArrayList;
+import org.json.JSONObject;
+import org.json.JSONTokener;
 import android.widget.Button;
 import android.widget.FrameLayout;
 import android.widget.ScrollView;
@@ -438,6 +440,23 @@ public class MainActivity extends Activity {
         if ("blob".equalsIgnoreCase(address.getScheme())) {
             if (webView == null || !isTrustedOrigin(Uri.parse(webView.getUrl() == null ? "" : webView.getUrl()))) return;
             blobDownload = new BlobDownload(this, webView, url);
+            BlobDownload pending = blobDownload;
+            WebView page = webView;
+            String fallback = DownloadNames.guess("https://chatgpt.com/Nova-download", null, mime);
+            // DownloadListener omits the anchor's download attribute. Read only the
+            // suggested filename of the exact user-clicked blob, with a bounded result.
+            page.evaluateJavascript("(()=>{for(let a of document.querySelectorAll('a[download]'))"
+                    + "if(a.href===" + JSONObject.quote(url) + ")return (a.getAttribute('download')||'').slice(0,160);return ''})()", result -> {
+                if (clearing || webView != page || blobDownload != pending) return;
+                String name = fallback;
+                try {
+                    Object value = new JSONTokener(result).nextValue();
+                    if (value instanceof String && !((String) value).trim().isEmpty())
+                        name = DownloadNames.sanitize((String) value);
+                } catch (Exception ignored) { }
+                openSaveLocation(name, mime);
+            });
+            return;
         } else if ("https".equalsIgnoreCase(address.getScheme()) && address.getUserInfo() == null) {
             httpDownload = new HttpDownload(this, url, userAgent);
         } else {
@@ -445,11 +464,15 @@ public class MainActivity extends Activity {
             else Toast.makeText(this, "无法下载此类型链接。", Toast.LENGTH_LONG).show();
             return;
         }
+        openSaveLocation(DownloadNames.guess(url, disposition, mime), mime);
+    }
+
+    private void openSaveLocation(String name, String mime) {
         String saveType = mime == null ? "" : mime.split(";", 2)[0].trim();
         if (!saveType.matches("[a-zA-Z0-9!#$&^_.+*-]+/[a-zA-Z0-9!#$&^_.+*-]+")) saveType = "application/octet-stream";
         Intent save = new Intent(Intent.ACTION_CREATE_DOCUMENT).addCategory(Intent.CATEGORY_OPENABLE)
                 .setType(saveType)
-                .putExtra(Intent.EXTRA_TITLE, DownloadNames.guess(url, disposition, mime));
+                .putExtra(Intent.EXTRA_TITLE, name);
         try { startActivityForResult(save, SAVE_BLOB); }
         catch (RuntimeException error) { cancelDownloads();
             Toast.makeText(this, "无法打开保存位置选择器。", Toast.LENGTH_LONG).show(); }
