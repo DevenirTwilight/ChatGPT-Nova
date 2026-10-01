@@ -21,6 +21,13 @@ def install(path):
     assert 'Success' in result, result
 
 def suite(selection, filename):
+    # Fresh Google APIs images can leave a boot-time Pixel Launcher ANR
+    # covering a resumed test Activity. Restart only that emulator home process;
+    # retain the focused-window and every Nova assertion below.
+    (OUT/('windows-before-'+filename)).write_text(adb('shell','dumpsys','window','windows'))
+    adb('shell','input','keyevent','224')
+    adb('shell','wm','dismiss-keyguard')
+    adb('shell','am','force-stop','com.google.android.apps.nexuslauncher')
     result = adb('shell', 'am', 'instrument', '-w', '-r', '-e', 'class', selection, RUNNER, timeout=240)
     (OUT/filename).write_text(result)
     assert re.search(r'OK \(\d+ tests?\)', result), result
