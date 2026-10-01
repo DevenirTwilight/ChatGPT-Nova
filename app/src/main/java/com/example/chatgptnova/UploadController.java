@@ -111,9 +111,9 @@ final class UploadController {
             if (!directory.isDirectory() && !directory.mkdirs()) throw new java.io.IOException();
             photo = File.createTempFile("nova-", ".jpg", directory);
             photoUri = FileProvider.getUriForFile(activity, activity.getPackageName() + ".fileprovider", photo);
-            Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE).putExtra(MediaStore.EXTRA_OUTPUT, photoUri)
-                    .setClipData(ClipData.newRawUri("Nova photo", photoUri))
-                    .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
+            Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE).putExtra(MediaStore.EXTRA_OUTPUT, photoUri);
+            intent.setClipData(ClipData.newRawUri("Nova photo", photoUri));
+            intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
             activity.startActivityForResult(intent, PICK_FILE);
         } catch (Exception error) { cancel(); message("无法调用相机，可选择已有图片。"); }
     }
