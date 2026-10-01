@@ -58,7 +58,8 @@ public final class NovaWebViewTest extends FixtureActivity {
         waitFor("web files", () -> "2".equals(js("window.uploadCount")) && js("JSON.stringify(window.uploadData)").contains("upload2.txt"));
         assertNotNull(captured.get());
         assertTrue(captured.get().getBooleanExtra(Intent.EXTRA_ALLOW_MULTIPLE,false));
-        assertArrayEquals(new String[]{"text/plain","image/png","image/jpeg"},captured.get().getStringArrayExtra(Intent.EXTRA_MIME_TYPES));
+        assertEquals(new java.util.HashSet<>(Arrays.asList("text/plain","image/png","image/jpeg")),
+                new java.util.HashSet<>(Arrays.asList(captured.get().getStringArrayExtra(Intent.EXTRA_MIME_TYPES))));
     }
 
     AlertDialog chooser() {
@@ -94,15 +95,25 @@ public final class NovaWebViewTest extends FixtureActivity {
     }
 
     @Test public void blobDownloadWritesAllChunksToTheSelectedDocument() throws Exception {
+        Uri destination=Uri.parse("content://com.example.chatgptnova.test.documents/blob-"+java.util.UUID.randomUUID()+".bin");
         AtomicReference<Intent> captured=new AtomicReference<>();
         external(intent -> {
             if (!Intent.ACTION_CREATE_DOCUMENT.equals(intent.getAction())) return null;
             captured.set(intent);
-            return new Instrumentation.ActivityResult(Activity.RESULT_OK,new Intent().setData(OUTPUT));
+            return new Instrumentation.ActivityResult(Activity.RESULT_OK,new Intent().setData(destination));
         });
         clickWeb("download");
-        waitFor("blob save", () -> { try { return read(OUTPUT).length==131089; } catch(Exception error) { return false; } });
-        byte[] data=read(OUTPUT); for(int i=0;i<data.length;i++) assertEquals((byte)(i%251),data[i]);
+        waitFor("blob save", () -> {
+            try {
+                AtomicReference<Boolean> completed=new AtomicReference<>(false);
+                main(() -> { try {
+                    Field field=MainActivity.class.getDeclaredField("blobDownload"); field.setAccessible(true);
+                    completed.set(field.get(activity)==null);
+                } catch(Exception error) { throw new AssertionError(error); } });
+                return captured.get()!=null && completed.get() && read(destination).length==131089;
+            } catch(Exception error) { return false; }
+        });
+        byte[] data=read(destination); for(int i=0;i<data.length;i++) assertEquals((byte)(i%251),data[i]);
         assertNotNull(captured.get()); assertEquals("nova-fixture.bin",captured.get().getStringExtra(Intent.EXTRA_TITLE));
     }
 
@@ -146,7 +157,7 @@ public final class NovaWebViewTest extends FixtureActivity {
     }
 
     @Test public void networkErrorsHaveAUsableRetryAndMicrosoftIsNotPreemptivelyBlocked() throws Exception {
-        main(() -> web.loadUrl("https://127.0.0.1:9/network-error"));
+        main(() -> web.loadUrl("https://127.0.0.1:46311/network-error"));
         waitFor("real connection error", () -> {
             AtomicReference<Boolean> visible=new AtomicReference<>(false);
             main(() -> { View retry=text(activity.getWindow().getDecorView(),"重试加载"); visible.set(retry!=null && retry.isShown()); });
@@ -167,15 +178,12 @@ public final class NovaWebViewTest extends FixtureActivity {
         js("localStorage.setItem('nova_clear_fixture','present')");
         Method confirm=MainActivity.class.getDeclaredMethod("confirmClear"); confirm.setAccessible(true);
         main(() -> { try { confirm.invoke(activity); } catch(Exception error){throw new AssertionError(error);} });
-        waitFor("clear confirmation", () -> {
-            android.view.accessibility.AccessibilityNodeInfo root=instrument.getUiAutomation().getRootInActiveWindow();
-            if(root==null) return false;
-            for(android.view.accessibility.AccessibilityNodeInfo node:root.findAccessibilityNodeInfosByText("清除")) {
-                if("清除".contentEquals(node.getText()==null?"":node.getText()))
-                    return node.performAction(android.view.accessibility.AccessibilityNodeInfo.ACTION_CLICK);
-            }
-            return false;
-        });
+        main(() -> { try {
+            Field field=MainActivity.class.getDeclaredField("clearDialog"); field.setAccessible(true);
+            AlertDialog dialog=(AlertDialog)field.get(activity);
+            assertNotNull(dialog); assertTrue(dialog.isShowing());
+            dialog.getButton(AlertDialog.BUTTON_POSITIVE).performClick();
+        } catch(Exception error) { throw new AssertionError(error); } });
         WebView old=web;
         waitFor("cleared WebView", () -> { AtomicReference<WebView> next=new AtomicReference<>(); main(() -> next.set(web(activity))); return next.get()!=null && next.get()!=old; });
         main(() -> web=web(activity)); fixture(PAGE);

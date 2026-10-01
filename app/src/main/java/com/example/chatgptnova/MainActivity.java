@@ -64,6 +64,7 @@ public class MainActivity extends Activity {
     private String loadingUrl;
     private boolean clearing;
     private boolean oauthDialogVisible;
+    private AlertDialog clearDialog;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -557,7 +558,8 @@ public class MainActivity extends Activity {
     }
 
     private void confirmClear() {
-        new AlertDialog.Builder(this)
+        if (clearDialog != null || clearing) return;
+        clearDialog = new AlertDialog.Builder(this)
                 .setTitle("清除登录？")
                 .setMessage("会清除此 APK 内的 Cookie、缓存和网站数据，不影响官方 ChatGPT App 的账号。")
                 .setNegativeButton("取消", null)
@@ -589,7 +591,9 @@ public class MainActivity extends Activity {
                         }
                     });
                 })
-                .show();
+                .create();
+        clearDialog.setOnDismissListener(dialog -> clearDialog = null);
+        clearDialog.show();
     }
 
     @Override
@@ -644,9 +648,11 @@ public class MainActivity extends Activity {
             Uri destination = resultCode == RESULT_OK && data != null ? data.getData() : null;
             if (destination == null || !"content".equalsIgnoreCase(destination.getScheme())) { cancelDownloads(); return; }
             if (blobDownload != null) {
+                Toast.makeText(this, "正在保存文件，请等待下载完成提示。", Toast.LENGTH_LONG).show();
                 BlobDownload saving = blobDownload;
                 saving.saveTo(destination, () -> { if (blobDownload == saving) blobDownload = null; });
             } else if (httpDownload != null) {
+                Toast.makeText(this, "正在保存文件，请等待下载完成提示。", Toast.LENGTH_LONG).show();
                 HttpDownload saving = httpDownload;
                 saving.saveTo(destination, () -> { if (httpDownload == saving) httpDownload = null; });
             }
@@ -669,6 +675,7 @@ public class MainActivity extends Activity {
 
     @Override
     protected void onDestroy() {
+        if (clearDialog != null) { clearDialog.dismiss(); clearDialog = null; }
         cancelPageRequests();
         cancelDownloads();
         if (webView != null) {

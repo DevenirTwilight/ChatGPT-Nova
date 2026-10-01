@@ -37,6 +37,7 @@ abstract class FixtureActivity {
         scenario = ActivityScenario.launch(new Intent(instrument.getTargetContext(), MainActivity.class));
         scenario.onActivity(value -> { activity = value; web = web(value); });
         fixture(PAGE);
+        focus();
     }
 
     static WebView web(MainActivity activity) {
@@ -88,6 +89,7 @@ abstract class FixtureActivity {
     }
 
     void clickWeb(String id) {
+        focus();
         String[] coords = js("(()=>{let r=document.getElementById('"+id+"').getBoundingClientRect();return [r.x+r.width/2,r.y+r.height/2].join(',')})()").split(",");
         int[] screen = new int[2];
         main(() -> web.getLocationOnScreen(screen));
@@ -98,6 +100,15 @@ abstract class FixtureActivity {
         MotionEvent down = MotionEvent.obtain(at,at,MotionEvent.ACTION_DOWN,x,y,0);
         MotionEvent up = MotionEvent.obtain(at,at+60,MotionEvent.ACTION_UP,x,y,0);
         instrument.sendPointerSync(down); instrument.sendPointerSync(up); down.recycle(); up.recycle();
+    }
+
+    private void focus() {
+        waitFor("focused Nova window", () -> {
+            AtomicReference<Boolean> ready=new AtomicReference<>(false);
+            main(() -> ready.set(activity.hasWindowFocus() && web.isShown()));
+            return ready.get();
+        });
+        instrument.waitForIdleSync();
     }
 
     View text(View view, String label) {
