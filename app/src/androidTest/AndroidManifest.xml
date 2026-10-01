@@ -1,0 +1,8 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <application>
+        <!-- This provider exists only in the separate CI test APK and serves synthetic fixtures. -->
+        <provider android:name="com.example.chatgptnova.FixtureDocuments"
+            android:authorities="com.example.chatgptnova.test.documents"
+            android:exported="true" />
+    </application>
+</manifest>

@@ -70,6 +70,11 @@ try:
     launch()
     checks.append('Signed Release APK installs and launches')
     capture('portrait')
+    public_text = [n.get('text','') for n in tree().iter('node')]
+    website = {'public_chatgpt_page_visible': 'Log in' in public_text or 'Chat with ChatGPT' in public_text,
+               'native_network_error_visible': '重试加载' in public_text,
+               'authenticated_features_tested': False}
+    (OUT/'website-observation.json').write_text(json.dumps(website,ensure_ascii=False,indent=2))
     menu('关于 / 登录帮助')
     root = tree()
     assert any('非官方客户端' in n.get('text','') and 'chatgpt.com' in n.get('text','') for n in root.iter('node'))

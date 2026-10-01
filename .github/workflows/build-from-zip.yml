@@ -5,6 +5,7 @@ on:
 
 permissions:
   contents: read
+  actions: read
 
 jobs:
   build:
@@ -15,23 +16,31 @@ jobs:
         uses: actions/checkout@v4
         with:
           persist-credentials: false
+          fetch-depth: 0
 
-      - name: Extract and check source
+      - name: Check tracked source
         run: |
-          python3 - <<'PY'
-          import zipfile
+          python3 - <<'PYCODE'
+          import subprocess
           from pathlib import Path
-          with zipfile.ZipFile('ChatGPT-Nova-Secure-Source.zip') as archive:
-              for entry in archive.infolist():
-                  path = Path(entry.filename)
-                  if path.is_absolute() or '..' in path.parts:
-                      raise SystemExit('Unsafe ZIP path')
-                  if path.suffix in ('.jks', '.keystore') or path.name == 'keystore.properties':
-                      raise SystemExit('Signing material must not be in source')
-              archive.extractall('project')
-          assert Path('project/app/build.gradle').is_file()
-          PY
-          diff -qr app project/app
+          files = subprocess.check_output(['git','ls-files','-z']).decode().split('\0')
+          for name in files:
+              path = Path(name)
+              if path.suffix in ('.jks','.keystore') or path.name == 'keystore.properties':
+                  raise SystemExit('Signing material must not be tracked')
+          assert Path('app/build.gradle').is_file()
+          assert Path('gradlew').is_file()
+          PYCODE
+
+      - name: Download original signed v1 for upgrade testing
+        id: original-v1
+        continue-on-error: true
+        uses: actions/download-artifact@v4
+        with:
+          name: ChatGPT-Nova-release
+          run-id: 36923256012
+          github-token: ${{ github.token }}
+          path: baseline
 
       - name: Set up JDK 17
         uses: actions/setup-java@v4
@@ -67,30 +76,50 @@ jobs:
           for name in names:
               if not os.environ.get(name):
                   raise SystemExit('Missing required GitHub secret: ' + name)
-          Path('project/signing').mkdir(exist_ok=True)
-          key = Path('project/signing/nova-personal-release.jks')
+          Path('signing').mkdir(exist_ok=True)
+          key = Path('signing/nova-personal-release.jks')
           key.write_bytes(base64.b64decode(os.environ['NOVA_KEYSTORE_B64'], validate=True))
           key.chmod(0o600)
           def escape(value):
               return ''.join({'\\':'\\\\', '\n':'\\n', '\r':'\\r', '\t':'\\t', '=':'\\=', ':':'\\:', ' ':'\\ '}.get(c,c) for c in value)
-          props = Path('project/keystore.properties')
+          props = Path('keystore.properties')
           props.write_text('storeFile=signing/nova-personal-release.jks\n' + ''.join(k+'='+escape(os.environ[v])+'\n' for k,v in (
               ('storePassword','NOVA_STORE_PASSWORD'), ('keyAlias','NOVA_KEY_ALIAS'), ('keyPassword','NOVA_KEY_PASSWORD'))))
           props.chmod(0o600)
           PY
 
-      - name: Generate Gradle 8.9 wrapper
-        run: gradle -p project wrapper --gradle-version 8.9 --distribution-type bin --no-daemon
+      - name: Build release APK and separate instrumentation APK
+        run: ./gradlew :app:clean :app:assembleRelease :app:assembleReleaseAndroidTest :app:lintRelease --stacktrace --no-daemon
 
-      - name: Build release APK
-        run: gradle -p project :app:clean :app:assembleRelease :app:lintRelease --stacktrace --no-daemon
+      - name: Retain a reproducible v1 baseline if the original Artifact has expired
+        run: |
+          if [ -f baseline/ChatGPT-Nova.apk ]; then
+            printf '%s\n' 'original Actions Artifact v1' > baseline/origin.txt
+            printf '%s\n' 'a48fc6e95bf3b8dd1abc32c86cbee168de7931aa71a80867134b58da61dd2921  baseline/ChatGPT-Nova.apk' | sha256sum --check
+          else
+            mkdir -p baseline baseline-source
+            git archive fee90be011ac72b6bbb972f0e91265469d2776ab | tar -x -C baseline-source
+            cp keystore.properties baseline-source/keystore.properties
+            cp signing/nova-personal-release.jks baseline-source/signing/nova-personal-release.jks
+            gradle -p baseline-source :app:assembleRelease --no-daemon
+            cp baseline-source/app/build/outputs/apk/release/app-release.apk baseline/ChatGPT-Nova.apk
+            printf '%s\n' 'pinned v1 source rebuilt with the original release key' > baseline/origin.txt
+          fi
 
       - name: Prepare and verify APK
         run: |
           mkdir -p dist
-          cp project/app/build/outputs/apk/release/app-release.apk dist/ChatGPT-Nova.apk
+          cp app/build/outputs/apk/release/app-release.apk dist/ChatGPT-Nova.apk
+          cp app/build/outputs/apk/androidTest/release/app-release-androidTest.apk dist/ChatGPT-Nova-tests.apk
+          cp baseline/ChatGPT-Nova.apk dist/ChatGPT-Nova-v1.apk
+          cp baseline/origin.txt dist/baseline-origin.txt
           "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose --print-certs dist/ChatGPT-Nova.apk > dist/APK-signature.txt
           cat dist/APK-signature.txt
+          grep -F "$(cat release-certificate.sha256)" dist/APK-signature.txt
+          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --print-certs dist/ChatGPT-Nova-tests.apk > dist/tests-signature.txt
+          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --print-certs dist/ChatGPT-Nova-v1.apk > dist/baseline-signature.txt
+          grep -F "$(cat release-certificate.sha256)" dist/tests-signature.txt
+          grep -F "$(cat release-certificate.sha256)" dist/baseline-signature.txt
           "$ANDROID_HOME/build-tools/35.0.0/aapt2" dump badging dist/ChatGPT-Nova.apk > dist/APK-manifest.txt
           python3 - <<'PY'
           import zipfile
@@ -103,7 +132,12 @@ jobs:
           manifest = Path('dist/APK-manifest.txt').read_text()
           assert "name='com.example.chatgptnova'" in manifest
           assert "targetSdkVersion:'35'" in manifest
+          assert "versionCode='4'" in manifest
+          assert "versionName='1.3.0'" in manifest
           assert 'application-debuggable' not in manifest
+          with zipfile.ZipFile('dist/ChatGPT-Nova.apk') as apk:
+              assert not any('FixtureDocuments' in apk.read(n).decode('latin1') for n in dex)
+          assert 'com.example.chatgptnova.test.documents' not in manifest
           Path('dist/APK-dex.txt').write_text('DEX headers verified; no signing secrets packaged.\n')
           PY
           (cd dist && sha256sum ChatGPT-Nova.apk > ChatGPT-Nova.apk.sha256)
@@ -111,15 +145,16 @@ jobs:
       - name: Prepare complete source without signing secrets
         run: |
           python3 - <<'PY'
-          import zipfile
+          import zipfile, subprocess
           from pathlib import Path
-          root = Path('project')
+          root = Path('.')
           with zipfile.ZipFile('dist/ChatGPT-Nova-Secure-Source.zip','w',zipfile.ZIP_DEFLATED) as archive:
-              for path in sorted(root.rglob('*')):
-                  rel = path.relative_to(root)
-                  if not path.is_file() or any(p in ('.gradle','build','.git') for p in rel.parts): continue
+              for name in subprocess.check_output(['git','ls-files','-z']).decode().split('\0'):
+                  if not name or name == 'ChatGPT-Nova-Secure-Source.zip': continue
+                  path = root / name
+                  if not path.is_file(): continue
                   if path.name in ('keystore.properties','local.properties') or path.suffix in ('.jks','.keystore'): continue
-                  archive.write(path, str(rel))
+                  archive.write(path, name)
           PY
 
       - name: Upload APK
@@ -141,12 +176,23 @@ jobs:
           if-no-files-found: error
           retention-days: 90
 
+      - name: Upload upgrade and WebView test inputs
+        uses: actions/upload-artifact@v4
+        with:
+          name: ChatGPT-Nova-ci-inputs
+          path: |
+            dist/ChatGPT-Nova-tests.apk
+            dist/ChatGPT-Nova-v1.apk
+            dist/baseline-origin.txt
+          if-no-files-found: error
+          retention-days: 90
+
       - name: Remove temporary signing material
         if: always()
-        run: rm -f project/keystore.properties project/signing/nova-personal-release.jks
+        run: rm -f keystore.properties signing/nova-personal-release.jks baseline-source/keystore.properties baseline-source/signing/nova-personal-release.jks
 
   compatibility:
-    name: Android ${{ matrix.api }} smoke test
+    name: Android ${{ matrix.api }} upgrade and WebView tests
     needs: build
     runs-on: ubuntu-latest
     timeout-minutes: 25
@@ -162,6 +208,10 @@ jobs:
         with:
           name: ChatGPT-Nova-release
           path: dist
+      - uses: actions/download-artifact@v4
+        with:
+          name: ChatGPT-Nova-ci-inputs
+          path: dist
       - name: Enable KVM
         run: |
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
@@ -175,13 +225,17 @@ jobs:
           arch: x86_64
           profile: pixel_6
           disable-animations: true
-          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back emulated
-          script: python3 scripts/smoke_apk.py dist/ChatGPT-Nova.apk ${{ matrix.api }}
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back emulated -dns-server 8.8.8.8,1.1.1.1
+          script: |
+            python3 scripts/upgrade_and_web_tests.py dist/ChatGPT-Nova.apk dist/ChatGPT-Nova-tests.apk dist/ChatGPT-Nova-v1.apk ${{ matrix.api }}
+            python3 scripts/smoke_apk.py dist/ChatGPT-Nova.apk ${{ matrix.api }}
       - name: Upload compatibility evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: ChatGPT-Nova-Android-${{ matrix.api }}
-          path: smoke-results/
+          path: |
+            smoke-results/
+            instrumented-results/
           if-no-files-found: warn
           retention-days: 90

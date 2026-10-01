@@ -3,18 +3,15 @@ package com.example.chatgptnova;
 import android.Manifest;
 import android.app.Activity;
 import android.app.AlertDialog;
-import android.app.DownloadManager;
 import android.content.ActivityNotFoundException;
 import android.content.Context;
 import android.content.Intent;
-import android.content.ClipData;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
-import android.os.Environment;
-import android.provider.MediaStore;
+import android.os.Parcel;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
@@ -31,55 +28,55 @@ import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.webkit.WebResourceResponse;
 import android.webkit.RenderProcessGoneDetail;
+import android.webkit.SslErrorHandler;
+import android.net.http.SslError;
 import android.window.OnBackInvokedDispatcher;
 import androidx.browser.customtabs.CustomTabsClient;
 import androidx.browser.customtabs.CustomTabsIntent;
-import androidx.core.content.FileProvider;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowCompat;
 import androidx.core.view.WindowInsetsCompat;
-import java.io.File;
 import java.util.ArrayList;
+import android.widget.Button;
 import android.widget.FrameLayout;
+import android.widget.ScrollView;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
 public class MainActivity extends Activity {
-    private static final int FILE_CHOOSER = 1001;
     private static final int WEB_PERMISSIONS = 1002;
-    private static final int DOWNLOAD_PERMISSION = 1003;
-    private static final int CAMERA_PERMISSION = 1004;
     private static final int SAVE_BLOB = 1005;
     private static final String HOME = "https://chatgpt.com/";
 
     private WebView webView;
     private ProgressBar progress;
-    private ValueCallback<Uri[]> fileCallback;
     private PermissionRequest pendingWebPermission;
-    private WebChromeClient.FileChooserParams pendingChooserParams;
-    private Uri cameraUri;
-    private File cameraFile;
+    private UploadController uploads;
     private BlobDownload blobDownload;
+    private HttpDownload httpDownload;
+    private TextView origin;
+    private LinearLayout errorPanel;
+    private TextView errorMessage;
+    private String failedUrl;
+    private boolean clearing;
     private boolean oauthDialogVisible;
-
-    private String pendingDownloadUrl;
-    private String pendingDownloadUserAgent;
-    private String pendingDownloadContentDisposition;
-    private String pendingDownloadMimeType;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        File photoDirectory = new File(getCacheDir(), "camera");
-        File[] oldPhotos = photoDirectory.listFiles();
-        if (oldPhotos != null) for (File photo : oldPhotos) photo.delete();
+        uploads = new UploadController(this);
         buildUi();
         configureWebView();
-        if (savedInstanceState == null || webView.restoreState(savedInstanceState) == null) {
-            webView.loadUrl(HOME);
+        Bundle webState = savedInstanceState == null ? null : savedInstanceState.getBundle("nova.webState");
+        boolean restored = false;
+        try { restored = webState != null && webView.restoreState(webState) != null; }
+        catch (RuntimeException ignored) { }
+        if (!restored) {
+            String last = savedInstanceState == null ? null : savedInstanceState.getString("nova.lastUrl");
+            webView.loadUrl(safePage(last) ? last : HOME);
         }
         if (Build.VERSION.SDK_INT >= 33) {
             getOnBackInvokedDispatcher().registerOnBackInvokedCallback(
@@ -107,18 +104,26 @@ public class MainActivity extends Activity {
         FrameLayout bar = new FrameLayout(this);
         bar.setPadding(dp(12), dp(4), dp(8), dp(4));
         LinearLayout.LayoutParams barLp = new LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT, dp(44));
+                ViewGroup.LayoutParams.MATCH_PARENT, dp(56));
 
+        LinearLayout heading = new LinearLayout(this);
+        heading.setOrientation(LinearLayout.VERTICAL);
+        heading.setGravity(Gravity.CENTER_VERTICAL);
+        heading.setPadding(0, 0, dp(52), 0);
         TextView title = new TextView(this);
-        title.setText("ChatGPT Nova · Unofficial");
-        title.setTextSize(16);
-        title.setGravity(Gravity.CENTER_VERTICAL);
+        title.setText("ChatGPT Nova · 非官方");
+        title.setTextSize(15);
         title.setTextColor(0xFF111111);
-        FrameLayout.LayoutParams titleLp = new FrameLayout.LayoutParams(
-                ViewGroup.LayoutParams.WRAP_CONTENT,
-                ViewGroup.LayoutParams.MATCH_PARENT,
-                Gravity.START);
-        bar.addView(title, titleLp);
+        heading.addView(title);
+        origin = new TextView(this);
+        origin.setText("chatgpt.com");
+        origin.setTextSize(12);
+        origin.setTextColor(0xFF555555);
+        origin.setSingleLine(true);
+        origin.setEllipsize(android.text.TextUtils.TruncateAt.END);
+        heading.addView(origin);
+        bar.addView(heading, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.MATCH_PARENT, Gravity.START));
 
         TextView menu = new TextView(this);
         menu.setText("⋮");
@@ -137,9 +142,34 @@ public class MainActivity extends Activity {
         root.addView(progress, new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, dp(2)));
 
+        FrameLayout content = new FrameLayout(this);
         webView = new WebView(this);
-        root.addView(webView, new LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f));
+        content.addView(webView, new FrameLayout.LayoutParams(-1, -1));
+        ScrollView errors = new ScrollView(this);
+        errorPanel = new LinearLayout(this);
+        errorPanel.setOrientation(LinearLayout.VERTICAL);
+        errorPanel.setPadding(dp(24), dp(24), dp(24), dp(24));
+        errorPanel.setBackgroundColor(0xFFFFFFFF);
+        errorMessage = new TextView(this);
+        errorMessage.setTextSize(17);
+        errorPanel.addView(errorMessage);
+        Button retry = new Button(this);
+        retry.setText("重试加载");
+        retry.setOnClickListener(v -> { if (!clearing && webView != null) webView.loadUrl(safePage(failedUrl) ? failedUrl : HOME); });
+        errorPanel.addView(retry);
+        Button home = new Button(this);
+        home.setText("返回 ChatGPT 首页");
+        home.setOnClickListener(v -> { if (!clearing && webView != null) webView.loadUrl(HOME); });
+        errorPanel.addView(home);
+        Button browser = new Button(this);
+        browser.setText("用浏览器打开");
+        browser.setOnClickListener(v -> openCurrentPageInBrowser());
+        errorPanel.addView(browser);
+        errors.addView(errorPanel);
+        errors.setTag("nova.error");
+        errors.setVisibility(View.GONE);
+        content.addView(errors, new FrameLayout.LayoutParams(-1, -1));
+        root.addView(content, new LinearLayout.LayoutParams(-1, 0, 1f));
         setContentView(root);
         ViewCompat.requestApplyInsets(root);
     }
@@ -156,7 +186,9 @@ public class MainActivity extends Activity {
         s.setSafeBrowsingEnabled(true);
         s.setSupportZoom(false);
         s.setBuiltInZoomControls(false);
-        s.setJavaScriptCanOpenWindowsAutomatically(true);
+        s.setJavaScriptCanOpenWindowsAutomatically(false);
+        s.setSupportMultipleWindows(false);
+        webView.setImportantForAutofill(View.IMPORTANT_FOR_AUTOFILL_NO_EXCLUDE_DESCENDANTS);
 
         CookieManager cm = CookieManager.getInstance();
         cm.setAcceptCookie(true);
@@ -166,39 +198,49 @@ public class MainActivity extends Activity {
             @Override
             public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
                 if (!request.isForMainFrame()) return false;
-                return handleUri(request.getUrl());
+                return clearing || handleUri(request.getUrl());
             }
 
             @Override
             public boolean shouldOverrideUrlLoading(WebView view, String url) {
-                return handleUri(Uri.parse(url));
+                return clearing || handleUri(Uri.parse(url));
             }
 
             @Override
             public void onPageStarted(WebView view, String url, Bitmap favicon) {
+                if (view != webView || clearing) return;
+                cancelPageRequests();
+                failedUrl = null;
+                errorContainer().setVisibility(View.GONE);
+                displayOrigin(url);
                 progress.setVisibility(View.VISIBLE);
             }
 
             @Override
             public void onPageFinished(WebView view, String url) {
+                if (view != webView) return;
                 progress.setVisibility(View.GONE);
+                displayOrigin(url);
                 CookieManager.getInstance().flush();
             }
 
             @Override
             public void onReceivedError(WebView view, WebResourceRequest request, WebResourceError error) {
-                super.onReceivedError(view, request, error);
-                if (request.isForMainFrame()) {
-                    Toast.makeText(MainActivity.this,
-                            "页面加载失败，请检查网络后刷新。",
-                            Toast.LENGTH_SHORT).show();
+                if (view == webView && request.isForMainFrame()) {
+                    showLoadError(request.getUrl().toString(), "页面未能加载。请检查网络，然后重试。");
                 }
+            }
+
+            @Override
+            public void onReceivedSslError(WebView view, SslErrorHandler handler, SslError error) {
+                handler.cancel();
+                if (view == webView) showLoadError(error.getUrl(), "无法安全连接此页面。请检查设备时间和网络后重试。");
             }
 
             @Override
             public void onReceivedHttpError(WebView view, WebResourceRequest request,
                                             WebResourceResponse response) {
-                if (request.isForMainFrame() && response.getStatusCode() >= 400) {
+                if (view == webView && request.isForMainFrame() && response.getStatusCode() >= 400) {
                     Toast.makeText(MainActivity.this, "网页暂时不可用，可刷新或用浏览器打开。",
                             Toast.LENGTH_LONG).show();
                 }
@@ -208,8 +250,7 @@ public class MainActivity extends Activity {
             public boolean onRenderProcessGone(WebView view, RenderProcessGoneDetail detail) {
                 if (view != webView) { view.destroy(); return true; }
                 if (blobDownload != null) { blobDownload.cancel(); blobDownload = null; }
-                if (fileCallback != null) { fileCallback.onReceiveValue(null); fileCallback = null; }
-                pendingWebPermission = null;
+                cancelPageRequests();
                 if (view.getParent() instanceof ViewGroup) ((ViewGroup) view.getParent()).removeView(view);
                 view.destroy();
                 webView = null;
@@ -224,6 +265,7 @@ public class MainActivity extends Activity {
         webView.setWebChromeClient(new WebChromeClient() {
             @Override
             public void onProgressChanged(WebView view, int newProgress) {
+                if (view != webView || clearing) return;
                 progress.setProgress(newProgress);
                 progress.setVisibility(newProgress >= 100 ? View.GONE : View.VISIBLE);
             }
@@ -232,25 +274,11 @@ public class MainActivity extends Activity {
             public boolean onShowFileChooser(WebView webView,
                                              ValueCallback<Uri[]> callback,
                                              FileChooserParams params) {
-                cancelFileChooser();
-                fileCallback = callback;
-                pendingChooserParams = params;
-                boolean acceptsImages = params.getAcceptTypes().length == 0;
-                for (String type : params.getAcceptTypes()) {
-                    if (type == null || type.isEmpty() || "*/*".equals(type)
-                            || type.startsWith("image/")) acceptsImages = true;
+                if (clearing || webView != MainActivity.this.webView || !isTrustedOrigin(Uri.parse(webView.getUrl() == null ? "" : webView.getUrl()))) {
+                    callback.onReceiveValue(null);
+                    return true;
                 }
-                if (acceptsImages) {
-                    new AlertDialog.Builder(MainActivity.this)
-                            .setTitle("上传文件或图片")
-                            .setItems(new String[]{"选择文件 / 图片", "拍照"}, (d, which) -> {
-                                if (which == 0) launchFilePicker(); else requestPhoto();
-                            })
-                            .setOnCancelListener(d -> cancelFileChooser()).show();
-                } else {
-                    launchFilePicker();
-                }
-                return true;
+                return uploads.show(callback, params);
             }
 
             @Override
@@ -273,10 +301,7 @@ public class MainActivity extends Activity {
         if (scheme == null) return false;
         if ("https".equalsIgnoreCase(scheme)) {
             String host = uri.getHost();
-            if ("accounts.google.com".equalsIgnoreCase(host)
-                    || "login.microsoftonline.com".equalsIgnoreCase(host)
-                    || "login.live.com".equalsIgnoreCase(host)
-                    || "appleid.apple.com".equalsIgnoreCase(host)) {
+            if ("accounts.google.com".equalsIgnoreCase(host)) {
                 showOAuthHelp();
                 return true;
             }
@@ -305,11 +330,14 @@ public class MainActivity extends Activity {
                 Uri target = intent.getData();
                 if (target == null || "file".equalsIgnoreCase(target.getScheme())
                         || "content".equalsIgnoreCase(target.getScheme())
-                        || "javascript".equalsIgnoreCase(target.getScheme())) return true;
+                        || "javascript".equalsIgnoreCase(target.getScheme())
+                        || "data".equalsIgnoreCase(target.getScheme())
+                        || "intent".equalsIgnoreCase(target.getScheme())) return true;
                 try { startActivity(intent); }
                 catch (ActivityNotFoundException e) {
                     if (fallback != null && "https".equalsIgnoreCase(Uri.parse(fallback).getScheme())) {
-                        webView.loadUrl(fallback);
+                        Uri next = Uri.parse(fallback);
+                        if (!handleUri(next)) webView.loadUrl(next.toString());
                     } else {
                         Toast.makeText(this, "没有应用可以打开这个链接。", Toast.LENGTH_SHORT).show();
                     }
@@ -329,7 +357,7 @@ public class MainActivity extends Activity {
         if (oauthDialogVisible) return;
         oauthDialogVisible = true;
         new AlertDialog.Builder(this).setTitle("第三方登录兼容性")
-                .setMessage("Google / Microsoft / Apple 可能禁止网页容器登录。可在系统浏览器中从 ChatGPT 首页重新登录。浏览器与 Nova 的 Cookie 独立，浏览器登录不会自动迁移回 Nova。要在 Nova 内保留第二账号，请使用官网支持的邮箱登录方式。")
+                .setMessage("Google 登录不支持嵌入式网页容器。Microsoft / Apple 的官网跳转可在 Nova 中尝试；网站仍可能限制登录。浏览器登录使用浏览器自己的账号与 Cookie，不能自动同步回 Nova。要在 Nova 中保留第二账号，可尝试官网提供的邮箱登录方式。")
                 .setNegativeButton("留在 Nova", null)
                 .setPositiveButton("在浏览器中登录", (d, w) -> openInBrowser(Uri.parse(HOME)))
                 .setOnDismissListener(d -> oauthDialogVisible = false).show();
@@ -338,61 +366,14 @@ public class MainActivity extends Activity {
     static boolean isTrustedOrigin(Uri uri) {
         String host = uri == null ? null : uri.getHost();
         return uri != null && "https".equalsIgnoreCase(uri.getScheme()) && host != null
+                && (uri.getPort() == -1 || uri.getPort() == 443) && uri.getUserInfo() == null
                 && ("chatgpt.com".equalsIgnoreCase(host)
                     || host.toLowerCase(java.util.Locale.ROOT).endsWith(".chatgpt.com"));
     }
 
-    private void launchFilePicker() {
-        if (fileCallback == null || pendingChooserParams == null) return;
-        try {
-            Intent intent = pendingChooserParams.createIntent();
-            intent.setAction(Intent.ACTION_OPEN_DOCUMENT);
-            intent.addCategory(Intent.CATEGORY_OPENABLE);
-            intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-            startActivityForResult(intent, FILE_CHOOSER);
-        } catch (Exception e) {
-            cancelFileChooser();
-            Toast.makeText(this, "没有可用的文件选择器。", Toast.LENGTH_SHORT).show();
-        }
-    }
-
-    private void requestPhoto() {
-        if (checkSelfPermission(Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
-            launchPhoto();
-        } else {
-            requestPermissions(new String[]{Manifest.permission.CAMERA}, CAMERA_PERMISSION);
-        }
-    }
-
-    private void launchPhoto() {
-        if (fileCallback == null) return;
-        try {
-            File directory = new File(getCacheDir(), "camera");
-            if (!directory.exists() && !directory.mkdirs()) throw new java.io.IOException();
-            cameraFile = File.createTempFile("nova-", ".jpg", directory);
-            cameraUri = FileProvider.getUriForFile(this, getPackageName() + ".fileprovider", cameraFile);
-            Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
-            intent.putExtra(MediaStore.EXTRA_OUTPUT, cameraUri);
-            intent.setClipData(ClipData.newRawUri("Nova photo", cameraUri));
-            intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
-            startActivityForResult(intent, FILE_CHOOSER);
-        } catch (Exception e) {
-            cancelFileChooser();
-            Toast.makeText(this, "无法调用相机，可选择已有图片。", Toast.LENGTH_SHORT).show();
-        }
-    }
-
-    private void cancelFileChooser() {
-        if (fileCallback != null) { fileCallback.onReceiveValue(null); fileCallback = null; }
-        pendingChooserParams = null;
-        if (cameraUri != null) revokeUriPermission(cameraUri,
-                Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
-        cameraUri = null;
-        if (cameraFile != null) { cameraFile.delete(); cameraFile = null; }
-    }
-
     private void requestWebPermissions(PermissionRequest request) {
-        if (!isTrustedOrigin(request.getOrigin())) { request.deny(); return; }
+        if (clearing || webView == null || !isTrustedOrigin(request.getOrigin())
+                || !isTrustedOrigin(Uri.parse(webView.getUrl() == null ? "" : webView.getUrl()))) { request.deny(); return; }
         if (pendingWebPermission != null) { request.deny(); return; }
         pendingWebPermission = request;
         boolean needCamera = false;
@@ -423,7 +404,8 @@ public class MainActivity extends Activity {
         pendingWebPermission = null;
         if (request == null) return;
         ArrayList<String> granted = new ArrayList<>();
-        if (isTrustedOrigin(request.getOrigin())) {
+        if (webView != null && isTrustedOrigin(request.getOrigin())
+                && isTrustedOrigin(Uri.parse(webView.getUrl() == null ? "" : webView.getUrl()))) {
             for (String resource : request.getResources()) {
                 if (PermissionRequest.RESOURCE_VIDEO_CAPTURE.equals(resource)
                         && checkSelfPermission(Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
@@ -437,96 +419,72 @@ public class MainActivity extends Activity {
         if (granted.isEmpty()) request.deny(); else request.grant(granted.toArray(new String[0]));
     }
 
-    private void requestDownload(String url,
-                                 String userAgent,
-                                 String contentDisposition,
-                                 String mimeType) {
-        if (url.startsWith("blob:") && isTrustedOrigin(Uri.parse(webView.getUrl() == null ? "" : webView.getUrl()))) {
-            if (blobDownload != null) { Toast.makeText(this, "请先完成当前下载。", Toast.LENGTH_SHORT).show(); return; }
+    private void requestDownload(String url, String userAgent, String disposition, String mime) {
+        if (url == null || clearing) return;
+        if (webView == null || !isTrustedOrigin(Uri.parse(webView.getUrl() == null ? "" : webView.getUrl()))) {
+            Uri external = Uri.parse(url);
+            if ("https".equalsIgnoreCase(external.getScheme()) || "http".equalsIgnoreCase(external.getScheme())) openInBrowser(external);
+            return;
+        }
+        if (blobDownload != null || httpDownload != null) {
+            Toast.makeText(this, "请先完成当前下载。", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        Uri address = Uri.parse(url);
+        if ("blob".equalsIgnoreCase(address.getScheme())) {
+            if (webView == null || !isTrustedOrigin(Uri.parse(webView.getUrl() == null ? "" : webView.getUrl()))) return;
             blobDownload = new BlobDownload(this, webView, url);
-            Intent save = new Intent(Intent.ACTION_CREATE_DOCUMENT);
-            save.addCategory(Intent.CATEGORY_OPENABLE);
-            save.setType(mimeType == null || mimeType.isEmpty() ? "application/octet-stream" : mimeType);
-            save.putExtra(Intent.EXTRA_TITLE, URLUtil.guessFileName(url, contentDisposition, mimeType));
-            try { startActivityForResult(save, SAVE_BLOB); }
-            catch (Exception e) { blobDownload.cancel(); blobDownload = null;
-                Toast.makeText(this, "无法打开保存位置选择器。", Toast.LENGTH_SHORT).show(); }
+        } else if ("https".equalsIgnoreCase(address.getScheme()) && address.getUserInfo() == null) {
+            httpDownload = new HttpDownload(this, url, userAgent);
+        } else {
+            if ("http".equalsIgnoreCase(address.getScheme())) openInBrowser(address);
+            else Toast.makeText(this, "无法下载此类型链接。", Toast.LENGTH_LONG).show();
             return;
         }
-        if (!"https".equalsIgnoreCase(Uri.parse(url).getScheme())
-                && !"http".equalsIgnoreCase(Uri.parse(url).getScheme())) {
-            Toast.makeText(this, "无法下载此类型链接，可用系统浏览器打开。", Toast.LENGTH_LONG).show();
-            return;
-        }
-        pendingDownloadUrl = url;
-        pendingDownloadUserAgent = userAgent;
-        pendingDownloadContentDisposition = contentDisposition;
-        pendingDownloadMimeType = mimeType;
-
-        if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.P
-                && checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE)
-                != PackageManager.PERMISSION_GRANTED) {
-            requestPermissions(
-                    new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE},
-                    DOWNLOAD_PERMISSION);
-            return;
-        }
-        enqueuePendingDownload();
+        Intent save = new Intent(Intent.ACTION_CREATE_DOCUMENT).addCategory(Intent.CATEGORY_OPENABLE)
+                .setType(mime == null || mime.isEmpty() ? "application/octet-stream" : mime)
+                .putExtra(Intent.EXTRA_TITLE, DownloadNames.guess(url, disposition, mime));
+        try { startActivityForResult(save, SAVE_BLOB); }
+        catch (RuntimeException error) { cancelDownloads();
+            Toast.makeText(this, "无法打开保存位置选择器。", Toast.LENGTH_LONG).show(); }
     }
 
-    private void enqueuePendingDownload() {
-        if (pendingDownloadUrl == null) return;
-
-        try {
-            String filename = URLUtil.guessFileName(
-                    pendingDownloadUrl,
-                    pendingDownloadContentDisposition,
-                    pendingDownloadMimeType);
-
-            DownloadManager.Request request = new DownloadManager.Request(Uri.parse(pendingDownloadUrl));
-            request.setTitle(filename);
-            request.setDescription("ChatGPT Nova 下载");
-            request.setNotificationVisibility(
-                    DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
-            request.setAllowedOverMetered(true);
-            request.setAllowedOverRoaming(false);
-
-            if (pendingDownloadMimeType != null && !pendingDownloadMimeType.isEmpty()) {
-                request.setMimeType(pendingDownloadMimeType);
-            }
-            if (pendingDownloadUserAgent != null && !pendingDownloadUserAgent.isEmpty()) {
-                request.addRequestHeader("User-Agent", pendingDownloadUserAgent);
-            }
-
-            String cookies = CookieManager.getInstance().getCookie(pendingDownloadUrl);
-            if (cookies != null && !cookies.isEmpty()) {
-                request.addRequestHeader("Cookie", cookies);
-            }
-
-            request.setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, filename);
-
-            DownloadManager dm = (DownloadManager) getSystemService(Context.DOWNLOAD_SERVICE);
-            dm.enqueue(request);
-            Toast.makeText(this,
-                    "已开始下载：" + filename,
-                    Toast.LENGTH_SHORT).show();
-        } catch (Exception e) {
-            Toast.makeText(this,
-                    "下载失败，可尝试在系统浏览器中打开当前页面。",
-                    Toast.LENGTH_LONG).show();
-        } finally {
-            clearPendingDownload();
-        }
+    private void cancelDownloads() {
+        if (blobDownload != null) { blobDownload.cancel(); blobDownload = null; }
+        if (httpDownload != null) { httpDownload.cancel(); httpDownload = null; }
     }
 
-    private void clearPendingDownload() {
-        pendingDownloadUrl = null;
-        pendingDownloadUserAgent = null;
-        pendingDownloadContentDisposition = null;
-        pendingDownloadMimeType = null;
+    private void cancelPageRequests() {
+        if (uploads != null) uploads.cancel();
+        if (pendingWebPermission != null) { pendingWebPermission.deny(); pendingWebPermission = null; }
+        if (blobDownload != null) { blobDownload.cancel(); blobDownload = null; }
+    }
+
+    private View errorContainer() { return (View) errorPanel.getParent(); }
+
+    private void showLoadError(String url, String message) {
+        if (clearing || isDestroyed()) return;
+        failedUrl = safePage(url) ? url : HOME;
+        errorMessage.setText(message);
+        errorContainer().setVisibility(View.VISIBLE);
+        progress.setVisibility(View.GONE);
+        displayOrigin(failedUrl);
+    }
+
+    private void displayOrigin(String url) {
+        Uri uri = Uri.parse(url == null ? HOME : url);
+        String host = uri.getHost();
+        origin.setText(host == null ? "chatgpt.com" : host + (uri.getPort() != -1 && uri.getPort() != 443 ? ":" + uri.getPort() : ""));
+    }
+
+    private static boolean safePage(String url) {
+        if (url == null || url.length() > 16384) return false;
+        Uri uri = Uri.parse(url);
+        return "https".equalsIgnoreCase(uri.getScheme()) && uri.getHost() != null && uri.getUserInfo() == null;
     }
 
     private void showMenu() {
+        if (clearing || webView == null) return;
         String[] items = {
                 "刷新",
                 "回到 ChatGPT",
@@ -539,7 +497,7 @@ public class MainActivity extends Activity {
                 .setTitle("ChatGPT Nova")
                 .setItems(items, (d, which) -> {
                     if (which == 0) {
-                        webView.reload();
+                        if (failedUrl != null) webView.loadUrl(failedUrl); else webView.reload();
                     } else if (which == 1) {
                         webView.loadUrl(HOME);
                     } else if (which == 2) {
@@ -547,8 +505,8 @@ public class MainActivity extends Activity {
                     } else if (which == 3) {
                         openCurrentPageInBrowser();
                     } else if (which == 4) {
-                        new AlertDialog.Builder(this).setTitle("ChatGPT Nova 1.2.0")
-                                .setMessage("非官方客户端，不由 OpenAI 发布、维护或背书。\n网页内容来自 chatgpt.com。\n应用使用独立的网站数据，不读取或保存账号密码。\n\n第三方登录可能受 WebView 限制；浏览器登录不会自动迁移到 Nova。可尝试官网邮箱登录。")
+                        new AlertDialog.Builder(this).setTitle("ChatGPT Nova 1.3.0")
+                                .setMessage("非官方客户端，不由 OpenAI 发布、维护或背书。\n网页内容来自 chatgpt.com。\n应用使用独立的网站数据，不读取或保存账号密码。\n\nGoogle 登录需浏览器；Microsoft / Apple 可在 Nova 内尝试。浏览器登录不能自动同步回 Nova。")
                                 .setPositiveButton("知道了", null)
                                 .setNeutralButton("浏览器登录帮助", (dialog, w) -> showOAuthHelp()).show();
                     }
@@ -557,7 +515,7 @@ public class MainActivity extends Activity {
     }
 
     private void openCurrentPageInBrowser() {
-        String url = webView.getUrl();
+        String url = failedUrl != null ? failedUrl : (webView == null ? HOME : webView.getUrl());
         if (url == null || url.isEmpty()) url = HOME;
         Uri uri = Uri.parse(url);
         if (!"https".equalsIgnoreCase(uri.getScheme()) && !"http".equalsIgnoreCase(uri.getScheme())) uri = Uri.parse(HOME);
@@ -599,9 +557,10 @@ public class MainActivity extends Activity {
                 .setMessage("会清除此 APK 内的 Cookie、缓存和网站数据，不影响官方 ChatGPT App 的账号。")
                 .setNegativeButton("取消", null)
                 .setPositiveButton("清除", (d, w) -> {
-                    if (blobDownload != null) { blobDownload.cancel(); blobDownload = null; }
-                    cancelFileChooser();
-                    if (pendingWebPermission != null) { pendingWebPermission.deny(); pendingWebPermission = null; }
+                    if (clearing) return;
+                    clearing = true;
+                    cancelPageRequests();
+                    cancelDownloads();
                     webView.stopLoading();
                     webView.clearCache(true);
                     webView.clearHistory();
@@ -609,12 +568,20 @@ public class MainActivity extends Activity {
                     ((ViewGroup) webView.getParent()).removeView(webView);
                     webView.destroy();
                     webView = null;
+                    uploads.clearCachedPhotos();
                     WebStorage.getInstance().deleteAllData();
-                    buildUi();
-                    configureWebView();
+                    errorMessage.setText("正在清除 Nova 的登录数据…");
+                    errorContainer().setVisibility(View.VISIBLE);
+                    progress.setVisibility(View.GONE);
                     CookieManager.getInstance().removeAllCookies(value -> {
                         CookieManager.getInstance().flush();
-                        if (webView != null && !isFinishing() && !isDestroyed()) webView.loadUrl(HOME);
+                        if (!isFinishing() && !isDestroyed()) {
+                            clearing = false;
+                            failedUrl = null;
+                            buildUi();
+                            configureWebView();
+                            webView.loadUrl(HOME);
+                        }
                     });
                 })
                 .show();
@@ -648,40 +615,35 @@ public class MainActivity extends Activity {
 
     @Override
     protected void onSaveInstanceState(Bundle outState) {
-        if (webView != null) webView.saveState(outState);
+        if (webView != null && !clearing) {
+            String last = webView.getUrl();
+            if (safePage(last)) outState.putString("nova.lastUrl", last);
+            Bundle state = new Bundle();
+            Parcel parcel = Parcel.obtain();
+            try {
+                webView.saveState(state);
+                parcel.writeBundle(state);
+                if (parcel.dataSize() <= 256 * 1024) outState.putBundle("nova.webState", state);
+            } catch (RuntimeException ignored) {
+                // The bounded HTTPS URL above remains a usable fallback.
+            } finally { parcel.recycle(); }
+        }
         super.onSaveInstanceState(outState);
     }
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        if (requestCode == FILE_CHOOSER && fileCallback != null) {
-            Uri[] results = WebChromeClient.FileChooserParams.parseResult(resultCode, data);
-            if (resultCode == RESULT_OK && cameraUri != null && cameraFile != null && cameraFile.length() > 0) {
-                results = new Uri[]{cameraUri};
-            }
-            if (results != null) {
-                ArrayList<Uri> safe = new ArrayList<>();
-                for (Uri uri : results) {
-                    if (uri != null && "content".equalsIgnoreCase(uri.getScheme())
-                            && (! (getPackageName() + ".fileprovider").equals(uri.getAuthority())
-                                || uri.equals(cameraUri))) safe.add(uri);
-                }
-                results = safe.isEmpty() ? null : safe.toArray(new Uri[0]);
-            }
-            fileCallback.onReceiveValue(results);
-            fileCallback = null;
-            pendingChooserParams = null;
-            if (cameraUri != null) revokeUriPermission(cameraUri,
-                    Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
-        }
-        if (requestCode == SAVE_BLOB && blobDownload != null) {
-            if (resultCode == RESULT_OK && data != null && data.getData() != null) {
+        if (requestCode == UploadController.PICK_FILE) uploads.result(resultCode, data);
+        if (requestCode == SAVE_BLOB) {
+            Uri destination = resultCode == RESULT_OK && data != null ? data.getData() : null;
+            if (destination == null || !"content".equalsIgnoreCase(destination.getScheme())) { cancelDownloads(); return; }
+            if (blobDownload != null) {
                 BlobDownload saving = blobDownload;
-                saving.saveTo(data.getData(), () -> { if (blobDownload == saving) blobDownload = null; });
-            } else {
-                blobDownload.cancel();
-                blobDownload = null;
+                saving.saveTo(destination, () -> { if (blobDownload == saving) blobDownload = null; });
+            } else if (httpDownload != null) {
+                HttpDownload saving = httpDownload;
+                saving.saveTo(destination, () -> { if (httpDownload == saving) httpDownload = null; });
             }
         }
     }
@@ -697,39 +659,18 @@ public class MainActivity extends Activity {
             return;
         }
 
-        if (requestCode == CAMERA_PERMISSION) {
-            if (checkSelfPermission(Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) launchPhoto();
-            else {
-                Toast.makeText(this, "相机权限未授予，可选择已有图片。", Toast.LENGTH_SHORT).show();
-                launchFilePicker();
-            }
-        }
-
-        if (requestCode == DOWNLOAD_PERMISSION) {
-            if (grantResults.length > 0
-                    && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                enqueuePendingDownload();
-            } else {
-                Toast.makeText(this,
-                        "没有存储权限，无法保存下载文件。",
-                        Toast.LENGTH_SHORT).show();
-                clearPendingDownload();
-            }
-        }
+        if (requestCode == UploadController.CAMERA_PERMISSION) uploads.cameraPermissionResult();
     }
 
     @Override
     protected void onDestroy() {
-        cancelFileChooser();
-        if (blobDownload != null) { blobDownload.cancel(); blobDownload = null; }
-        if (pendingWebPermission != null) {
-            pendingWebPermission.deny();
-            pendingWebPermission = null;
-        }
+        cancelPageRequests();
+        cancelDownloads();
         if (webView != null) {
             webView.stopLoading();
             webView.setWebChromeClient(null);
             webView.setWebViewClient(null);
+            if (webView.getParent() instanceof ViewGroup) ((ViewGroup) webView.getParent()).removeView(webView);
             webView.destroy();
             webView = null;
         }
