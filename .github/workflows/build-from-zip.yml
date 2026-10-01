@@ -3,18 +3,35 @@ name: Build ChatGPT Nova APK
 on:
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   build:
     runs-on: ubuntu-latest
-
+    timeout-minutes: 30
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          persist-credentials: false
 
-      - name: Extract source
+      - name: Extract and check source
         run: |
-          mkdir project
-          unzip ChatGPT-Nova-Secure-Source.zip -d project
+          python3 - <<'PY'
+          import zipfile
+          from pathlib import Path
+          with zipfile.ZipFile('ChatGPT-Nova-Secure-Source.zip') as archive:
+              for entry in archive.infolist():
+                  path = Path(entry.filename)
+                  if path.is_absolute() or '..' in path.parts:
+                      raise SystemExit('Unsafe ZIP path')
+                  if path.suffix in ('.jks', '.keystore') or path.name == 'keystore.properties':
+                      raise SystemExit('Signing material must not be in source')
+              archive.extractall('project')
+          assert Path('project/app/build.gradle').is_file()
+          PY
+          diff -qr app project/app
 
       - name: Set up JDK 17
         uses: actions/setup-java@v4
@@ -24,11 +41,12 @@ jobs:
 
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
+          log-accepted-android-sdk-licenses: false
 
       - name: Install Android SDK 35
-        run: |
-          yes | sdkmanager --licenses >/dev/null || true
-          sdkmanager "platforms;android-35" "build-tools;35.0.0"
+        run: sdkmanager "platforms;android-35" "build-tools;35.0.0"
 
       - name: Set up Gradle 8.9
         uses: gradle/actions/setup-gradle@v4
@@ -42,29 +60,66 @@ jobs:
           NOVA_KEY_ALIAS: ${{ secrets.NOVA_KEY_ALIAS }}
           NOVA_KEY_PASSWORD: ${{ secrets.NOVA_KEY_PASSWORD }}
         run: |
-          mkdir -p project/signing
-          printf '%s' "$NOVA_KEYSTORE_B64" | base64 --decode > project/signing/nova-personal-release.jks
+          python3 - <<'PY'
+          import base64, os
+          from pathlib import Path
+          names = ('NOVA_KEYSTORE_B64', 'NOVA_STORE_PASSWORD', 'NOVA_KEY_ALIAS', 'NOVA_KEY_PASSWORD')
+          for name in names:
+              if not os.environ.get(name):
+                  raise SystemExit('Missing required GitHub secret: ' + name)
+          Path('project/signing').mkdir(exist_ok=True)
+          key = Path('project/signing/nova-personal-release.jks')
+          key.write_bytes(base64.b64decode(os.environ['NOVA_KEYSTORE_B64'], validate=True))
+          key.chmod(0o600)
+          def escape(value):
+              return ''.join({'\\':'\\\\', '\n':'\\n', '\r':'\\r', '\t':'\\t', '=':'\\=', ':':'\\:', ' ':'\\ '}.get(c,c) for c in value)
+          props = Path('project/keystore.properties')
+          props.write_text('storeFile=signing/nova-personal-release.jks\n' + ''.join(k+'='+escape(os.environ[v])+'\n' for k,v in (
+              ('storePassword','NOVA_STORE_PASSWORD'), ('keyAlias','NOVA_KEY_ALIAS'), ('keyPassword','NOVA_KEY_PASSWORD'))))
+          props.chmod(0o600)
+          PY
 
-          cat > project/keystore.properties <<EOF
-          storeFile=signing/nova-personal-release.jks
-          storePassword=$NOVA_STORE_PASSWORD
-          keyAlias=$NOVA_KEY_ALIAS
-          keyPassword=$NOVA_KEY_PASSWORD
-          EOF
+      - name: Generate Gradle 8.9 wrapper
+        run: gradle -p project wrapper --gradle-version 8.9 --distribution-type bin --no-daemon
 
       - name: Build release APK
-        run: |
-          gradle -p project :app:clean :app:assembleRelease --stacktrace
+        run: gradle -p project :app:clean :app:assembleRelease :app:lintRelease --stacktrace --no-daemon
 
-      - name: Prepare APK
+      - name: Prepare and verify APK
         run: |
-          mkdir dist
+          mkdir -p dist
           cp project/app/build/outputs/apk/release/app-release.apk dist/ChatGPT-Nova.apk
-          sha256sum dist/ChatGPT-Nova.apk > dist/ChatGPT-Nova.apk.sha256
+          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose --print-certs dist/ChatGPT-Nova.apk | tee dist/APK-signature.txt
+          "$ANDROID_HOME/build-tools/35.0.0/aapt2" dump badging dist/ChatGPT-Nova.apk > dist/APK-manifest.txt
+          python3 - <<'PY'
+          import zipfile
+          from pathlib import Path
+          with zipfile.ZipFile('dist/ChatGPT-Nova.apk') as apk:
+              assert 'AndroidManifest.xml' in apk.namelist()
+              dex = [n for n in apk.namelist() if n.startswith('classes') and n.endswith('.dex')]
+              assert dex and all(apk.read(n)[:4] == b'dex\n' for n in dex)
+              assert not any(n.endswith(('.jks','.keystore')) or n.endswith('keystore.properties') for n in apk.namelist())
+          manifest = Path('dist/APK-manifest.txt').read_text()
+          assert "name='com.example.chatgptnova'" in manifest
+          assert "targetSdkVersion:'35'" in manifest
+          assert 'application-debuggable' not in manifest
+          Path('dist/APK-dex.txt').write_text('DEX headers verified; no signing secrets packaged.\n')
+          PY
+          (cd dist && sha256sum ChatGPT-Nova.apk > ChatGPT-Nova.apk.sha256)
 
-      - name: Verify APK
+      - name: Prepare complete source without signing secrets
         run: |
-          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose --print-certs dist/ChatGPT-Nova.apk
+          python3 - <<'PY'
+          import zipfile
+          from pathlib import Path
+          root = Path('project')
+          with zipfile.ZipFile('dist/ChatGPT-Nova-Secure-Source.zip','w',zipfile.ZIP_DEFLATED) as archive:
+              for path in sorted(root.rglob('*')):
+                  rel = path.relative_to(root)
+                  if not path.is_file() or any(p in ('.gradle','build','.git') for p in rel.parts): continue
+                  if path.name in ('keystore.properties','local.properties') or path.suffix in ('.jks','.keystore'): continue
+                  archive.write(path, str(rel))
+          PY
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
@@ -73,3 +128,59 @@ jobs:
           path: |
             dist/ChatGPT-Nova.apk
             dist/ChatGPT-Nova.apk.sha256
+            dist/APK-*.txt
+          if-no-files-found: error
+          retention-days: 90
+
+      - name: Upload complete source
+        uses: actions/upload-artifact@v4
+        with:
+          name: ChatGPT-Nova-source
+          path: dist/ChatGPT-Nova-Secure-Source.zip
+          if-no-files-found: error
+          retention-days: 90
+
+      - name: Remove temporary signing material
+        if: always()
+        run: rm -f project/keystore.properties project/signing/nova-personal-release.jks
+
+  compatibility:
+    name: Android ${{ matrix.api }} smoke test
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        api: [33, 34, 35]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@v4
+        with:
+          name: ChatGPT-Nova-release
+          path: dist
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Test installed Release APK
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: ${{ matrix.api }}
+          target: google_apis
+          arch: x86_64
+          profile: pixel_6
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back emulated
+          script: python3 scripts/smoke_apk.py dist/ChatGPT-Nova.apk ${{ matrix.api }}
+      - name: Upload compatibility evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ChatGPT-Nova-Android-${{ matrix.api }}
+          path: smoke-results/
+          if-no-files-found: warn
+          retention-days: 90
