@@ -21,9 +21,17 @@ def adb(*args, binary=False):
     return result.stdout if binary else result.stdout.decode(errors='replace')
 
 def tree():
-    adb('shell', 'uiautomator', 'dump', '/sdcard/nova-ui.xml')
-    xml = adb('exec-out', 'cat', '/sdcard/nova-ui.xml')
-    return ET.fromstring(xml[xml.index('<?xml'):])
+    last_dump = ''
+    for _ in range(3):
+        adb('shell', 'rm', '-f', '/sdcard/nova-ui.xml')
+        last_dump = adb('shell', 'uiautomator', 'dump', '--compressed', '/sdcard/nova-ui.xml')
+        xml = adb('exec-out', 'cat', '/sdcard/nova-ui.xml')
+        start = xml.find('<hierarchy')
+        if start >= 0:
+            try: return ET.fromstring(xml[start:])
+            except ET.ParseError: pass
+        time.sleep(0.5)
+    raise RuntimeError('UI snapshot unavailable after bounded retries: ' + last_dump.strip())
 
 def find(text=None, description=None, attempts=8):
     for _ in range(attempts):
@@ -101,6 +109,8 @@ try:
     print(json.dumps(report,ensure_ascii=False))
 except Exception as error:
     (OUT/'result.json').write_text(json.dumps({'passed':False,'checks':checks,'error':str(error)},indent=2))
+    try: (OUT/'logcat.txt').write_text(adb('logcat', '-d', '-v', 'brief'))
+    except Exception: pass
     try: capture('failure')
     except Exception: pass
     raise
