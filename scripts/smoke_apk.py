@@ -23,13 +23,16 @@ def adb(*args, binary=False):
 def tree():
     last_dump = ''
     for _ in range(3):
-        adb('shell', 'rm', '-f', '/sdcard/nova-ui.xml')
-        last_dump = adb('shell', 'uiautomator', 'dump', '--compressed', '/sdcard/nova-ui.xml')
-        xml = adb('exec-out', 'cat', '/sdcard/nova-ui.xml')
-        start = xml.find('<hierarchy')
-        if start >= 0:
-            try: return ET.fromstring(xml[start:])
-            except ET.ParseError: pass
+        try:
+            adb('shell', 'rm', '-f', '/sdcard/nova-ui.xml')
+            last_dump = adb('shell', 'uiautomator', 'dump', '--compressed', '/sdcard/nova-ui.xml')
+            xml = adb('exec-out', 'cat', '/sdcard/nova-ui.xml')
+            start = xml.find('<hierarchy')
+            if start >= 0:
+                try: return ET.fromstring(xml[start:])
+                except ET.ParseError: pass
+        except (subprocess.CalledProcessError, subprocess.TimeoutExpired) as error:
+            last_dump = 'Snapshot process failed: ' + str(error)
         time.sleep(0.5)
     raise RuntimeError('UI snapshot unavailable after bounded retries: ' + last_dump.strip())
 
@@ -99,8 +102,15 @@ try:
     checks.append('Android Back and process restart do not crash')
     log = adb('logcat', '-d', '-v', 'brief')
     (OUT/'logcat.txt').write_text(log)
-    assert 'FATAL EXCEPTION' not in log, 'A fatal exception was recorded'
-    checks.append('No FATAL EXCEPTION during the smoke test')
+    lines = log.splitlines()
+    app_pids = set(re.findall(r'Start proc (\d+):'+re.escape(PACKAGE)+r'(?:/|:)', log))
+    for i, line in enumerate(lines):
+        if 'FATAL EXCEPTION' not in line: continue
+        pid = re.search(r'AndroidRuntime\(\s*(\d+)\)', line)
+        block = '\n'.join(lines[i:i+20])
+        assert not ((pid and pid.group(1) in app_pids)
+                    or 'Process: '+PACKAGE+',' in block), 'Nova recorded a fatal exception'
+    checks.append('No Nova FATAL EXCEPTION during the smoke test')
     report = {'api': int(sys.argv[2]), 'passed': True, 'checks': checks,
               'not_tested': ['Second-account authentication and persistent authenticated cookies',
                              'Live file/image upload, camera and microphone',

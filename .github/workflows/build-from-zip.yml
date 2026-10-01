@@ -89,7 +89,8 @@ jobs:
         run: |
           mkdir -p dist
           cp project/app/build/outputs/apk/release/app-release.apk dist/ChatGPT-Nova.apk
-          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose --print-certs dist/ChatGPT-Nova.apk | tee dist/APK-signature.txt
+          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose --print-certs dist/ChatGPT-Nova.apk > dist/APK-signature.txt
+          cat dist/APK-signature.txt
           "$ANDROID_HOME/build-tools/35.0.0/aapt2" dump badging dist/ChatGPT-Nova.apk > dist/APK-manifest.txt
           python3 - <<'PY'
           import zipfile
