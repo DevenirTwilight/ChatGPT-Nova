@@ -1,3 +1,11 @@
+# 1.3.3 (versionCode 7)
+
+- Google 登录入口改为可选择的“浏览器登录”，并新增菜单“Google / 浏览器登录”，可在应用外完成官网登录并继续聊天。
+- 浏览器从公开的 chatgpt.com/auth/login 开始新流程，优先使用 Chrome / Brave；不转发 WebView 的 OAuth 地址、临时 state 或 Cookie。
+- 在打开浏览器前明确说明浏览器会话与 Nova 会话独立；返回 Nova 不会自动建立登录，不伪造认证成功。
+- 取消浏览器登录仍留在 Nova；从 Google 提示打开浏览器时恢复 Nova 内的登录页，避免返回时停在空白 Google 页面。
+- 保留所有其他功能、原图标、applicationId、release 签名及 Android 35 构建配置；新增受控外部登录 Intent 检查，不声称真实 Google 账号认证已实测。
+
 # 1.3.2 (versionCode 6)
 
 - 延续 1.3.1 的稳定 WebView 登录：直接打开 chatgpt.com，登录与聊天使用 Nova 的独立 Cookie / Storage。

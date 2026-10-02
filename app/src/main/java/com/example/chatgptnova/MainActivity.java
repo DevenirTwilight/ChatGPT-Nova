@@ -39,6 +39,7 @@ import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowCompat;
 import androidx.core.view.WindowInsetsCompat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import org.json.JSONObject;
 import org.json.JSONTokener;
 import android.widget.Button;
@@ -381,19 +382,31 @@ public class MainActivity extends Activity {
         return true;
     }
 
-    private void showLoginHelp(boolean unsupported) {
+    private void showLoginHelp(boolean google) {
         if (loginDialogVisible) return;
         loginDialogVisible = true;
-        new AlertDialog.Builder(this).setTitle(unsupported ? "不支持该登录方式" : "在 Nova 内登录")
+        new AlertDialog.Builder(this).setTitle(google ? "Google 登录" : "选择登录方式")
                 .setIcon(R.mipmap.ic_launcher)
-                .setMessage("登录与聊天使用 Nova 自己的独立 Cookie 和网页数据。\n\nGoogle 登录当前不支持。外部浏览器登录无法把会话带回 Nova。\n\n只有账号本身支持、且官网允许在应用内完成的登录方式才能使用。邮箱密码 / 验证码、Microsoft、Apple 的可用性以官网实际结果为准；被官网拒绝的方式目前也不支持。\n\nNova 不读取或保存账号密码。")
-                .setNegativeButton("知道了", null)
-                .setPositiveButton("返回登录页", (d, w) -> openLoginInNova())
+                .setMessage("Google 登录需要使用 Chrome、Brave 等浏览器。\n\n将在浏览器打开 ChatGPT 官方登录页，请在那里选择“使用 Google 继续”。登录成功后可在该浏览器继续聊天。\n\n浏览器与 Nova 使用各自的登录数据。回到 Nova 不会自动带入浏览器会话；浏览器已有账号也可能影响登录。\n\n要使用 Nova 的独立会话，请选择账号支持的 Nova 内登录方式。Nova 不读取或保存账号密码。")
+                .setNeutralButton("取消", null)
+                .setNegativeButton("Nova 内登录", (d, w) -> openLoginInNova())
+                .setPositiveButton("浏览器登录", (d, w) -> {
+                    if (google) openLoginInNova();
+                    openLoginInBrowser();
+                })
                 .setOnDismissListener(d -> loginDialogVisible = false).show();
     }
 
     private void openLoginInNova() {
         if (!clearing && webView != null) webView.loadUrl(LOGIN);
+    }
+
+    private void openLoginInBrowser() {
+        if (!clearing) {
+            // Start a fresh browser-owned flow. WebView OAuth URLs contain state
+            // tied to WebView cookies, so forwarding them cannot complete login.
+            openInBrowser(Uri.parse(LOGIN), true);
+        }
     }
 
     static boolean isTrustedOrigin(Uri uri) {
@@ -545,6 +558,7 @@ public class MainActivity extends Activity {
                 "刷新",
                 "回到 ChatGPT",
                 "在 Nova 内登录",
+                "Google / 浏览器登录",
                 "清除第二账号登录数据",
                 "用系统浏览器打开当前页",
                 "关于 / 登录帮助"
@@ -560,13 +574,15 @@ public class MainActivity extends Activity {
                     } else if (which == 2) {
                         openLoginInNova();
                     } else if (which == 3) {
-                        confirmClear();
+                        showLoginHelp(true);
                     } else if (which == 4) {
-                        openCurrentPageInBrowser();
+                        confirmClear();
                     } else if (which == 5) {
-                        new AlertDialog.Builder(this).setTitle("ChatGPT Nova 1.3.2")
+                        openCurrentPageInBrowser();
+                    } else if (which == 6) {
+                        new AlertDialog.Builder(this).setTitle("ChatGPT Nova 1.3.3")
                                 .setIcon(R.mipmap.ic_launcher)
-                                .setMessage("非官方客户端，不由 OpenAI 发布、维护或背书。\n网页内容来自 chatgpt.com。\n应用使用独立的网站数据，不读取或保存账号密码。\n\n登录与聊天优先留在 Nova 内。Google OAuth 当前不支持；其他方式取决于账号与官网是否允许 WebView 登录。系统浏览器是单独的会话，不是 Nova 的登录方案。")
+                                .setMessage("非官方客户端，不由 OpenAI 发布、维护或背书。\n网页内容来自 chatgpt.com。\n应用使用独立的网站数据，不读取或保存账号密码。\n\nNova 内登录使用独立的网页会话。Google 可选择在浏览器登录并继续聊天；该会话保存在浏览器中，回到 Nova 不会自动同步。其他方式取决于账号与官网是否允许应用内登录。")
                                 .setPositiveButton("知道了", null)
                                 .setNeutralButton("登录方式说明", (dialog, w) -> showLoginHelp(false)).show();
                     }
@@ -583,8 +599,17 @@ public class MainActivity extends Activity {
     }
 
     private void openInBrowser(Uri uri) {
+        openInBrowser(uri, false);
+    }
+
+    private void openInBrowser(Uri uri, boolean login) {
         try {
             String browserPackage = CustomTabsClient.getPackageName(this, null);
+            if (login && !"com.android.chrome".equals(browserPackage) && !"com.brave.browser".equals(browserPackage)) {
+                String supported = CustomTabsClient.getPackageName(this,
+                        Arrays.asList("com.android.chrome", "com.brave.browser"), true);
+                if (supported != null) browserPackage = supported;
+            }
             if (browserPackage != null) {
                 CustomTabsIntent customTab = new CustomTabsIntent.Builder().setShowTitle(true).build();
                 customTab.intent.setPackage(browserPackage);

@@ -132,11 +132,12 @@ jobs:
           manifest = Path('dist/APK-manifest.txt').read_text()
           assert "name='com.example.chatgptnova'" in manifest
           assert "targetSdkVersion:'35'" in manifest
-          assert "versionCode='6'" in manifest
-          assert "versionName='1.3.2'" in manifest
+          assert "versionCode='7'" in manifest
+          assert "versionName='1.3.3'" in manifest
           assert 'application-debuggable' not in manifest
           with zipfile.ZipFile('dist/ChatGPT-Nova.apk') as apk:
               assert not any('FixtureDocuments' in apk.read(n).decode('latin1') for n in dex)
+              assert not any('FixtureBrowser' in apk.read(n).decode('latin1') for n in dex)
           assert 'com.example.chatgptnova.test.documents' not in manifest
           Path('dist/APK-dex.txt').write_text('DEX headers verified; no signing secrets packaged.\n')
           report = []

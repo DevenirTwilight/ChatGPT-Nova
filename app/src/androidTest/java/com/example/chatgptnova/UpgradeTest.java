@@ -20,7 +20,7 @@ public final class UpgradeTest extends FixtureActivity {
         assertNotNull(cookies); assertTrue(cookies.contains("nova_upgrade_fixture=retained"));
         assertEquals("retained",js("localStorage.getItem('nova_upgrade_fixture')"));
         assertEquals("com.example.chatgptnova",activity.getPackageName());
-        try { assertEquals(6,activity.getPackageManager().getPackageInfo(activity.getPackageName(),0).versionCode); }
+        try { assertEquals(7,activity.getPackageManager().getPackageInfo(activity.getPackageName(),0).versionCode); }
         catch (Exception error) { throw new AssertionError(error); }
     }
 }

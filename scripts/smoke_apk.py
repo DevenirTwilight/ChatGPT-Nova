@@ -84,10 +84,10 @@ try:
     capture('about')
     tap(find(text='登录方式说明'))
     root = tree()
-    assert any('Google 登录当前不支持' in n.get('text','') for n in root.iter('node'))
-    assert not any('在浏览器中登录' == n.get('text','') for n in root.iter('node'))
+    assert any('回到 Nova 不会自动带入浏览器会话' in n.get('text','') for n in root.iter('node'))
+    assert any('浏览器登录' == n.get('text','') for n in root.iter('node'))
     capture('login-help')
-    tap(find(text='返回登录页'))
+    tap(find(text='Nova 内登录'))
     find(description='Menu')
     # Inspect only the public login entry; never enter credentials or bypass
     # website verification. An entry screenshot is not completed authentication.
@@ -113,7 +113,7 @@ try:
     (OUT/'login-observation.json').write_text(json.dumps(login_observation,ensure_ascii=False,indent=2))
     menu('回到 ChatGPT')
     checks.append('About dialog shows unofficial status and website origin')
-    checks.append('Login help explicitly marks Google unsupported; public login entry remains in Nova without launching a browser')
+    checks.append('Login help offers an explicit browser fallback and explains separate sessions; choosing internal login stays in Nova')
     menu('刷新')
     find(description='Menu')
     checks.append('Refresh keeps native controls usable')

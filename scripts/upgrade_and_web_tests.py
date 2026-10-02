@@ -54,7 +54,7 @@ try:
                'Media permission policy rejects untrusted top-level origins and unknown resources',
                'Network error retry is usable; Microsoft and Apple URLs are not preemptively blocked',
                'Confirmed clear removes synthetic cookies and localStorage',
-               'Internal login route and unsupported Google OAuth never start an external Activity, including HTTPS intent links']
+               'Browser login requires explicit consent, starts a fresh official login URL and preserves independent WebView data']
     report = {'api':int(api),'passed':True,'checks':checks,
               'not_tested':['Real ChatGPT account authentication, long-term authenticated session and provider OAuth',
                             'Physical camera, live microphone capture and real authenticated ChatGPT attachments']}

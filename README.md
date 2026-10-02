@@ -6,21 +6,25 @@
 
 ## 使用
 
-启动后进入官网。右上角菜单支持刷新、回到首页、在 Nova 内登录、清除 Nova 的登录数据、使用系统浏览器打开和关于页面。文件上传支持系统文件 / 图片选择器以及拍照；相机和麦克风只为 HTTPS 的 chatgpt.com 及其子域请求 Android 权限。Cookie 在页面完成和应用暂停时写入本地；清除时等待 Cookie 删除完成再加载首页。
+启动后进入官网。右上角菜单支持刷新、回到首页、在 Nova 内登录、Google / 浏览器登录、清除 Nova 的登录数据、使用系统浏览器打开和关于页面。文件上传支持系统文件 / 图片选择器以及拍照；相机和麦克风只为 HTTPS 的 chatgpt.com 及其子域请求 Android 权限。Cookie 在页面完成和应用暂停时写入本地；清除时等待 Cookie 删除完成再加载首页。
 
 HTTPS 下载与 blob 下载均通过系统保存对话框写入用户选择的位置，不需要存储权限。HTTPS 在后台线程流式写入，只向下载开始时的 ChatGPT 同源地址发送 Cookie；一旦跨源，后续全程不携带 Cookie，拒绝 HTTPS 降级为 HTTP；blob 分块保存，上限 256 MiB。下载进行时请保持 Nova 运行，清除数据或销毁 Activity 会取消未完成下载；失败时保存位置可能有不完整文件。不会将 Cookie 发给代理服务。HTTP 页面及 HTTP 下载通过浏览器打开。支持安全处理 intent 链接和其它外部 scheme，拒绝本地 file/content/javascript/data 页面跳转。TLS 验证和 Safe Browsing 保持启用。
 
 工具栏显示当前网站主机名。网络错误提供原生重试、首页和浏览器入口；HTTP 错误保留网站自身的页面，避免遮挡身份提供商的正常提示。清除数据等待 Cookie 删除完成后再打开首页。保存的 WebView 状态限制为 256 KiB，过大或失效时以当前 HTTPS 地址恢复。相机成功返回的文件保留供网页读取，后续选择文件不会删除前次照片；七天前的临时照片会在启动时清理，主动清除 Nova 登录数据也会删除临时照片。
 
-## 登录限制
+## 登录方式与限制
 
 默认的登录与聊天都使用 Nova 自己的 WebView 和 Cookie。菜单“在 Nova 内登录”直接加载官方公开页面 https://chatgpt.com/auth/login ，不会打开系统浏览器。所有 HTTPS 跳转（包括 intent 链接里的 HTTPS 地址）优先在 Nova 内处理。
 
-**Google OAuth 当前不支持。** Google 禁止嵌入式网页容器 OAuth，而浏览器的登录 Cookie 不能自动、安全迁移回 Nova。因此 Google 入口明确显示“不支持该登录方式”，可返回 Nova 内的官网登录页，不提供“去浏览器登录”的伪兼容方案。Microsoft / Apple 仅在 Nova 内继续官网流程；如果官网拒绝 WebView，Nova 无法宣称支持该方式。
+**Google 登录可选择在应用外完成。** 在 Nova 内点击 Google 或菜单“Google / 浏览器登录”后，可以选择“浏览器登录”。应用在打开前明确说明两个会话独立；取消会留在 Nova。优先使用已选择的 Chrome / Brave，否则尝试已安装的 Chrome / Brave，再回退到可用浏览器。官网认证与聊天由浏览器负责，没有可用浏览器时提供提示。
+
+浏览器登录从公开页面 https://chatgpt.com/auth/login 开始，请在该页面选择 Google。它不会转发 WebView 中的 Google OAuth 地址、state、Cookie 或其他临时认证数据，避免复用绑定了另一套 Cookie 的登录流程。从 Google 提示进入浏览器时，Nova 自己也恢复到内部官网登录页，避免返回后停在空白 Google 页面。
+
+**浏览器登录成功后，可继续在同一浏览器 / Custom Tab 中聊天。关闭浏览器页面可以回到 Nova，但不会自动建立 Nova 内的登录会话。** 浏览器现有的 ChatGPT / Google 登录会影响该外部流程；需要第二个账号时，应在官网确认所选账号。Nova 清除登录数据只作用于自己的 WebView，不清除浏览器的账号或 Cookie。
 
 只有账号本身支持邮箱密码或验证码，并且官网允许 WebView 完成认证时，才能在 Nova 内通过这些方式登录。邮箱登录不是所有第三方账号的通用替代方案。网站验证、提供商政策、账号设置与手机 WebView 版本可能影响登录；公开登录页可见和合成 Cookie 测试通过均不代表真实账号认证成功。
 
-系统浏览器入口仅供用户主动在外部查看页面，它拥有另一个会话，不是 Nova 的登录方案。应用没有自行实现或逆向官方 OAuth 回调，也没有将浏览器 Cookie 搬回 Nova。
+菜单“用系统浏览器打开当前页”仍用于外部查看页面。“浏览器登录”专门开启新的官网登录流程。二者都使用浏览器自己的数据；应用没有自行实现或逆向官方 OAuth 回调，也没有将浏览器 Cookie 搬回 Nova。
 
 应用不读取或记录账号密码，不含 AI 后端、OpenAI API Key、JavaScript 原生接口、第三方登录代理或密码存储逻辑。下载 blob 时执行的网页脚本只读取用户点击的那个 blob，不读取登录字段或 Cookie。Android 和官方网页自己的认证 Cookie 保存在应用独立数据目录中。
 

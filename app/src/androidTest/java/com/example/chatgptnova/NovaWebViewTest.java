@@ -193,9 +193,13 @@ public final class NovaWebViewTest extends FixtureActivity {
         assertEquals("null",js("localStorage.getItem('nova_clear_fixture')"));
     }
 
-    @Test public void internalLoginAndUnsupportedGoogleNeverLaunchAnExternalActivity() throws Exception {
+    @Test public void browserLoginRequiresConsentAndStartsAFreshOfficialFlow() throws Exception {
         AtomicInteger externalLaunches = new AtomicInteger();
-        external(intent -> { externalLaunches.incrementAndGet(); return new Instrumentation.ActivityResult(Activity.RESULT_CANCELED, null); });
+        AtomicReference<Intent> launched = new AtomicReference<>();
+        external(intent -> {
+            externalLaunches.incrementAndGet(); launched.set(intent);
+            return new Instrumentation.ActivityResult(Activity.RESULT_CANCELED, null);
+        });
         loginFixture = true;
         Method login = MainActivity.class.getDeclaredMethod("openLoginInNova"); login.setAccessible(true);
         Method handle = MainActivity.class.getDeclaredMethod("handleUri",Uri.class); handle.setAccessible(true);
@@ -204,16 +208,44 @@ public final class NovaWebViewTest extends FixtureActivity {
             AtomicReference<String> url = new AtomicReference<>(); main(() -> url.set(web.getUrl()));
             return "https://chatgpt.com/auth/login".equals(url.get()) && "ready".equals(js("document.getElementById('ready')?.textContent"));
         });
+        main(() -> CookieManager.getInstance().setCookie(PAGE,"nova_external_login_fixture=retained; Path=/; Secure"));
+        assertEquals("retained", js("localStorage.setItem('nova_external_login_fixture','retained');localStorage.getItem('nova_external_login_fixture')"));
         main(() -> { try {
-            assertTrue((Boolean)handle.invoke(activity, Uri.parse("https://accounts.google.com/o/oauth2/v2/auth")));
+            assertTrue((Boolean)handle.invoke(activity, Uri.parse("https://accounts.google.com/o/oauth2/v2/auth?state=nova-webview-fixture")));
             assertTrue((Boolean)handle.invoke(activity, Uri.parse("intent://accounts.google.com/o/oauth2/v2/auth#Intent;scheme=https;package=com.android.chrome;end")));
         } catch(Exception error) { throw new AssertionError(error); } });
-        waitFor("unsupported login message", () -> {
+        waitFor("browser login choice", () -> {
             android.view.accessibility.AccessibilityNodeInfo root = instrument.getUiAutomation().getRootInActiveWindow();
-            return root != null && !root.findAccessibilityNodeInfosByText("不支持该登录方式").isEmpty();
+            return root != null && !root.findAccessibilityNodeInfosByText("浏览器登录").isEmpty();
         });
         instrument.sendKeyDownUpSync(android.view.KeyEvent.KEYCODE_BACK);
-        assertEquals("Unsupported OAuth must not launch a browser or provider app", 0, externalLaunches.get());
+        assertEquals("Cancelling Google login must keep the user inside Nova", 0, externalLaunches.get());
+        instrument.waitForIdleSync();
+        main(() -> { try { handle.invoke(activity, Uri.parse("https://accounts.google.com/o/oauth2/v2/auth?state=nova-webview-fixture")); }
+            catch(Exception error) { throw new AssertionError(error); } });
+        waitFor("explicit browser login click", () -> {
+            android.view.accessibility.AccessibilityNodeInfo root = instrument.getUiAutomation().getRootInActiveWindow();
+            if (root == null) return false;
+            for (android.view.accessibility.AccessibilityNodeInfo node : root.findAccessibilityNodeInfosByText("浏览器登录")) {
+                if ("浏览器登录".contentEquals(node.getText() == null ? "" : node.getText()) && node.isClickable()) {
+                    return node.performAction(android.view.accessibility.AccessibilityNodeInfo.ACTION_CLICK);
+                }
+            }
+            return false;
+        });
+        waitFor("browser launch", () -> launched.get() != null);
+        assertEquals(1,externalLaunches.get());
+        Intent target = launched.get();
+        if (Intent.ACTION_CHOOSER.equals(target.getAction())) target = target.getParcelableExtra(Intent.EXTRA_INTENT);
+        assertNotNull(target);
+        assertEquals(Intent.ACTION_VIEW,target.getAction());
+        assertEquals(Uri.parse("https://chatgpt.com/auth/login"),target.getData());
+        assertNotNull("The launch must target a browser package",target.getPackage());
+        assertNotEquals(activity.getPackageName(),target.getPackage());
+        assertNull("WebView OAuth state must not be forwarded",target.getData().getQuery());
+        waitFor("internal login page restored", () -> "ready".equals(js("document.getElementById('ready')?.textContent")));
+        assertTrue(CookieManager.getInstance().getCookie(PAGE).contains("nova_external_login_fixture=retained"));
+        assertEquals("retained",js("localStorage.getItem('nova_external_login_fixture')"));
     }
 
     static final class Request extends PermissionRequest {
