@@ -87,7 +87,7 @@ try:
     assert any('回到 Nova 不会自动带入浏览器会话' in n.get('text','') for n in root.iter('node'))
     assert any('浏览器登录' == n.get('text','') for n in root.iter('node'))
     capture('login-help')
-    tap(find(text='Nova 内登录'))
+    tap(find(text='应用内登录'))
     find(description='Menu')
     # Inspect only the public login entry; never enter credentials or bypass
     # website verification. An entry screenshot is not completed authentication.

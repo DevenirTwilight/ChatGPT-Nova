@@ -387,9 +387,9 @@ public class MainActivity extends Activity {
         loginDialogVisible = true;
         new AlertDialog.Builder(this).setTitle(google ? "Google 登录" : "选择登录方式")
                 .setIcon(R.mipmap.ic_launcher)
-                .setMessage("Google 登录需要使用 Chrome、Brave 等浏览器。\n\n将在浏览器打开 ChatGPT 官方登录页，请在那里选择“使用 Google 继续”。登录成功后可在该浏览器继续聊天。\n\n浏览器与 Nova 使用各自的登录数据。回到 Nova 不会自动带入浏览器会话；浏览器已有账号也可能影响登录。\n\n要使用 Nova 的独立会话，请选择账号支持的 Nova 内登录方式。Nova 不读取或保存账号密码。")
+                .setMessage("可使用 Chrome / Brave 在浏览器中完成 Google 登录。打开 ChatGPT 官方登录页后，请选择“使用 Google 继续”。\n\n登录成功后可继续在浏览器聊天。浏览器与 Nova 的会话独立，回到 Nova 不会自动带入浏览器会话；浏览器已有账号可能影响登录。")
                 .setNeutralButton("取消", null)
-                .setNegativeButton("Nova 内登录", (d, w) -> openLoginInNova())
+                .setNegativeButton("应用内登录", (d, w) -> openLoginInNova())
                 .setPositiveButton("浏览器登录", (d, w) -> {
                     if (google) openLoginInNova();
                     openLoginInBrowser();
