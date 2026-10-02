@@ -85,7 +85,22 @@ public class MainActivity extends Activity {
               if (!e || !['prompt-textarea','mobile-composer-prompt'].includes(e.id)
                   || e.disabled || e.readOnly || !e.getClientRects().length
                   || !(e.isContentEditable || e.tagName === 'TEXTAREA')) return false;
-              return document.execCommand('insertText', false, text);
+              if (e.tagName === 'TEXTAREA') {
+                const start = e.selectionStart, end = e.selectionEnd;
+                const value = e.value.slice(0, start) + text + e.value.slice(end);
+                // Native setter avoids Chromium's per-line editing/layout stall
+                // and notifies React without changing its value tracker first.
+                Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value').set.call(e, value);
+                e.setSelectionRange(start + text.length, start + text.length);
+                e.dispatchEvent(new InputEvent('input', {bubbles:true, inputType:'insertFromPaste', data:text}));
+                return e.value === value;
+              }
+              // A single escaped, whitespace-preserving fragment avoids thousands
+              // of insertText paragraph edits. Clipboard markup remains inert text.
+              const span = document.createElement('span');
+              span.style.whiteSpace = 'pre-wrap';
+              span.textContent = text;
+              return document.execCommand('insertHTML', false, span.outerHTML);
             })
             """;
     private static final String LONG_PASTE_COMPATIBILITY = """
@@ -94,7 +109,7 @@ public class MainActivity extends Activity {
               window.__novaLongPasteInstalled = true;
               document.addEventListener('paste', event => {
                 const text = event.clipboardData && event.clipboardData.getData('text/plain');
-                if (!text || text.length < 4096) return;
+                if (!text || (text.length < 4096 && !text.includes('\\n'))) return;
                 const insert = INSERT_FUNCTION;
                 // Suppress the website/default paste only after insertion succeeds.
                 // Clipboard text stays plain text; never interpret it as HTML.
@@ -449,7 +464,8 @@ public class MainActivity extends Activity {
         loginDialogVisible = true;
         new AlertDialog.Builder(this).setTitle(google ? "Google 登录" : "选择登录方式")
                 .setIcon(R.mipmap.ic_launcher)
-                .setMessage("可使用 Chrome / Brave 在浏览器中完成 Google 登录。打开 ChatGPT 官方登录页后，请选择“使用 Google 继续”。\n\n登录成功后可继续在浏览器聊天。浏览器与 Nova 的会话独立，回到 Nova 不会自动带入浏览器会话；浏览器已有账号可能影响登录。")
+                .setMessage(google ? "可使用 Chrome / Brave 在浏览器中完成 Google 登录。打开 ChatGPT 官方登录页后，请选择“使用 Google 继续”。\n\n登录成功后可继续在浏览器聊天。浏览器与 Nova 的会话独立，回到 Nova 不会自动带入浏览器会话；浏览器已有账号可能影响登录。"
+                        : "使用账号邮箱和独立密码，在 Nova 内打开 ChatGPT 官方登录页。登录状态由 Nova 单独保存，和官方 App、系统浏览器互不影响。\n\nGoogle 登录不支持普通 WebView；如需使用，可在浏览器中登录并继续聊天，回到 Nova 不会自动带入浏览器会话。")
                 .setNeutralButton("取消", null)
                 .setNegativeButton("应用内登录", (d, w) -> openLoginInNova())
                 .setPositiveButton("浏览器登录", (d, w) -> {
@@ -749,7 +765,7 @@ public class MainActivity extends Activity {
     }
 
     private void showAbout() {
-        new AlertDialog.Builder(this).setTitle("ChatGPT Nova 1.3.5")
+        new AlertDialog.Builder(this).setTitle("ChatGPT Nova 1.3.6")
                 .setIcon(R.mipmap.ic_launcher)
                 .setMessage("ChatGPT Nova 是用于访问 chatgpt.com 的个人客户端，与官方 ChatGPT App 独立存储登录状态。\n\n这是非官方客户端，不由 OpenAI 发布、维护或背书。应用不读取或保存账号密码。")
                 .setPositiveButton("知道了", null).show();

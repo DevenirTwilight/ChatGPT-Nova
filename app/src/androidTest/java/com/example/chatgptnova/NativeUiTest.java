@@ -88,11 +88,14 @@ public final class NativeUiTest extends FixtureActivity {
         waitFor("back history ready", () -> LOGIN.equals(currentUrl()));
         instrument.sendKeyDownUpSync(KeyEvent.KEYCODE_BACK);
         waitFor("Android Back navigates inside Nova", () -> !LOGIN.equals(currentUrl()) && shown("菜单"));
+        waitFor("back page loaded before storage seed", () -> "ready".equals(js("document.getElementById('ready')?.textContent")));
 
         // The separate second invocation runs after adb force-stop and must
         // observe these synthetic markers, without substituting a real login.
         main(() -> { CookieManager.getInstance().setCookie(PAGE,"nova_native_restart=retained; Path=/; Secure"); CookieManager.getInstance().flush(); });
         js("localStorage.setItem('nova_native_restart','retained')");
+        assertEquals("retained", js("localStorage.getItem('nova_native_restart')"));
+        SystemClock.sleep(1500); // Allow Chromium to commit DOM storage before force-stop.
     }
 
     @Test public void processRestartPreservesSyntheticSessionAndControls() throws Exception {
