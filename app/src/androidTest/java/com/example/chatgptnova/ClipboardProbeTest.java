@@ -43,6 +43,7 @@ public final class ClipboardProbeTest extends FixtureActivity {
 
     @Test public void longPressSystemPaste() throws Exception { route="long-press"; matrix(); }
     @Test public void imePasteCommand() throws Exception { route="ime-context-paste"; matrix(); }
+    @Test public void nativeMenuPaste() throws Exception { route="native-menu"; matrix(); }
     @Test public void imeCommitText() throws Exception { route="ime-commit-text"; matrix(); }
 
     private void matrix() throws Exception {
@@ -58,6 +59,7 @@ public final class ClipboardProbeTest extends FixtureActivity {
             waitFor("focused editor",()->id.equals(js("document.activeElement.id")));
             main(()->((ClipboardManager)activity.getSystemService(Context.CLIPBOARD_SERVICE)).setPrimaryClip(ClipData.newPlainText("synthetic paste fixture",expected)));
             if("long-press".equals(route))longPress(id);
+            else if("native-menu".equals(route)) main(activity::pasteFromClipboard);
             else input(expected,"ime-context-paste".equals(route));
             SystemClock.sleep(500);
             String actual=js("(()=>{let e=document.getElementById('"+id+"');return e.tagName==='TEXTAREA'?e.value:e.innerText})()");

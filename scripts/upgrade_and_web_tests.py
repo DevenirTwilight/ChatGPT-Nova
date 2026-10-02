@@ -45,6 +45,11 @@ try:
     install(release)
     assert suite(PACKAGE+'.UpgradeTest#testUpgradeDataPreserved','upgrade.txt') == 1
     checks.append('Original signed v1 is upgraded with install -r; synthetic cookie and localStorage survive process restart')
+    try:
+        assert suite(PACKAGE+'.ClipboardProbeTest','clipboard-baseline.txt') == 4
+    finally:
+        adb('pull','/sdcard/Android/data/'+PACKAGE+'.test/files/clipboard-probe/.',str(OUT/'clipboard-probe'))
+    checks.append('Baseline full-text clipboard checks: real long-press Paste, IME paste command and IME commitText; 1/10/50 KB, multiline, Markdown, Chinese/English and emoji; textarea and contenteditable')
     count = suite(PACKAGE+'.NovaWebViewTest','webview-fixtures.txt')
     assert count == 9, count
     checks += ['Real WebView multiple-file input reads two synthetic documents and correct MIME types',
@@ -56,11 +61,6 @@ try:
                'Confirmed clear removes synthetic cookies and localStorage',
                'Browser login requires explicit consent, starts a fresh official login URL and preserves independent WebView data',
                'Visible account controls drive signed-in, signed-out and unknown menus; sensitive actions stay in settings with confirmation']
-    try:
-        assert suite(PACKAGE+'.ClipboardProbeTest','clipboard-baseline.txt') == 3
-    finally:
-        adb('pull','/sdcard/Android/data/'+PACKAGE+'.test/files/clipboard-probe/.',str(OUT/'clipboard-probe'))
-    checks.append('Baseline full-text clipboard checks: real long-press Paste, IME paste command and IME commitText; 1/10/50 KB, multiline, Markdown, Chinese/English and emoji; textarea and contenteditable')
     report = {'api':int(api),'passed':True,'checks':checks,
               'not_tested':['Real ChatGPT account authentication, long-term authenticated session and provider OAuth',
                             'Physical camera, live microphone capture and real authenticated ChatGPT attachments']}

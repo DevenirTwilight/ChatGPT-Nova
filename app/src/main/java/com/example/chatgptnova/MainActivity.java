@@ -5,6 +5,10 @@ import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.ActivityNotFoundException;
 import android.content.Context;
+import android.content.ClipData;
+import android.content.ClipboardManager;
+import android.view.inputmethod.EditorInfo;
+import android.view.inputmethod.InputConnection;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
@@ -592,6 +596,8 @@ public class MainActivity extends Activity {
             items.add(0, 2, 1, "ChatGPT 首页");
             if (accountUiState == AccountUiState.SIGNED_OUT) items.add(0, 3, 2, "登录");
             items.add(0, 4, 3, "用浏览器打开");
+            if ("chatgpt.com".equals(Uri.parse(webView.getUrl() == null ? "" : webView.getUrl()).getHost()))
+                items.add(0, 6, 4, "从剪贴板粘贴");
             items.add(0, 5, 4, "设置");
             overflowMenu.setOnMenuItemClickListener(item -> {
                 if (clearing || webView == null) return true;
@@ -607,6 +613,9 @@ public class MainActivity extends Activity {
                         break;
                     case 4:
                         openCurrentPageInBrowser();
+                        break;
+                    case 6:
+                        pasteFromClipboard();
                         break;
                     case 5:
                         showSettings();
@@ -648,6 +657,52 @@ public class MainActivity extends Activity {
         } catch (RuntimeException error) { complete.run(); }
     }
 
+    // Explicit user action only. Clipboard text goes through the native IME
+    // connection, never through a JavaScript string or a persistent store.
+    void pasteFromClipboard() {
+        WebView page = webView;
+        String address = page == null ? null : page.getUrl();
+        Uri uri = Uri.parse(address == null ? "" : address);
+        if (clearing || page == null || !"https".equals(uri.getScheme())
+                || !"chatgpt.com".equals(uri.getHost()) || uri.getUserInfo() != null
+                || (uri.getPort() != -1 && uri.getPort() != 443)) return;
+        page.requestFocus();
+        // Never target login fields, arbitrary inputs, or external pages.
+        page.evaluateJavascript("""
+                (() => {
+                  const e = document.activeElement;
+                  return !!e && (e.id === 'prompt-textarea' || e.id === 'mobile-composer-prompt')
+                    && !e.disabled && !e.readOnly && !!e.getClientRects().length
+                    && (e.isContentEditable || e.tagName === 'TEXTAREA');
+                })()
+                """, result -> {
+            if (page != webView || clearing || !address.equals(page.getUrl())) return;
+            if (!"true".equals(result)) {
+                Toast.makeText(this, "请先点一下聊天输入框，再从菜单粘贴。", Toast.LENGTH_LONG).show();
+                return;
+            }
+            ClipboardManager clipboard = (ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
+            ClipData clip = clipboard.getPrimaryClip();
+            CharSequence text = clip == null || clip.getItemCount() == 0 ? null : clip.getItemAt(0).getText();
+            if (text == null || text.length() == 0) {
+                Toast.makeText(this, "剪贴板中没有文本。", Toast.LENGTH_SHORT).show();
+                return;
+            }
+            InputConnection connection = page.onCreateInputConnection(new EditorInfo());
+            if (connection == null) return;
+            String plainText = text.toString();
+            Runnable insert = () -> {
+                boolean accepted = connection.commitText(plainText, 1);
+                page.post(() -> {
+                    if (!accepted && page == webView && !clearing)
+                        Toast.makeText(this, "未能粘贴，请重新点一下聊天输入框。", Toast.LENGTH_LONG).show();
+                });
+            };
+            android.os.Handler handler = connection.getHandler();
+            if (handler == null) insert.run(); else handler.post(insert);
+        });
+    }
+
     private void showSettings() {
         if (clearing || webView == null) return;
         refreshAccountUiState(() -> {
@@ -672,7 +727,7 @@ public class MainActivity extends Activity {
     }
 
     private void showAbout() {
-        new AlertDialog.Builder(this).setTitle("ChatGPT Nova 1.3.4")
+        new AlertDialog.Builder(this).setTitle("ChatGPT Nova 1.3.5")
                 .setIcon(R.mipmap.ic_launcher)
                 .setMessage("ChatGPT Nova 是用于访问 chatgpt.com 的个人客户端，与官方 ChatGPT App 独立存储登录状态。\n\n这是非官方客户端，不由 OpenAI 发布、维护或背书。应用不读取或保存账号密码。")
                 .setPositiveButton("知道了", null).show();

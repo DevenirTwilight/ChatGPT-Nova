@@ -253,11 +253,11 @@ public final class NovaWebViewTest extends FixtureActivity {
 
     @Test public void menusFollowVisibleAccountStateAndKeepDataActionsInSettings() throws Exception {
         main(() -> CookieManager.getInstance().setCookie(PAGE,"nova_menu_fixture=retained; Path=/; Secure"));
-        assertEquals(Arrays.asList("刷新","ChatGPT 首页","用浏览器打开","设置"), openMenuLabels());
+        assertEquals(Arrays.asList("刷新","ChatGPT 首页","用浏览器打开","从剪贴板粘贴","设置"), openMenuLabels());
         main(() -> overflow().dismiss());
 
         js("(()=>{let b=document.createElement('button');b.id='account-control';b.dataset.testid='login-button';b.textContent='Log in';document.body.prepend(b);})()");
-        assertEquals(Arrays.asList("刷新","ChatGPT 首页","登录","用浏览器打开","设置"),openMenuLabels());
+        assertEquals(Arrays.asList("刷新","ChatGPT 首页","登录","用浏览器打开","从剪贴板粘贴","设置"),openMenuLabels());
         main(() -> overflow().getMenu().performIdentifierAction(5,0));
         waitFor("signed-out settings", () -> settingsFixture()!=null);
         assertEquals(Arrays.asList("清除登录与网站数据","登录帮助","关于 ChatGPT Nova"), settingsLabels());
@@ -265,7 +265,7 @@ public final class NovaWebViewTest extends FixtureActivity {
         instrument.waitForIdleSync();
 
         js("(()=>{let b=document.getElementById('account-control');b.dataset.testid='accounts-profile-button';b.textContent='Fixture account';})()");
-        assertEquals(Arrays.asList("刷新","ChatGPT 首页","用浏览器打开","设置"),openMenuLabels());
+        assertEquals(Arrays.asList("刷新","ChatGPT 首页","用浏览器打开","从剪贴板粘贴","设置"),openMenuLabels());
         main(() -> overflow().getMenu().performIdentifierAction(5,0));
         waitFor("signed-in settings", () -> settingsFixture()!=null);
         assertEquals(Arrays.asList("退出当前账号","清除登录与网站数据","登录帮助","关于 ChatGPT Nova"),settingsLabels());
