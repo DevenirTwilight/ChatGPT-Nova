@@ -60,7 +60,7 @@ try:
             value = independent('clipboard-'+method, lambda method=method: suite(PACKAGE+'.ClipboardProbeTest#'+method,'clipboard-'+method+'.txt'))
             if value == 1: clipboard_count += 1
     finally:
-        adb('pull','/sdcard/Android/data/'+PACKAGE+'.test/files/clipboard-probe/.',str(OUT/'clipboard-probe'))
+        adb('pull','/sdcard/Android/data/'+PACKAGE+'/files/clipboard-probe/.',str(OUT/'clipboard-probe'))
     if clipboard_count == 4:
         checks.append('Baseline full-text clipboard checks: real long-press Paste, IME paste command and IME commitText; 1/10/50 KB, multiline, Markdown, Chinese/English and emoji; textarea and contenteditable')
     count = independent('webview', lambda: suite(PACKAGE+'.NovaWebViewTest','webview-fixtures.txt'))
