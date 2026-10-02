@@ -122,7 +122,7 @@ jobs:
           grep -F "$(cat release-certificate.sha256)" dist/baseline-signature.txt
           "$ANDROID_HOME/build-tools/35.0.0/aapt2" dump badging dist/ChatGPT-Nova.apk > dist/APK-manifest.txt
           python3 - <<'PY'
-          import zipfile, os, subprocess
+          import zipfile, os, subprocess, re
           from pathlib import Path
           with zipfile.ZipFile('dist/ChatGPT-Nova.apk') as apk:
               assert 'AndroidManifest.xml' in apk.namelist()
@@ -139,17 +139,20 @@ jobs:
               assert not any('FixtureDocuments' in apk.read(n).decode('latin1') for n in dex)
           assert 'com.example.chatgptnova.test.documents' not in manifest
           Path('dist/APK-dex.txt').write_text('DEX headers verified; no signing secrets packaged.\n')
-          with zipfile.ZipFile('dist/ChatGPT-Nova.apk') as apk:
-              names = apk.namelist()
-          assert not any('app_icon' in name for name in names), 'Old temporary icon is still packaged'
-          themed = [name for name in names if 'mipmap-anydpi-v33/' in name and name.endswith(('/ic_launcher.xml','/ic_launcher_round.xml'))]
-          assert len(themed) == 2, themed
           report = []
           aapt2 = os.path.join(os.environ['ANDROID_HOME'],'build-tools/35.0.0/aapt2')
-          for name in themed:
+          resources = subprocess.check_output([aapt2,'dump','resources','dist/ChatGPT-Nova.apk'],text=True)
+          assert 'drawable/app_icon' not in resources, 'Old temporary icon is still packaged'
+          for icon in ('ic_launcher','ic_launcher_round'):
+              pattern = r'resource[^\n]*\bmipmap/'+re.escape(icon)+r'\s*\n(.*?)(?=\n\s*resource|\Z)'
+              block = re.search(pattern,resources,re.S)
+              assert block, 'Missing packaged launcher resource: '+icon
+              path = re.search(r'v33\)[^\n]*?(res/[^\s\"]+\.xml)',block.group(1))
+              assert path, 'Missing Android 13 themed configuration for '+icon+'\n'+block.group(1)
+              name = path.group(1)
               tree = subprocess.check_output([aapt2,'dump','xmltree','dist/ChatGPT-Nova.apk','--file',name],text=True)
               assert all(layer in tree for layer in ('adaptive-icon','background','foreground','monochrome')), tree
-              report.append(name+'\n'+tree)
+              report.append(icon+' / Android 13+ / '+name+'\n'+tree)
           Path('dist/APK-branding.txt').write_text('\n'.join(report))
           PY
           (cd dist && sha256sum ChatGPT-Nova.apk > ChatGPT-Nova.apk.sha256)
