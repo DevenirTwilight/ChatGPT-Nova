@@ -38,7 +38,7 @@ public final class ClipboardProbeTest extends FixtureActivity {
         JSONObject report=new JSONObject().put("api",Build.VERSION.SDK_INT).put("route",route)
                 .put("webview",provider==null ? "unknown" : provider.packageName+" "+provider.versionName)
                 .put("page","test-APK-owned textarea and contenteditable; not a real ChatGPT session").put("cases",results);
-        File dir=new File(instrument.getContext().getExternalFilesDir(null),"clipboard-probe");
+        File dir=new File(instrument.getTargetContext().getExternalFilesDir(null),"clipboard-probe");
         assertTrue(dir.isDirectory() || dir.mkdirs());
         try(FileOutputStream out=new FileOutputStream(new File(dir,route+".json"))) { out.write(report.toString(2).getBytes(StandardCharsets.UTF_8)); }
         if(scenario!=null)scenario.close();
@@ -70,6 +70,8 @@ public final class ClipboardProbeTest extends FixtureActivity {
                     .put("utf16Units",expected.length()).put("actualUnits",actual.length()).put("exactMatch",expected.equals(actual))
                     .put("pasteEvents",new JSONArray(js("JSON.stringify(pasteEvents)"))).put("inputEvents",new JSONArray(js("JSON.stringify(inputEvents)")));
             results.put(result);
+            System.out.println("NOVA_CLIPBOARD_CASE " + result.toString());
+            if (!expected.equals(actual)) System.out.println("NOVA_CLIPBOARD_TAIL " + new JSONObject().put("expected", expected.substring(Math.max(0, expected.length()-80))).put("actual", actual.substring(Math.max(0, actual.length()-80))));
             if(!expected.equals(actual))failures++;
         }
         assertEquals(route+": full-text paste failures (see clipboard-probe JSON)",0,failures);

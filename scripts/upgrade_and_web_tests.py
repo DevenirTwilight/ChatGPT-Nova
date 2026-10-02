@@ -55,7 +55,10 @@ try:
     if upgrade_count == 1:
         checks.append('Original signed v1 is upgraded with install -r; synthetic cookie and localStorage survive process restart')
     try:
-        clipboard_count = independent('clipboard', lambda: suite(PACKAGE+'.ClipboardProbeTest','clipboard-baseline.txt'))
+        clipboard_count = 0
+        for method in ('nativeMenuPaste','imeCommitText','imePasteCommand','longPressSystemPaste'):
+            value = independent('clipboard-'+method, lambda method=method: suite(PACKAGE+'.ClipboardProbeTest#'+method,'clipboard-'+method+'.txt'))
+            if value == 1: clipboard_count += 1
     finally:
         adb('pull','/sdcard/Android/data/'+PACKAGE+'.test/files/clipboard-probe/.',str(OUT/'clipboard-probe'))
     if clipboard_count == 4:
