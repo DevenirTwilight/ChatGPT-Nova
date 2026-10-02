@@ -80,11 +80,12 @@ public final class ClipboardProbeTest extends FixtureActivity {
         show.setAccessible(true);
         Field field = MainActivity.class.getDeclaredField("overflowMenu");
         field.setAccessible(true);
+        PopupMenu previous = (PopupMenu) field.get(activity);
         main(() -> { try { show.invoke(activity); } catch(Exception e) { throw new AssertionError(e); } });
         AtomicReference<PopupMenu> menu = new AtomicReference<>();
         waitFor("native paste menu", () -> {
             main(() -> { try { menu.set((PopupMenu)field.get(activity)); } catch(Exception e) { throw new AssertionError(e); } });
-            return menu.get() != null && menu.get().getMenu().findItem(6) != null;
+            return menu.get() != null && menu.get() != previous && menu.get().getMenu().findItem(6) != null;
         });
         main(() -> { assertTrue(menu.get().getMenu().performIdentifierAction(6,0)); menu.get().dismiss(); });
     }

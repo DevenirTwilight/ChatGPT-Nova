@@ -255,6 +255,7 @@ jobs:
           script: |
             python3 scripts/upgrade_and_web_tests.py dist/ChatGPT-Nova.apk dist/ChatGPT-Nova-tests.apk dist/ChatGPT-Nova-v1.apk ${{ matrix.api }}
       - name: Test installed Release UI on controlled pages after emulator restart
+        if: always()
         uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: ${{ matrix.api }}
