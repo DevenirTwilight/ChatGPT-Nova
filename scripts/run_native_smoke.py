@@ -7,7 +7,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-command = [sys.executable, 'scripts/smoke_apk.py', *sys.argv[1:]]
+command = [sys.executable, 'scripts/native_ui_tests.py', *sys.argv[1:]]
 first = subprocess.run(command)
 if first.returncode == 0:
     sys.exit(0)

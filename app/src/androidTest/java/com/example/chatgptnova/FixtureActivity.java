@@ -33,6 +33,8 @@ abstract class FixtureActivity {
     WebView web;
     volatile boolean retryFixture;
     volatile boolean loginFixture;
+    volatile boolean nativeFixture;
+    volatile boolean clipboardFixture;
 
     void start() {
         scenario = ActivityScenario.launch(new Intent(instrument.getTargetContext(), MainActivity.class));
@@ -55,6 +57,12 @@ abstract class FixtureActivity {
             web.setWebViewClient(new WebViewClient() {
                 @Override public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) {
                     // Served locally inside instrumentation, without requesting chatgpt.com or reading credentials.
+                    if (clipboardFixture && PAGE.equals(request.getUrl().toString())) {
+                        return new WebResourceResponse("text/html", "UTF-8", new ByteArrayInputStream(CLIPBOARD_HTML.getBytes(StandardCharsets.UTF_8)));
+                    }
+                    if (nativeFixture && MainActivity.isTrustedOrigin(request.getUrl())) {
+                        return new WebResourceResponse("text/html", "UTF-8", new ByteArrayInputStream(NATIVE_HTML.getBytes(StandardCharsets.UTF_8)));
+                    }
                     String path=request.getUrl().getPath();
                     if ((path!=null && path.startsWith("/nova-fixture"))
                             || (loginFixture && "chatgpt.com".equals(request.getUrl().getHost()) && "/auth/login".equals(path))
@@ -140,4 +148,16 @@ abstract class FixtureActivity {
             + "document.getElementById('download').onclick=()=>{let d=new Uint8Array(131089);for(let i=0;i<d.length;i++)d[i]=i%251;"
             + "let a=document.createElement('a');a.href=URL.createObjectURL(new Blob([d],{type:'application/octet-stream'}));"
             + "a.download='nova-fixture.bin';document.body.append(a);a.click();};</script>";
+
+    static final String NATIVE_HTML = "<!doctype html><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'>"
+            + "<style>body{font-family:sans-serif;margin:24px;color:#233047}p{line-height:1.6}</style>"
+            + "<h2>Nova 原生界面检查</h2><p>这是测试 APK 提供的受控页面，不是真实登录或聊天。</p>"
+            + "<div id='ready'>ready</div>";
+
+    static final String CLIPBOARD_HTML = "<!doctype html><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'>"
+            + "<style>body{margin:12px;font-family:sans-serif}textarea,[contenteditable]{display:block;box-sizing:border-box;width:100%;height:120px;overflow:auto;white-space:pre-wrap;font-size:16px;border:1px solid #456;padding:8px}</style>"
+            + "<div id='ready'>ready</div><label for='mobile-composer-prompt'>Textarea</label><textarea id='mobile-composer-prompt' rows='1'></textarea>"
+            + "<p>Contenteditable</p><div id='prompt-textarea' class='ProseMirror' contenteditable='true' role='textbox' aria-label='Fixture composer'></div>"
+            + "<script>window.pasteEvents=[];window.inputEvents=[];document.addEventListener('paste',e=>pasteEvents.push({id:e.target.id,length:e.clipboardData.getData('text/plain').length}));"
+            + "document.addEventListener('input',e=>inputEvents.push({id:e.target.id,type:e.inputType}));</script>";
 }
