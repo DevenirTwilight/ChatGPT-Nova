@@ -237,6 +237,8 @@ jobs:
         uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: ${{ matrix.api }}
+          # Pin the July 2026 stable Emulator instead of changing CI binaries.
+          emulator-build: '15917651' # 37.1.11
           target: google_apis
           arch: x86_64
           profile: pixel_6
@@ -254,6 +256,7 @@ jobs:
         uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: ${{ matrix.api }}
+          emulator-build: '15917651' # 37.1.11
           target: google_apis
           arch: x86_64
           profile: pixel_6
