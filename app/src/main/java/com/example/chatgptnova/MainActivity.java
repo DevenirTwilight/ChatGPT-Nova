@@ -72,8 +72,12 @@ public class MainActivity extends Activity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        SplashScreen.installSplashScreen(this);
+        SplashScreen splash = SplashScreen.installSplashScreen(this);
         super.onCreate(savedInstanceState);
+        splash.setOnExitAnimationListener(provider -> {
+            provider.remove();
+            applySystemBars();
+        });
         uploads = new UploadController(this);
         buildUi();
         configureWebView();
@@ -91,15 +95,22 @@ public class MainActivity extends Activity {
         }
     }
 
+    private void applySystemBars() {
+        WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
+        getWindow().setStatusBarColor(0xFFFFFFFF);
+        getWindow().setNavigationBarColor(Build.VERSION.SDK_INT >= 27
+                ? 0xFFFFFFFF : getColor(R.color.nova_night));
+        WindowCompat.getInsetsController(getWindow(), getWindow().getDecorView())
+                .setAppearanceLightStatusBars(true);
+        WindowCompat.getInsetsController(getWindow(), getWindow().getDecorView())
+                .setAppearanceLightNavigationBars(Build.VERSION.SDK_INT >= 27);
+    }
+
     private void buildUi() {
         LinearLayout root = new LinearLayout(this);
         root.setOrientation(LinearLayout.VERTICAL);
         root.setBackgroundColor(0xFFFFFFFF);
-        WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
-        WindowCompat.getInsetsController(getWindow(), getWindow().getDecorView())
-                .setAppearanceLightStatusBars(true);
-        WindowCompat.getInsetsController(getWindow(), getWindow().getDecorView())
-                .setAppearanceLightNavigationBars(true);
+        applySystemBars();
         ViewCompat.setOnApplyWindowInsetsListener(root, (view, insets) -> {
             Insets bars = insets.getInsets(WindowInsetsCompat.Type.systemBars()
                     | WindowInsetsCompat.Type.displayCutout());

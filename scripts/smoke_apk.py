@@ -17,7 +17,10 @@ checks = []
 
 def adb(*args, binary=False):
     result = subprocess.run(['adb', *args], stdout=subprocess.PIPE,
-                            stderr=subprocess.PIPE, timeout=60, check=True)
+                            stderr=subprocess.PIPE, timeout=60)
+    if result.returncode:
+        detail = result.stderr.decode(errors='replace').strip()
+        raise RuntimeError('ADB '+repr(args)+' failed: '+detail)
     return result.stdout if binary else result.stdout.decode(errors='replace')
 
 def tree():
@@ -95,8 +98,10 @@ try:
             break
         time.sleep(1)
     capture('login-entry')
-    window = adb('shell','dumpsys','window','windows')
-    assert re.search(r'mCurrentFocus=.*'+re.escape(PACKAGE), window), 'Login entry left Nova'
+    activities = adb('shell','dumpsys','activity','activities')
+    (OUT/'login-activities.txt').write_text(activities)
+    assert any(n.get('package') == PACKAGE and n.get('content-desc') == 'Menu' for n in root.iter('node')), 'Nova controls are not visible during login'
+    assert re.search(r'(?:topResumedActivity|mResumedActivity|ResumedActivity)[^\n]*'+re.escape(PACKAGE)+r'/\.MainActivity', activities), 'Login entry left the resumed Nova Activity'
     login_observation = {
         'stayed_in_nova': True,
         'email_input_visible': any(n.get('class') == 'android.widget.EditText' for n in root.iter('node')) and any(marker in visible.lower() for marker in ('email','邮箱','电子邮件')),

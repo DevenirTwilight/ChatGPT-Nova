@@ -243,7 +243,7 @@ jobs:
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back emulated -dns-server 8.8.8.8,1.1.1.1
           script: |
             python3 scripts/upgrade_and_web_tests.py dist/ChatGPT-Nova.apk dist/ChatGPT-Nova-tests.apk dist/ChatGPT-Nova-v1.apk ${{ matrix.api }}
-            python3 scripts/smoke_apk.py dist/ChatGPT-Nova.apk ${{ matrix.api }}
+            python3 scripts/run_native_smoke.py dist/ChatGPT-Nova.apk ${{ matrix.api }}
       - name: Upload compatibility evidence
         if: always()
         uses: actions/upload-artifact@v4

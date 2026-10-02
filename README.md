@@ -37,7 +37,7 @@ HTTPS 下载与 blob 下载均通过系统保存对话框写入用户选择的�
 
 Artifact `ChatGPT-Nova-release` 包含签名 APK、SHA-256 和静态验证报告，`ChatGPT-Nova-source` 包含完整工程。独立的 `ChatGPT-Nova-ci-inputs` 仅用于模拟器检查，里面的测试 APK 不是用户安装包。
 
-Android 13 / 14 / 15 的模拟器均检查：原 v1 `install -r` 覆盖安装及合成 Cookie / localStorage 保留；受控网页的多文件输入、拍照结果生命周期、blob 字节完整性、HTTPS 下载重定向 Cookie 隔离与降级拒绝、权限范围、网络错误恢复和清除数据；原生菜单、旋转、返回与重启。网页与外部文件/相机结果是合成测试夹具，不代表真实账号上传或硬件拍摄已实测。测试夹具及其 ContentProvider 只存在于单独的测试 APK，未打包进 Release。原始 v1 Artifact 过期后，CI 从固定的 v1 提交和原签名重建兼容性基线。
+Android 13 / 14 / 15 的模拟器均检查：原 v1 `install -r` 覆盖安装及合成 Cookie / localStorage 保留；受控网页的多文件输入、拍照结果生命周期、blob 字节完整性、HTTPS 下载重定向 Cookie 隔离与降级拒绝、权限范围、网络错误恢复和清除数据；原生菜单、旋转、返回与重启。网页与外部文件/相机结果是合成测试夹具，不代表真实账号上传或硬件拍摄已实测。测试夹具及其 ContentProvider 只存在于单独的测试 APK，未打包进 Release。原始 v1 Artifact 过期后，CI 从固定的 v1 提交和原签名重建兼容性基线。 如果模拟器日志明确显示 Google 系统字体提供者重启并连带终止 Nova，CI 只重跑一次完整原生检查并保留初次失败证据；Nova 自身崩溃及其他检查失败不会被此机制跳过。
 
 ## 品牌资源
 
