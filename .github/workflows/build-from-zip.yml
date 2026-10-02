@@ -233,13 +233,14 @@ jobs:
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
-      - name: Test installed Release APK
+      - name: Test upgrade and WebView behavior
         uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: ${{ matrix.api }}
           target: google_apis
           arch: x86_64
           profile: pixel_6
+          avd-name: nova-ci-${{ matrix.api }}
           cores: 2
           ram-size: 2048M
           heap-size: 512M
@@ -249,7 +250,31 @@ jobs:
           emulator-options: -no-window -gpu swiftshader -feature -Vulkan -no-snapshot -noaudio -no-boot-anim -camera-back emulated -dns-server 8.8.8.8,1.1.1.1
           script: |
             python3 scripts/upgrade_and_web_tests.py dist/ChatGPT-Nova.apk dist/ChatGPT-Nova-tests.apk dist/ChatGPT-Nova-v1.apk ${{ matrix.api }}
+      - name: Test installed Release UI after emulator restart
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: ${{ matrix.api }}
+          target: google_apis
+          arch: x86_64
+          profile: pixel_6
+          avd-name: nova-ci-${{ matrix.api }}
+          # Restart the VM after instrumentation; preserve its upgraded app
+          # and site data. No assertions or application failures are skipped.
+          force-avd-creation: false
+          cores: 2
+          ram-size: 2048M
+          heap-size: 512M
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader -feature -Vulkan -no-snapshot -noaudio -no-boot-anim -camera-back emulated -dns-server 8.8.8.8,1.1.1.1
+          script: |
             python3 scripts/run_native_smoke.py dist/ChatGPT-Nova.apk ${{ matrix.api }}
+      - name: Collect runner diagnostics on failure
+        if: failure()
+        run: |
+          mkdir -p runner-diagnostics
+          free -h > runner-diagnostics/memory.txt
+          df -h > runner-diagnostics/disk.txt
+          sudo dmesg -T | tail -n 120 > runner-diagnostics/kernel.txt
       - name: Upload compatibility evidence
         if: always()
         uses: actions/upload-artifact@v4
@@ -258,5 +283,6 @@ jobs:
           path: |
             smoke-results/
             instrumented-results/
+            runner-diagnostics/
           if-no-files-found: warn
           retention-days: 90

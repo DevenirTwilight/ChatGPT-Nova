@@ -19,8 +19,8 @@ def adb(*args, binary=False):
     result = subprocess.run(['adb', *args], stdout=subprocess.PIPE,
                             stderr=subprocess.PIPE, timeout=60)
     if result.returncode:
-        detail = result.stderr.decode(errors='replace').strip()
-        raise RuntimeError('ADB '+repr(args)+' failed: '+detail)
+        detail = (result.stderr + result.stdout).decode(errors='replace').strip()
+        raise RuntimeError('ADB '+repr(args)+' exited '+str(result.returncode)+': '+detail[-2000:])
     return result.stdout if binary else result.stdout.decode(errors='replace')
 
 def tree():
@@ -34,7 +34,9 @@ def tree():
             if start >= 0:
                 try: return ET.fromstring(xml[start:])
                 except ET.ParseError: pass
-        except (subprocess.CalledProcessError, subprocess.TimeoutExpired) as error:
+        # The CLI can die while its accessibility service attaches after an
+        # Activity restart. Retry the snapshot, never a failed UI assertion.
+        except (RuntimeError, subprocess.CalledProcessError, subprocess.TimeoutExpired) as error:
             last_dump = 'Snapshot process failed: ' + str(error)
         time.sleep(0.5)
     raise RuntimeError('UI snapshot unavailable after bounded retries: ' + last_dump.strip())
@@ -90,6 +92,7 @@ try:
     assert not any(label in labels for label in ('清除第二账号登录数据','在 Nova 内登录','关于 / 登录帮助'))
     capture('menu')
     tap(find(text='设置'))
+    find(text='关于 ChatGPT Nova')
     capture('settings')
     tap(find(text='关于 ChatGPT Nova'))
     root = tree()
