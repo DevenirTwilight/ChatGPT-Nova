@@ -240,8 +240,13 @@ jobs:
           target: google_apis
           arch: x86_64
           profile: pixel_6
+          cores: 2
+          ram-size: 2048M
+          heap-size: 512M
           disable-animations: true
-          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back emulated -dns-server 8.8.8.8,1.1.1.1
+          # Current Emulator releases deprecate swiftshader_indirect. Avoid
+          # Vulkan and snapshots on headless CI while retaining every check.
+          emulator-options: -no-window -gpu swiftshader -feature -Vulkan -no-snapshot -noaudio -no-boot-anim -camera-back emulated -dns-server 8.8.8.8,1.1.1.1
           script: |
             python3 scripts/upgrade_and_web_tests.py dist/ChatGPT-Nova.apk dist/ChatGPT-Nova-tests.apk dist/ChatGPT-Nova-v1.apk ${{ matrix.api }}
             python3 scripts/run_native_smoke.py dist/ChatGPT-Nova.apk ${{ matrix.api }}
