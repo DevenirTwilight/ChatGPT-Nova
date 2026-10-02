@@ -14,6 +14,7 @@ import android.webkit.PermissionRequest;
 import android.webkit.WebResourceError;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebView;
+import android.widget.PopupMenu;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -25,6 +26,8 @@ import java.net.URL;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Map;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.AtomicInteger;
 import static org.junit.Assert.*;
@@ -246,6 +249,69 @@ public final class NovaWebViewTest extends FixtureActivity {
         waitFor("internal login page restored", () -> "ready".equals(js("document.getElementById('ready')?.textContent")));
         assertTrue(CookieManager.getInstance().getCookie(PAGE).contains("nova_external_login_fixture=retained"));
         assertEquals("retained",js("localStorage.getItem('nova_external_login_fixture')"));
+    }
+
+    @Test public void menusFollowVisibleAccountStateAndKeepDataActionsInSettings() throws Exception {
+        main(() -> CookieManager.getInstance().setCookie(PAGE,"nova_menu_fixture=retained; Path=/; Secure"));
+        assertEquals(Arrays.asList("刷新","ChatGPT 首页","用浏览器打开","设置"), openMenuLabels());
+        main(() -> overflow().dismiss());
+
+        js("(()=>{let b=document.createElement('button');b.id='account-control';b.dataset.testid='login-button';b.textContent='Log in';document.body.prepend(b);})()");
+        assertEquals(Arrays.asList("刷新","ChatGPT 首页","登录","用浏览器打开","设置"),openMenuLabels());
+        main(() -> overflow().getMenu().performIdentifierAction(5,0));
+        waitFor("signed-out settings", () -> settingsFixture()!=null);
+        assertEquals(Arrays.asList("清除登录与网站数据","登录帮助","关于 ChatGPT Nova"), settingsLabels());
+        main(() -> settingsFixture().dismiss());
+        instrument.waitForIdleSync();
+
+        js("(()=>{let b=document.getElementById('account-control');b.dataset.testid='accounts-profile-button';b.textContent='Fixture account';})()");
+        assertEquals(Arrays.asList("刷新","ChatGPT 首页","用浏览器打开","设置"),openMenuLabels());
+        main(() -> overflow().getMenu().performIdentifierAction(5,0));
+        waitFor("signed-in settings", () -> settingsFixture()!=null);
+        assertEquals(Arrays.asList("退出当前账号","清除登录与网站数据","登录帮助","关于 ChatGPT Nova"),settingsLabels());
+        main(() -> settingsFixture().getListView().performItemClick(null,0,0));
+        waitFor("logout confirmation", () -> clearFixture()!=null);
+        main(() -> {
+            assertEquals("退出",clearFixture().getButton(AlertDialog.BUTTON_POSITIVE).getText().toString());
+            clearFixture().getButton(AlertDialog.BUTTON_NEGATIVE).performClick();
+        });
+        instrument.waitForIdleSync();
+        assertTrue(CookieManager.getInstance().getCookie(PAGE).contains("nova_menu_fixture=retained"));
+
+        // SPA login changes are observed the next time the menu opens.
+        js("(()=>{let b=document.getElementById('account-control');b.dataset.testid='login-button';b.textContent='登录';})()");
+        assertTrue(openMenuLabels().contains("登录"));
+        main(() -> overflow().dismiss());
+        fixture("https://nova.invalid/nova-fixture");
+        js("(()=>{let b=document.createElement('button');b.dataset.testid='accounts-profile-button';b.textContent='Fixture account';document.body.prepend(b);})()");
+        assertEquals(Arrays.asList("刷新","ChatGPT 首页","用浏览器打开","设置"),openMenuLabels());
+    }
+
+    PopupMenu overflow() {
+        try { Field f=MainActivity.class.getDeclaredField("overflowMenu");f.setAccessible(true);return (PopupMenu)f.get(activity); }
+        catch(Exception error){throw new AssertionError(error);}
+    }
+    AlertDialog settingsFixture() {
+        try { Field f=MainActivity.class.getDeclaredField("settingsDialog");f.setAccessible(true);return (AlertDialog)f.get(activity); }
+        catch(Exception error){throw new AssertionError(error);}
+    }
+    AlertDialog clearFixture() {
+        try { Field f=MainActivity.class.getDeclaredField("clearDialog");f.setAccessible(true);return (AlertDialog)f.get(activity); }
+        catch(Exception error){throw new AssertionError(error);}
+    }
+    List<String> openMenuLabels() throws Exception {
+        AtomicReference<PopupMenu> previous=new AtomicReference<>();main(() -> previous.set(overflow()));
+        Method show=MainActivity.class.getDeclaredMethod("showMenu");show.setAccessible(true);
+        main(() -> {try{show.invoke(activity);}catch(Exception error){throw new AssertionError(error);}});
+        waitFor("menu refreshed", () -> {AtomicReference<Boolean> ready=new AtomicReference<>(false);main(() -> ready.set(overflow()!=null && overflow()!=previous.get()));return ready.get();});
+        ArrayList<String> labels=new ArrayList<>();
+        main(() -> {for(int i=0;i<overflow().getMenu().size();i++)labels.add(overflow().getMenu().getItem(i).getTitle().toString());});
+        return labels;
+    }
+    List<String> settingsLabels() {
+        ArrayList<String> labels=new ArrayList<>();
+        main(() -> {for(int i=0;i<settingsFixture().getListView().getAdapter().getCount();i++)labels.add(settingsFixture().getListView().getAdapter().getItem(i).toString());});
+        return labels;
     }
 
     static final class Request extends PermissionRequest {

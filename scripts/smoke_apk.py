@@ -55,13 +55,17 @@ def tap(node):
     adb('shell', 'input', 'tap', str((x1+x2)//2), str((y1+y2)//2))
 
 def menu(item):
-    tap(find(description='Menu'))
+    tap(find(description='菜单'))
+    tap(find(text=item))
+
+def settings(item):
+    menu('设置')
     tap(find(text=item))
 
 def launch():
     result = adb('shell', 'am', 'start', '-W', '-n', PACKAGE+'/.MainActivity')
     assert 'Status: ok' in result, result
-    find(description='Menu')
+    find(description='菜单')
 
 def capture(name):
     (OUT/(name+'.png')).write_bytes(adb('exec-out', 'screencap', '-p', binary=True))
@@ -74,21 +78,31 @@ try:
     checks.append('Signed Release APK installs and launches')
     capture('portrait')
     public_text = [n.get('text','') for n in tree().iter('node')]
+    assert 'ChatGPT Nova' in public_text and 'ChatGPT Nova · 非官方' not in public_text
     website = {'public_chatgpt_page_visible': 'Log in' in public_text or 'Chat with ChatGPT' in public_text,
                'native_network_error_visible': '重试加载' in public_text,
                'authenticated_features_tested': False}
     (OUT/'website-observation.json').write_text(json.dumps(website,ensure_ascii=False,indent=2))
-    menu('关于 / 登录帮助')
+    tap(find(description='菜单'))
+    root = tree()
+    labels = [n.get('text','') for n in root.iter('node')]
+    assert all(label in labels for label in ('刷新','ChatGPT 首页','用浏览器打开','设置'))
+    assert not any(label in labels for label in ('清除第二账号登录数据','在 Nova 内登录','关于 / 登录帮助'))
+    capture('menu')
+    tap(find(text='设置'))
+    capture('settings')
+    tap(find(text='关于 ChatGPT Nova'))
     root = tree()
     assert any('非官方客户端' in n.get('text','') and 'chatgpt.com' in n.get('text','') for n in root.iter('node'))
     capture('about')
-    tap(find(text='登录方式说明'))
+    tap(find(text='知道了'))
+    settings('登录帮助')
     root = tree()
     assert any('回到 Nova 不会自动带入浏览器会话' in n.get('text','') for n in root.iter('node'))
     assert any('浏览器登录' == n.get('text','') for n in root.iter('node'))
     capture('login-help')
     tap(find(text='应用内登录'))
-    find(description='Menu')
+    find(description='菜单')
     # Inspect only the public login entry; never enter credentials or bypass
     # website verification. An entry screenshot is not completed authentication.
     for _ in range(8):
@@ -100,7 +114,7 @@ try:
     capture('login-entry')
     activities = adb('shell','dumpsys','activity','activities')
     (OUT/'login-activities.txt').write_text(activities)
-    assert any(n.get('package') == PACKAGE and n.get('content-desc') == 'Menu' for n in root.iter('node')), 'Nova controls are not visible during login'
+    assert any(n.get('package') == PACKAGE and n.get('content-desc') == '菜单' for n in root.iter('node')), 'Nova controls are not visible during login'
     assert re.search(r'(?:topResumedActivity|mResumedActivity|ResumedActivity)[^\n]*'+re.escape(PACKAGE)+r'/\.MainActivity', activities), 'Login entry left the resumed Nova Activity'
     login_observation = {
         'stayed_in_nova': True,
@@ -111,27 +125,28 @@ try:
         'visible_text': visible,
     }
     (OUT/'login-observation.json').write_text(json.dumps(login_observation,ensure_ascii=False,indent=2))
-    menu('回到 ChatGPT')
+    menu('ChatGPT 首页')
+    checks.append('Clean title and concise overflow menu; data clearing and About are available in settings')
     checks.append('About dialog shows unofficial status and website origin')
     checks.append('Login help offers an explicit browser fallback and explains separate sessions; choosing internal login stays in Nova')
     menu('刷新')
-    find(description='Menu')
+    find(description='菜单')
     checks.append('Refresh keeps native controls usable')
-    menu('清除第二账号登录数据')
+    settings('清除登录与网站数据')
     tap(find(text='取消'))
-    find(description='Menu')
-    menu('清除第二账号登录数据')
+    find(description='菜单')
+    settings('清除登录与网站数据')
     tap(find(text='清除'))
-    find(description='Menu')
+    find(description='菜单')
     checks.append('Cancel and confirm clear-data flows remain usable')
     adb('shell', 'settings', 'put', 'system', 'accelerometer_rotation', '0')
     adb('shell', 'settings', 'put', 'system', 'user_rotation', '1')
     time.sleep(2)
-    find(description='Menu')
+    find(description='菜单')
     capture('landscape')
     adb('shell', 'settings', 'put', 'system', 'user_rotation', '0')
     time.sleep(2)
-    find(description='Menu')
+    find(description='菜单')
     checks.append('Rotation preserves a usable Activity and menu')
     adb('shell', 'input', 'keyevent', '4')
     launch()

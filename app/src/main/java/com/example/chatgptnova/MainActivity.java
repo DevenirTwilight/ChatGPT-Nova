@@ -13,6 +13,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Parcel;
 import android.view.Gravity;
+import android.view.Menu;
 import android.view.View;
 import android.view.ViewGroup;
 import android.webkit.CookieManager;
@@ -47,6 +48,7 @@ import android.widget.FrameLayout;
 import android.widget.ScrollView;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
+import android.widget.PopupMenu;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -55,6 +57,25 @@ public class MainActivity extends Activity {
     private static final int SAVE_BLOB = 1005;
     private static final String HOME = "https://chatgpt.com/";
     private static final String LOGIN = "https://chatgpt.com/auth/login";
+    private enum AccountUiState { UNKNOWN, SIGNED_OUT, SIGNED_IN }
+    // Read only visible public controls. Never read input values, cookies,
+    // storage, account details, or private authentication endpoints.
+    private static final String ACCOUNT_STATE_QUERY = """
+            (() => {
+              const visible = e => !!(e.getClientRects().length) &&
+                getComputedStyle(e).visibility !== 'hidden' && getComputedStyle(e).display !== 'none';
+              const profiles = document.querySelectorAll('[data-testid="accounts-profile-button"], [data-testid="profile-button"], [data-testid="user-menu-button"], [data-testid="account-menu-button"]');
+              if ([...profiles].some(visible)) return 'signed_in';
+              const controls = [...document.querySelectorAll('button, a, [role="button"]')].slice(0, 250);
+              const login = controls.some(e => {
+                if (!visible(e)) return false;
+                if (e.getAttribute('data-testid') === 'login-button') return true;
+                const label = (e.getAttribute('aria-label') || e.textContent || '').replace(/\\s+/g, ' ').trim();
+                return /^(log in|login|sign in|登录|登入|se connecter|connexion|anmelden|iniciar sesión|accedi|로그인|ログイン)$/i.test(label);
+              });
+              return login ? 'signed_out' : 'unknown';
+            })()
+            """;
 
     private WebView webView;
     private ProgressBar progress;
@@ -70,6 +91,11 @@ public class MainActivity extends Activity {
     private boolean clearing;
     private boolean loginDialogVisible;
     private AlertDialog clearDialog;
+    private AlertDialog settingsDialog;
+    private View menuButton;
+    private PopupMenu overflowMenu;
+    private AccountUiState accountUiState = AccountUiState.UNKNOWN;
+    private int accountQuerySerial;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -134,7 +160,7 @@ public class MainActivity extends Activity {
         heading.setGravity(Gravity.CENTER_VERTICAL);
         heading.setPadding(0, 0, dp(52), 0);
         TextView title = new TextView(this);
-        title.setText("ChatGPT Nova · 非官方");
+        title.setText("ChatGPT Nova");
         title.setTextSize(15);
         title.setTextColor(0xFF111111);
         heading.addView(title);
@@ -152,8 +178,9 @@ public class MainActivity extends Activity {
         menu.setText("⋮");
         menu.setTextSize(28);
         menu.setGravity(Gravity.CENTER);
-        menu.setContentDescription("Menu");
+        menu.setContentDescription("菜单");
         menu.setOnClickListener(v -> showMenu());
+        menuButton = menu;
         FrameLayout.LayoutParams menuLp = new FrameLayout.LayoutParams(
                 dp(48), ViewGroup.LayoutParams.MATCH_PARENT, Gravity.END);
         bar.addView(menu, menuLp);
@@ -232,6 +259,8 @@ public class MainActivity extends Activity {
             @Override
             public void onPageStarted(WebView view, String url, Bitmap favicon) {
                 if (view != webView || clearing) return;
+                accountUiState = AccountUiState.UNKNOWN;
+                accountQuerySerial++;
                 cancelPageRequests();
                 failedUrl = null;
                 loadingUrl = url;
@@ -246,6 +275,7 @@ public class MainActivity extends Activity {
                 progress.setVisibility(View.GONE);
                 displayOrigin(url);
                 CookieManager.getInstance().flush();
+                refreshAccountUiState(null);
             }
 
             @Override
@@ -554,40 +584,98 @@ public class MainActivity extends Activity {
 
     private void showMenu() {
         if (clearing || webView == null) return;
-        String[] items = {
-                "刷新",
-                "回到 ChatGPT",
-                "在 Nova 内登录",
-                "Google / 浏览器登录",
-                "清除第二账号登录数据",
-                "用系统浏览器打开当前页",
-                "关于 / 登录帮助"
-        };
-
-        new AlertDialog.Builder(this)
-                .setTitle("ChatGPT Nova")
-                .setItems(items, (d, which) -> {
-                    if (which == 0) {
+        refreshAccountUiState(() -> {
+            if (overflowMenu != null) overflowMenu.dismiss();
+            overflowMenu = new PopupMenu(this, menuButton);
+            Menu items = overflowMenu.getMenu();
+            items.add(0, 1, 0, "刷新");
+            items.add(0, 2, 1, "ChatGPT 首页");
+            if (accountUiState == AccountUiState.SIGNED_OUT) items.add(0, 3, 2, "登录");
+            items.add(0, 4, 3, "用浏览器打开");
+            items.add(0, 5, 4, "设置");
+            overflowMenu.setOnMenuItemClickListener(item -> {
+                if (clearing || webView == null) return true;
+                switch (item.getItemId()) {
+                    case 1:
                         if (failedUrl != null) webView.loadUrl(failedUrl); else webView.reload();
-                    } else if (which == 1) {
+                        break;
+                    case 2:
                         webView.loadUrl(HOME);
-                    } else if (which == 2) {
-                        openLoginInNova();
-                    } else if (which == 3) {
-                        showLoginHelp(true);
-                    } else if (which == 4) {
-                        confirmClear();
-                    } else if (which == 5) {
+                        break;
+                    case 3:
+                        showLoginHelp(false);
+                        break;
+                    case 4:
                         openCurrentPageInBrowser();
-                    } else if (which == 6) {
-                        new AlertDialog.Builder(this).setTitle("ChatGPT Nova 1.3.3")
-                                .setIcon(R.mipmap.ic_launcher)
-                                .setMessage("非官方客户端，不由 OpenAI 发布、维护或背书。\n网页内容来自 chatgpt.com。\n应用使用独立的网站数据，不读取或保存账号密码。\n\nNova 内登录使用独立的网页会话。Google 可选择在浏览器登录并继续聊天；该会话保存在浏览器中，回到 Nova 不会自动同步。其他方式取决于账号与官网是否允许应用内登录。")
-                                .setPositiveButton("知道了", null)
-                                .setNeutralButton("登录方式说明", (dialog, w) -> showLoginHelp(false)).show();
-                    }
-                })
-                .show();
+                        break;
+                    case 5:
+                        showSettings();
+                        break;
+                    default: break;
+                }
+                return true;
+            });
+            overflowMenu.show();
+        });
+    }
+
+    private void refreshAccountUiState(Runnable finished) {
+        WebView page = webView;
+        String address = page == null ? null : page.getUrl();
+        int serial = ++accountQuerySerial;
+        accountUiState = AccountUiState.UNKNOWN;
+        if (clearing || page == null || failedUrl != null || !isTrustedOrigin(Uri.parse(address == null ? "" : address))) {
+            if (finished != null) finished.run();
+            return;
+        }
+        boolean[] completed = {false};
+        Runnable complete = () -> {
+            if (completed[0]) return;
+            completed[0] = true;
+            if (!isFinishing() && !isDestroyed() && !clearing && webView != null && finished != null) finished.run();
+        };
+        // A failed or busy webpage must not prevent opening the native menu.
+        page.postDelayed(complete, 350);
+        try {
+            page.evaluateJavascript(ACCOUNT_STATE_QUERY, value -> {
+                if (completed[0]) return;
+                if (serial == accountQuerySerial && page == webView && address.equals(page.getUrl())) {
+                    if ("\"signed_in\"".equals(value)) accountUiState = AccountUiState.SIGNED_IN;
+                    else if ("\"signed_out\"".equals(value)) accountUiState = AccountUiState.SIGNED_OUT;
+                }
+                complete.run();
+            });
+        } catch (RuntimeException error) { complete.run(); }
+    }
+
+    private void showSettings() {
+        if (clearing || webView == null) return;
+        refreshAccountUiState(() -> {
+            ArrayList<String> items = new ArrayList<>();
+            if (accountUiState == AccountUiState.SIGNED_IN) items.add("退出当前账号");
+            items.add("清除登录与网站数据");
+            items.add("登录帮助");
+            items.add("关于 ChatGPT Nova");
+            if (settingsDialog != null) settingsDialog.dismiss();
+            settingsDialog = new AlertDialog.Builder(this).setTitle("设置")
+                    .setItems(items.toArray(new String[0]), (dialog, which) -> {
+                        String selected = items.get(which);
+                        if ("退出当前账号".equals(selected)) confirmClear(true);
+                        else if ("清除登录与网站数据".equals(selected)) confirmClear();
+                        else if ("登录帮助".equals(selected)) showLoginHelp(false);
+                        else showAbout();
+                    }).setNegativeButton("关闭", null).create();
+            AlertDialog shown = settingsDialog;
+            shown.setOnDismissListener(dialog -> { if (settingsDialog == shown) settingsDialog = null; });
+            settingsDialog.show();
+        });
+    }
+
+    private void showAbout() {
+        new AlertDialog.Builder(this).setTitle("ChatGPT Nova 1.3.4")
+                .setIcon(R.mipmap.ic_launcher)
+                .setMessage("ChatGPT Nova 是用于访问 chatgpt.com 的个人客户端，与官方 ChatGPT App 独立存储登录状态。\n\n这是非官方客户端，不由 OpenAI 发布、维护或背书。应用不读取或保存账号密码。")
+                .setPositiveButton("知道了", null).show();
     }
 
     private void openCurrentPageInBrowser() {
@@ -637,14 +725,22 @@ public class MainActivity extends Activity {
     }
 
     private void confirmClear() {
+        confirmClear(false);
+    }
+
+    private void confirmClear(boolean signOut) {
         if (clearDialog != null || clearing) return;
         clearDialog = new AlertDialog.Builder(this)
-                .setTitle("清除登录？")
-                .setMessage("会清除此 APK 内的 Cookie、缓存和网站数据，不影响官方 ChatGPT App 的账号。")
+                .setTitle(signOut ? "退出当前账号？" : "清除登录与网站数据？")
+                .setMessage(signOut
+                        ? "将退出 Nova 内的账号，并清除本应用的登录与网站数据。不会退出官方 ChatGPT App 或浏览器中的账号。"
+                        : "将清除 Nova 的登录状态、Cookie、缓存、网站数据和临时照片。不会影响官方 ChatGPT App 或浏览器中的账号。")
                 .setNegativeButton("取消", null)
-                .setPositiveButton("清除", (d, w) -> {
+                .setPositiveButton(signOut ? "退出" : "清除", (d, w) -> {
                     if (clearing) return;
                     clearing = true;
+                    accountUiState = AccountUiState.UNKNOWN;
+                    accountQuerySerial++;
                     cancelPageRequests();
                     cancelDownloads();
                     webView.stopLoading();
@@ -754,6 +850,8 @@ public class MainActivity extends Activity {
 
     @Override
     protected void onDestroy() {
+        if (overflowMenu != null) { overflowMenu.dismiss(); overflowMenu = null; }
+        if (settingsDialog != null) { settingsDialog.dismiss(); settingsDialog = null; }
         if (clearDialog != null) { clearDialog.dismiss(); clearDialog = null; }
         cancelPageRequests();
         cancelDownloads();
