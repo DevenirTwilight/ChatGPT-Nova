@@ -12,6 +12,9 @@ import android.view.accessibility.AccessibilityNodeInfo;
 import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputConnection;
 import android.webkit.WebView;
+import android.widget.PopupMenu;
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.junit.After;
@@ -59,7 +62,7 @@ public final class ClipboardProbeTest extends FixtureActivity {
             waitFor("focused editor",()->id.equals(js("document.activeElement.id")));
             main(()->((ClipboardManager)activity.getSystemService(Context.CLIPBOARD_SERVICE)).setPrimaryClip(ClipData.newPlainText("synthetic paste fixture",expected)));
             if("long-press".equals(route))longPress(id);
-            else if("native-menu".equals(route)) main(activity::pasteFromClipboard);
+            else if("native-menu".equals(route)) menuPaste();
             else input(expected,"ime-context-paste".equals(route));
             SystemClock.sleep(500);
             String actual=js("(()=>{let e=document.getElementById('"+id+"');return e.tagName==='TEXTAREA'?e.value:e.innerText})()");
@@ -70,6 +73,20 @@ public final class ClipboardProbeTest extends FixtureActivity {
             if(!expected.equals(actual))failures++;
         }
         assertEquals(route+": full-text paste failures (see clipboard-probe JSON)",0,failures);
+    }
+
+    private void menuPaste() throws Exception {
+        Method show = MainActivity.class.getDeclaredMethod("showMenu");
+        show.setAccessible(true);
+        Field field = MainActivity.class.getDeclaredField("overflowMenu");
+        field.setAccessible(true);
+        main(() -> { try { show.invoke(activity); } catch(Exception e) { throw new AssertionError(e); } });
+        AtomicReference<PopupMenu> menu = new AtomicReference<>();
+        waitFor("native paste menu", () -> {
+            main(() -> { try { menu.set((PopupMenu)field.get(activity)); } catch(Exception e) { throw new AssertionError(e); } });
+            return menu.get() != null && menu.get().getMenu().findItem(6) != null;
+        });
+        main(() -> { assertTrue(menu.get().getMenu().performIdentifierAction(6,0)); menu.get().dismiss(); });
     }
 
     private void input(String text,boolean paste) throws Exception {

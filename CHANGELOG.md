@@ -1,3 +1,9 @@
+# 1.3.5 (versionCode 9)
+
+- 保留系统长按与键盘粘贴；增加 ChatGPT 页面中的“从剪贴板粘贴”原生兜底。先点聊天输入框，再打开菜单粘贴。
+- 仅用户主动操作时读取纯文本，以 Android InputConnection 插入，不持久保存、不拼接到 JavaScript、不自动发送；不向登录字段或外部页面粘贴。
+- 在签名 Release 的真实 WebView 中检查长按、IME 粘贴、IME 输入和原生菜单入口；覆盖 1/10/50 KB、中文英文、Markdown、换行与 emoji。受控页面结果不代表已验证真实账号登录后的 ChatGPT 网页。
+
 # 1.3.4 (versionCode 8)
 
 - 顶部只显示 ChatGPT Nova 和当前域名；非官方性质与独立登录说明移至“关于 ChatGPT Nova”。
