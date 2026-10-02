@@ -29,7 +29,7 @@ public final class NativeUiTest extends FixtureActivity {
         assertTrue(shown("chatgpt.com"));
         capture("portrait");
         click("菜单");
-        for (String item : new String[]{"刷新","ChatGPT 首页","用浏览器打开","设置"}) assertTrue(shown(item));
+        for (String item : new String[]{"刷新","ChatGPT 首页","用浏览器打开","设置"}) waitFor("menu item " + item, () -> shown(item));
         for (String old : new String[]{"清除第二账号登录数据","在 Nova 内登录","关于 / 登录帮助"}) assertFalse(shown(old));
         capture("menu");
         click("设置");
@@ -106,7 +106,7 @@ public final class NativeUiTest extends FixtureActivity {
         waitFor("Nova title in accessibility window", () -> shown("ChatGPT Nova"));
         assertTrue(shown("ChatGPT Nova"));
         click("菜单");
-        for (String item : new String[]{"刷新","ChatGPT 首页","用浏览器打开","设置"}) assertTrue(shown(item));
+        for (String item : new String[]{"刷新","ChatGPT 首页","用浏览器打开","设置"}) waitFor("menu item " + item, () -> shown(item));
         capture("restart-menu");
     }
 
@@ -115,8 +115,17 @@ public final class NativeUiTest extends FixtureActivity {
     }
     private void menu(String item) { click("菜单"); click(item); }
     private void settings(String item) { menu("设置"); click(item); }
-    private boolean shown(String label) { return find(instrument.getUiAutomation().getRootInActiveWindow(),label,false) != null; }
-    private boolean contains(String label) { return find(instrument.getUiAutomation().getRootInActiveWindow(),label,true) != null; }
+    private boolean shown(String label) { return accessible(label,false) != null; }
+    private boolean contains(String label) { return accessible(label,true) != null; }
+    private AccessibilityNodeInfo accessible(String label, boolean partial) {
+        AccessibilityNodeInfo found = find(instrument.getUiAutomation().getRootInActiveWindow(), label, partial);
+        if (found != null) return found;
+        for (android.view.accessibility.AccessibilityWindowInfo window : instrument.getUiAutomation().getWindows()) {
+            found = find(window.getRoot(), label, partial);
+            if (found != null) return found;
+        }
+        return null;
+    }
     private static AccessibilityNodeInfo find(AccessibilityNodeInfo node,String label,boolean partial) {
         if (node == null || !node.isVisibleToUser()) return null;
         String value = node.getText() == null ? "" : node.getText().toString();
@@ -127,7 +136,7 @@ public final class NativeUiTest extends FixtureActivity {
     }
     private void click(String label) {
         waitFor("click "+label, () -> {
-            AccessibilityNodeInfo node=find(instrument.getUiAutomation().getRootInActiveWindow(),label,false);
+            AccessibilityNodeInfo node=accessible(label,false);
             while (node != null && !node.isClickable()) node=node.getParent();
             return node != null && node.performAction(AccessibilityNodeInfo.ACTION_CLICK);
         });

@@ -67,11 +67,28 @@ public final class ClipboardProbeTest extends FixtureActivity {
             clickWeb(id);
             waitFor("focused editor",()->id.equals(js("document.activeElement.id")));
             main(()->((ClipboardManager)activity.getSystemService(Context.CLIPBOARD_SERVICE)).setPrimaryClip(ClipData.newPlainText("synthetic paste fixture",expected)));
+            // Chromium receives clipboard-change notifications asynchronously.
+            // Wait for the OS value and then allow its renderer clipboard cache to update.
+            waitFor("clipboard published", () -> {
+                AtomicReference<String> value = new AtomicReference<>();
+                main(() -> { ClipData clip = ((ClipboardManager)activity.getSystemService(Context.CLIPBOARD_SERVICE)).getPrimaryClip();
+                    value.set(clip == null ? null : String.valueOf(clip.getItemAt(0).getText())); });
+                return expected.equals(value.get());
+            });
+            SystemClock.sleep(400);
             if("long-press".equals(route))longPress(id);
             else if("native-menu".equals(route)) menuPaste();
             else input(expected,"ime-context-paste".equals(route));
-            SystemClock.sleep(500);
-            String actual=js("(()=>{let e=document.getElementById('"+id+"');return e.tagName==='TEXTAREA'?e.value:e.innerText})()");
+            // Observe the asynchronous paste result without repeating the action.
+            long until = SystemClock.uptimeMillis() + 5000;
+            String actual;
+            do {
+                SystemClock.sleep(100);
+                actual=js("(()=>{let e=document.getElementById('"+id+"');return e.tagName==='TEXTAREA'?e.value:e.innerText})()");
+                if (expected.equals(actual)) break;
+            } while (SystemClock.uptimeMillis() < until);
+            SystemClock.sleep(200);
+            actual=js("(()=>{let e=document.getElementById('"+id+"');return e.tagName==='TEXTAREA'?e.value:e.innerText})()");
             JSONObject result=new JSONObject().put("case",item[0]).put("editor",id).put("utf8Bytes",expected.getBytes(StandardCharsets.UTF_8).length)
                     .put("utf16Units",expected.length()).put("actualUnits",actual.length()).put("exactMatch",expected.equals(actual))
                     .put("pasteEvents",new JSONArray(js("JSON.stringify(pasteEvents)"))).put("inputEvents",new JSONArray(js("JSON.stringify(inputEvents)"))).put("htmlTail", js("document.getElementById('"+id+"').innerHTML.slice(-200)"));

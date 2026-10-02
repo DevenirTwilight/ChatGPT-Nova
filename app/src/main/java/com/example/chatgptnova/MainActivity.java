@@ -659,7 +659,9 @@ public class MainActivity extends Activity {
                         openCurrentPageInBrowser();
                         break;
                     case 6:
-                        pasteFromClipboard();
+                        // Finish popup/IME focus transitions before editing the draft.
+                        overflowMenu.dismiss();
+                        webView.postDelayed(this::pasteFromClipboard, 150);
                         break;
                     case 5:
                         showSettings();
