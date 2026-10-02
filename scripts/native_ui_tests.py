@@ -50,7 +50,7 @@ try:
         block = '\n'.join(lines[i:i+20])
         assert not ((pid and pid.group(1) in app_pids) or 'Process: '+PACKAGE+',' in block), 'Nova recorded a fatal exception'
     checks.append('No Nova FATAL EXCEPTION during the native fixture checks')
-    adb('pull','/sdcard/Android/data/'+PACKAGE+'.test/files/native-smoke/.',str(OUT))
+    adb('pull','/sdcard/Android/data/'+PACKAGE+'/files/native-smoke/.',str(OUT))
     for name in ('portrait','menu','settings','about','login-help','login-entry','landscape','restart-menu'):
         assert (OUT/(name+'.png')).read_bytes().startswith(b'\x89PNG\r\n\x1a\n')
     report = {'api':int(sys.argv[2]),'passed':True,'page_mode':'synthetic fixture served only by the test APK',
@@ -63,6 +63,6 @@ except Exception as error:
     (OUT/'result.json').write_text(json.dumps({'passed':False,'checks':checks,'error':str(error)},ensure_ascii=False,indent=2))
     try: (OUT/'logcat.txt').write_text(adb('logcat','-d','-v','brief'))
     except Exception: pass
-    try: adb('pull','/sdcard/Android/data/'+PACKAGE+'.test/files/native-smoke/.',str(OUT))
+    try: adb('pull','/sdcard/Android/data/'+PACKAGE+'/files/native-smoke/.',str(OUT))
     except Exception: pass
     raise

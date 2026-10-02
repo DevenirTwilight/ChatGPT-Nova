@@ -52,9 +52,9 @@ public final class ClipboardProbeTest extends FixtureActivity {
     private void matrix() throws Exception {
         int failures=0;
         String[][] cases={{"1KB",repeat("a",1024)},{"10KB",repeat("b",10240)},{"50KB",repeat("c",51200)},
-                {"multiline",repeat("one\n\ntwo\nthree\n",10240)},
-                {"markdown",repeat("# Heading\n\n- **bold**\n> quote\n```java\nString s = \"<script> & \\ path\";\n```\n",10240)},
-                {"unicode-emoji",repeat("中文 English 👩🏽‍💻 🇨🇳 😀 e\u0301 \u2028 \u2029\n\n",51200)}};
+                {"multiline",repeat("one\n\ntwo\nthree\n",10240)+"结束 END"},
+                {"markdown",repeat("# Heading\n\n- **bold**\n> quote\n```java\nString s = \"<script> & \\ path\";\n```\n",10240)+"结束 END"},
+                {"unicode-emoji",repeat("中文 English 👩🏽‍💻 🇨🇳 😀 e\u0301 \u2028 \u2029\n\n",51200)+"结束 END"}};
         for(String id:new String[]{"mobile-composer-prompt","prompt-textarea"})for(String[] item:cases) {
             String expected=item[1];
             js("(()=>{let e=document.getElementById('"+id+"');if(e.tagName==='TEXTAREA')e.value='';else e.textContent='';pasteEvents=[];inputEvents=[];e.scrollTop=0;})()");
@@ -68,7 +68,7 @@ public final class ClipboardProbeTest extends FixtureActivity {
             String actual=js("(()=>{let e=document.getElementById('"+id+"');return e.tagName==='TEXTAREA'?e.value:e.innerText})()");
             JSONObject result=new JSONObject().put("case",item[0]).put("editor",id).put("utf8Bytes",expected.getBytes(StandardCharsets.UTF_8).length)
                     .put("utf16Units",expected.length()).put("actualUnits",actual.length()).put("exactMatch",expected.equals(actual))
-                    .put("pasteEvents",new JSONArray(js("JSON.stringify(pasteEvents)"))).put("inputEvents",new JSONArray(js("JSON.stringify(inputEvents)")));
+                    .put("pasteEvents",new JSONArray(js("JSON.stringify(pasteEvents)"))).put("inputEvents",new JSONArray(js("JSON.stringify(inputEvents)"))).put("htmlTail", js("document.getElementById('"+id+"').innerHTML.slice(-200)"));
             results.put(result);
             System.out.println("NOVA_CLIPBOARD_CASE " + result.toString());
             if (!expected.equals(actual)) System.out.println("NOVA_CLIPBOARD_TAIL " + new JSONObject().put("expected", expected.substring(Math.max(0, expected.length()-80))).put("actual", actual.substring(Math.max(0, actual.length()-80))));
@@ -113,6 +113,9 @@ public final class ClipboardProbeTest extends FixtureActivity {
         MotionEvent up=MotionEvent.obtain(downAt,SystemClock.uptimeMillis(),MotionEvent.ACTION_UP,x,y,0);instrument.sendPointerSync(up);up.recycle();
         waitFor("system Paste action",()->{
             AccessibilityNodeInfo node=pasteNode(instrument.getUiAutomation().getRootInActiveWindow());
+            if (node == null) for (android.view.accessibility.AccessibilityWindowInfo window : instrument.getUiAutomation().getWindows()) {
+                node = pasteNode(window.getRoot()); if (node != null) break;
+            }
             while(node!=null&&!node.isClickable())node=node.getParent();
             return node!=null&&node.performAction(AccessibilityNodeInfo.ACTION_CLICK);
         });

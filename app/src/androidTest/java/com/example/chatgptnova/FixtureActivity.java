@@ -37,6 +37,11 @@ abstract class FixtureActivity {
     volatile boolean clipboardFixture;
 
     void start() {
+        // Connect accessibility before showing an editor/toolbar, not midway through a paste.
+        android.accessibilityservice.AccessibilityServiceInfo info = instrument.getUiAutomation().getServiceInfo();
+        info.flags |= android.accessibilityservice.AccessibilityServiceInfo.FLAG_RETRIEVE_INTERACTIVE_WINDOWS;
+        instrument.getUiAutomation().setServiceInfo(info);
+        instrument.getUiAutomation().getRootInActiveWindow();
         scenario = ActivityScenario.launch(new Intent(instrument.getTargetContext(), MainActivity.class));
         scenario.onActivity(value -> { activity = value; web = web(value); });
         fixture(PAGE);

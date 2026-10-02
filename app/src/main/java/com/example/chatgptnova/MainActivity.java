@@ -7,8 +7,6 @@ import android.content.ActivityNotFoundException;
 import android.content.Context;
 import android.content.ClipData;
 import android.content.ClipboardManager;
-import android.view.inputmethod.EditorInfo;
-import android.view.inputmethod.InputConnection;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
@@ -80,6 +78,33 @@ public class MainActivity extends Activity {
               return login ? 'signed_out' : 'unknown';
             })()
             """;
+
+    private static final String INSERT_COMPOSER_TEXT = """
+            (text => {
+              const e = document.activeElement;
+              if (!e || !['prompt-textarea','mobile-composer-prompt'].includes(e.id)
+                  || e.disabled || e.readOnly || !e.getClientRects().length
+                  || !(e.isContentEditable || e.tagName === 'TEXTAREA')) return false;
+              return document.execCommand('insertText', false, text);
+            })
+            """;
+    private static final String LONG_PASTE_COMPATIBILITY = """
+            (() => {
+              if (window.__novaLongPasteInstalled) return;
+              window.__novaLongPasteInstalled = true;
+              document.addEventListener('paste', event => {
+                const text = event.clipboardData && event.clipboardData.getData('text/plain');
+                if (!text || text.length < 4096) return;
+                const insert = INSERT_FUNCTION;
+                // Suppress the website/default paste only after insertion succeeds.
+                // Clipboard text stays plain text; never interpret it as HTML.
+                if (insert(text)) {
+                  event.preventDefault();
+                  event.stopImmediatePropagation();
+                }
+              }, true);
+            })()
+            """.replace("INSERT_FUNCTION", INSERT_COMPOSER_TEXT);
 
     private WebView webView;
     private ProgressBar progress;
@@ -279,6 +304,9 @@ public class MainActivity extends Activity {
                 progress.setVisibility(View.GONE);
                 displayOrigin(url);
                 CookieManager.getInstance().flush();
+                Uri pageOrigin = Uri.parse(view.getUrl() == null ? "" : view.getUrl());
+                if (isTrustedOrigin(pageOrigin) && "chatgpt.com".equals(pageOrigin.getHost()))
+                    view.evaluateJavascript(LONG_PASTE_COMPATIBILITY, null);
                 refreshAccountUiState(null);
             }
 
@@ -657,8 +685,8 @@ public class MainActivity extends Activity {
         } catch (RuntimeException error) { complete.run(); }
     }
 
-    // Explicit user action only. Clipboard text goes through the native IME
-    // connection, never through a JavaScript string or a persistent store.
+    // Explicit user action only. Insert plain text into the focused composer;
+    // never read login fields, persist clipboard content or submit the draft.
     void pasteFromClipboard() {
         WebView page = webView;
         String address = page == null ? null : page.getUrl();
@@ -688,18 +716,12 @@ public class MainActivity extends Activity {
                 Toast.makeText(this, "剪贴板中没有文本。", Toast.LENGTH_SHORT).show();
                 return;
             }
-            InputConnection connection = page.onCreateInputConnection(new EditorInfo());
-            if (connection == null) return;
-            String plainText = text.toString();
-            Runnable insert = () -> {
-                boolean accepted = connection.commitText(plainText, 1);
-                page.post(() -> {
-                    if (!accepted && page == webView && !clearing)
-                        Toast.makeText(this, "未能粘贴，请重新点一下聊天输入框。", Toast.LENGTH_LONG).show();
-                });
-            };
-            android.os.Handler handler = connection.getHandler();
-            if (handler == null) insert.run(); else handler.post(insert);
+            String plainText = JSONObject.quote(text.toString())
+                    .replace("\u2028", "\\u2028").replace("\u2029", "\\u2029");
+            page.evaluateJavascript(INSERT_COMPOSER_TEXT + "(" + plainText + ")", inserted -> {
+                if (!"true".equals(inserted) && page == webView && !clearing)
+                    Toast.makeText(this, "未能粘贴，请重新点一下聊天输入框。", Toast.LENGTH_LONG).show();
+            });
         });
     }
 

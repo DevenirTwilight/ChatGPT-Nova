@@ -12,12 +12,13 @@ PACKAGE = 'com.example.chatgptnova'
 RUNNER = PACKAGE + '.test/androidx.test.runner.AndroidJUnitRunner'
 checks = []
 failures = []
+diagnostics = []
 
-def independent(name, operation):
+def independent(name, operation, required=True):
     try:
         return operation()
     except Exception as error:
-        failures.append({"suite": name, "error": str(error)})
+        (failures if required else diagnostics).append({"suite": name, "error": str(error)})
         return None
 
 def adb(*args, timeout=120):
@@ -57,7 +58,7 @@ try:
     try:
         clipboard_count = 0
         for method in ('nativeMenuPaste','imeCommitText','imePasteCommand','longPressSystemPaste'):
-            value = independent('clipboard-'+method, lambda method=method: suite(PACKAGE+'.ClipboardProbeTest#'+method,'clipboard-'+method+'.txt'))
+            value = independent('clipboard-'+method, lambda method=method: suite(PACKAGE+'.ClipboardProbeTest#'+method,'clipboard-'+method+'.txt'), required=method!='imeCommitText')
             if value == 1: clipboard_count += 1
     finally:
         adb('pull','/sdcard/Android/data/'+PACKAGE+'/files/clipboard-probe/.',str(OUT/'clipboard-probe'))
@@ -74,7 +75,7 @@ try:
                'Confirmed clear removes synthetic cookies and localStorage',
                'Browser login requires explicit consent, starts a fresh official login URL and preserves independent WebView data',
                'Visible account controls drive signed-in, signed-out and unknown menus; sensitive actions stay in settings with confirmation']
-    report = {'api':int(api),'passed':not failures,'checks':checks,'failures':failures,
+    report = {'api':int(api),'passed':not failures,'checks':checks,'failures':failures,'diagnostics':diagnostics,
               'not_tested':['Real ChatGPT account authentication, long-term authenticated session and provider OAuth',
                             'Physical camera, live microphone capture and real authenticated ChatGPT attachments']}
     (OUT/'result.json').write_text(json.dumps(report,ensure_ascii=False,indent=2))

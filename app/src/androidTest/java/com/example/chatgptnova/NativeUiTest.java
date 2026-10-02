@@ -23,6 +23,7 @@ public final class NativeUiTest extends FixtureActivity {
     @After public void after() { if (scenario != null) scenario.close(); }
 
     @Test public void nativeControlsAndLifecycleRemainUsable() throws Exception {
+        waitFor("Nova title in accessibility window", () -> shown("ChatGPT Nova"));
         assertTrue(shown("ChatGPT Nova"));
         assertFalse(shown("ChatGPT Nova · 非官方"));
         assertTrue(shown("chatgpt.com"));
@@ -99,6 +100,7 @@ public final class NativeUiTest extends FixtureActivity {
         assertNotNull(cookie);
         assertTrue(cookie.contains("nova_native_restart=retained"));
         assertEquals("retained",js("localStorage.getItem('nova_native_restart')"));
+        waitFor("Nova title in accessibility window", () -> shown("ChatGPT Nova"));
         assertTrue(shown("ChatGPT Nova"));
         click("菜单");
         for (String item : new String[]{"刷新","ChatGPT 首页","用浏览器打开","设置"}) assertTrue(shown(item));
@@ -131,7 +133,7 @@ public final class NativeUiTest extends FixtureActivity {
     }
     private void capture(String name) throws Exception {
         Bitmap screenshot=instrument.getUiAutomation().takeScreenshot(); assertNotNull(screenshot);
-        File folder=new File(instrument.getContext().getExternalFilesDir(null),"native-smoke");
+        File folder=new File(instrument.getTargetContext().getExternalFilesDir(null),"native-smoke");
         assertTrue(folder.isDirectory() || folder.mkdirs());
         try(FileOutputStream out=new FileOutputStream(new File(folder,name+".png"))) { assertTrue(screenshot.compress(Bitmap.CompressFormat.PNG,100,out)); }
         screenshot.recycle();
