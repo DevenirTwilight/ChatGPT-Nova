@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="108" height="108" viewBox="0 0 108 108">
+  <title>ChatGPT Nova — transparent monochrome layer</title>
+  <path d="M45,39 V37 C45,33.7 47.7,31 51,31 H72 C75.3,31 78,33.7 78,37 V55 C78,58.3 75.3,61 72,61 H71 V67 L64,61" fill="none" stroke="#FFFFFF" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M35,43 H58 C62,43 65,46 65,50 V62 C65,67 62,70 58,70 H43 L33,77 V70 C30,69 28,67 28,63 V50 C28,46 31,43 35,43 Z M46.5,48 L48.9,54.1 L55,56.5 L48.9,58.9 L46.5,65 L44.1,58.9 L38,56.5 L44.1,54.1 Z" fill="#FFFFFF" fill-rule="evenodd"/>
+</svg>

@@ -34,6 +34,7 @@ import android.window.OnBackInvokedDispatcher;
 import androidx.browser.customtabs.CustomTabsClient;
 import androidx.browser.customtabs.CustomTabsIntent;
 import androidx.core.graphics.Insets;
+import androidx.core.splashscreen.SplashScreen;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowCompat;
 import androidx.core.view.WindowInsetsCompat;
@@ -52,6 +53,7 @@ public class MainActivity extends Activity {
     private static final int WEB_PERMISSIONS = 1002;
     private static final int SAVE_BLOB = 1005;
     private static final String HOME = "https://chatgpt.com/";
+    private static final String LOGIN = "https://chatgpt.com/auth/login";
 
     private WebView webView;
     private ProgressBar progress;
@@ -70,6 +72,7 @@ public class MainActivity extends Activity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        SplashScreen.installSplashScreen(this);
         super.onCreate(savedInstanceState);
         uploads = new UploadController(this);
         buildUi();
@@ -93,6 +96,10 @@ public class MainActivity extends Activity {
         root.setOrientation(LinearLayout.VERTICAL);
         root.setBackgroundColor(0xFFFFFFFF);
         WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
+        WindowCompat.getInsetsController(getWindow(), getWindow().getDecorView())
+                .setAppearanceLightStatusBars(true);
+        WindowCompat.getInsetsController(getWindow(), getWindow().getDecorView())
+                .setAppearanceLightNavigationBars(true);
         ViewCompat.setOnApplyWindowInsetsListener(root, (view, insets) -> {
             Insets bars = insets.getInsets(WindowInsetsCompat.Type.systemBars()
                     | WindowInsetsCompat.Type.displayCutout());
@@ -166,7 +173,7 @@ public class MainActivity extends Activity {
         home.setOnClickListener(v -> { if (!clearing && webView != null) webView.loadUrl(HOME); });
         errorPanel.addView(home);
         Button browser = new Button(this);
-        browser.setText("用浏览器打开");
+        browser.setText("外部查看（独立会话）");
         browser.setOnClickListener(v -> openCurrentPageInBrowser());
         errorPanel.addView(browser);
         errors.addView(errorPanel);
@@ -247,7 +254,7 @@ public class MainActivity extends Activity {
             public void onReceivedHttpError(WebView view, WebResourceRequest request,
                                             WebResourceResponse response) {
                 if (view == webView && request.isForMainFrame() && response.getStatusCode() >= 400) {
-                    Toast.makeText(MainActivity.this, "网页暂时不可用，可刷新或用浏览器打开。",
+                    Toast.makeText(MainActivity.this, "网页暂时不可用，请在 Nova 中刷新或重试。",
                             Toast.LENGTH_LONG).show();
                 }
             }
@@ -339,6 +346,10 @@ public class MainActivity extends Activity {
                         || "javascript".equalsIgnoreCase(target.getScheme())
                         || "data".equalsIgnoreCase(target.getScheme())
                         || "intent".equalsIgnoreCase(target.getScheme())) return true;
+                if ("https".equalsIgnoreCase(target.getScheme()) || "http".equalsIgnoreCase(target.getScheme())) {
+                    if (!handleUri(target)) webView.loadUrl(target.toString());
+                    return true;
+                }
                 try { startActivity(intent); }
                 catch (ActivityNotFoundException e) {
                     if (fallback != null && "https".equalsIgnoreCase(Uri.parse(fallback).getScheme())) {
@@ -362,11 +373,16 @@ public class MainActivity extends Activity {
     private void showOAuthHelp() {
         if (oauthDialogVisible) return;
         oauthDialogVisible = true;
-        new AlertDialog.Builder(this).setTitle("第三方登录兼容性")
-                .setMessage("Google 登录不支持嵌入式网页容器。Microsoft / Apple 的官网跳转可在 Nova 中尝试；网站仍可能限制登录。浏览器登录使用浏览器自己的账号与 Cookie，不能自动同步回 Nova。要在 Nova 中保留第二账号，可尝试官网提供的邮箱登录方式。")
-                .setNegativeButton("留在 Nova", null)
-                .setPositiveButton("在浏览器中登录", (d, w) -> openInBrowser(Uri.parse(HOME)))
+        new AlertDialog.Builder(this).setTitle("在 Nova 内登录")
+                .setIcon(R.mipmap.ic_launcher)
+                .setMessage("登录与聊天使用 Nova 自己的 Cookie，不会默认转到系统浏览器。\n\nGoogle 登录当前不支持：Google 禁止 WebView OAuth，外部浏览器的登录状态也不能安全返回 Nova。\n\n只有账号本身支持邮箱登录、且官网允许在 WebView 完成认证时，邮箱密码或验证码才能在 Nova 内使用。Microsoft / Apple 可继续官网流程；若官网拒绝容器登录，此方式在 Nova 中也不支持。\n\n邮箱登录不是所有第三方账号的替代方案，请使用账号实际支持的登录方式。")
+                .setNegativeButton("知道了", null)
+                .setPositiveButton("返回登录页", (d, w) -> openLoginInNova())
                 .setOnDismissListener(d -> oauthDialogVisible = false).show();
+    }
+
+    private void openLoginInNova() {
+        if (!clearing && webView != null) webView.loadUrl(LOGIN);
     }
 
     static boolean isTrustedOrigin(Uri uri) {
@@ -517,6 +533,7 @@ public class MainActivity extends Activity {
         String[] items = {
                 "刷新",
                 "回到 ChatGPT",
+                "在 Nova 内登录",
                 "清除第二账号登录数据",
                 "用系统浏览器打开当前页",
                 "关于 / 登录帮助"
@@ -530,14 +547,17 @@ public class MainActivity extends Activity {
                     } else if (which == 1) {
                         webView.loadUrl(HOME);
                     } else if (which == 2) {
-                        confirmClear();
+                        openLoginInNova();
                     } else if (which == 3) {
-                        openCurrentPageInBrowser();
+                        confirmClear();
                     } else if (which == 4) {
-                        new AlertDialog.Builder(this).setTitle("ChatGPT Nova 1.3.0")
-                                .setMessage("非官方客户端，不由 OpenAI 发布、维护或背书。\n网页内容来自 chatgpt.com。\n应用使用独立的网站数据，不读取或保存账号密码。\n\nGoogle 登录需浏览器；Microsoft / Apple 可在 Nova 内尝试。浏览器登录不能自动同步回 Nova。")
+                        openCurrentPageInBrowser();
+                    } else if (which == 5) {
+                        new AlertDialog.Builder(this).setTitle("ChatGPT Nova 1.3.1")
+                                .setIcon(R.mipmap.ic_launcher)
+                                .setMessage("非官方客户端，不由 OpenAI 发布、维护或背书。\n网页内容来自 chatgpt.com。\n应用使用独立的网站数据，不读取或保存账号密码。\n\n登录与聊天优先留在 Nova 内。Google OAuth 当前不支持；其他方式取决于账号与官网是否允许 WebView 登录。系统浏览器是单独的会话，不是 Nova 的登录方案。")
                                 .setPositiveButton("知道了", null)
-                                .setNeutralButton("浏览器登录帮助", (dialog, w) -> showOAuthHelp()).show();
+                                .setNeutralButton("登录方式说明", (dialog, w) -> showOAuthHelp()).show();
                     }
                 })
                 .show();

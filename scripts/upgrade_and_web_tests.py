@@ -46,14 +46,15 @@ try:
     assert suite(PACKAGE+'.UpgradeTest#testUpgradeDataPreserved','upgrade.txt') == 1
     checks.append('Original signed v1 is upgraded with install -r; synthetic cookie and localStorage survive process restart')
     count = suite(PACKAGE+'.NovaWebViewTest','webview-fixtures.txt')
-    assert count == 7, count
+    assert count == 8, count
     checks += ['Real WebView multiple-file input reads two synthetic documents and correct MIME types',
                'Delegated camera result remains readable after opening another chooser',
                'Real WebView blob download saves all 131089 fixture bytes',
                'HTTPS transport fixture streams 131089 bytes, scopes redirect cookies and refuses HTTP downgrade',
                'Media permission policy rejects untrusted top-level origins and unknown resources',
                'Network error retry is usable; Microsoft and Apple URLs are not preemptively blocked',
-               'Confirmed clear removes synthetic cookies and localStorage']
+               'Confirmed clear removes synthetic cookies and localStorage',
+               'Internal login route and unsupported Google OAuth never start an external Activity, including HTTPS intent links']
     report = {'api':int(api),'passed':True,'checks':checks,
               'not_tested':['Real ChatGPT account authentication, long-term authenticated session and provider OAuth',
                             'Physical camera, live microphone capture and real authenticated ChatGPT attachments']}

@@ -26,6 +26,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.atomic.AtomicInteger;
 import static org.junit.Assert.*;
 
 public final class NovaWebViewTest extends FixtureActivity {
@@ -190,6 +191,25 @@ public final class NovaWebViewTest extends FixtureActivity {
         String cookies=CookieManager.getInstance().getCookie(PAGE);
         assertTrue(cookies==null || !cookies.contains("nova_clear_fixture"));
         assertEquals("null",js("localStorage.getItem('nova_clear_fixture')"));
+    }
+
+    @Test public void internalLoginAndUnsupportedGoogleNeverLaunchAnExternalActivity() throws Exception {
+        AtomicInteger externalLaunches = new AtomicInteger();
+        external(intent -> { externalLaunches.incrementAndGet(); return new Instrumentation.ActivityResult(Activity.RESULT_CANCELED, null); });
+        loginFixture = true;
+        Method login = MainActivity.class.getDeclaredMethod("openLoginInNova"); login.setAccessible(true);
+        Method handle = MainActivity.class.getDeclaredMethod("handleUri",Uri.class); handle.setAccessible(true);
+        main(() -> { try { login.invoke(activity); } catch(Exception error) { throw new AssertionError(error); } });
+        waitFor("login stays inside WebView", () -> {
+            AtomicReference<String> url = new AtomicReference<>(); main(() -> url.set(web.getUrl()));
+            return "https://chatgpt.com/auth/login".equals(url.get()) && "ready".equals(js("document.getElementById('ready')?.textContent"));
+        });
+        main(() -> { try {
+            assertTrue((Boolean)handle.invoke(activity, Uri.parse("https://accounts.google.com/o/oauth2/v2/auth")));
+            assertTrue((Boolean)handle.invoke(activity, Uri.parse("intent://accounts.google.com/o/oauth2/v2/auth#Intent;scheme=https;package=com.android.chrome;end")));
+        } catch(Exception error) { throw new AssertionError(error); } });
+        instrument.sendKeyDownUpSync(android.view.KeyEvent.KEYCODE_BACK);
+        assertEquals("Unsupported OAuth must not launch a browser or provider app", 0, externalLaunches.get());
     }
 
     static final class Request extends PermissionRequest {

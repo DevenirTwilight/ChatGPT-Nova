@@ -1,3 +1,14 @@
+# 1.3.1 (versionCode 5)
+
+- 原创“两层聊天气泡 + 镂空 Nova 星核”图标，替换临时 Z/S 图形；统一桌面、安装页、启动页和关于页。
+- 提供彩色 adaptive icon、Android 13+ 单色主题图标、圆形图标与矢量后备资源；附 SVG 源图和预览。
+- 使用 AndroidX SplashScreen 标准启动页，不引入独立启动 Activity 或额外等待。
+- 登录默认留在 Nova；新增内部官网登录入口，移除“外部浏览器登录”兼容引导。Google OAuth 明确标为当前不支持，Microsoft / Apple 仅继续官网允许的容器内流程，不声称已兼容。
+- HTTPS intent 链接也在 Nova 内处理，避免其指定浏览器包名导致登录会话离开 Nova。
+- 保留 `com.example.chatgptnova` 和原 release 签名，可覆盖之前的 Release 版本；CI 检查原 v1 升级、八项 WebView 集成测试及原生界面。
+
+官网入口可见不代表账号认证已完成；真实账号登录和长期会话保留仍需要真实设备验证。WebView Cookie 不能从系统浏览器安全迁回。
+
 # 1.3.0 (versionCode 4)
 
 - 保留 com.example.chatgptnova、原 release 签名与 WebView 数据，支持覆盖 v1。

@@ -6,7 +6,7 @@
 
 ## 使用
 
-启动后进入官网。右上角菜单支持刷新、回到首页、清除 Nova 的登录数据、使用系统浏览器打开和关于页面。文件上传支持系统文件 / 图片选择器以及拍照；相机和麦克风只为 HTTPS 的 chatgpt.com 及其子域请求 Android 权限。Cookie 在页面完成和应用暂停时写入本地；清除时等待 Cookie 删除完成再加载首页。
+启动后进入官网。右上角菜单支持刷新、回到首页、在 Nova 内登录、清除 Nova 的登录数据、使用系统浏览器打开和关于页面。文件上传支持系统文件 / 图片选择器以及拍照；相机和麦克风只为 HTTPS 的 chatgpt.com 及其子域请求 Android 权限。Cookie 在页面完成和应用暂停时写入本地；清除时等待 Cookie 删除完成再加载首页。
 
 HTTPS 下载与 blob 下载均通过系统保存对话框写入用户选择的位置，不需要存储权限。HTTPS 在后台线程流式写入，只向下载开始时的 ChatGPT 同源地址发送 Cookie；一旦跨源，后续全程不携带 Cookie，拒绝 HTTPS 降级为 HTTP；blob 分块保存，上限 256 MiB。下载进行时请保持 Nova 运行，清除数据或销毁 Activity 会取消未完成下载；失败时保存位置可能有不完整文件。不会将 Cookie 发给代理服务。HTTP 页面及 HTTP 下载通过浏览器打开。支持安全处理 intent 链接和其它外部 scheme，拒绝本地 file/content/javascript/data 页面跳转。TLS 验证和 Safe Browsing 保持启用。
 
@@ -14,7 +14,13 @@ HTTPS 下载与 blob 下载均通过系统保存对话框写入用户选择的�
 
 ## 登录限制
 
-Google 禁止嵌入式网页容器 OAuth，Nova 提供浏览器帮助入口，从 ChatGPT 官网重新开始。Microsoft / Apple HTTPS 跳转保留在 Nova 内，避免提前阻止可能可用的官方流程；网站仍可能限制 WebView。**浏览器与 WebView 不共享 Cookie，浏览器登录不能自动迁移为 Nova 的登录状态，也没有自行实现或逆向官方 OAuth 回调。** Nova 没有可供 ChatGPT 官方网站注册的 OAuth 客户端、授权回调或 Digital Asset Links，因此不能把 Auth Tab 当作自动回到 WebView 登录的解决方案。要在 Nova 内保持第二账号，可以尝试官网当前提供且支持 WebView 的邮箱登录方式。真实账号和提供商的兼容性仍需在手机上确认。
+默认的登录与聊天都使用 Nova 自己的 WebView 和 Cookie。菜单“在 Nova 内登录”直接加载官方公开页面 https://chatgpt.com/auth/login ，不会打开系统浏览器。所有 HTTPS 跳转（包括 intent 链接里的 HTTPS 地址）优先在 Nova 内处理。
+
+**Google OAuth 当前不支持。** Google 禁止嵌入式网页容器 OAuth，而浏览器的登录 Cookie 不能自动、安全迁移回 Nova。因此 Google 入口显示不支持的说明，返回 Nova 内的官网登录页，不提供“去浏览器登录”的伪兼容方案。Microsoft / Apple 仅在 Nova 内继续官网流程；如果官网拒绝 WebView，Nova 无法宣称支持该方式。
+
+只有账号本身支持邮箱密码或验证码，并且官网允许 WebView 完成认证时，才能在 Nova 内通过这些方式登录。邮箱登录不是所有第三方账号的通用替代方案。网站验证、提供商政策、账号设置与手机 WebView 版本可能影响登录；公开登录页可见和合成 Cookie 测试通过均不代表真实账号认证成功。
+
+系统浏览器入口仅供用户主动在外部查看页面，它拥有另一个会话，不是 Nova 的登录方案。应用没有自行实现或逆向官方 OAuth 回调，也没有将浏览器 Cookie 搬回 Nova。
 
 应用不读取或记录账号密码，不含 AI 后端、OpenAI API Key、JavaScript 原生接口、第三方登录代理或密码存储逻辑。下载 blob 时执行的网页脚本只读取用户点击的那个 blob，不读取登录字段或 Cookie。Android 和官方网页自己的认证 Cookie 保存在应用独立数据目录中。
 
@@ -33,4 +39,8 @@ Artifact `ChatGPT-Nova-release` 包含签名 APK、SHA-256 和静态验证报告
 
 Android 13 / 14 / 15 的模拟器均检查：原 v1 `install -r` 覆盖安装及合成 Cookie / localStorage 保留；受控网页的多文件输入、拍照结果生命周期、blob 字节完整性、HTTPS 下载重定向 Cookie 隔离与降级拒绝、权限范围、网络错误恢复和清除数据；原生菜单、旋转、返回与重启。网页与外部文件/相机结果是合成测试夹具，不代表真实账号上传或硬件拍摄已实测。测试夹具及其 ContentProvider 只存在于单独的测试 APK，未打包进 Release。原始 v1 Artifact 过期后，CI 从固定的 v1 提交和原签名重建兼容性基线。
 
-详见 `docs/V1-REVIEW.md` 和 `CHANGELOG.md`。
+## 品牌资源
+
+1.3.1 的原创图标使用两层聊天气泡和镂空 Nova 星核，采用深蓝、薄荷绿与浅蓝。彩色 adaptive icon、Android 13+ 主题图标、安装页图标、标准启动页和关于页保持一致。完整矢量源图、512px 导出和图标预览位于 `docs/branding/`。启动页由 AndroidX SplashScreen 管理，应用准备好即可进入，不添加人为延迟。
+
+详见 `docs/V1-REVIEW.md`、`docs/branding/README.md` 和 `CHANGELOG.md`。

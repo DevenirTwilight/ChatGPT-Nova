@@ -32,6 +32,7 @@ abstract class FixtureActivity {
     MainActivity activity;
     WebView web;
     volatile boolean retryFixture;
+    volatile boolean loginFixture;
 
     void start() {
         scenario = ActivityScenario.launch(new Intent(instrument.getTargetContext(), MainActivity.class));
@@ -56,6 +57,7 @@ abstract class FixtureActivity {
                     // Served locally inside instrumentation, without requesting chatgpt.com or reading credentials.
                     String path=request.getUrl().getPath();
                     if ((path!=null && path.startsWith("/nova-fixture"))
+                            || (loginFixture && "chatgpt.com".equals(request.getUrl().getHost()) && "/auth/login".equals(path))
                             || (retryFixture && "127.0.0.1".equals(request.getUrl().getHost()) && "/network-error".equals(path))) {
                         return new WebResourceResponse("text/html", "UTF-8", new ByteArrayInputStream(HTML.getBytes(StandardCharsets.UTF_8)));
                     }

@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Fallback for surfaces that request a non-adaptive drawable. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="72dp" android:height="72dp"
+    android:viewportWidth="72" android:viewportHeight="72">
+    <path android:pathData="M36,0 A36,36 0,1 1,36,72 A36,36 0,1 1,36,0 Z" android:fillColor="@color/nova_night" />
+    <group android:translateX="-18" android:translateY="-18">
+    <path android:pathData="M45,39 V37 C45,33.7 47.7,31 51,31 H72 C75.3,31 78,33.7 78,37 V55 C78,58.3 75.3,61 72,61 H71 V67 L64,61" android:fillColor="@android:color/transparent"
+        android:strokeColor="@color/nova_orbit" android:strokeWidth="3.5"
+        android:strokeLineCap="round" android:strokeLineJoin="round" />
+    <path android:pathData="M35,43 H58 C62,43 65,46 65,50 V62 C65,67 62,70 58,70 H43 L33,77 V70 C30,69 28,67 28,63 V50 C28,46 31,43 35,43 Z M46.5,48 L48.9,54.1 L55,56.5 L48.9,58.9 L46.5,65 L44.1,58.9 L38,56.5 L44.1,54.1 Z" android:fillColor="@color/nova_mint"
+        android:fillType="evenOdd" />
+    </group>
+</vector>

@@ -79,8 +79,36 @@ try:
     root = tree()
     assert any('非官方客户端' in n.get('text','') and 'chatgpt.com' in n.get('text','') for n in root.iter('node'))
     capture('about')
-    tap(find(text='知道了'))
+    tap(find(text='登录方式说明'))
+    root = tree()
+    assert any('Google 登录当前不支持' in n.get('text','') for n in root.iter('node'))
+    assert not any('在浏览器中登录' == n.get('text','') for n in root.iter('node'))
+    capture('login-help')
+    tap(find(text='返回登录页'))
+    find(description='Menu')
+    # Inspect only the public login entry; never enter credentials or bypass
+    # website verification. An entry screenshot is not completed authentication.
+    for _ in range(8):
+        root = tree()
+        visible = ' '.join(n.get('text','')+' '+n.get('content-desc','') for n in root.iter('node'))
+        if any(marker in visible.lower() for marker in ('email address','verify you are human','verification','auth.openai.com','邮箱','电子邮件')):
+            break
+        time.sleep(1)
+    capture('login-entry')
+    window = adb('shell','dumpsys','window','windows')
+    assert re.search(r'mCurrentFocus=.*'+re.escape(PACKAGE), window), 'Login entry left Nova'
+    login_observation = {
+        'stayed_in_nova': True,
+        'email_input_visible': any(n.get('class') == 'android.widget.EditText' for n in root.iter('node')) and any(marker in visible.lower() for marker in ('email','邮箱','电子邮件')),
+        'website_verification_visible': any(marker in visible.lower() for marker in ('verify you are human','verification','cloudflare','确认您是人类','验证您是人类')),
+        'credentials_entered': False,
+        'authenticated_chat_tested': False,
+        'visible_text': visible,
+    }
+    (OUT/'login-observation.json').write_text(json.dumps(login_observation,ensure_ascii=False,indent=2))
+    menu('回到 ChatGPT')
     checks.append('About dialog shows unofficial status and website origin')
+    checks.append('Login help explicitly marks Google unsupported; public login entry remains in Nova without launching a browser')
     menu('刷新')
     find(description='Menu')
     checks.append('Refresh keeps native controls usable')
