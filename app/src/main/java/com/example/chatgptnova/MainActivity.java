@@ -67,7 +67,7 @@ public class MainActivity extends Activity {
     private String failedUrl;
     private String loadingUrl;
     private boolean clearing;
-    private boolean oauthDialogVisible;
+    private boolean loginDialogVisible;
     private AlertDialog clearDialog;
 
     @Override
@@ -326,7 +326,7 @@ public class MainActivity extends Activity {
         if ("https".equalsIgnoreCase(scheme)) {
             String host = uri.getHost();
             if ("accounts.google.com".equalsIgnoreCase(host)) {
-                showOAuthHelp();
+                showLoginHelp(true);
                 return true;
             }
             return false;
@@ -381,15 +381,15 @@ public class MainActivity extends Activity {
         return true;
     }
 
-    private void showOAuthHelp() {
-        if (oauthDialogVisible) return;
-        oauthDialogVisible = true;
-        new AlertDialog.Builder(this).setTitle("在 Nova 内登录")
+    private void showLoginHelp(boolean unsupported) {
+        if (loginDialogVisible) return;
+        loginDialogVisible = true;
+        new AlertDialog.Builder(this).setTitle(unsupported ? "不支持该登录方式" : "在 Nova 内登录")
                 .setIcon(R.mipmap.ic_launcher)
-                .setMessage("登录与聊天使用 Nova 自己的 Cookie，不会默认转到系统浏览器。\n\nGoogle 登录当前不支持：Google 禁止 WebView OAuth，外部浏览器的登录状态也不能安全返回 Nova。\n\n只有账号本身支持邮箱登录、且官网允许在 WebView 完成认证时，邮箱密码或验证码才能在 Nova 内使用。Microsoft / Apple 可继续官网流程；若官网拒绝容器登录，此方式在 Nova 中也不支持。\n\n邮箱登录不是所有第三方账号的替代方案，请使用账号实际支持的登录方式。")
+                .setMessage("登录与聊天使用 Nova 自己的独立 Cookie 和网页数据。\n\nGoogle 登录当前不支持。外部浏览器登录无法把会话带回 Nova。\n\n只有账号本身支持、且官网允许在应用内完成的登录方式才能使用。邮箱密码 / 验证码、Microsoft、Apple 的可用性以官网实际结果为准；被官网拒绝的方式目前也不支持。\n\nNova 不读取或保存账号密码。")
                 .setNegativeButton("知道了", null)
                 .setPositiveButton("返回登录页", (d, w) -> openLoginInNova())
-                .setOnDismissListener(d -> oauthDialogVisible = false).show();
+                .setOnDismissListener(d -> loginDialogVisible = false).show();
     }
 
     private void openLoginInNova() {
@@ -564,11 +564,11 @@ public class MainActivity extends Activity {
                     } else if (which == 4) {
                         openCurrentPageInBrowser();
                     } else if (which == 5) {
-                        new AlertDialog.Builder(this).setTitle("ChatGPT Nova 1.3.1")
+                        new AlertDialog.Builder(this).setTitle("ChatGPT Nova 1.3.2")
                                 .setIcon(R.mipmap.ic_launcher)
                                 .setMessage("非官方客户端，不由 OpenAI 发布、维护或背书。\n网页内容来自 chatgpt.com。\n应用使用独立的网站数据，不读取或保存账号密码。\n\n登录与聊天优先留在 Nova 内。Google OAuth 当前不支持；其他方式取决于账号与官网是否允许 WebView 登录。系统浏览器是单独的会话，不是 Nova 的登录方案。")
                                 .setPositiveButton("知道了", null)
-                                .setNeutralButton("登录方式说明", (dialog, w) -> showOAuthHelp()).show();
+                                .setNeutralButton("登录方式说明", (dialog, w) -> showLoginHelp(false)).show();
                     }
                 })
                 .show();

@@ -208,6 +208,10 @@ public final class NovaWebViewTest extends FixtureActivity {
             assertTrue((Boolean)handle.invoke(activity, Uri.parse("https://accounts.google.com/o/oauth2/v2/auth")));
             assertTrue((Boolean)handle.invoke(activity, Uri.parse("intent://accounts.google.com/o/oauth2/v2/auth#Intent;scheme=https;package=com.android.chrome;end")));
         } catch(Exception error) { throw new AssertionError(error); } });
+        waitFor("unsupported login message", () -> {
+            android.view.accessibility.AccessibilityNodeInfo root = instrument.getUiAutomation().getRootInActiveWindow();
+            return root != null && !root.findAccessibilityNodeInfosByText("不支持该登录方式").isEmpty();
+        });
         instrument.sendKeyDownUpSync(android.view.KeyEvent.KEYCODE_BACK);
         assertEquals("Unsupported OAuth must not launch a browser or provider app", 0, externalLaunches.get());
     }

@@ -16,7 +16,7 @@ HTTPS 下载与 blob 下载均通过系统保存对话框写入用户选择的�
 
 默认的登录与聊天都使用 Nova 自己的 WebView 和 Cookie。菜单“在 Nova 内登录”直接加载官方公开页面 https://chatgpt.com/auth/login ，不会打开系统浏览器。所有 HTTPS 跳转（包括 intent 链接里的 HTTPS 地址）优先在 Nova 内处理。
 
-**Google OAuth 当前不支持。** Google 禁止嵌入式网页容器 OAuth，而浏览器的登录 Cookie 不能自动、安全迁移回 Nova。因此 Google 入口显示不支持的说明，返回 Nova 内的官网登录页，不提供“去浏览器登录”的伪兼容方案。Microsoft / Apple 仅在 Nova 内继续官网流程；如果官网拒绝 WebView，Nova 无法宣称支持该方式。
+**Google OAuth 当前不支持。** Google 禁止嵌入式网页容器 OAuth，而浏览器的登录 Cookie 不能自动、安全迁移回 Nova。因此 Google 入口明确显示“不支持该登录方式”，可返回 Nova 内的官网登录页，不提供“去浏览器登录”的伪兼容方案。Microsoft / Apple 仅在 Nova 内继续官网流程；如果官网拒绝 WebView，Nova 无法宣称支持该方式。
 
 只有账号本身支持邮箱密码或验证码，并且官网允许 WebView 完成认证时，才能在 Nova 内通过这些方式登录。邮箱登录不是所有第三方账号的通用替代方案。网站验证、提供商政策、账号设置与手机 WebView 版本可能影响登录；公开登录页可见和合成 Cookie 测试通过均不代表真实账号认证成功。
 
