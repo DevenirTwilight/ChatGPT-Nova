@@ -138,13 +138,7 @@ public final class ClipboardUiTest extends FixtureActivity {
                     fixtureNativeEdits++;
                     return original.apply(this, args);
                   };
-                  // A document handler must also run before Nova's fallback.
-                  document.addEventListener('paste', event => {
-                    if (event.target !== e) return;
-                    const started = performance.now();
-                    event.preventDefault();
-                    fixturePasteCount++;
-                    const text = event.clipboardData.getData('text/plain');
+                  window.fixtureApplyPaste = (text, started = performance.now()) => {
                     const range = getSelection().getRangeAt(0);
                     const start = range.startOffset, end = range.endOffset;
                     fixtureHistory.push(fixtureModel);
@@ -158,24 +152,50 @@ public final class ClipboardUiTest extends FixtureActivity {
                     e.dispatchEvent(new InputEvent('input', {
                       bubbles:true, inputType:'insertFromPaste', data:text
                     }));
+                    window.fixtureTransactionMs = performance.now() - started;
                     requestAnimationFrame(() => requestAnimationFrame(() => {
                       fixturePaintMs = performance.now() - started;
                     }));
+                  };
+                  // A document handler must also run before Nova's fallback.
+                  document.addEventListener('paste', event => {
+                    if (event.target !== e) return;
+                    const started = performance.now();
+                    event.preventDefault();
+                    fixturePasteCount++;
+                    fixtureApplyPaste(event.clipboardData.getData('text/plain'), started);
                   });
                   window.fixtureUndo = () => {
                     fixtureModel = fixtureHistory.pop();
                     e.textContent = fixtureModel;
                     return fixtureModel;
                   };
-                  const r = document.createRange();
-                  r.setStart(e.firstChild, 2);
-                  r.setEnd(e.firstChild, 4);
-                  getSelection().removeAllRanges();
-                  getSelection().addRange(r);
-                  return true;
+                  window.fixtureReset = () => {
+                    fixtureModel = 'abcdef';
+                    e.textContent = fixtureModel;
+                    fixtureHistory = [];
+                    fixturePasteCount = fixtureNativeEdits = 0;
+                    fixturePaintMs = null;
+                    window.fixtureTransactionMs = null;
+                    const r = document.createRange();
+                    r.setStart(e.firstChild, 2);
+                    r.setEnd(e.firstChild, 4);
+                    getSelection().removeAllRanges();
+                    getSelection().addRange(r);
+                    return true;
+                  };
+                  return fixtureReset();
                 })()
                 """);
         String text = "# Heading\n\n中文 English 😀 <script> & literal\n- **bold**\n\n".repeat(4096);
+        // Measure the same editor drawing the same data without invoking Nova's
+        // paste path. Older WebViews may need seconds to lay out 20,000 lines.
+        js("fixtureApplyPaste(" + JSONObject.quote(text) + ");true");
+        waitFor("editor paint baseline", () -> "true".equals(js("fixturePaintMs !== null")));
+        assertEquals("ab" + text + "ef", js("fixtureModel"));
+        double baselinePaintMs = Double.parseDouble(js("fixturePaintMs"));
+        double baselineTransactionMs = Double.parseDouble(js("fixtureTransactionMs"));
+        js("fixtureReset()");
         putClipboard(text);
         SystemClock.sleep(400); // Let Chromium observe the new OS clipboard value.
         if (nativeMenu) {
@@ -199,19 +219,25 @@ public final class ClipboardUiTest extends FixtureActivity {
                 "document.getElementById('prompt-textarea').querySelectorAll('script').length"));
         assertEquals(String.valueOf(2 + text.length()), js("getSelection().anchorOffset"));
         double paintMs = Double.parseDouble(js("fixturePaintMs"));
+        double transactionMs = Double.parseDouble(js("fixtureTransactionMs"));
         JSONObject result = new JSONObject().put("page", "test-owned paste transaction and history")
                 .put("route", nativeMenu ? "native-menu" : "system-paste")
                 .put("utf8Bytes", text.getBytes(StandardCharsets.UTF_8).length)
-                .put("utf16Units", text.length()).put("paintMs", paintMs);
+                .put("utf16Units", text.length()).put("transactionMs", transactionMs)
+                .put("paintMs", paintMs).put("baselineTransactionMs", baselineTransactionMs)
+                .put("baselinePaintMs", baselinePaintMs);
         File directory = new File(instrument.getTargetContext().getExternalFilesDir(null), "clipboard-probe");
         assertTrue(directory.isDirectory() || directory.mkdirs());
         try (FileOutputStream out = new FileOutputStream(new File(directory,
                 nativeMenu ? "page-editor-native.json" : "page-editor-system.json"))) {
             out.write(result.toString(2).getBytes(StandardCharsets.UTF_8));
         }
-        assertTrue("Long paste transaction and paint took " + paintMs + " ms", paintMs < 3000);
         assertEquals("one undo restores the pre-paste draft", "abcdef", js("fixtureUndo()"));
         assertEquals("abcdef", js("document.getElementById('prompt-textarea').innerText"));
+        assertTrue("Long paste transaction took " + transactionMs + " ms; editor baseline " + baselineTransactionMs,
+                transactionMs < Math.max(1000, baselineTransactionMs + 500));
+        assertTrue("Long paste paint took " + paintMs + " ms; editor baseline " + baselinePaintMs,
+                paintMs < Math.max(3000, baselinePaintMs + 1500));
     }
 
     private void putClipboard(String text) {

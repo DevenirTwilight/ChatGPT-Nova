@@ -182,8 +182,10 @@ public class MainActivity extends Activity {
               window.__novaPasteCompatibilityInstalled = true;
 
               const selector = '#prompt-textarea, #mobile-composer-prompt';
+              // Selection tracking must not force layout after a large edit.
+              // Visibility is checked only when a paste actually needs fallback.
               const isComposer = e => !!e && (e.id === 'prompt-textarea' || e.id === 'mobile-composer-prompt')
-                && !e.disabled && !e.readOnly && !!e.getClientRects().length
+                && e.isConnected && !e.disabled && !e.readOnly
                 && (e.isContentEditable || e.tagName === 'TEXTAREA');
 
               const resolveComposer = e => {
@@ -249,7 +251,7 @@ public class MainActivity extends Activity {
               window.addEventListener('paste', event => {
                 if (event.defaultPrevented || !event.isTrusted) return;
                 const composer = resolveComposer(event.target);
-                if (!composer) return;
+                if (!composer || !composer.getClientRects().length) return;
                 const data = event.clipboardData;
                 const text = data ? data.getData('text/plain') : '';
                 if (!text) return;
