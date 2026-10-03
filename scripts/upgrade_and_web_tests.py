@@ -19,6 +19,18 @@ def independent(name, operation, required=True):
         return operation()
     except Exception as error:
         (failures if required else diagnostics).append({"suite": name, "error": str(error)})
+        # Independent suites continue, and the later UI stage clears logcat.
+        # Keep evidence now so a crashed instrumentation process can be diagnosed.
+        prefix = OUT / ('failure-' + re.sub(r'[^A-Za-z0-9_-]', '_', name))
+        try:
+            prefix.with_name(prefix.name + '-logcat.txt').write_text(adb('logcat', '-d', '-v', 'threadtime'))
+        except Exception:
+            pass
+        try:
+            screenshot = subprocess.run(['adb', 'exec-out', 'screencap', '-p'], capture_output=True, timeout=30, check=True)
+            prefix.with_suffix('.png').write_bytes(screenshot.stdout)
+        except Exception:
+            pass
         return None
 
 def adb(*args, timeout=120):
