@@ -27,6 +27,8 @@ public final class NativeUiTest extends FixtureActivity {
         assertTrue(shown("ChatGPT Nova"));
         assertFalse(shown("ChatGPT Nova · 非官方"));
         assertTrue(shown("chatgpt.com"));
+        assertEquals("function", js("typeof NovaWebShare.share"));
+        assertEquals("function", js("typeof navigator.share"));
         capture("portrait");
         click("菜单");
         for (String item : new String[]{"刷新","ChatGPT 首页","用浏览器打开","设置"}) waitFor("menu item " + item, () -> shown(item));
