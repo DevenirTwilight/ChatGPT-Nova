@@ -7,6 +7,7 @@
 - 原生侧再次校验当前页面与分享 URL；不读取 Cookie、账号、密码或 Storage，不调用 ChatGPT 私有 API，不伪造 `/share/` URL。
 - Nova 菜单“分享当前页面”继续作为独立辅助入口；增加网页 Web Share 到真实系统 Sharesheet 的受控测试。真实 ChatGPT 会话的网页 Share 仍需实机验收，测试夹具通过不视为已修好。
 - 修正原生粘贴脚本中的 Java 字符串换行转义，以及版本、菜单和关于说明的过时测试断言；版本仍为 1.3.7 / 11。
+- 保留已有 SPA / 选区兼容，恢复 contenteditable 的一次性转义纯文本片段插入，避免多行 insertText 引入额外换行及长文本编辑卡顿。分享测试兼容 Android 35 的新版 chooser 回调字段。
 - 不为系统 Sharesheet 增加不必要的 `<queries>` 包可见性声明：Nova 不需要预先枚举分享目标，直接调用系统 chooser 并处理无可用目标的异常。
 
 # 1.3.6 (versionCode 10)

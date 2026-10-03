@@ -79,7 +79,8 @@ public final class WebShareTest extends FixtureActivity {
         // Test-owned target-selection signal. This verifies the callback transport,
         // not delivery to a real third-party app or publication of a conversation.
         IntentSender selected = intent.getParcelableExtra(Intent.EXTRA_CHOSEN_COMPONENT_INTENT_SENDER);
-        assertNotNull(selected);
+        if (selected == null) selected = intent.getParcelableExtra(Intent.EXTRA_CHOOSER_RESULT_INTENT_SENDER);
+        assertNotNull("Chooser must carry its target/result callback", selected);
         selected.sendIntent(activity, 0, null, null, null);
         waitFor("share Promise fulfilled after target selection", () -> "resolved".equals(js("shareState")));
         instrument.sendKeyDownUpSync(KeyEvent.KEYCODE_BACK);

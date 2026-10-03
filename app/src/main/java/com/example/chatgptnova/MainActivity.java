@@ -132,20 +132,20 @@ public class MainActivity extends Activity {
               selection.removeAllRanges();
               selection.addRange(range);
 
+              // One escaped fragment preserves newlines without Chromium's per-line
+              // insertText edits, duplicated block breaks or long-paste layout stalls.
+              const span = document.createElement('span');
+              span.style.whiteSpace = 'pre-wrap';
+              span.textContent = text;
               let inserted = false;
               try {
-                inserted = document.execCommand('insertText', false, text);
+                inserted = document.execCommand('insertHTML', false, span.outerHTML);
               } catch (ignored) {}
 
               if (!inserted) {
-                const fragment = document.createDocumentFragment();
-                const parts = String(text).split(/(\\n)/);
-                for (const part of parts) {
-                  if (part === '\\n') fragment.appendChild(document.createElement('br'));
-                  else if (part) fragment.appendChild(document.createTextNode(part));
-                }
                 range.deleteContents();
-                range.insertNode(fragment);
+                range.insertNode(span);
+                range.setStartAfter(span);
                 range.collapse(false);
                 selection.removeAllRanges();
                 selection.addRange(range);
