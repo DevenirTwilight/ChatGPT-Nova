@@ -41,7 +41,7 @@ def install(path):
     result = adb('install', '-r', path)
     assert 'Success' in result, result
 
-def suite(selection, filename):
+def suite(selection, filename, allow_provider_retry=True):
     # Fresh Google APIs images can leave a boot-time Pixel Launcher ANR
     # covering a resumed test Activity. Restart only that emulator home process;
     # retain the focused-window and every Nova assertion below.
@@ -49,8 +49,23 @@ def suite(selection, filename):
     adb('shell','input','keyevent','224')
     adb('shell','wm','dismiss-keyguard')
     adb('shell','am','force-stop','com.google.android.apps.nexuslauncher')
+    adb('logcat','-c')
     result = adb('shell', 'am', 'instrument', '-w', '-r', '-e', 'class', selection, RUNNER, timeout=240)
     (OUT/filename).write_text(result)
+    if allow_provider_retry and 'Process crashed.' in result:
+        log = adb('logcat', '-d', '-v', 'threadtime')
+        provider_death = re.search(
+            r'Killing \d+:com\.example\.chatgptnova/[^\n]*depends on provider '
+            r'com\.google\.android\.gms/\.fonts\.provider\.FontsProvider in dying proc', log)
+        if provider_death and 'Process: com.example.chatgptnova,' not in log:
+            (OUT/(filename+'.external-provider-first-attempt.txt')).write_text(result)
+            (OUT/(filename+'.external-provider-logcat.txt')).write_text(log)
+            recovery = {'suite': selection, 'reason': 'Observed GMS FontsProvider death killed its Nova client',
+                        'attempts': 2, 'assertions_skipped': False, 'nova_data_cleared_for_retry': False}
+            diagnostics.append(recovery)
+            (OUT/(filename+'.external-provider-recovery.json')).write_text(json.dumps(recovery, indent=2))
+            print(recovery['reason'] + '; rerunning the complete suite once.', flush=True)
+            return suite(selection, filename, allow_provider_retry=False)
     assert re.search(r'OK \(\d+ tests?\)', result), result
     assert 'FAILURES!!!' not in result and 'INSTRUMENTATION_FAILED' not in result, result
     return int(re.search(r'OK \((\d+) tests?\)', result).group(1))
