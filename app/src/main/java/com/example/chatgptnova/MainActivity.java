@@ -80,7 +80,7 @@ public class MainActivity extends Activity {
             """;
 
     private static final String INSERT_COMPOSER_TEXT = """
-            (text => {
+            ((text, originalPaste) => {
               const isComposer = e => !!e && (e.id === 'prompt-textarea' || e.id === 'mobile-composer-prompt')
                 && !e.disabled && !e.readOnly && !!e.getClientRects().length
                 && (e.isContentEditable || e.tagName === 'TEXTAREA');
@@ -101,6 +101,22 @@ public class MainActivity extends Activity {
               const target = findComposer(document.activeElement);
               if (!target) return false;
 
+              // Give the page's editor its paste transaction before modifying its
+              // DOM. In particular, a ProseMirror editor maintains its own model,
+              // selection and undo history; native DOM edits bypass that path.
+              const offerToEditor = () => {
+                if (originalPaste) return false; // The real event already reached it.
+                try {
+                  const data = new DataTransfer();
+                  data.setData('text/plain', text);
+                  const event = new ClipboardEvent('paste', {
+                    bubbles:true, cancelable:true, clipboardData:data
+                  });
+                  target.dispatchEvent(event);
+                  return event.defaultPrevented;
+                } catch (ignored) { return false; }
+              };
+
               if (target.tagName === 'TEXTAREA') {
                 target.focus({preventScroll:true});
                 const start = Number.isInteger(target.__novaPasteStart)
@@ -109,6 +125,8 @@ public class MainActivity extends Activity {
                 const end = Number.isInteger(target.__novaPasteEnd)
                     ? Math.max(start, Math.min(target.__novaPasteEnd, target.value.length))
                     : target.selectionEnd;
+                target.setSelectionRange(start, end);
+                if (offerToEditor()) return true;
                 const value = target.value.slice(0, start) + text + target.value.slice(end);
                 const setter = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value').set;
                 setter.call(target, value);
@@ -131,6 +149,7 @@ public class MainActivity extends Activity {
               }
               selection.removeAllRanges();
               selection.addRange(range);
+              if (offerToEditor()) return true;
 
               // One escaped fragment preserves newlines without Chromium's per-line
               // insertText edits, duplicated block breaks or long-paste layout stalls.
@@ -224,18 +243,21 @@ public class MainActivity extends Activity {
 
               window.__novaPasteText = INSERT_FUNCTION;
 
-              document.addEventListener('paste', event => {
+              // Bubble after the editor/document handlers. A handled paste must
+              // not be replayed through Chromium's HTML editing command. Synthetic
+              // events offered by the native menu fall back in the insertion helper.
+              window.addEventListener('paste', event => {
+                if (event.defaultPrevented || !event.isTrusted) return;
                 const composer = resolveComposer(event.target);
                 if (!composer) return;
                 const data = event.clipboardData;
                 const text = data ? data.getData('text/plain') : '';
                 if (!text) return;
                 remember(composer);
-                if (window.__novaPasteText(text)) {
+                if (window.__novaPasteText(text, event)) {
                   event.preventDefault();
-                  event.stopImmediatePropagation();
                 }
-              }, true);
+              });
             })()
             """.replace("INSERT_FUNCTION", INSERT_COMPOSER_TEXT);
 

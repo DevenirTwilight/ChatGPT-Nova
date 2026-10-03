@@ -49,7 +49,11 @@ public final class WebShareTest extends FixtureActivity {
     }
 
     private void shareButton() {
-        button("navigator.share({title:'Fixture title',text:'Fixture text',url:" + JSONObject.quote(PUBLIC_URL) + "})");
+        shareButton(PUBLIC_URL);
+    }
+
+    private void shareButton(String url) {
+        button("navigator.share({title:'Fixture title',text:'Fixture text',url:" + JSONObject.quote(url) + "})");
         clickWeb("web-share");
     }
 
@@ -64,14 +68,15 @@ public final class WebShareTest extends FixtureActivity {
     }
 
     @Test public void webpagePayloadReachesSharesheetAndWaitsForTargetSelection() throws Exception {
-        shareButton();
+        String suppliedUrl = "https://chatgpt.com/s/t_nova-test-owned-fixture";
+        shareButton(suppliedUrl);
         Intent intent = openedSharesheet();
         Intent send = intent.getParcelableExtra(Intent.EXTRA_INTENT);
         assertNotNull(send);
         assertEquals(Intent.ACTION_SEND, send.getAction());
         assertEquals("text/plain", send.getType());
         assertEquals("Fixture title", send.getStringExtra(Intent.EXTRA_TITLE));
-        assertEquals("Fixture text\n" + PUBLIC_URL, send.getStringExtra(Intent.EXTRA_TEXT));
+        assertEquals("Fixture text\n" + suppliedUrl, send.getStringExtra(Intent.EXTRA_TEXT));
         assertFalse(send.getStringExtra(Intent.EXTRA_TEXT).contains("/c/"));
         assertEquals("pending", js("shareState"));
         js("window.parallelShare='pending';navigator.share({text:'second fixture'}).catch(e=>parallelShare=e.name)");
@@ -106,6 +111,7 @@ public final class WebShareTest extends FixtureActivity {
             assertEquals("false", js("navigator.canShare(" + data + ")"));
         }
         assertEquals("true", js("navigator.canShare({url:'/share/nova-test-owned-fixture'})"));
+        assertEquals("true", js("navigator.canShare({url:'/s/t_nova-test-owned-fixture'})"));
         assertEquals("true", js("navigator.canShare({text:'fixture'})"));
         button("navigator.share({url:'https://example.com/share/x'})");
         clickWeb("web-share");

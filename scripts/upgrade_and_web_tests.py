@@ -90,8 +90,8 @@ try:
     if share_count == 5:
         checks.append('Synthetic webpage navigator.share launches the Android Sharesheet with the supplied public URL; target callback, cancellation, invalid data, user gesture, SPA/reload and origin/frame restrictions are exercised')
     clipboard_ui_count = independent('clipboard-ui', lambda: suite(PACKAGE+'.ClipboardUiTest','clipboard-ui.txt'))
-    if clipboard_ui_count == 3:
-        checks.append('Native clipboard menu preserves contenteditable and textarea selections and works after SPA composer replacement')
+    if clipboard_ui_count == 5:
+        checks.append('Clipboard menu preserves selections and SPA replacement; native-menu and system long pastes reach a page-owned transaction, retain undo and paint within the fixture budget')
     try:
         clipboard_count = 0
         for method in ('nativeMenuPaste','imeCommitText','imePasteCommand','longPressSystemPaste'):
