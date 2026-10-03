@@ -464,9 +464,9 @@ public class MainActivity extends Activity {
         loginDialogVisible = true;
         new AlertDialog.Builder(this).setTitle(google ? "Google 登录" : "选择登录方式")
                 .setIcon(R.mipmap.ic_launcher)
-                .setMessage(google ? "可使用 Chrome / Brave 在浏览器中完成 Google 登录。打开 ChatGPT 官方登录页后，请选择“使用 Google 继续”。\n\n登录成功后可继续在浏览器聊天。浏览器与 Nova 的会话独立，回到 Nova 不会自动带入浏览器会话；浏览器已有账号可能影响登录。"
-                        : "使用账号邮箱和独立密码，在 Nova 内打开 ChatGPT 官方登录页。登录状态由 Nova 单独保存，和官方 App、系统浏览器互不影响。\n\nGoogle 登录不支持普通 WebView；如需使用，可在浏览器中登录并继续聊天，回到 Nova 不会自动带入浏览器会话。")
-                .setNeutralButton("取消", null)
+                .setMessage(google
+                        ? "可使用 Chrome / Brave 在浏览器中完成 Google 登录。打开 ChatGPT 官方登录页后，请选择“使用 Google 继续”。\n\n登录成功后可继续在浏览器聊天。浏览器与 Nova 的会话独立，回到 Nova 不会自动带入浏览器会话；浏览器已有账号可能影响登录。\n\n重要提醒：Nova 是非官方第三方客户端。OpenAI 没有将 Nova 作为官方 Android 客户端发布、维护或背书。第三方客户端的登录/会话方式可能与官方客户端不同，不能保证不会触发额外的安全验证、访问限制或其他账号问题；这不表示“使用非官方客户端一定会封号”。如不愿承担这项不确定性，请使用官方 ChatGPT App 或浏览器。"
+                        : "使用账号邮箱和独立密码，在 Nova 内打开 ChatGPT 官方登录页。登录状态由 Nova 单独保存，和官方 App、系统浏览器互不影响。\n\nGoogle 登录不支持普通 WebView；如需使用，可在浏览器中登录并继续聊天，回到 Nova 不会自动带入浏览器会话。\n\n重要提醒：Nova 是非官方第三方客户端。应用内登录会加载 chatgpt.com 官方登录页，但整个登录/会话仍运行在 Nova 的 WebView 中。OpenAI 没有将 Nova 作为官方 Android 客户端发布、维护或背书，不能保证第三方客户端的访问方式不会触发额外的安全验证、访问限制或其他账号问题；这不表示“使用非官方客户端一定会封号”。如不愿承担这项不确定性，请使用官方 ChatGPT App 或浏览器。")         .setNeutralButton("取消", null)
                 .setNegativeButton("应用内登录", (d, w) -> openLoginInNova())
                 .setPositiveButton("浏览器登录", (d, w) -> {
                     if (google) openLoginInNova();
@@ -769,7 +769,7 @@ public class MainActivity extends Activity {
     private void showAbout() {
         new AlertDialog.Builder(this).setTitle("ChatGPT Nova 1.3.6")
                 .setIcon(R.mipmap.ic_launcher)
-                .setMessage("ChatGPT Nova 是用于访问 chatgpt.com 的个人客户端，与官方 ChatGPT App 独立存储登录状态。\n\n这是非官方客户端，不由 OpenAI 发布、维护或背书。应用不读取或保存账号密码。")
+                .setMessage("ChatGPT Nova 是用于访问 chatgpt.com 的个人客户端，与官方 ChatGPT App 独立存储登录状态。\n\n这是非官方第三方客户端，不由 OpenAI 发布、维护或背书。应用内登录使用 chatgpt.com 官方登录页，但登录/会话仍运行在 Nova 的 WebView 中。第三方客户端可能与官方客户端存在不同的安全验证、访问限制或账号风险；这不表示使用非官方客户端一定会封号。若不愿承担这项不确定性，请使用官方 ChatGPT App 或浏览器。应用本身不读取或保存账号密码。")
                 .setPositiveButton("知道了", null).show();
     }
 
