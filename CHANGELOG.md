@@ -1,3 +1,9 @@
+# 1.3.7 (versionCode 11)
+
+- 新增“分享当前页面”原生菜单入口：仅在可信的 `chatgpt.com` 页面可用，直接使用 Android Sharesheet 的 `ACTION_SEND` 分享当前 HTTPS 页面链接。
+- 不新增 JavaScript → Android 原生接口；网页内的 ChatGPT 分享按钮仍不由 Nova WebView 提供 `navigator.share`，因此该按钮本身仍可能无响应。原生菜单入口是本版本有意提供的受控替代方案。
+- 不为系统 Sharesheet 增加不必要的 `<queries>` 包可见性声明：Nova 不需要预先枚举分享目标，直接调用系统 chooser 并处理无可用目标的异常。
+
 # 1.3.6 (versionCode 10)
 
 - 继续 1.3.5 的系统粘贴修复，解决旧 WebView 在大量换行的编辑命令中卡住：textarea 使用原生值 setter、保留选区并通知 input；contenteditable 使用一次性纯文本转义片段，保留浏览器编辑撤销路径。
