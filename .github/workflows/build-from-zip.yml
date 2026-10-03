@@ -6,7 +6,7 @@ on:
     branches: [main]
 
 permissions:
-  contents: read
+  contents: write
   actions: read
 
 jobs:
@@ -150,7 +150,7 @@ jobs:
               pattern = r'resource[^\n]*\bmipmap/'+re.escape(icon)+r'\s*\n(.*?)(?=\n\s*resource|\Z)'
               block = re.search(pattern,resources,re.S)
               assert block, 'Missing packaged launcher resource: '+icon
-              path = re.search(r'v33\)[^\n]*?(res/[^\s\"]+\.xml)',block.group(1))
+              path = re.search(r'v33\)[^\n]*?(res/[^\s"]+\.xml)',block.group(1))
               assert path, 'Missing Android 13 themed configuration for '+icon+'\n'+block.group(1)
               name = path.group(1)
               tree = subprocess.check_output([aapt2,'dump','xmltree','dist/ChatGPT-Nova.apk','--file',name],text=True)
@@ -185,6 +185,19 @@ jobs:
             dist/APK-*.txt
           if-no-files-found: error
           retention-days: 90
+
+      - name: Publish APK to GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="nova-build-${{ github.run_number }}"
+          gh release create "$TAG" \
+            dist/ChatGPT-Nova.apk \
+            dist/ChatGPT-Nova.apk.sha256 \
+            --title "ChatGPT Nova APK #${{ github.run_number }}" \
+            --notes "Signed ChatGPT Nova APK built from commit ${{ github.sha }}. Download ChatGPT-Nova.apk below." \
+            --target "${{ github.sha }}" \
+            --latest
 
       - name: Upload complete source
         uses: actions/upload-artifact@v4
@@ -239,8 +252,7 @@ jobs:
         uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: ${{ matrix.api }}
-          # Pin the July 2026 stable Emulator instead of changing CI binaries.
-          emulator-build: '15917651' # 37.1.11
+          emulator-build: '15917651'
           target: google_apis
           arch: x86_64
           profile: pixel_6
@@ -249,8 +261,6 @@ jobs:
           ram-size: 2048M
           heap-size: 512M
           disable-animations: true
-          # Current Emulator releases deprecate swiftshader_indirect. Avoid
-          # Vulkan and snapshots on headless CI while retaining every check.
           emulator-options: -no-window -gpu swiftshader -feature -Vulkan -no-snapshot -noaudio -no-boot-anim -camera-back emulated -dns-server 8.8.8.8,1.1.1.1
           script: |
             python3 scripts/upgrade_and_web_tests.py dist/ChatGPT-Nova.apk dist/ChatGPT-Nova-tests.apk dist/ChatGPT-Nova-v1.apk ${{ matrix.api }}
@@ -259,13 +269,11 @@ jobs:
         uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: ${{ matrix.api }}
-          emulator-build: '15917651' # 37.1.11
+          emulator-build: '15917651'
           target: google_apis
           arch: x86_64
           profile: pixel_6
           avd-name: nova-ci-${{ matrix.api }}
-          # Restart the VM after instrumentation; preserve its upgraded app
-          # and site data. No assertions or application failures are skipped.
           force-avd-creation: false
           cores: 2
           ram-size: 2048M
