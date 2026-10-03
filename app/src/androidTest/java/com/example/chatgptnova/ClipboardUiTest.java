@@ -47,6 +47,43 @@ public final class ClipboardUiTest extends FixtureActivity {
         assertEquals("hello world", js("document.getElementById('prompt-textarea').textContent"));
     }
 
+    @Test public void nativePasteSurvivesSpaComposerReplacement() {
+        clickWeb("prompt-textarea");
+        js("""
+                (() => {
+                  const old = document.getElementById('prompt-textarea');
+                  old.textContent = 'before';
+                  old.focus();
+                  const s = getSelection();
+                  const r = document.createRange();
+                  r.selectNodeContents(old);
+                  r.collapse(false);
+                  s.removeAllRanges();
+                  s.addRange(r);
+                  history.pushState({}, '', '/c/spa-fixture');
+                  old.replaceWith(Object.assign(document.createElement('div'), {
+                    id:'prompt-textarea', className:'ProseMirror'
+                  }));
+                  const current = document.getElementById('prompt-textarea');
+                  current.contentEditable = 'true';
+                  current.textContent = 'after';
+                  current.focus();
+                  const range = document.createRange();
+                  range.selectNodeContents(current);
+                  range.collapse(false);
+                  s.removeAllRanges();
+                  s.addRange(range);
+                  return location.pathname + ':' + current.textContent;
+                })()
+                """);
+        putClipboard(" route");
+        click("菜单");
+        click("从剪贴板粘贴");
+        waitFor("SPA replacement paste", () -> "after route".equals(js(
+                "document.getElementById('prompt-textarea').textContent")));
+        assertEquals("after route", js("document.getElementById('prompt-textarea').textContent"));
+    }
+
     @Test public void nativePasteReplacesTextareaSelection() {
         clickWeb("mobile-composer-prompt");
         js("""
