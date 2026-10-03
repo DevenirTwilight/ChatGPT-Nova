@@ -28,7 +28,7 @@ HTTPS 下载与 blob 下载均通过系统保存对话框写入用户选择的�
 
 菜单“用浏览器打开”用于外部查看当前页面。“浏览器登录”专门开启新的官网登录流程。二者都使用浏览器自己的数据；应用没有自行实现或逆向官方 OAuth 回调，也没有将浏览器 Cookie 搬回 Nova。
 
-应用不读取或记录账号密码，不含 AI 后端、OpenAI API Key、JavaScript 原生接口、第三方登录代理或密码存储逻辑。下载 blob 时执行的网页脚本只读取用户点击的那个 blob，不读取登录字段或 Cookie。Android 和官方网页自己的认证 Cookie 保存在应用独立数据目录中。
+应用不读取或记录账号密码，不含 AI 后端、OpenAI API Key、通用 JavaScript 原生接口、第三方登录代理或密码存储逻辑。网页 Share 仅在可信 chatgpt.com 页面通过单用途原生分享适配器调用 Android Sharesheet。下载 blob 时执行的网页脚本只读取用户点击的那个 blob，不读取登录字段或 Cookie。Android 和官方网页自己的认证 Cookie 保存在应用独立数据目录中。
 
 公开 OAuth 能力与 Nova 网页会话的区别、近期官方 Android 回调观察，以及尚未确认的后台限制，见 [浏览器登录回调研究](docs/LOGIN-CALLBACK-RESEARCH.md)（2026-10-02）。
 
