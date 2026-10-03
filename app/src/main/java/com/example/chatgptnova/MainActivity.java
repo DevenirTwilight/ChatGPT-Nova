@@ -211,9 +211,15 @@ public class MainActivity extends Activity {
                   return;
                 }
                 const s = window.getSelection();
-                if (s && s.rangeCount && composer.contains(s.anchorNode) && composer.contains(s.focusNode)) {
-                  window.__novaPasteRange = s.getRangeAt(0).cloneRange();
-                }
+                if (!s) return;
+                try {
+                  // Old Chromium computes visible selection (and layout) when
+                  // these getters have no cached Range. Read/cache it once.
+                  const range = s.getRangeAt(0);
+                  if (composer.contains(range.commonAncestorContainer)) {
+                    window.__novaPasteRange = range.cloneRange();
+                  }
+                } catch (ignored) {}
               };
 
               const clearStaleSelection = () => {
@@ -224,7 +230,14 @@ public class MainActivity extends Activity {
               };
 
               document.addEventListener('focusin', e => remember(e.target), true);
-              document.addEventListener('selectionchange', () => remember(document.activeElement), true);
+              let selectionFrame = 0;
+              document.addEventListener('selectionchange', () => {
+                if (selectionFrame) return;
+                selectionFrame = requestAnimationFrame(() => {
+                  selectionFrame = 0;
+                  remember(document.activeElement);
+                });
+              }, true);
 
               const markSpaNavigation = () => {
                 clearStaleSelection();
