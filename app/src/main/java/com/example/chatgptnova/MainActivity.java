@@ -28,6 +28,7 @@ import android.webkit.WebResourceRequest;
 import android.webkit.WebSettings;
 import android.webkit.WebStorage;
 import android.webkit.WebView;
+import android.webkit.JavascriptInterface;
 import android.webkit.WebViewClient;
 import android.webkit.WebResourceResponse;
 import android.webkit.RenderProcessGoneDetail;
@@ -59,6 +60,7 @@ public class MainActivity extends Activity {
     private static final int SAVE_BLOB = 1005;
     private static final String HOME = "https://chatgpt.com/";
     private static final String LOGIN = "https://chatgpt.com/auth/login";
+    private static final String WEB_SHARE_BRIDGE = "NovaWebShare";
     private enum AccountUiState { UNKNOWN, SIGNED_OUT, SIGNED_IN }
     // Read only visible public controls. Never read input values, cookies,
     // storage, account details, or private authentication endpoints.
@@ -303,6 +305,7 @@ public class MainActivity extends Activity {
             @Override
             public void onPageStarted(WebView view, String url, Bitmap favicon) {
                 if (view != webView || clearing) return;
+                removeWebShareBridge();
                 accountUiState = AccountUiState.UNKNOWN;
                 accountQuerySerial++;
                 cancelPageRequests();
@@ -320,8 +323,10 @@ public class MainActivity extends Activity {
                 displayOrigin(url);
                 CookieManager.getInstance().flush();
                 Uri pageOrigin = Uri.parse(view.getUrl() == null ? "" : view.getUrl());
-                if (isTrustedOrigin(pageOrigin) && "chatgpt.com".equals(pageOrigin.getHost()))
+                if (isTrustedOrigin(pageOrigin) && "chatgpt.com".equals(pageOrigin.getHost())) {
+                    installWebShareCompatibility();
                     view.evaluateJavascript(LONG_PASTE_COMPATIBILITY, null);
+                }
                 refreshAccountUiState(null);
             }
 
@@ -804,6 +809,41 @@ public class MainActivity extends Activity {
         }
     }
 
+    private final class WebShareBridge {
+        @JavascriptInterface
+        public void share(String title, String text, String url) {
+            runOnUiThread(() -> shareWebPayload(title, text, url));
+        }
+    }
+
+    private void installWebShareCompatibility() {
+        if (clearing || webView == null) return;
+        Uri uri = Uri.parse(webView.getUrl() == null ? "" : webView.getUrl());
+        if (!isTrustedOrigin(uri) || !"chatgpt.com".equalsIgnoreCase(uri.getHost())) return;
+        webView.removeJavascriptInterface(WEB_SHARE_BRIDGE);
+        webView.addJavascriptInterface(new WebShareBridge(), WEB_SHARE_BRIDGE);
+        webView.evaluateJavascript("(() => {\n  if (typeof navigator.share === 'function') return;\n  const bridge = window.NovaWebShare;\n  if (!bridge || typeof bridge.share !== 'function') return;\n  Object.defineProperty(navigator, 'share', {\n    configurable: true, enumerable: false, writable: false,\n    value: data => {\n      const d = data || {};\n      if (!d.title && !d.text && !d.url) return Promise.reject(new TypeError('Share data is empty'));\n      bridge.share(\n        typeof d.title === 'string' ? d.title : '',\n        typeof d.text === 'string' ? d.text : '',\n        typeof d.url === 'string' ? d.url : location.href\n      );\n      return Promise.resolve();\n    }\n  });\n  if (typeof navigator.canShare !== 'function') {\n    Object.defineProperty(navigator, 'canShare', {\n      configurable: true, enumerable: false, writable: false,\n      value: data => {\n        const d = data || {};\n        return !!(d.title || d.text || d.url);\n      }\n    });\n  }\n})()", null);
+    }
+
+    private void removeWebShareBridge() {
+        if (webView != null) webView.removeJavascriptInterface(WEB_SHARE_BRIDGE);
+    }
+
+    private void shareWebPayload(String title, String text, String url) {
+        if (!canShareCurrentPage()) {
+            Toast.makeText(this, "当前页面不能通过 Nova 分享。", Toast.LENGTH_SHORT).show(); return;
+        }
+        String safeUrl = url == null || url.isEmpty() ? webView.getUrl() : url;
+        Uri payload = Uri.parse(safeUrl == null ? "" : safeUrl);
+        if (!isTrustedOrigin(payload) || !"chatgpt.com".equalsIgnoreCase(payload.getHost())) safeUrl = webView.getUrl();
+        if (safeUrl == null || safeUrl.isEmpty()) { Toast.makeText(this, "当前页面没有可分享的链接。", Toast.LENGTH_SHORT).show(); return; }
+        String body = (text == null || text.isEmpty()) ? safeUrl : text + "\n" + safeUrl;
+        Intent send = new Intent(Intent.ACTION_SEND).setType("text/plain")
+                .putExtra(Intent.EXTRA_TEXT, body)
+                .putExtra(Intent.EXTRA_TITLE, title == null || title.isEmpty() ? "ChatGPT" : title);
+        try { startActivity(Intent.createChooser(send, "分享")); }
+        catch (ActivityNotFoundException ignored) { Toast.makeText(this, "设备上没有可用的分享应用。", Toast.LENGTH_LONG).show(); }
+    }
     private void openCurrentPageInBrowser() {
         String url = failedUrl != null ? failedUrl : (webView == null ? HOME : webView.getUrl());
         if (url == null || url.isEmpty()) url = HOME;
@@ -982,6 +1022,7 @@ public class MainActivity extends Activity {
         cancelPageRequests();
         cancelDownloads();
         if (webView != null) {
+            removeWebShareBridge();
             webView.stopLoading();
             webView.setWebChromeClient(null);
             webView.setWebViewClient(null);
