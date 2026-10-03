@@ -80,44 +80,209 @@ public class MainActivity extends Activity {
             """;
 
     private static final String INSERT_COMPOSER_TEXT = """
-            (text => {
-              const e = document.activeElement;
-              if (!e || !['prompt-textarea','mobile-composer-prompt'].includes(e.id)
-                  || e.disabled || e.readOnly || !e.getClientRects().length
-                  || !(e.isContentEditable || e.tagName === 'TEXTAREA')) return false;
-              if (e.tagName === 'TEXTAREA') {
-                const start = e.selectionStart, end = e.selectionEnd;
-                const value = e.value.slice(0, start) + text + e.value.slice(end);
-                // Native setter avoids Chromium's per-line editing/layout stall
-                // and notifies React without changing its value tracker first.
-                Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value').set.call(e, value);
-                e.setSelectionRange(start + text.length, start + text.length);
-                e.dispatchEvent(new InputEvent('input', {bubbles:true, inputType:'insertFromPaste', data:text}));
-                return e.value === value;
+            ((text, originalPaste) => {
+              const isComposer = e => !!e && (e.id === 'prompt-textarea' || e.id === 'mobile-composer-prompt')
+                && !e.disabled && !e.readOnly && !!e.getClientRects().length
+                && (e.isContentEditable || e.tagName === 'TEXTAREA');
+
+              const findComposer = e => {
+                if (isComposer(e)) return e;
+                if (e && e.closest) {
+                  const candidate = e.closest('#prompt-textarea, #mobile-composer-prompt');
+                  if (isComposer(candidate)) return candidate;
+                }
+                const focused = document.activeElement;
+                if (isComposer(focused)) return focused;
+                const remembered = window.__novaPasteTarget;
+                if (isComposer(remembered)) return remembered;
+                return document.querySelector('#prompt-textarea, #mobile-composer-prompt');
+              };
+
+              const target = findComposer(document.activeElement);
+              if (!target) return false;
+
+              // Give the page's editor its paste transaction before modifying its
+              // DOM. In particular, a ProseMirror editor maintains its own model,
+              // selection and undo history; native DOM edits bypass that path.
+              const offerToEditor = () => {
+                if (originalPaste) return false; // The real event already reached it.
+                try {
+                  const data = new DataTransfer();
+                  data.setData('text/plain', text);
+                  const event = new ClipboardEvent('paste', {
+                    bubbles:true, cancelable:true, clipboardData:data
+                  });
+                  target.dispatchEvent(event);
+                  return event.defaultPrevented;
+                } catch (ignored) { return false; }
+              };
+
+              if (target.tagName === 'TEXTAREA') {
+                const hasCurrentSelection = document.activeElement === target;
+                const start = !hasCurrentSelection && Number.isInteger(target.__novaPasteStart)
+                    ? Math.max(0, Math.min(target.__novaPasteStart, target.value.length))
+                    : target.selectionStart;
+                const end = !hasCurrentSelection && Number.isInteger(target.__novaPasteEnd)
+                    ? Math.max(start, Math.min(target.__novaPasteEnd, target.value.length))
+                    : target.selectionEnd;
+                target.focus({preventScroll:true});
+                target.setSelectionRange(start, end);
+                if (offerToEditor()) return true;
+                const value = target.value.slice(0, start) + text + target.value.slice(end);
+                const setter = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value').set;
+                setter.call(target, value);
+                target.setSelectionRange(start + text.length, start + text.length);
+                target.dispatchEvent(new InputEvent('input', {
+                  bubbles:true, inputType:'insertFromPaste', data:text
+                }));
+                target.dispatchEvent(new Event('change', {bubbles:true}));
+                return target.value === value;
               }
-              // A single escaped, whitespace-preserving fragment avoids thousands
-              // of insertText paragraph edits. Clipboard markup remains inert text.
+
+              const selection = window.getSelection();
+              if (!selection) return false;
+              // Tracking is deferred to a frame; its saved Range can lag behind
+              // the user's selection. Capture the live Range before focus changes.
+              let range = null;
+              try {
+                const current = selection.getRangeAt(0);
+                if (target.contains(current.commonAncestorContainer)) range = current.cloneRange();
+              } catch (ignored) {}
+              if (!range && window.__novaPasteRange && window.__novaPasteRange.cloneRange) {
+                range = window.__novaPasteRange.cloneRange();
+              }
+              if (!range || !target.contains(range.commonAncestorContainer)) {
+                range = document.createRange();
+                range.selectNodeContents(target);
+                range.collapse(false);
+              }
+              target.focus({preventScroll:true});
+              selection.removeAllRanges();
+              selection.addRange(range);
+              if (offerToEditor()) return true;
+
+              // One escaped fragment preserves newlines without Chromium's per-line
+              // insertText edits, duplicated block breaks or long-paste layout stalls.
               const span = document.createElement('span');
               span.style.whiteSpace = 'pre-wrap';
               span.textContent = text;
-              return document.execCommand('insertHTML', false, span.outerHTML);
+              let inserted = false;
+              try {
+                inserted = document.execCommand('insertHTML', false, span.outerHTML);
+              } catch (ignored) {}
+
+              if (!inserted) {
+                range.deleteContents();
+                range.insertNode(span);
+                range.setStartAfter(span);
+                range.collapse(false);
+                selection.removeAllRanges();
+                selection.addRange(range);
+                target.dispatchEvent(new InputEvent('input', {
+                  bubbles:true, inputType:'insertFromPaste', data:text
+                }));
+              }
+              return true;
             })
             """;
-    private static final String LONG_PASTE_COMPATIBILITY = """
+
+    private static final String PASTE_COMPATIBILITY = """
             (() => {
-              if (window.__novaLongPasteInstalled) return;
-              window.__novaLongPasteInstalled = true;
-              document.addEventListener('paste', event => {
-                const text = event.clipboardData && event.clipboardData.getData('text/plain');
-                if (!text || (text.length < 4096 && !text.includes('\\n'))) return;
-                const insert = INSERT_FUNCTION;
-                // Suppress the website/default paste only after insertion succeeds.
-                // Clipboard text stays plain text; never interpret it as HTML.
-                if (insert(text)) {
-                  event.preventDefault();
-                  event.stopImmediatePropagation();
+              if (window.__novaPasteCompatibilityInstalled) return;
+              window.__novaPasteCompatibilityInstalled = true;
+
+              const selector = '#prompt-textarea, #mobile-composer-prompt';
+              // Selection tracking must not force layout after a large edit.
+              // Visibility is checked only when a paste actually needs fallback.
+              const isComposer = e => !!e && (e.id === 'prompt-textarea' || e.id === 'mobile-composer-prompt')
+                && e.isConnected && !e.disabled && !e.readOnly
+                && (e.isContentEditable || e.tagName === 'TEXTAREA');
+
+              const resolveComposer = e => {
+                if (isComposer(e)) return e;
+                if (e && e.closest) {
+                  const candidate = e.closest(selector);
+                  if (isComposer(candidate)) return candidate;
                 }
+                const focused = document.activeElement;
+                if (isComposer(focused)) return focused;
+                const current = document.querySelector(selector);
+                return isComposer(current) ? current : null;
+              };
+
+              const remember = e => {
+                const composer = resolveComposer(e);
+                if (!composer) return;
+                window.__novaPasteTarget = composer;
+                if (composer.tagName === 'TEXTAREA') {
+                  composer.__novaPasteStart = composer.selectionStart;
+                  composer.__novaPasteEnd = composer.selectionEnd;
+                  window.__novaPasteRange = null;
+                  return;
+                }
+                const s = window.getSelection();
+                if (!s) return;
+                try {
+                  // Old Chromium computes visible selection (and layout) when
+                  // these getters have no cached Range. Read/cache it once.
+                  const range = s.getRangeAt(0);
+                  if (composer.contains(range.commonAncestorContainer)) {
+                    window.__novaPasteRange = range.cloneRange();
+                  }
+                } catch (ignored) {}
+              };
+
+              const clearStaleSelection = () => {
+                if (window.__novaPasteTarget && !isComposer(window.__novaPasteTarget)) {
+                  window.__novaPasteTarget = null;
+                  window.__novaPasteRange = null;
+                }
+              };
+
+              document.addEventListener('focusin', e => remember(e.target), true);
+              let selectionFrame = 0;
+              document.addEventListener('selectionchange', () => {
+                if (selectionFrame) return;
+                selectionFrame = requestAnimationFrame(() => {
+                  selectionFrame = 0;
+                  remember(document.activeElement);
+                });
               }, true);
+
+              const markSpaNavigation = () => {
+                clearStaleSelection();
+                window.__novaPasteRange = null;
+                const current = resolveComposer(null);
+                if (current) remember(current);
+              };
+              for (const method of ['pushState', 'replaceState']) {
+                const original = history[method];
+                history[method] = function(...args) {
+                  const result = original.apply(this, args);
+                  setTimeout(markSpaNavigation, 0);
+                  return result;
+                };
+              }
+              window.addEventListener('popstate', () => setTimeout(markSpaNavigation, 0));
+              window.addEventListener('hashchange', () => setTimeout(markSpaNavigation, 0));
+
+              window.__novaPasteText = INSERT_FUNCTION;
+
+              // Bubble after the editor/document handlers. A handled paste must
+              // not be replayed through Chromium's HTML editing command. Synthetic
+              // events offered by the native menu fall back in the insertion helper.
+              window.addEventListener('paste', event => {
+                if (event.defaultPrevented || !event.isTrusted) return;
+                const composer = resolveComposer(event.target);
+                if (!composer || !composer.getClientRects().length) return;
+                const data = event.clipboardData;
+                const text = data ? data.getData('text/plain') : '';
+                if (!text) return;
+                remember(composer);
+                if (window.__novaPasteText(text, event)) {
+                  event.preventDefault();
+                }
+              });
             })()
             """.replace("INSERT_FUNCTION", INSERT_COMPOSER_TEXT);
 
@@ -140,6 +305,7 @@ public class MainActivity extends Activity {
     private PopupMenu overflowMenu;
     private AccountUiState accountUiState = AccountUiState.UNKNOWN;
     private int accountQuerySerial;
+    private WebShareAdapter webShare;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -288,6 +454,10 @@ public class MainActivity extends Activity {
         cm.setAcceptCookie(true);
         cm.setAcceptThirdPartyCookies(webView, true);
 
+        WebView shareView = webView;
+        webShare = new WebShareAdapter(this, shareView,
+                () -> !clearing && webView == shareView);
+
         webView.setWebViewClient(new WebViewClient() {
             @Override
             public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
@@ -303,6 +473,7 @@ public class MainActivity extends Activity {
             @Override
             public void onPageStarted(WebView view, String url, Bitmap favicon) {
                 if (view != webView || clearing) return;
+                if (webShare != null) webShare.navigationStarted();
                 accountUiState = AccountUiState.UNKNOWN;
                 accountQuerySerial++;
                 cancelPageRequests();
@@ -320,8 +491,10 @@ public class MainActivity extends Activity {
                 displayOrigin(url);
                 CookieManager.getInstance().flush();
                 Uri pageOrigin = Uri.parse(view.getUrl() == null ? "" : view.getUrl());
-                if (isTrustedOrigin(pageOrigin) && "chatgpt.com".equals(pageOrigin.getHost()))
-                    view.evaluateJavascript(LONG_PASTE_COMPATIBILITY, null);
+                if (isTrustedOrigin(pageOrigin) && "chatgpt.com".equals(pageOrigin.getHost())) {
+                    if (webShare != null) webShare.pageFinished();
+                    view.evaluateJavascript(PASTE_COMPATIBILITY, null);
+                }
                 refreshAccountUiState(null);
             }
 
@@ -353,6 +526,7 @@ public class MainActivity extends Activity {
                 if (view != webView) { view.destroy(); return true; }
                 if (blobDownload != null) { blobDownload.cancel(); blobDownload = null; }
                 cancelPageRequests();
+                if (webShare != null) { webShare.destroy(); webShare = null; }
                 if (view.getParent() instanceof ViewGroup) ((ViewGroup) view.getParent()).removeView(view);
                 view.destroy();
                 webView = null;
@@ -640,9 +814,10 @@ public class MainActivity extends Activity {
             items.add(0, 2, 1, "ChatGPT 首页");
             if (accountUiState == AccountUiState.SIGNED_OUT) items.add(0, 3, 2, "登录");
             items.add(0, 4, 3, "用浏览器打开");
+            if (canShareCurrentPage()) items.add(0, 7, 4, "分享当前页面");
             if ("chatgpt.com".equals(Uri.parse(webView.getUrl() == null ? "" : webView.getUrl()).getHost()))
-                items.add(0, 6, 4, "从剪贴板粘贴");
-            items.add(0, 5, 4, "设置");
+                items.add(0, 6, 5, "从剪贴板粘贴");
+            items.add(0, 5, 6, "设置");
             overflowMenu.setOnMenuItemClickListener(item -> {
                 if (clearing || webView == null) return true;
                 switch (item.getItemId()) {
@@ -657,6 +832,9 @@ public class MainActivity extends Activity {
                         break;
                     case 4:
                         openCurrentPageInBrowser();
+                        break;
+                    case 7:
+                        shareCurrentPage();
                         break;
                     case 6:
                         // Finish popup/IME focus transitions before editing the draft.
@@ -712,34 +890,28 @@ public class MainActivity extends Activity {
         if (clearing || page == null || !"https".equals(uri.getScheme())
                 || !"chatgpt.com".equals(uri.getHost()) || uri.getUserInfo() != null
                 || (uri.getPort() != -1 && uri.getPort() != 443)) return;
-        page.requestFocus();
-        // Never target login fields, arbitrary inputs, or external pages.
-        page.evaluateJavascript("""
-                (() => {
-                  const e = document.activeElement;
-                  return !!e && (e.id === 'prompt-textarea' || e.id === 'mobile-composer-prompt')
-                    && !e.disabled && !e.readOnly && !!e.getClientRects().length
-                    && (e.isContentEditable || e.tagName === 'TEXTAREA');
-                })()
-                """, result -> {
-            if (page != webView || clearing || !address.equals(page.getUrl())) return;
-            if (!"true".equals(result)) {
-                Toast.makeText(this, "请先点一下聊天输入框，再从菜单粘贴。", Toast.LENGTH_LONG).show();
-                return;
-            }
+
+        CharSequence text;
+        try {
             ClipboardManager clipboard = (ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
-            ClipData clip = clipboard.getPrimaryClip();
-            CharSequence text = clip == null || clip.getItemCount() == 0 ? null : clip.getItemAt(0).getText();
-            if (text == null || text.length() == 0) {
-                Toast.makeText(this, "剪贴板中没有文本。", Toast.LENGTH_SHORT).show();
-                return;
+            ClipData clip = clipboard == null ? null : clipboard.getPrimaryClip();
+            text = clip == null || clip.getItemCount() == 0
+                    ? null : clip.getItemAt(0).coerceToText(this);
+        } catch (RuntimeException error) {
+            Toast.makeText(this, "无法读取系统剪贴板，请重试。", Toast.LENGTH_LONG).show();
+            return;
+        }
+        if (text == null || text.length() == 0) {
+            Toast.makeText(this, "剪贴板中没有可粘贴的文本。", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        String plainText = JSONObject.quote(text.toString())
+                .replace("\u2028", "\\u2028").replace("\u2029", "\\u2029");
+        page.evaluateJavascript(INSERT_COMPOSER_TEXT + "(" + plainText + ")", inserted -> {
+            if (!"true".equals(inserted) && page == webView && !clearing) {
+                Toast.makeText(this, "未能粘贴，请先点一下聊天输入框后重试。", Toast.LENGTH_LONG).show();
             }
-            String plainText = JSONObject.quote(text.toString())
-                    .replace("\u2028", "\\u2028").replace("\u2029", "\\u2029");
-            page.evaluateJavascript(INSERT_COMPOSER_TEXT + "(" + plainText + ")", inserted -> {
-                if (!"true".equals(inserted) && page == webView && !clearing)
-                    Toast.makeText(this, "未能粘贴，请重新点一下聊天输入框。", Toast.LENGTH_LONG).show();
-            });
         });
     }
 
@@ -767,10 +939,37 @@ public class MainActivity extends Activity {
     }
 
     private void showAbout() {
-        new AlertDialog.Builder(this).setTitle("ChatGPT Nova 1.3.6")
+        new AlertDialog.Builder(this).setTitle("ChatGPT Nova 1.3.7")
                 .setIcon(R.mipmap.ic_launcher)
                 .setMessage("ChatGPT Nova 是用于访问 chatgpt.com 的个人客户端，与官方 ChatGPT App 独立存储登录状态。\n\n这是非官方第三方客户端，不由 OpenAI 发布、维护或背书。应用内登录使用 chatgpt.com 官方登录页，但登录/会话仍运行在 Nova 的 WebView 中。第三方客户端可能与官方客户端存在不同的安全验证、访问限制或账号风险；这不表示使用非官方客户端一定会封号。若不愿承担这项不确定性，请使用官方 ChatGPT App 或浏览器。应用本身不读取或保存账号密码。")
                 .setPositiveButton("知道了", null).show();
+    }
+
+    private boolean canShareCurrentPage() {
+        if (clearing || webView == null) return false;
+        Uri uri = Uri.parse(webView.getUrl() == null ? "" : webView.getUrl());
+        return isTrustedOrigin(uri) && "chatgpt.com".equalsIgnoreCase(uri.getHost());
+    }
+
+    private void shareCurrentPage() {
+        if (!canShareCurrentPage()) {
+            Toast.makeText(this, "当前页面不能通过 Nova 分享。", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        String url = webView.getUrl();
+        if (url == null || url.isEmpty()) {
+            Toast.makeText(this, "当前页面没有可分享的链接。", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        Intent send = new Intent(Intent.ACTION_SEND)
+                .setType("text/plain")
+                .putExtra(Intent.EXTRA_TEXT, url)
+                .putExtra(Intent.EXTRA_TITLE, "ChatGPT Nova");
+        try {
+            startActivity(Intent.createChooser(send, "分享当前页面"));
+        } catch (ActivityNotFoundException ignored) {
+            Toast.makeText(this, "设备上没有可用的分享应用。", Toast.LENGTH_LONG).show();
+        }
     }
 
     private void openCurrentPageInBrowser() {
@@ -837,6 +1036,7 @@ public class MainActivity extends Activity {
                     accountUiState = AccountUiState.UNKNOWN;
                     accountQuerySerial++;
                     cancelPageRequests();
+                    if (webShare != null) { webShare.destroy(); webShare = null; }
                     cancelDownloads();
                     webView.stopLoading();
                     webView.clearCache(true);
@@ -913,6 +1113,7 @@ public class MainActivity extends Activity {
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
+        if (webShare != null && webShare.activityResult(requestCode, resultCode)) return;
         if (requestCode == UploadController.PICK_FILE) uploads.result(resultCode, data);
         if (requestCode == SAVE_BLOB) {
             Uri destination = resultCode == RESULT_OK && data != null ? data.getData() : null;
@@ -951,6 +1152,7 @@ public class MainActivity extends Activity {
         cancelPageRequests();
         cancelDownloads();
         if (webView != null) {
+            if (webShare != null) { webShare.destroy(); webShare = null; }
             webView.stopLoading();
             webView.setWebChromeClient(null);
             webView.setWebViewClient(null);

@@ -27,6 +27,8 @@ public final class NativeUiTest extends FixtureActivity {
         assertTrue(shown("ChatGPT Nova"));
         assertFalse(shown("ChatGPT Nova · 非官方"));
         assertTrue(shown("chatgpt.com"));
+        waitFor("Web Share compatibility ready", () -> "function".equals(js("typeof window.NovaWebShare?.share"))
+                && "function".equals(js("typeof navigator.share")));
         capture("portrait");
         click("菜单");
         for (String item : new String[]{"刷新","ChatGPT 首页","用浏览器打开","设置"}) waitFor("menu item " + item, () -> shown(item));
@@ -36,7 +38,7 @@ public final class NativeUiTest extends FixtureActivity {
         waitFor("settings visible", () -> shown("关于 ChatGPT Nova"));
         capture("settings");
         click("关于 ChatGPT Nova");
-        waitFor("unofficial About", () -> contains("这是非官方客户端") && contains("chatgpt.com"));
+        waitFor("unofficial About", () -> contains("非官方第三方客户端") && contains("不由 OpenAI") && contains("chatgpt.com"));
         capture("about");
         click("知道了");
 
@@ -84,8 +86,12 @@ public final class NativeUiTest extends FixtureActivity {
         main(() -> activity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT));
         waitFor("portrait", () -> activity.getResources().getConfiguration().orientation == Configuration.ORIENTATION_PORTRAIT);
         waitFor("portrait controls", () -> shown("菜单"));
-        main(() -> web.loadUrl(LOGIN));
-        waitFor("back history ready", () -> LOGIN.equals(currentUrl()));
+        fixture(LOGIN);
+        waitFor("committed back history ready", () -> {
+            AtomicReference<Boolean> ready = new AtomicReference<>(false);
+            main(() -> ready.set(LOGIN.equals(web.getUrl()) && web.canGoBack()));
+            return ready.get();
+        });
         instrument.sendKeyDownUpSync(KeyEvent.KEYCODE_BACK);
         waitFor("Android Back navigates inside Nova", () -> !LOGIN.equals(currentUrl()) && shown("菜单"));
         waitFor("back page loaded before storage seed", () -> "ready".equals(js("document.getElementById('ready')?.textContent")));
@@ -95,7 +101,7 @@ public final class NativeUiTest extends FixtureActivity {
         main(() -> { CookieManager.getInstance().setCookie(PAGE,"nova_native_restart=retained; Path=/; Secure"); CookieManager.getInstance().flush(); });
         js("localStorage.setItem('nova_native_restart','retained')");
         assertEquals("retained", js("localStorage.getItem('nova_native_restart')"));
-        SystemClock.sleep(1500); // Allow Chromium to commit DOM storage before force-stop.
+        SystemClock.sleep(6000); // Exceed Chromium's five-second default commit timer before force-stop.
     }
 
     @Test public void processRestartPreservesSyntheticSessionAndControls() throws Exception {

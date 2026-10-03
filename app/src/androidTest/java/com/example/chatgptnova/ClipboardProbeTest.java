@@ -76,6 +76,7 @@ public final class ClipboardProbeTest extends FixtureActivity {
                 return expected.equals(value.get());
             });
             SystemClock.sleep(400);
+            long pasteStarted = SystemClock.uptimeMillis();
             if("long-press".equals(route))longPress(id);
             else if("native-menu".equals(route)) menuPaste();
             else input(expected,"ime-context-paste".equals(route));
@@ -91,6 +92,7 @@ public final class ClipboardProbeTest extends FixtureActivity {
             actual=js("(()=>{let e=document.getElementById('"+id+"');return e.tagName==='TEXTAREA'?e.value:e.innerText})()");
             JSONObject result=new JSONObject().put("case",item[0]).put("editor",id).put("utf8Bytes",expected.getBytes(StandardCharsets.UTF_8).length)
                     .put("utf16Units",expected.length()).put("actualUnits",actual.length()).put("exactMatch",expected.equals(actual))
+                    .put("requestToVerifiedMs",SystemClock.uptimeMillis() - pasteStarted)
                     .put("pasteEvents",new JSONArray(js("JSON.stringify(pasteEvents)"))).put("inputEvents",new JSONArray(js("JSON.stringify(inputEvents)"))).put("htmlTail", js("document.getElementById('"+id+"').innerHTML.slice(-200)"));
             results.put(result);
             System.out.println("NOVA_CLIPBOARD_CASE " + result.toString());
