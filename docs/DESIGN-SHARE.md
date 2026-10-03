@@ -1,43 +1,57 @@
 # Nova 分享功能设计决策
 
-## 背景
+## 1. 当前能力
 
-ChatGPT 网页的分享入口依赖 Web Share API（`navigator.share`）。Android WebView 与完整浏览器不是同一能力集合；Nova 当前设计不提供通用 JavaScript → Android 原生接口，因此不把网页脚本直接桥接到 `Intent.ACTION_SEND`。
+Nova 有两条独立分享路径：
 
-## 决策
+1. **ChatGPT 网页 Share**：ChatGPT 前端调用 `navigator.share(...)` 时，Nova 仅在可信 `https://chatgpt.com` 页面且 WebView 尚未提供该 API 时安装最小兼容层，再由 Android `ACTION_SEND` 打开系统 Sharesheet。
+2. **Nova 菜单“分享当前页面”**：直接把当前可信 ChatGPT 页面 URL 交给 Android Sharesheet。
 
-Nova 1.3.7 增加一个原生菜单入口：**分享当前页面**。
+OpenAI 当前文档说明，ChatGPT 的 Share 流程会先创建/更新共享链接，再可在移动端打开设备分享面板；真正的共享对话链接使用 `https://chatgpt.com/share/` 前缀。
 
-流程：
+## 2. Web Share 兼容层
 
-`chatgpt.com` 可信页面 → Nova 原生菜单 → `Intent.ACTION_SEND` (`text/plain`) → `Intent.createChooser()` → Android 系统 Sharesheet。
+Web Share 要求安全上下文，并且 `navigator.share()` 必须由用户激活触发。Nova 不自动发起分享。
 
-分享内容仅为当前 WebView 的 HTTPS 页面 URL。入口只在 `chatgpt.com` 精确主机名页面显示，并复用现有可信来源检查。
+当 WebView 没有原生 `navigator.share` 时，Nova 安装一个单用途 `NovaWebShare` 接口，并在页面 JavaScript 中提供兼容的 `navigator.share(data)`：
 
-## 为什么不使用 JavaScript Bridge
+`navigator.share(data)` → `NovaWebShare.share(title,text,url)` → `Intent.ACTION_SEND` → Android Sharesheet
 
-不引入 `addJavascriptInterface()` 或其他通用 JavaScript → Android API。这样可以保持 README 中既有的“无 JavaScript 原生接口”安全边界，不让远程网页 JavaScript 获得调用 Nova 原生能力的通道。
+如果 WebView 将来原生提供 `navigator.share`，兼容层不覆盖它。
 
-网页内分享按钮与原生菜单入口是两个不同能力：本版本保证原生菜单可以分享页面链接，但不声称修复网页内部的 `navigator.share` 调用。
+## 3. 安全边界
 
-## 为什么不增加 `<queries>`
+Android 官方文档指出，`addJavascriptInterface` 会暴露到 WebView 的所有 frame，调用 frame 的来源不能由应用可靠判断。因此这里严格限制桥接能力：
 
-Nova 不需要通过 `PackageManager` 预先枚举或判断分享目标。Android 官方文档说明，直接启动隐式 Intent 不要求额外的 package visibility；只有需要事先查询可用应用时才需要相应的 `<queries>` 声明。因此本版本不扩大应用对已安装应用的可见范围。
+- 只在 `https://chatgpt.com` 精确主机页面安装；
+- 页面开始导航时先移除接口；
+- 页面加载完成并再次通过可信来源检查后才安装；
+- 接口只有一个 `share` 方法；
+- 原生侧再次检查当前 WebView 页面仍为可信 `chatgpt.com`；
+- 不暴露 Cookie、Storage、账号状态、文件系统、网络请求或任意 Java 方法。
 
-## WebView 能力表述与实测基线
+这不是通用 JavaScript Bridge，而是单用途分享适配器；仍应把它视为 WebView 安全边界的一部分。
 
-Android System WebView 是通过 Google Play 持续更新的 Chromium 实现，Nova 无法控制用户设备上的 WebView 版本。因此本文件不把「WebView 不提供 Web Share API」写成永久成立的结论，只记录当前事实与实测：
+## 4. 两种分享的语义
 
-> 截至Nova 1.3.7 的目标环境与实测，Android System WebView 未提供 Nova 所需的 Web Share API（`navigator.share`）能力；因此 Nova 不依赖 `navigator.share`，而使用原生菜单分享。
+网页 Share 的目标是让 ChatGPT 自己完成其共享链接流程，然后把最终提供给 `navigator.share` 的数据交给 Android。Nova 不调用 ChatGPT 私有 API，也不自行伪造 `/share/` URL。
 
-### 实测基线记录
+Nova 菜单“分享当前页面”则明确只分享当前 WebView URL。它可能是 `/c/<conversation-id>` 私有会话地址，不能被当作 ChatGPT 共享链接。
 
-每次验收时通过 `chrome://inspect` 连接真机 WebView（Android 官方支持 WebView 远程调试），在控制台执行 `typeof navigator.share` 并补充一行记录。若未来某次实测不再是 `"undefined"`，回到「后续」一节重新评估。
+## 5. 验收
 
-| 日期 | Android 版本 | System WebView 版本 | `typeof navigator.share` | 备注 |
-| --- | --- | --- | --- | --- |
-| 待补（1.3.7 验收时填写） |  |  |  |  |
+真机上至少验证：
 
-## 后续
+1. 登录 ChatGPT；
+2. 打开具体会话；
+3. 点击 ChatGPT 网页 Share；
+4. 如果出现分享预览/创建链接，完成 Create link 或 Copy link；
+5. 如果进入 Android Sharesheet，确认分享内容是 ChatGPT 提供的最终 URL；
+6. 最终共享链接应为 `https://chatgpt.com/share/...`，而不是普通 `/c/...`；
+7. 取消系统 Sharesheet 不应导致崩溃；
+8. 离开 `chatgpt.com` 后不应保留 Web Share 接口；
+9. 在 `chrome://inspect` 中记录 Android 与 System WebView 版本以及 `typeof navigator.share`。
 
-如果未来需要让网页内的分享按钮直接调用 Android Sharesheet，应先重新评估 WebView 安全边界、来源限制和桥接接口的最小权限，而不是直接加入通用 JavaScript Bridge。
+## 6. 后续
+
+如果未来 System WebView 原生支持 Web Share API，兼容层应自动停用。若 ChatGPT 前端改变 Share 实现，使其不再调用 `navigator.share`，应根据实际行为重新定位，而不是假定旧兼容层仍然适用。
