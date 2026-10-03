@@ -87,10 +87,20 @@ public class MainActivity extends Activity {
                 && !e.disabled && !e.readOnly && !!e.getClientRects().length
                 && (e.isContentEditable || e.tagName === 'TEXTAREA');
 
-              const target = isComposer(document.activeElement)
-                ? document.activeElement
-                : (window.__novaPasteTarget && isComposer(window.__novaPasteTarget)
-                    ? window.__novaPasteTarget : null);
+              const findComposer = e => {
+                if (isComposer(e)) return e;
+                if (e && e.closest) {
+                  const candidate = e.closest('#prompt-textarea, #mobile-composer-prompt');
+                  if (isComposer(candidate)) return candidate;
+                }
+                const focused = document.activeElement;
+                if (isComposer(focused)) return focused;
+                const remembered = window.__novaPasteTarget;
+                if (isComposer(remembered)) return remembered;
+                return document.querySelector('#prompt-textarea, #mobile-composer-prompt');
+              };
+
+              const target = findComposer(document.activeElement);
               if (!target) return false;
 
               if (target.tagName === 'TEXTAREA') {
@@ -154,35 +164,75 @@ public class MainActivity extends Activity {
               if (window.__novaPasteCompatibilityInstalled) return;
               window.__novaPasteCompatibilityInstalled = true;
 
+              const selector = '#prompt-textarea, #mobile-composer-prompt';
               const isComposer = e => !!e && (e.id === 'prompt-textarea' || e.id === 'mobile-composer-prompt')
                 && !e.disabled && !e.readOnly && !!e.getClientRects().length
                 && (e.isContentEditable || e.tagName === 'TEXTAREA');
 
+              const resolveComposer = e => {
+                if (isComposer(e)) return e;
+                if (e && e.closest) {
+                  const candidate = e.closest(selector);
+                  if (isComposer(candidate)) return candidate;
+                }
+                const focused = document.activeElement;
+                if (isComposer(focused)) return focused;
+                const current = document.querySelector(selector);
+                return isComposer(current) ? current : null;
+              };
+
               const remember = e => {
-                if (!isComposer(e)) return;
-                window.__novaPasteTarget = e;
-                if (e.tagName === 'TEXTAREA') {
-                  e.__novaPasteStart = e.selectionStart;
-                  e.__novaPasteEnd = e.selectionEnd;
+                const composer = resolveComposer(e);
+                if (!composer) return;
+                window.__novaPasteTarget = composer;
+                if (composer.tagName === 'TEXTAREA') {
+                  composer.__novaPasteStart = composer.selectionStart;
+                  composer.__novaPasteEnd = composer.selectionEnd;
+                  window.__novaPasteRange = null;
                   return;
                 }
                 const s = window.getSelection();
-                if (s && s.rangeCount && e.contains(s.anchorNode) && e.contains(s.focusNode)) {
+                if (s && s.rangeCount && composer.contains(s.anchorNode) && composer.contains(s.focusNode)) {
                   window.__novaPasteRange = s.getRangeAt(0).cloneRange();
+                }
+              };
+
+              const clearStaleSelection = () => {
+                if (window.__novaPasteTarget && !isComposer(window.__novaPasteTarget)) {
+                  window.__novaPasteTarget = null;
+                  window.__novaPasteRange = null;
                 }
               };
 
               document.addEventListener('focusin', e => remember(e.target), true);
               document.addEventListener('selectionchange', () => remember(document.activeElement), true);
 
+              const markSpaNavigation = () => {
+                clearStaleSelection();
+                window.__novaPasteRange = null;
+                const current = resolveComposer(null);
+                if (current) remember(current);
+              };
+              for (const method of ['pushState', 'replaceState']) {
+                const original = history[method];
+                history[method] = function(...args) {
+                  const result = original.apply(this, args);
+                  setTimeout(markSpaNavigation, 0);
+                  return result;
+                };
+              }
+              window.addEventListener('popstate', () => setTimeout(markSpaNavigation, 0));
+              window.addEventListener('hashchange', () => setTimeout(markSpaNavigation, 0));
+
               window.__novaPasteText = INSERT_FUNCTION;
 
               document.addEventListener('paste', event => {
-                if (!isComposer(event.target)) return;
+                const composer = resolveComposer(event.target);
+                if (!composer) return;
                 const data = event.clipboardData;
                 const text = data ? data.getData('text/plain') : '';
                 if (!text) return;
-                remember(event.target);
+                remember(composer);
                 if (window.__novaPasteText(text)) {
                   event.preventDefault();
                   event.stopImmediatePropagation();
@@ -790,10 +840,16 @@ public class MainActivity extends Activity {
                 || !"chatgpt.com".equals(uri.getHost()) || uri.getUserInfo() != null
                 || (uri.getPort() != -1 && uri.getPort() != 443)) return;
 
-        ClipboardManager clipboard = (ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
-        ClipData clip = clipboard.getPrimaryClip();
-        CharSequence text = clip == null || clip.getItemCount() == 0
-                ? null : clip.getItemAt(0).coerceToText(this);
+        CharSequence text;
+        try {
+            ClipboardManager clipboard = (ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
+            ClipData clip = clipboard == null ? null : clipboard.getPrimaryClip();
+            text = clip == null || clip.getItemCount() == 0
+                    ? null : clip.getItemAt(0).coerceToText(this);
+        } catch (RuntimeException error) {
+            Toast.makeText(this, "无法读取系统剪贴板，请重试。", Toast.LENGTH_LONG).show();
+            return;
+        }
         if (text == null || text.length() == 0) {
             Toast.makeText(this, "剪贴板中没有可粘贴的文本。", Toast.LENGTH_SHORT).show();
             return;
