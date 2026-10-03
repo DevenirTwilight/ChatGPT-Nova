@@ -25,7 +25,8 @@ report = json.loads(resultfile.read_text()) if resultfile.exists() else {}
 # creates its replacement, closing a dialog being exercised by this test.
 activities = set(re.findall(r'Lifecycle status change: com\.example\.chatgptnova\.MainActivity@(\w+) in: PRE_ON_CREATE', log))
 overlay_restart = ('Config changes=80000000' in log and len(activities) > 1
-                   and not report.get('checks') and 'Timed out: click ' in report.get('error', ''))
+                   and not report.get('checks')
+                   and 'nativeControlsAndLifecycleRemainUsable' in report.get('error', ''))
 if 'Process: com.example.chatgptnova,' in log or not (provider_death or overlay_restart):
     sys.exit(first.returncode)
 

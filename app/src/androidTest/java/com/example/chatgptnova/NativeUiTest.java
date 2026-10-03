@@ -101,7 +101,7 @@ public final class NativeUiTest extends FixtureActivity {
         main(() -> { CookieManager.getInstance().setCookie(PAGE,"nova_native_restart=retained; Path=/; Secure"); CookieManager.getInstance().flush(); });
         js("localStorage.setItem('nova_native_restart','retained')");
         assertEquals("retained", js("localStorage.getItem('nova_native_restart')"));
-        SystemClock.sleep(1500); // Allow Chromium to commit DOM storage before force-stop.
+        SystemClock.sleep(6000); // Exceed Chromium's five-second default commit timer before force-stop.
     }
 
     @Test public void processRestartPreservesSyntheticSessionAndControls() throws Exception {

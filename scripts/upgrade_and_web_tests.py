@@ -63,6 +63,10 @@ try:
         adb('shell','pm','grant',PACKAGE,permission)
     assert suite(PACKAGE+'.UpgradeTest#testSeedUpgradeData','v1-seed.txt') == 1
     adb('shell','am','force-stop',PACKAGE)
+    # Observe persisted baseline data before installing the candidate. A marker
+    # lost while seeding v1 must not be mistaken for a candidate upgrade failure.
+    assert suite(PACKAGE+'.UpgradeTest#testSeedDataPersistedBeforeUpgrade','v1-persisted.txt') == 1
+    adb('shell','am','force-stop',PACKAGE)
     install(release)
     upgrade_count = independent('upgrade', lambda: suite(PACKAGE+'.UpgradeTest#testUpgradeDataPreserved','upgrade.txt'))
     if upgrade_count == 1:
