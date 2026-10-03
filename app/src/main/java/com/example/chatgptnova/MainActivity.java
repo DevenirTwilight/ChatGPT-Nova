@@ -118,13 +118,14 @@ public class MainActivity extends Activity {
               };
 
               if (target.tagName === 'TEXTAREA') {
-                target.focus({preventScroll:true});
-                const start = Number.isInteger(target.__novaPasteStart)
+                const hasCurrentSelection = document.activeElement === target;
+                const start = !hasCurrentSelection && Number.isInteger(target.__novaPasteStart)
                     ? Math.max(0, Math.min(target.__novaPasteStart, target.value.length))
                     : target.selectionStart;
-                const end = Number.isInteger(target.__novaPasteEnd)
+                const end = !hasCurrentSelection && Number.isInteger(target.__novaPasteEnd)
                     ? Math.max(start, Math.min(target.__novaPasteEnd, target.value.length))
                     : target.selectionEnd;
+                target.focus({preventScroll:true});
                 target.setSelectionRange(start, end);
                 if (offerToEditor()) return true;
                 const value = target.value.slice(0, start) + text + target.value.slice(end);
@@ -138,15 +139,24 @@ public class MainActivity extends Activity {
                 return target.value === value;
               }
 
-              target.focus({preventScroll:true});
               const selection = window.getSelection();
-              let range = window.__novaPasteRange && window.__novaPasteRange.cloneRange
-                ? window.__novaPasteRange.cloneRange() : null;
+              if (!selection) return false;
+              // Tracking is deferred to a frame; its saved Range can lag behind
+              // the user's selection. Capture the live Range before focus changes.
+              let range = null;
+              try {
+                const current = selection.getRangeAt(0);
+                if (target.contains(current.commonAncestorContainer)) range = current.cloneRange();
+              } catch (ignored) {}
+              if (!range && window.__novaPasteRange && window.__novaPasteRange.cloneRange) {
+                range = window.__novaPasteRange.cloneRange();
+              }
               if (!range || !target.contains(range.commonAncestorContainer)) {
                 range = document.createRange();
                 range.selectNodeContents(target);
                 range.collapse(false);
               }
+              target.focus({preventScroll:true});
               selection.removeAllRanges();
               selection.addRange(range);
               if (offerToEditor()) return true;

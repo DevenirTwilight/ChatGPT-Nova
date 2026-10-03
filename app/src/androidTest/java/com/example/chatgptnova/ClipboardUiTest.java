@@ -8,7 +8,9 @@ import android.view.inputmethod.InputConnection;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicBoolean;
+import org.json.JSONArray;
 import org.json.JSONObject;
 import org.junit.After;
 import org.junit.Before;
@@ -52,6 +54,28 @@ public final class ClipboardUiTest extends FixtureActivity {
         waitFor("contenteditable paste", () -> "hello world".equals(js(
                 "document.getElementById('prompt-textarea').textContent")));
         assertEquals("hello world", js("document.getElementById('prompt-textarea').textContent"));
+    }
+
+    @Test public void nativePastePrefersLiveSelectionOverDeferredCache() {
+        clickWeb("prompt-textarea");
+        assertEquals("abXYef", js("""
+                (() => {
+                  const e = document.getElementById('prompt-textarea');
+                  e.textContent = 'abcdef';
+                  e.focus();
+                  const stale = document.createRange();
+                  stale.selectNodeContents(e);
+                  stale.collapse(false);
+                  window.__novaPasteRange = stale.cloneRange();
+                  const current = document.createRange();
+                  current.setStart(e.firstChild, 2);
+                  current.setEnd(e.firstChild, 4);
+                  getSelection().removeAllRanges();
+                  getSelection().addRange(current);
+                  window.__novaPasteText('XY');
+                  return e.textContent;
+                })()
+                """));
     }
 
     @Test public void nativePasteSurvivesSpaComposerReplacement() {
@@ -189,72 +213,90 @@ public final class ClipboardUiTest extends FixtureActivity {
                 """;
         js(setup);
         String text = "# Heading\n\n中文 English 😀 <script> & literal\n- **bold**\n\n".repeat(4096);
-        String editorSize = js("(()=>{const e=document.getElementById('prompt-textarea');"
-                + "return e.clientWidth+':'+e.clientHeight})()");
-        // The reference must use the same paste route, not a direct DOM update:
-        // old WebViews also do selection/IME work around clipboard events.
-        // This same-origin test iframe has identical editor CSS but no Nova
-        // paste/selection listeners (the production script is top-frame only).
-        js("(()=>{const f=document.createElement('iframe');f.id='paste-baseline';"
-                + "f.style='position:fixed;inset:0;width:100%;height:100%;border:0;z-index:99999';"
-                + "f.srcdoc=" + JSONObject.quote(CLIPBOARD_HTML) + ";document.body.append(f);return true})()");
-        waitFor("baseline iframe ready", () -> "true".equals(js(
-                "document.getElementById('paste-baseline')?.contentDocument?.getElementById('ready')?.textContent === 'ready'")));
-        assertEquals("reference must not run Nova paste listeners", "undefined", js(
-                "typeof document.getElementById('paste-baseline').contentWindow.__novaPasteCompatibilityInstalled"));
-        assertEquals("reference editor has the same dimensions", editorSize, js(
-                "(()=>{const e=document.getElementById('paste-baseline').contentDocument.getElementById('prompt-textarea');"
-                        + "return e.clientWidth+':'+e.clientHeight})()"));
-        js("document.getElementById('paste-baseline').contentWindow.eval(" + JSONObject.quote(setup) + ");true");
-        js("(()=>{const f=document.getElementById('paste-baseline');"
-                + "f.contentDocument.getElementById('prompt-textarea').focus();return f.contentWindow.fixtureReset()})()");
-        putClipboard(text);
-        SystemClock.sleep(400);
-        if (nativeMenu) {
-            js("(()=>{const f=document.getElementById('paste-baseline'),w=f.contentWindow;"
-                    + "const data=new w.DataTransfer();data.setData('text/plain'," + JSONObject.quote(text) + ");"
-                    + "f.contentDocument.getElementById('prompt-textarea').dispatchEvent(new w.ClipboardEvent('paste',"
-                    + "{bubbles:true,cancelable:true,clipboardData:data}));return true})()");
-        } else {
-            systemPaste();
+        double[] transactions = new double[3], paints = new double[3];
+        double[] baselineTransactions = new double[3], baselinePaints = new double[3];
+        JSONArray samples = new JSONArray();
+        // Shared emulator scheduling varies between single pastes. Use three
+        // paired samples; preserve the existing median regression thresholds.
+        for (int sample = 0; sample < transactions.length; sample++) {
+            String editorSize = js("(()=>{const e=document.getElementById('prompt-textarea');"
+                    + "return e.clientWidth+':'+e.clientHeight})()");
+            // The reference must use the same paste route, not a direct DOM update:
+            // old WebViews also do selection/IME work around clipboard events.
+            // This same-origin test iframe has identical editor CSS but no Nova
+            // paste/selection listeners (the production script is top-frame only).
+            js("(()=>{const f=document.createElement('iframe');f.id='paste-baseline';"
+                    + "f.style='position:fixed;inset:0;width:100%;height:100%;border:0;z-index:99999';"
+                    + "f.srcdoc=" + JSONObject.quote(CLIPBOARD_HTML) + ";document.body.append(f);return true})()");
+            waitFor("baseline iframe ready", () -> "true".equals(js(
+                    "document.getElementById('paste-baseline')?.contentDocument?.getElementById('ready')?.textContent === 'ready'")));
+            assertEquals("reference must not run Nova paste listeners", "undefined", js(
+                    "typeof document.getElementById('paste-baseline').contentWindow.__novaPasteCompatibilityInstalled"));
+            assertEquals("reference editor has the same dimensions", editorSize, js(
+                    "(()=>{const e=document.getElementById('paste-baseline').contentDocument.getElementById('prompt-textarea');"
+                            + "return e.clientWidth+':'+e.clientHeight})()"));
+            js("document.getElementById('paste-baseline').contentWindow.eval(" + JSONObject.quote(setup) + ");true");
+            js("(()=>{const f=document.getElementById('paste-baseline');"
+                    + "f.contentDocument.getElementById('prompt-textarea').focus();return f.contentWindow.fixtureReset()})()");
+            putClipboard(text);
+            SystemClock.sleep(400);
+            if (nativeMenu) {
+                js("(()=>{const f=document.getElementById('paste-baseline'),w=f.contentWindow;"
+                        + "const data=new w.DataTransfer();data.setData('text/plain'," + JSONObject.quote(text) + ");"
+                        + "f.contentDocument.getElementById('prompt-textarea').dispatchEvent(new w.ClipboardEvent('paste',"
+                        + "{bubbles:true,cancelable:true,clipboardData:data}));return true})()");
+            } else {
+                systemPaste();
+            }
+            waitFor("editor paste baseline painted", () -> "true".equals(js(
+                    "document.getElementById('paste-baseline').contentWindow.fixturePaintMs !== null")));
+            assertEquals("baseline uses one paste event", "1", js(
+                    "document.getElementById('paste-baseline').contentWindow.fixturePasteCount"));
+            assertLongTextEquals("ab" + text + "ef", js(
+                    "document.getElementById('paste-baseline').contentWindow.fixtureModel"));
+            double baselinePaintMs = Double.parseDouble(js(
+                    "document.getElementById('paste-baseline').contentWindow.fixturePaintMs"));
+            double baselineTransactionMs = Double.parseDouble(js(
+                    "document.getElementById('paste-baseline').contentWindow.fixtureTransactionMs"));
+            js("document.getElementById('paste-baseline').remove();true");
+            clickWeb("prompt-textarea");
+            js("fixtureReset()");
+            putClipboard(text);
+            SystemClock.sleep(400); // Let Chromium observe the new OS clipboard value.
+            if (nativeMenu) {
+                click("菜单");
+                click("从剪贴板粘贴");
+            } else {
+                systemPaste();
+            }
+            waitFor("page editor long paste painted", () -> "true".equals(js("fixturePaintMs !== null")));
+            assertEquals("one page transaction", "1", js("fixturePasteCount"));
+            assertEquals("handled paste must bypass native HTML editing", "0", js("fixtureNativeEdits"));
+            assertLongTextEquals("ab" + text + "ef", js("fixtureModel"));
+            assertLongTextEquals("ab" + text + "ef", js("document.getElementById('prompt-textarea').innerText"));
+            assertEquals("plain text never creates executable elements", "0", js(
+                    "document.getElementById('prompt-textarea').querySelectorAll('script').length"));
+            assertEquals(String.valueOf(2 + text.length()), js("getSelection().anchorOffset"));
+            double paintMs = Double.parseDouble(js("fixturePaintMs"));
+            double transactionMs = Double.parseDouble(js("fixtureTransactionMs"));
+            baselineTransactions[sample] = baselineTransactionMs;
+            baselinePaints[sample] = baselinePaintMs;
+            transactions[sample] = transactionMs;
+            paints[sample] = paintMs;
+            samples.put(new JSONObject().put("transactionMs", transactionMs).put("paintMs", paintMs)
+                    .put("baselineTransactionMs", baselineTransactionMs).put("baselinePaintMs", baselinePaintMs));
+            assertEquals("one undo restores the pre-paste draft", "abcdef", js("fixtureUndo()"));
+            assertEquals("abcdef", js("document.getElementById('prompt-textarea').innerText"));
         }
-        waitFor("editor paste baseline painted", () -> "true".equals(js(
-                "document.getElementById('paste-baseline').contentWindow.fixturePaintMs !== null")));
-        assertEquals("baseline uses one paste event", "1", js(
-                "document.getElementById('paste-baseline').contentWindow.fixturePasteCount"));
-        assertEquals("ab" + text + "ef", js(
-                "document.getElementById('paste-baseline').contentWindow.fixtureModel"));
-        double baselinePaintMs = Double.parseDouble(js(
-                "document.getElementById('paste-baseline').contentWindow.fixturePaintMs"));
-        double baselineTransactionMs = Double.parseDouble(js(
-                "document.getElementById('paste-baseline').contentWindow.fixtureTransactionMs"));
-        js("document.getElementById('paste-baseline').remove();true");
-        clickWeb("prompt-textarea");
-        js("fixtureReset()");
-        putClipboard(text);
-        SystemClock.sleep(400); // Let Chromium observe the new OS clipboard value.
-        if (nativeMenu) {
-            click("菜单");
-            click("从剪贴板粘贴");
-        } else {
-            systemPaste();
-        }
-        waitFor("page editor long paste painted", () -> "true".equals(js("fixturePaintMs !== null")));
-        assertEquals("one page transaction", "1", js("fixturePasteCount"));
-        assertEquals("handled paste must bypass native HTML editing", "0", js("fixtureNativeEdits"));
-        assertEquals("ab" + text + "ef", js("fixtureModel"));
-        assertEquals("ab" + text + "ef", js("document.getElementById('prompt-textarea').innerText"));
-        assertEquals("plain text never creates executable elements", "0", js(
-                "document.getElementById('prompt-textarea').querySelectorAll('script').length"));
-        assertEquals(String.valueOf(2 + text.length()), js("getSelection().anchorOffset"));
-        double paintMs = Double.parseDouble(js("fixturePaintMs"));
-        double transactionMs = Double.parseDouble(js("fixtureTransactionMs"));
+        double transactionMs = median(transactions), paintMs = median(paints);
+        double baselineTransactionMs = median(baselineTransactions), baselinePaintMs = median(baselinePaints);
         JSONObject result = new JSONObject().put("page", "test-owned paste transaction and history")
                 .put("route", nativeMenu ? "native-menu" : "system-paste")
                 .put("utf8Bytes", text.getBytes(StandardCharsets.UTF_8).length)
                 .put("utf16Units", text.length()).put("transactionMs", transactionMs)
                 .put("paintMs", paintMs).put("baselineTransactionMs", baselineTransactionMs)
-                .put("baselinePaintMs", baselinePaintMs)
+                .put("baselinePaintMs", baselinePaintMs).put("aggregation", "median of three paired samples")
+                .put("samples", samples)
                 .put("baseline", "same paste route in an identical iframe without Nova paste listeners");
         File directory = new File(instrument.getTargetContext().getExternalFilesDir(null), "clipboard-probe");
         assertTrue(directory.isDirectory() || directory.mkdirs());
@@ -262,12 +304,24 @@ public final class ClipboardUiTest extends FixtureActivity {
                 nativeMenu ? "page-editor-native.json" : "page-editor-system.json"))) {
             out.write(result.toString(2).getBytes(StandardCharsets.UTF_8));
         }
-        assertEquals("one undo restores the pre-paste draft", "abcdef", js("fixtureUndo()"));
-        assertEquals("abcdef", js("document.getElementById('prompt-textarea').innerText"));
         assertTrue("Long paste transaction took " + transactionMs + " ms; editor baseline " + baselineTransactionMs,
                 transactionMs < Math.max(1000, baselineTransactionMs + 500));
         assertTrue("Long paste paint took " + paintMs + " ms; editor baseline " + baselinePaintMs,
                 paintMs < Math.max(3000, baselinePaintMs + 1500));
+    }
+
+    private static void assertLongTextEquals(String expected, String actual) {
+        int prefix = 0;
+        while (prefix < Math.min(expected.length(), actual.length())
+                && expected.charAt(prefix) == actual.charAt(prefix)) prefix++;
+        assertTrue("Long text mismatch at UTF-16 index " + prefix + "; expected length "
+                + expected.length() + ", actual length " + actual.length(), expected.equals(actual));
+    }
+
+    private static double median(double[] values) {
+        double[] sorted = values.clone();
+        Arrays.sort(sorted);
+        return sorted[sorted.length / 2];
     }
 
     private void systemPaste() {
