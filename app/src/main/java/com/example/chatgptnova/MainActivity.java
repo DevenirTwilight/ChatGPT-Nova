@@ -640,9 +640,10 @@ public class MainActivity extends Activity {
             items.add(0, 2, 1, "ChatGPT 首页");
             if (accountUiState == AccountUiState.SIGNED_OUT) items.add(0, 3, 2, "登录");
             items.add(0, 4, 3, "用浏览器打开");
+            if (canShareCurrentPage()) items.add(0, 7, 4, "分享当前页面");
             if ("chatgpt.com".equals(Uri.parse(webView.getUrl() == null ? "" : webView.getUrl()).getHost()))
-                items.add(0, 6, 4, "从剪贴板粘贴");
-            items.add(0, 5, 4, "设置");
+                items.add(0, 6, 5, "从剪贴板粘贴");
+            items.add(0, 5, 6, "设置");
             overflowMenu.setOnMenuItemClickListener(item -> {
                 if (clearing || webView == null) return true;
                 switch (item.getItemId()) {
@@ -657,6 +658,9 @@ public class MainActivity extends Activity {
                         break;
                     case 4:
                         openCurrentPageInBrowser();
+                        break;
+                    case 7:
+                        shareCurrentPage();
                         break;
                     case 6:
                         // Finish popup/IME focus transitions before editing the draft.
@@ -767,10 +771,37 @@ public class MainActivity extends Activity {
     }
 
     private void showAbout() {
-        new AlertDialog.Builder(this).setTitle("ChatGPT Nova 1.3.6")
+        new AlertDialog.Builder(this).setTitle("ChatGPT Nova 1.3.7")
                 .setIcon(R.mipmap.ic_launcher)
                 .setMessage("ChatGPT Nova 是用于访问 chatgpt.com 的个人客户端，与官方 ChatGPT App 独立存储登录状态。\n\n这是非官方第三方客户端，不由 OpenAI 发布、维护或背书。应用内登录使用 chatgpt.com 官方登录页，但登录/会话仍运行在 Nova 的 WebView 中。第三方客户端可能与官方客户端存在不同的安全验证、访问限制或账号风险；这不表示使用非官方客户端一定会封号。若不愿承担这项不确定性，请使用官方 ChatGPT App 或浏览器。应用本身不读取或保存账号密码。")
                 .setPositiveButton("知道了", null).show();
+    }
+
+    private boolean canShareCurrentPage() {
+        if (clearing || webView == null) return false;
+        Uri uri = Uri.parse(webView.getUrl() == null ? "" : webView.getUrl());
+        return isTrustedOrigin(uri) && "chatgpt.com".equalsIgnoreCase(uri.getHost());
+    }
+
+    private void shareCurrentPage() {
+        if (!canShareCurrentPage()) {
+            Toast.makeText(this, "当前页面不能通过 Nova 分享。", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        String url = webView.getUrl();
+        if (url == null || url.isEmpty()) {
+            Toast.makeText(this, "当前页面没有可分享的链接。", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        Intent send = new Intent(Intent.ACTION_SEND)
+                .setType("text/plain")
+                .putExtra(Intent.EXTRA_TEXT, url)
+                .putExtra(Intent.EXTRA_TITLE, "ChatGPT Nova");
+        try {
+            startActivity(Intent.createChooser(send, "分享当前页面"));
+        } catch (ActivityNotFoundException ignored) {
+            Toast.makeText(this, "设备上没有可用的分享应用。", Toast.LENGTH_LONG).show();
+        }
     }
 
     private void openCurrentPageInBrowser() {
