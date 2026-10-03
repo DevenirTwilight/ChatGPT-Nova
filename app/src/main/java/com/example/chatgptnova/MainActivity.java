@@ -83,39 +83,107 @@ public class MainActivity extends Activity {
 
     private static final String INSERT_COMPOSER_TEXT = """
             (text => {
-              const e = document.activeElement;
-              if (!e || !['prompt-textarea','mobile-composer-prompt'].includes(e.id)
-                  || e.disabled || e.readOnly || !e.getClientRects().length
-                  || !(e.isContentEditable || e.tagName === 'TEXTAREA')) return false;
-              if (e.tagName === 'TEXTAREA') {
-                const start = e.selectionStart, end = e.selectionEnd;
-                const value = e.value.slice(0, start) + text + e.value.slice(end);
-                // Native setter avoids Chromium's per-line editing/layout stall
-                // and notifies React without changing its value tracker first.
-                Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value').set.call(e, value);
-                e.setSelectionRange(start + text.length, start + text.length);
-                e.dispatchEvent(new InputEvent('input', {bubbles:true, inputType:'insertFromPaste', data:text}));
-                return e.value === value;
+              const isComposer = e => !!e && (e.id === 'prompt-textarea' || e.id === 'mobile-composer-prompt')
+                && !e.disabled && !e.readOnly && !!e.getClientRects().length
+                && (e.isContentEditable || e.tagName === 'TEXTAREA');
+
+              const target = isComposer(document.activeElement)
+                ? document.activeElement
+                : (window.__novaPasteTarget && isComposer(window.__novaPasteTarget)
+                    ? window.__novaPasteTarget : null);
+              if (!target) return false;
+
+              if (target.tagName === 'TEXTAREA') {
+                target.focus({preventScroll:true});
+                const start = Number.isInteger(target.__novaPasteStart)
+                    ? Math.max(0, Math.min(target.__novaPasteStart, target.value.length))
+                    : target.selectionStart;
+                const end = Number.isInteger(target.__novaPasteEnd)
+                    ? Math.max(start, Math.min(target.__novaPasteEnd, target.value.length))
+                    : target.selectionEnd;
+                const value = target.value.slice(0, start) + text + target.value.slice(end);
+                const setter = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value').set;
+                setter.call(target, value);
+                target.setSelectionRange(start + text.length, start + text.length);
+                target.dispatchEvent(new InputEvent('input', {
+                  bubbles:true, inputType:'insertFromPaste', data:text
+                }));
+                target.dispatchEvent(new Event('change', {bubbles:true}));
+                return target.value === value;
               }
-              // A single escaped, whitespace-preserving fragment avoids thousands
-              // of insertText paragraph edits. Clipboard markup remains inert text.
-              const span = document.createElement('span');
-              span.style.whiteSpace = 'pre-wrap';
-              span.textContent = text;
-              return document.execCommand('insertHTML', false, span.outerHTML);
+
+              target.focus({preventScroll:true});
+              const selection = window.getSelection();
+              let range = window.__novaPasteRange && window.__novaPasteRange.cloneRange
+                ? window.__novaPasteRange.cloneRange() : null;
+              if (!range || !target.contains(range.commonAncestorContainer)) {
+                range = document.createRange();
+                range.selectNodeContents(target);
+                range.collapse(false);
+              }
+              selection.removeAllRanges();
+              selection.addRange(range);
+
+              let inserted = false;
+              try {
+                inserted = document.execCommand('insertText', false, text);
+              } catch (ignored) {}
+
+              if (!inserted) {
+                const fragment = document.createDocumentFragment();
+                const parts = String(text).split(/(\n)/);
+                for (const part of parts) {
+                  if (part === '\n') fragment.appendChild(document.createElement('br'));
+                  else if (part) fragment.appendChild(document.createTextNode(part));
+                }
+                range.deleteContents();
+                range.insertNode(fragment);
+                range.collapse(false);
+                selection.removeAllRanges();
+                selection.addRange(range);
+                target.dispatchEvent(new InputEvent('input', {
+                  bubbles:true, inputType:'insertFromPaste', data:text
+                }));
+              }
+              return true;
             })
             """;
-    private static final String LONG_PASTE_COMPATIBILITY = """
+
+    private static final String PASTE_COMPATIBILITY = """
             (() => {
-              if (window.__novaLongPasteInstalled) return;
-              window.__novaLongPasteInstalled = true;
+              if (window.__novaPasteCompatibilityInstalled) return;
+              window.__novaPasteCompatibilityInstalled = true;
+
+              const isComposer = e => !!e && (e.id === 'prompt-textarea' || e.id === 'mobile-composer-prompt')
+                && !e.disabled && !e.readOnly && !!e.getClientRects().length
+                && (e.isContentEditable || e.tagName === 'TEXTAREA');
+
+              const remember = e => {
+                if (!isComposer(e)) return;
+                window.__novaPasteTarget = e;
+                if (e.tagName === 'TEXTAREA') {
+                  e.__novaPasteStart = e.selectionStart;
+                  e.__novaPasteEnd = e.selectionEnd;
+                  return;
+                }
+                const s = window.getSelection();
+                if (s && s.rangeCount && e.contains(s.anchorNode) && e.contains(s.focusNode)) {
+                  window.__novaPasteRange = s.getRangeAt(0).cloneRange();
+                }
+              };
+
+              document.addEventListener('focusin', e => remember(e.target), true);
+              document.addEventListener('selectionchange', () => remember(document.activeElement), true);
+
+              window.__novaPasteText = INSERT_FUNCTION;
+
               document.addEventListener('paste', event => {
-                const text = event.clipboardData && event.clipboardData.getData('text/plain');
-                if (!text || (text.length < 4096 && !text.includes('\\n'))) return;
-                const insert = INSERT_FUNCTION;
-                // Suppress the website/default paste only after insertion succeeds.
-                // Clipboard text stays plain text; never interpret it as HTML.
-                if (insert(text)) {
+                if (!isComposer(event.target)) return;
+                const data = event.clipboardData;
+                const text = data ? data.getData('text/plain') : '';
+                if (!text) return;
+                remember(event.target);
+                if (window.__novaPasteText(text)) {
                   event.preventDefault();
                   event.stopImmediatePropagation();
                 }
@@ -325,7 +393,7 @@ public class MainActivity extends Activity {
                 Uri pageOrigin = Uri.parse(view.getUrl() == null ? "" : view.getUrl());
                 if (isTrustedOrigin(pageOrigin) && "chatgpt.com".equals(pageOrigin.getHost())) {
                     installWebShareCompatibility();
-                    view.evaluateJavascript(LONG_PASTE_COMPATIBILITY, null);
+                    view.evaluateJavascript(PASTE_COMPATIBILITY, null);
                 }
                 refreshAccountUiState(null);
             }
@@ -721,34 +789,22 @@ public class MainActivity extends Activity {
         if (clearing || page == null || !"https".equals(uri.getScheme())
                 || !"chatgpt.com".equals(uri.getHost()) || uri.getUserInfo() != null
                 || (uri.getPort() != -1 && uri.getPort() != 443)) return;
-        page.requestFocus();
-        // Never target login fields, arbitrary inputs, or external pages.
-        page.evaluateJavascript("""
-                (() => {
-                  const e = document.activeElement;
-                  return !!e && (e.id === 'prompt-textarea' || e.id === 'mobile-composer-prompt')
-                    && !e.disabled && !e.readOnly && !!e.getClientRects().length
-                    && (e.isContentEditable || e.tagName === 'TEXTAREA');
-                })()
-                """, result -> {
-            if (page != webView || clearing || !address.equals(page.getUrl())) return;
-            if (!"true".equals(result)) {
-                Toast.makeText(this, "请先点一下聊天输入框，再从菜单粘贴。", Toast.LENGTH_LONG).show();
-                return;
+
+        ClipboardManager clipboard = (ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
+        ClipData clip = clipboard.getPrimaryClip();
+        CharSequence text = clip == null || clip.getItemCount() == 0
+                ? null : clip.getItemAt(0).coerceToText(this);
+        if (text == null || text.length() == 0) {
+            Toast.makeText(this, "剪贴板中没有可粘贴的文本。", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        String plainText = JSONObject.quote(text.toString())
+                .replace("\u2028", "\\u2028").replace("\u2029", "\\u2029");
+        page.evaluateJavascript(INSERT_COMPOSER_TEXT + "(" + plainText + ")", inserted -> {
+            if (!"true".equals(inserted) && page == webView && !clearing) {
+                Toast.makeText(this, "未能粘贴，请先点一下聊天输入框后重试。", Toast.LENGTH_LONG).show();
             }
-            ClipboardManager clipboard = (ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
-            ClipData clip = clipboard.getPrimaryClip();
-            CharSequence text = clip == null || clip.getItemCount() == 0 ? null : clip.getItemAt(0).getText();
-            if (text == null || text.length() == 0) {
-                Toast.makeText(this, "剪贴板中没有文本。", Toast.LENGTH_SHORT).show();
-                return;
-            }
-            String plainText = JSONObject.quote(text.toString())
-                    .replace("\u2028", "\\u2028").replace("\u2029", "\\u2029");
-            page.evaluateJavascript(INSERT_COMPOSER_TEXT + "(" + plainText + ")", inserted -> {
-                if (!"true".equals(inserted) && page == webView && !clearing)
-                    Toast.makeText(this, "未能粘贴，请重新点一下聊天输入框。", Toast.LENGTH_LONG).show();
-            });
         });
     }
 
