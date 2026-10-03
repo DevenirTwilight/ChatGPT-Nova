@@ -14,11 +14,13 @@ Nova 1.3.7 增加一个原生菜单入口：**分享当前页面**。
 
 分享内容仅为当前 WebView 的 HTTPS 页面 URL。入口只在 `chatgpt.com` 精确主机名页面显示，并复用现有可信来源检查。
 
-## 为什么不使用 JavaScript Bridge
+## 为什么使用受限 JavaScript Bridge
 
-不引入 `addJavascriptInterface()` 或其他通用 JavaScript → Android API。这样可以保持 README 中既有的“无 JavaScript 原生接口”安全边界，不让远程网页 JavaScript 获得调用 Nova 原生能力的通道。
+1.3.7 为了修复 ChatGPT 网页自身 Share，在可信 `chatgpt.com` 页面提供一个**单用途** `NovaWebShare.share(title,text,url)` 适配器，并由它调用 Android Sharesheet。它不是通用 JavaScript Bridge：没有 Cookie、Storage、文件、网络、账号或任意 Java 方法。
 
-网页内分享按钮与原生菜单入口是两个不同能力：本版本保证原生菜单可以分享页面链接，但不声称修复网页内部的 `navigator.share` 调用。
+页面开始导航时立即移除接口；只有页面加载完成且仍通过现有可信来源检查时才重新安装。原生 `shareWebPayload()` 再次检查当前 WebView URL 和传入 URL，只允许 `chatgpt.com`。Android 官方同时明确警告 `addJavascriptInterface()` 的安全风险，因此这个接口必须继续保持最小权限和来源限制。
+
+网页内 Share 与 Nova 原生菜单是两条不同入口，但现在都能进入 Android Sharesheet。网页 Share 仍由 ChatGPT 自己决定共享流程；Nova 不自行创建 `/share/` 链接。
 
 ## 为什么不增加 `<queries>`
 
