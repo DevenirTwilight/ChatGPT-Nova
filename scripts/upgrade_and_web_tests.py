@@ -55,6 +55,9 @@ try:
     upgrade_count = independent('upgrade', lambda: suite(PACKAGE+'.UpgradeTest#testUpgradeDataPreserved','upgrade.txt'))
     if upgrade_count == 1:
         checks.append('Original signed v1 is upgraded with install -r; synthetic cookie and localStorage survive process restart')
+    share_count = independent('web-share', lambda: suite(PACKAGE+'.WebShareTest','web-share-fixtures.txt'))
+    if share_count == 5:
+        checks.append('Synthetic webpage navigator.share launches the Android Sharesheet with the supplied public URL; target callback, cancellation, invalid data, user gesture, SPA/reload and origin/frame restrictions are exercised')
     try:
         clipboard_count = 0
         for method in ('nativeMenuPaste','imeCommitText','imePasteCommand','longPressSystemPaste'):
@@ -77,6 +80,7 @@ try:
                'Visible account controls drive signed-in, signed-out and unknown menus; sensitive actions stay in settings with confirmation']
     report = {'api':int(api),'passed':not failures,'checks':checks,'failures':failures,'diagnostics':diagnostics,
               'not_tested':['Real ChatGPT account authentication, long-term authenticated session and provider OAuth',
+                            'The live ChatGPT conversation Share button and actual delivery to external share targets on a physical device',
                             'Physical camera, live microphone capture and real authenticated ChatGPT attachments']}
     (OUT/'result.json').write_text(json.dumps(report,ensure_ascii=False,indent=2))
     print(json.dumps(report,ensure_ascii=False))

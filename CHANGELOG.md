@@ -1,10 +1,12 @@
 # 1.3.7 (versionCode 11)
 
 - 新增“分享当前页面”原生菜单入口：仅在可信的 `chatgpt.com` 页面可用，直接使用 Android Sharesheet 的 `ACTION_SEND` 分享当前 HTTPS 页面链接。
-- 修复 ChatGPT 网页内 Share 在 Android WebView 中因缺少 `navigator.share` 而无响应：仅在可信 `https://chatgpt.com` 页面安装单用途分享适配器，将网页提供的 title/text/url 交给 Android Sharesheet。
-- 不覆盖 WebView 已有的原生 `navigator.share`；页面开始导航时移除接口，加载完成且仍为可信 `chatgpt.com` 页面时才重新安装。
+- 为缺少 `navigator.share` 的 WebView 提供网页 Share 兼容层：使用加载前注册、限定 `https://chatgpt.com` 的 WebMessageListener；不暴露 Java 对象，不覆盖已有的原生实现。
+- 修正旧 adapter 在页面加载完成后才添加 JavaScript 接口、导致当前页面接口为 undefined 的时序问题；支持时在 document start 安装兼容函数，保留 SPA 和重载后的能力。
+- 分享 Promise 等待系统目标选择回调；取消、非法数据和来源限制会返回错误。未提供 URL 时不追加当前私人会话地址，非法 URL 不替换成当前页面。
 - 原生侧再次校验当前页面与分享 URL；不读取 Cookie、账号、密码或 Storage，不调用 ChatGPT 私有 API，不伪造 `/share/` URL。
-- Nova 菜单“分享当前页面”继续作为独立入口；网页 Share 与原生菜单均可调用 Android Sharesheet。
+- Nova 菜单“分享当前页面”继续作为独立辅助入口；增加网页 Web Share 到真实系统 Sharesheet 的受控测试。真实 ChatGPT 会话的网页 Share 仍需实机验收，测试夹具通过不视为已修好。
+- 修正原生粘贴脚本中的 Java 字符串换行转义，以及版本、菜单和关于说明的过时测试断言；版本仍为 1.3.7 / 11。
 - 不为系统 Sharesheet 增加不必要的 `<queries>` 包可见性声明：Nova 不需要预先枚举分享目标，直接调用系统 chooser 并处理无可用目标的异常。
 
 # 1.3.6 (versionCode 10)

@@ -27,8 +27,8 @@ public final class NativeUiTest extends FixtureActivity {
         assertTrue(shown("ChatGPT Nova"));
         assertFalse(shown("ChatGPT Nova · 非官方"));
         assertTrue(shown("chatgpt.com"));
-        assertEquals("function", js("typeof NovaWebShare.share"));
-        assertEquals("function", js("typeof navigator.share"));
+        waitFor("Web Share compatibility ready", () -> "function".equals(js("typeof window.NovaWebShare?.share"))
+                && "function".equals(js("typeof navigator.share")));
         capture("portrait");
         click("菜单");
         for (String item : new String[]{"刷新","ChatGPT 首页","用浏览器打开","设置"}) waitFor("menu item " + item, () -> shown(item));
@@ -38,7 +38,7 @@ public final class NativeUiTest extends FixtureActivity {
         waitFor("settings visible", () -> shown("关于 ChatGPT Nova"));
         capture("settings");
         click("关于 ChatGPT Nova");
-        waitFor("unofficial About", () -> contains("这是非官方客户端") && contains("chatgpt.com"));
+        waitFor("unofficial About", () -> contains("非官方第三方客户端") && contains("不由 OpenAI") && contains("chatgpt.com"));
         capture("about");
         click("知道了");
 

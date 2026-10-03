@@ -1,45 +1,49 @@
-# Nova 分享功能设计决策
+# Nova 1.3.7 分享设计与验收
 
-## 背景
+版本保持 `1.3.7` / `versionCode 11`，工作仅在 PR #1 和 `fix/native-share-1.3.7`。
 
-ChatGPT 网页的分享入口依赖 Web Share API（`navigator.share`）。Android WebView 与完整浏览器不是同一能力集合；Nova 当前设计不提供通用 JavaScript → Android 原生接口，因此不把网页脚本直接桥接到 `Intent.ACTION_SEND`。
+## 网页 Share
 
-## 决策
+主要目标是让 ChatGPT 网页自己的 Share 流程在 Nova 中可用。网页负责生成和提供分享内容；Nova 在 WebView 缺少 `navigator.share` 时提供有限的 Web Share 兼容层。不覆盖已有的原生实现，不调用 ChatGPT 私有接口，不创建或推导公共分享链接。
 
-Nova 1.3.7 增加一个原生菜单入口：**分享当前页面**。
+`/c/<conversation-id>` 是私人会话地址，`/share/<id>` 是公共分享地址。兼容层原样使用网页提供的 URL；没有 URL 时只分享提供的文本或标题，不追加当前私人会话地址。非法 URL 会被拒绝，不替换成当前页面。
 
-流程：
+## 安装时序与安全边界
 
-`chatgpt.com` 可信页面 → Nova 原生菜单 → `Intent.ACTION_SEND` (`text/plain`) → `Intent.createChooser()` → Android 系统 Sharesheet。
+旧实现在 `onPageFinished()` 中调用 `addJavascriptInterface()`，而 Android 文档说明新增接口要到下一次页面加载才对 JavaScript 可见。Actions `37133352812` 的 Android 33/34/35 测试均在 `NovaWebShare.share` 为 `undefined` 时失败。这是安装时序的直接回归证据，不能把 APK 含有相应字符串当成运行成功。
 
-分享内容仅为当前 WebView 的 HTTPS 页面 URL。入口只在 `chatgpt.com` 精确主机名页面显示，并复用现有可信来源检查。
+现在使用 AndroidX WebKit 的 `WebViewCompat.addWebMessageListener()`，在任何 `loadUrl()` 或 `restoreState()` 之前注册，仅允许 `https://chatgpt.com` 默认 443 端口。支持时在 document start 安装兼容函数；较旧的 provider 有 message listener 但没有 document-start script 时，在页面加载完成后安装函数。没有 message listener 支持时不暴露 Java 对象，也不假装支持网页 Web Share。
 
-## 为什么使用受限 JavaScript Bridge
+`NovaWebShare.share(title, text, url)` 与 `navigator.share(data)` 使用同一条单用途消息通道。原生侧只接受 `share` 请求，检查实际 `sourceOrigin`、主 frame、当前 WebView、页面 URL 和传入 URL。子 frame 的请求被拒绝；外部 origin 没有通道。导航取消未完成请求，清除网站数据、进程恢复和 Activity 销毁时释放旧 adapter。
 
-1.3.7 为了修复 ChatGPT 网页自身 Share，在可信 `chatgpt.com` 页面提供一个**单用途** `NovaWebShare.share(title,text,url)` 适配器，并由它调用 Android Sharesheet。它不是通用 JavaScript Bridge：没有 Cookie、Storage、文件、网络、账号或任意 Java 方法。
+Share adapter 不读取 Cookie、密码、Token、账号、Storage、文件或已安装应用名单。它没有任意 Android 方法、通用命令、认证代理或登录系统。
 
-页面开始导航时立即移除接口；只有页面加载完成且仍通过现有可信来源检查时才重新安装。原生 `shareWebPayload()` 再次检查当前 WebView URL 和传入 URL，只允许 `chatgpt.com`。Android 官方同时明确警告 `addJavascriptInterface()` 的安全风险，因此这个接口必须继续保持最小权限和来源限制。
+## 有限 Web Share 行为
 
-网页内 Share 与 Nova 原生菜单是两条不同入口，但现在都能进入 Android Sharesheet。网页 Share 仍由 ChatGPT 自己决定共享流程；Nova 不自行创建 `/share/` 链接。
+- 支持 title、text 和可信 ChatGPT URL；拒绝文件、空数据、userinfo、非 HTTPS、外部主机和非 443 端口。`canShare()` 使用同样的校验。
+- `share()` 要求页面用户手势，同一文档只允许一个未完成请求。
+- Promise 在系统报告用户选择分享目标后完成；关闭 Sharesheet、页面导航或启动失败会拒绝 Promise，不会无条件返回 `Promise.resolve()`。Android 返回的 Activity 结果不能单独证明是否选择了目标，因此使用 chooser 的 `IntentSender` 回调。
+- 目标选择回调不代表接收应用完成了发送，也不代表公共会话创建成功。
 
-## 为什么不增加 `<queries>`
+## Nova 原生菜单
 
-Nova 不需要通过 `PackageManager` 预先枚举或判断分享目标。Android 官方文档说明，直接启动隐式 Intent 不要求额外的 package visibility；只有需要事先查询可用应用时才需要相应的 `<queries>` 声明。因此本版本不扩大应用对已安装应用的可见范围。
+“分享当前页面”仍是独立辅助入口，分享当前 HTTPS 页面地址。它可能分享 `/c/...` 私人会话 URL；这不是 ChatGPT 公共分享，也不能作为网页 Share 已修好的证据。不枚举分享应用，不为 `ACTION_SEND` 添加额外 `<queries>`。
 
-## WebView 能力表述与实测基线
+## 验证与发布条件
 
-Android System WebView 是通过 Google Play 持续更新的 Chromium 实现，Nova 无法控制用户设备上的 WebView 版本。因此本文件不把「WebView 不提供 Web Share API」写成永久成立的结论，只记录当前事实与实测：
+CI 检查签名、包名及 `1.3.7 / 11`；构建后另行核验 APK 中的 `NovaWebShare`、`navigator.share`。`WebShareTest` 从测试 APK 提供的受控网页点击按钮，经过真实 Release WebView 调用 `navigator.share()` 并打开系统 Sharesheet。测试覆盖提供的公共形式 URL、目标选择回调、取消与重试、用户手势、非法数据、SPA/重载、iframe 和外部来源限制。目标选择回调由测试夹具触发，不是向真实应用发送会话。
 
-> 截至Nova 1.3.7 的目标环境与实测，Android System WebView 未提供 Nova 所需的 Web Share API（`navigator.share`）能力；因此 Nova 不依赖 `navigator.share`，而使用原生菜单分享。
+自动化夹具不能证明当前 ChatGPT 前端使用了同一调用链。合并前还必须在真机打开自己的 ChatGPT 会话，点击网页自己的 Share，验证公共分享链接及 Android Sharesheet，并实际检查接收目标的内容。
 
-### 实测基线记录
+| 日期 | Android / WebView 版本 | 真正的 ChatGPT 网页 Share | 结果 |
+| --- | --- | --- | --- |
+| 待实机验收 | 待填写 | 自己的会话 → 网页 Share → 系统 Sharesheet → 接收目标 | 未验证 |
 
-每次验收时通过 `chrome://inspect` 连接真机 WebView（Android 官方支持 WebView 远程调试），在控制台执行 `typeof navigator.share` 并补充一行记录。若未来某次实测不再是 `"undefined"`，回到「后续」一节重新评估。
+若实机仍失败，根据实际网页调用、Promise、SPA 和 frame 证据定位，保持现有来源边界；CI 全绿且实机通过后才考虑合并。
 
-| 日期 | Android 版本 | System WebView 版本 | `typeof navigator.share` | 备注 |
-| --- | --- | --- | --- | --- |
-| 待补（1.3.7 验收时填写） |  |  |  |  |
+## 官方依据
 
-## 后续
-
-如果未来需要让网页内的分享按钮直接调用 Android Sharesheet，应先重新评估 WebView 安全边界、来源限制和桥接接口的最小权限，而不是直接加入通用 JavaScript Bridge。
+- [WebView.addJavascriptInterface](https://developer.android.com/reference/android/webkit/WebView#addJavascriptInterface(java.lang.Object,java.lang.String))：接口可见时序与所有 frame 的暴露范围。
+- [WebViewCompat](https://developer.android.com/reference/androidx/webkit/WebViewCompat)：origin rules、message listener 与 document-start script。
+- [Web Share 标准](https://www.w3.org/TR/web-share/)：数据校验、用户手势、Promise 和取消行为。
+- [Android Sharesheet](https://developer.android.com/training/sharing/send)：chooser 与目标选择回调。
