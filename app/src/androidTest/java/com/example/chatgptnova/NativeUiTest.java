@@ -86,8 +86,12 @@ public final class NativeUiTest extends FixtureActivity {
         main(() -> activity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT));
         waitFor("portrait", () -> activity.getResources().getConfiguration().orientation == Configuration.ORIENTATION_PORTRAIT);
         waitFor("portrait controls", () -> shown("菜单"));
-        main(() -> web.loadUrl(LOGIN));
-        waitFor("back history ready", () -> LOGIN.equals(currentUrl()));
+        fixture(LOGIN);
+        waitFor("committed back history ready", () -> {
+            AtomicReference<Boolean> ready = new AtomicReference<>(false);
+            main(() -> ready.set(LOGIN.equals(web.getUrl()) && web.canGoBack()));
+            return ready.get();
+        });
         instrument.sendKeyDownUpSync(KeyEvent.KEYCODE_BACK);
         waitFor("Android Back navigates inside Nova", () -> !LOGIN.equals(currentUrl()) && shown("菜单"));
         waitFor("back page loaded before storage seed", () -> "ready".equals(js("document.getElementById('ready')?.textContent")));
