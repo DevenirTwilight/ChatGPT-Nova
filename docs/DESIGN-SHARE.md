@@ -24,6 +24,20 @@ Nova 1.3.7 增加一个原生菜单入口：**分享当前页面**。
 
 Nova 不需要通过 `PackageManager` 预先枚举或判断分享目标。Android 官方文档说明，直接启动隐式 Intent 不要求额外的 package visibility；只有需要事先查询可用应用时才需要相应的 `<queries>` 声明。因此本版本不扩大应用对已安装应用的可见范围。
 
+## WebView 能力表述与实测基线
+
+Android System WebView 是通过 Google Play 持续更新的 Chromium 实现，Nova 无法控制用户设备上的 WebView 版本。因此本文件不把「WebView 不提供 Web Share API」写成永久成立的结论，只记录当前事实与实测：
+
+> 截至Nova 1.3.7 的目标环境与实测，Android System WebView 未提供 Nova 所需的 Web Share API（`navigator.share`）能力；因此 Nova 不依赖 `navigator.share`，而使用原生菜单分享。
+
+### 实测基线记录
+
+每次验收时通过 `chrome://inspect` 连接真机 WebView（Android 官方支持 WebView 远程调试），在控制台执行 `typeof navigator.share` 并补充一行记录。若未来某次实测不再是 `"undefined"`，回到「后续」一节重新评估。
+
+| 日期 | Android 版本 | System WebView 版本 | `typeof navigator.share` | 备注 |
+| --- | --- | --- | --- | --- |
+| 待补（1.3.7 验收时填写） |  |  |  |  |
+
 ## 后续
 
 如果未来需要让网页内的分享按钮直接调用 Android Sharesheet，应先重新评估 WebView 安全边界、来源限制和桥接接口的最小权限，而不是直接加入通用 JavaScript Bridge。
