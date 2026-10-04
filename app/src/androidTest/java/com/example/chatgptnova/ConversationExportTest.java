@@ -17,7 +17,12 @@ import static org.junit.Assert.*;
 /** Synthetic current-origin data through the production exporter; no account access. */
 public final class ConversationExportTest extends FixtureActivity {
     private Instrumentation.ActivityMonitor monitor;
-    @Before public void before() { start(); }
+    @Before public void before() {
+        start();
+        android.accessibilityservice.AccessibilityServiceInfo info=instrument.getUiAutomation().getServiceInfo();
+        info.flags |= android.accessibilityservice.AccessibilityServiceInfo.FLAG_REPORT_VIEW_IDS;
+        instrument.getUiAutomation().setServiceInfo(info);
+    }
     @After public void after() {
         if (monitor!=null) instrument.removeMonitor(monitor);
         if (scenario!=null) scenario.close();
@@ -40,7 +45,7 @@ public final class ConversationExportTest extends FixtureActivity {
             AccessibilityNodeInfo root=instrument.getUiAutomation().getRootInActiveWindow();
             if (root==null) return false;
             for (AccessibilityNodeInfo n:root.findAccessibilityNodeInfosByText(label)) {
-                if (!label.contentEquals(n.getText())) continue;
+                if (n.getText()==null || !label.equalsIgnoreCase(n.getText().toString())) continue;
                 for (AccessibilityNodeInfo p=n;p!=null;p=p.getParent()) if (p.isClickable()) return p.performAction(AccessibilityNodeInfo.ACTION_CLICK);
             }
             return false;
@@ -114,9 +119,38 @@ public final class ConversationExportTest extends FixtureActivity {
         instrument.sendKeyDownUpSync(android.view.KeyEvent.KEYCODE_BACK);
         waitFor("PDF cancel releases exporter",()->!busy());
     }
+    @Test public void pdfSavedBySystemOpensWithMultiplePages() throws Exception {
+        StringBuilder text=new StringBuilder();for(int i=0;i<80;i++) text.append("段落 ").append(i).append(" 中文 English [link](https://example.org)\n\n");
+        conversation(text.toString());export("PDF");
+        waitFor("print PDF save button",()-> {
+            AccessibilityNodeInfo root=instrument.getUiAutomation().getRootInActiveWindow();
+            if(root==null) return false;
+            for(AccessibilityNodeInfo button:root.findAccessibilityNodeInfosByViewId("com.android.printspooler:id/print_button"))
+                if(button.isEnabled() && button.isClickable()) return button.performAction(AccessibilityNodeInfo.ACTION_CLICK);
+            return false;
+        });
+        click("Save");
+        waitFor("system PDF save finished",()->!busy());
+        String path="/sdcard/Download/"+output().getName();
+        String command="cat '"+path.replace("'","'\\''")+"'";
+        byte[] pdf;
+        try(android.os.ParcelFileDescriptor result=instrument.getUiAutomation().executeShellCommand(command);
+            java.io.InputStream input=new android.os.ParcelFileDescriptor.AutoCloseInputStream(result);
+            java.io.ByteArrayOutputStream data=new java.io.ByteArrayOutputStream()) {
+            byte[] buffer=new byte[8192];int count;while((count=input.read(buffer))!=-1)data.write(buffer,0,count);pdf=data.toByteArray();
+        }
+        assertTrue("System saved a PDF",pdf.length>1000);assertEquals("%PDF-",new String(pdf,0,5,StandardCharsets.US_ASCII));
+        File local=new File(activity.getCacheDir(),"printed-export.pdf");
+        try(java.io.FileOutputStream out=new java.io.FileOutputStream(local)){out.write(pdf);}
+        try(android.os.ParcelFileDescriptor fd=android.os.ParcelFileDescriptor.open(local,android.os.ParcelFileDescriptor.MODE_READ_ONLY);
+            android.graphics.pdf.PdfRenderer renderer=new android.graphics.pdf.PdfRenderer(fd)) {
+            assertTrue("Long HTML became multiple PDF pages",renderer.getPageCount()>1);
+            try(android.graphics.pdf.PdfRenderer.Page page=renderer.openPage(0)){assertTrue(page.getWidth()>0);assertTrue(page.getHeight()>0);}
+        }
+    }
     @Test public void unconfirmedBranchRefusesFileAndShowsPersistentError() {
         conversation("user text");
-        js("(()=>{const original=window.__novaReadConversation;window.__novaReadConversation=async()=>{const tree=await original();tree.current_node='u';return tree;};return true;})()");
+        js("document.querySelector('[data-message-id]').setAttribute('data-message-id','u')");
         main(()->exporter().start());
         click("知道了");
         assertFalse(busy());assertNull(output());

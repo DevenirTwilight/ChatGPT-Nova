@@ -7,11 +7,14 @@
     if (!tree || tree.conversation_id !== conversationId || !tree.mapping || !tree.current_node)
       fail('当前会话消息树不可用');
     const map = tree.mapping, ids = [...new Set(visibleIds)];
+    if (!map[tree.current_node]) fail('消息树末端缺失');
     if (!ids.length || ids.some(id => !map[id])) fail('无法核对页面消息 ID');
     // A DOM subset is only evidence of the selected branch, never its content source.
-    // Require the terminal page message to equal the server-selected terminal node.
-    // Reject switched/stale branches rather than guessing from tree.children ordering.
-    let terminal = tree.current_node;
+    // Server current_node may retain a different regenerated reply. The page may
+    // select another terminal leaf only when the complete tree proves it has no
+    // descendants. A scrolled-up ancestor cannot select a truncated branch.
+    let selected = tree.current_node;
+    let terminal = selected;
     const hiddenSeen = new Set();
     while (map[terminal] && !displayable(map[terminal].message)) {
       if (hiddenSeen.has(terminal)) fail("末尾消息循环");
@@ -19,9 +22,15 @@
       terminal = map[terminal].parent;
       if (!terminal) fail('没有可导出的消息');
     }
-    if (ids[ids.length - 1] !== terminal) fail('页面末条消息与消息树分支不一致，请请滚动到当前分支末尾，等待回复完成或刷新后重试');
+
+    if (ids[ids.length - 1] !== terminal) {
+      const leaf = ids[ids.length - 1], node = map[leaf];
+      if (!displayable(node?.message) || !Array.isArray(node.children) || node.children.length)
+        fail('当前分支末尾无法确认，请滚动到末尾，等待回复完成或刷新后重试');
+      selected = leaf;
+    }
     const chain = [], seen = new Set();
-    let id = tree.current_node;
+    let id = selected;
     while (id != null) {
       if (seen.has(id) || !map[id] || map[id].id !== id) fail('消息链断裂或循环');
       seen.add(id);
@@ -35,8 +44,11 @@
     if (rootNode.message && rootNode.message.author?.role !== 'system') fail('无法确认消息链起点');
     if (tree.has_missing_conversation_data || tree.is_partial || tree.has_more) fail('消息树标记为不完整');
     if (ids.some(id => !seen.has(id))) fail('页面包含另一分支的消息');
+    chain.reverse();
+    const order = new Map(chain.map((node,index)=>[node.id,index]));
+    if (ids.some((id,index)=>index>0 && order.get(id)<=order.get(ids[index-1]))) fail('页面消息顺序不一致');
     const warnings = [], messages = [];
-    for (const node of chain.reverse()) {
+    for (const node of chain) {
       const m = node.message;
       if (!displayable(m)) continue;
       if (m.id !== node.id || m.status !== 'finished_successfully') fail('消息未完成或格式无法验证');
@@ -59,7 +71,7 @@
     }
     if (!messages.length) fail('会话为空');
     return {conversationId, title:tree.title || '未命名会话', messages, warnings:[...new Set(warnings)],
-      completeness:{root:chain[0].id, terminal:tree.current_node, nodes:chain.length, messages:messages.length}};
+      completeness:{root:chain[0].id, terminal:selected, nodes:chain.length, messages:messages.length}};
   }
   function withSources(text, metadata, warnings) {
     const entries = [...(Array.isArray(metadata?.citations) ? metadata.citations : []),

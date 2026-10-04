@@ -2,6 +2,7 @@ name: Conversation export validation
 on:
   push:
     branches: [feature/export-conversation]
+    paths: ['app/**', 'tools/export-tests/**', '.github/workflows/export-validation.yml']
   workflow_dispatch:
 permissions:
   contents: read
@@ -64,10 +65,20 @@ jobs:
           arch: x86_64
           profile: pixel_6
           disable-animations: true
-          script: ./gradlew -PnovaExportTests :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.example.chatgptnova.ConversationExportTest,com.example.chatgptnova.WebShareTest,com.example.chatgptnova.NovaWebViewTest,com.example.chatgptnova.ClipboardUiTest,com.example.chatgptnova.ClipboardProbeTest --no-daemon
+          script: |
+            ./gradlew -PnovaExportTests :app:assembleDebug :app:assembleDebugAndroidTest --no-daemon
+            adb install -r app/build/outputs/apk/debug/app-debug.apk
+            adb shell pm grant com.example.chatgptnova.debug android.permission.CAMERA
+            adb shell pm grant com.example.chatgptnova.debug android.permission.RECORD_AUDIO
+            export_test_status=0
+            ./gradlew -PnovaExportTests :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.example.chatgptnova.ConversationExportTest,com.example.chatgptnova.WebShareTest,com.example.chatgptnova.NovaWebViewTest,com.example.chatgptnova.ClipboardUiTest,com.example.chatgptnova.ClipboardProbeTest --no-daemon || export_test_status=$?
+            adb exec-out run-as com.example.chatgptnova.debug cat cache/printed-export.pdf > android-export.pdf || true
+            exit "$export_test_status"
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: export-android-${{ matrix.api }}
-          path: app/build/reports/androidTests/
+          path: |
+            app/build/reports/androidTests/
+            android-export.pdf
           if-no-files-found: warn

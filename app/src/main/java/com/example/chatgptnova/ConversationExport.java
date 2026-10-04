@@ -248,7 +248,7 @@ final class ConversationExport {
     private void toast(String message) { Toast.makeText(activity,message,Toast.LENGTH_LONG).show(); }
     void destroy() {
         destroyed=true; fail("");
-        if (capture!=null) capture.remove(); capture=null;
-        if (installed) WebViewCompat.removeWebMessageListener(web,CHANNEL); installed=false;
+        if (capture!=null && WebViewFeature.isFeatureSupported(WebViewFeature.DOCUMENT_START_SCRIPT)) capture.remove(); capture=null;
+        if (installed && WebViewFeature.isFeatureSupported(WebViewFeature.WEB_MESSAGE_LISTENER)) WebViewCompat.removeWebMessageListener(web,CHANNEL); installed=false;
     }
 }

@@ -61,7 +61,7 @@ const root=path.resolve(__dirname,'../..'), assets=path.join(root,'app/src/main/
   assert.equal(out.marked,'website-owned-marked');
   assert(!out.out[0].error,JSON.stringify(out.out));
   const data=JSON.parse(out.out.map(p=>p.chunk).join(''));assert.equal(data.proof.messages,4);assert(data.markdown.includes('第 1 条消息'));
-  await page.evaluate(()=>{out=[];document.querySelector('[data-message-id]').setAttribute('data-message-id','other');});
+  await page.evaluate(()=>{out=[];document.querySelector('[data-message-id]').setAttribute('data-message-id','m1');});
   await page.evaluate(source);await page.waitForFunction(()=>out.length>0);
   assert.match(await page.evaluate(()=>out[0].error),/无法确认完整会话/);
   // A response observer only captures the matching current conversation.

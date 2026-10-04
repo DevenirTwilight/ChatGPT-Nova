@@ -19,7 +19,7 @@ for(const [name,mutate,ids] of [
  ['streaming reply',t=>t.mapping.m3.message.status='in_progress'],
  ['unknown message content',t=>t.mapping.m2.message.content.content_type='audio'],
  ['attachments fail explicitly',t=>t.mapping.m1.message.metadata={attachments:[{id:'file'}]}],
- ['stale selected branch',()=>{},['other']],
+ ['scrolled-up ancestor cannot select incomplete branch',()=>{},['m1']],
  ['mixed DOM branches',()=>{},['other','m3']],
  ['missing DOM evidence',()=>{},[]]
 ]) test(name,()=>{const t=fixture();mutate(t);assert.throws(()=>normalize(t,ids),/无法确认完整会话/);});
@@ -47,4 +47,13 @@ test('regenerated assistant branch follows server-selected leaf',()=> {
  const data=normalize(tree,['m0','other']);
  assert.deepEqual(data.messages.map(m=>m.id),['m0','other']);
  assert.match(data.messages[1].markdown,/OTHER BRANCH/);
+});
+
+test('page-selected regenerated leaf can differ from server current_node',()=> {
+ const data=normalize(fixture(),['m0','other']);
+ assert.deepEqual(data.messages.map(m=>m.id),['m0','other']);
+ assert.equal(data.completeness.terminal,'other');
+});
+test('DOM message order must follow the verified branch',()=> {
+ assert.throws(()=>normalize(fixture(),['m1','m0','m3']),/顺序/);
 });
