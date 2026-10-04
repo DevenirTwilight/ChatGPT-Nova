@@ -41,7 +41,7 @@ def install(path):
     result = adb('install', '-r', path)
     assert 'Success' in result, result
 
-def suite(selection, filename, allow_provider_retry=True):
+def suite(selection, filename, allow_provider_retry=True, timeout=240):
     # Fresh Google APIs images can leave a boot-time Pixel Launcher ANR
     # covering a resumed test Activity. Restart only that emulator home process;
     # retain the focused-window and every Nova assertion below.
@@ -50,7 +50,14 @@ def suite(selection, filename, allow_provider_retry=True):
     adb('shell','wm','dismiss-keyguard')
     adb('shell','am','force-stop','com.google.android.apps.nexuslauncher')
     adb('logcat','-c')
-    result = adb('shell', 'am', 'instrument', '-w', '-r', '-e', 'class', selection, RUNNER, timeout=240)
+    try:
+        result = adb('shell', 'am', 'instrument', '-w', '-r', '-e', 'class', selection, RUNNER, timeout=timeout)
+    except subprocess.TimeoutExpired as error:
+        partial = error.stdout or b''
+        (OUT/(filename+'.partial.txt')).write_text(partial.decode(errors='replace') if isinstance(partial, bytes) else partial)
+        # Stop the still-running failed instrumentation without clearing data.
+        adb('shell', 'am', 'force-stop', PACKAGE)
+        raise
     (OUT/filename).write_text(result)
     if allow_provider_retry and 'Process crashed.' in result:
         log = adb('logcat', '-d', '-v', 'threadtime')
@@ -65,7 +72,7 @@ def suite(selection, filename, allow_provider_retry=True):
             diagnostics.append(recovery)
             (OUT/(filename+'.external-provider-recovery.json')).write_text(json.dumps(recovery, indent=2))
             print(recovery['reason'] + '; rerunning the complete suite once.', flush=True)
-            return suite(selection, filename, allow_provider_retry=False)
+            return suite(selection, filename, allow_provider_retry=False, timeout=timeout)
     assert re.search(r'OK \(\d+ tests?\)', result), result
     assert 'FAILURES!!!' not in result and 'INSTRUMENTATION_FAILED' not in result, result
     return int(re.search(r'OK \((\d+) tests?\)', result).group(1))
@@ -89,7 +96,10 @@ try:
     share_count = independent('web-share', lambda: suite(PACKAGE+'.WebShareTest','web-share-fixtures.txt'))
     if share_count == 5:
         checks.append('Synthetic webpage navigator.share launches the Android Sharesheet with the supplied public URL; target callback, cancellation, invalid data, user gesture, SPA/reload and origin/frame restrictions are exercised')
-    clipboard_ui_count = independent('clipboard-ui', lambda: suite(PACKAGE+'.ClipboardUiTest','clipboard-ui.txt'))
+    # The suite grew from six to nine tests, including a third paired long-paste
+    # route. Scale only its whole-suite execution budget; individual paste
+    # transaction/paint limits and every assertion remain unchanged.
+    clipboard_ui_count = independent('clipboard-ui', lambda: suite(PACKAGE+'.ClipboardUiTest','clipboard-ui.txt',timeout=360))
     if clipboard_ui_count == 9:
         checks.append('Clipboard menu preserves selections and SPA replacement; native-menu, system and keyboard commitText long pastes reach a page-owned transaction, retain undo and paint within the fixture budget; subsequent IME edits stay ordered and native composition/cursor/non-composer semantics remain intact')
     try:

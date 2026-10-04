@@ -5,6 +5,7 @@ import android.content.ClipboardManager;
 import android.os.SystemClock;
 import android.os.Build;
 import android.os.Handler;
+import android.text.InputType;
 import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputConnection;
 import java.io.File;
@@ -201,8 +202,22 @@ public final class ClipboardUiTest extends FixtureActivity {
         assertEquals("IME text never targets a remembered composer", text, js(
                 "document.getElementById('mobile-composer-prompt').value"));
         assertEquals("non-composer commit does not synthesize paste", "0", js("pasteEvents.length"));
-        js("(()=>{const e=document.createElement('input');e.type='password';e.id='fixture-password';document.body.append(e);e.scrollIntoView({block:'center'});return true})()");
+        js("(()=>{const e=document.createElement('input');e.type='password';e.id='fixture-password';e.style.cssText='display:block;width:95%;height:56px';document.body.append(e);e.focus();e.scrollIntoView({block:'center'});return true})()");
         clickWeb("fixture-password");
+        waitFor("password fixture has DOM focus", () -> "fixture-password".equals(js("document.activeElement.id")));
+        // Renderer focus and Android's EditorInfo update asynchronously. Do not
+        // assert against the previous textarea's native input context.
+        waitFor("Android password input context", () -> {
+            AtomicBoolean ready = new AtomicBoolean();
+            main(() -> {
+                EditorInfo info = new EditorInfo();
+                web.onCreateInputConnection(info);
+                int variation = info.inputType & InputType.TYPE_MASK_VARIATION;
+                ready.set(variation == InputType.TYPE_TEXT_VARIATION_WEB_PASSWORD
+                        || variation == InputType.TYPE_TEXT_VARIATION_PASSWORD);
+            });
+            return ready.get();
+        });
         keyboardInput(connection -> {
             assertTrue("password input never receives Nova's wrapper",
                     !connection.getClass().getName().contains("ComposerWebView"));
@@ -362,9 +377,15 @@ public final class ClipboardUiTest extends FixtureActivity {
                 int index = sample;
                 keyboardInput(connection -> {
                     assertTrue(connection.setSelection(2, 4));
-                    // Exercise both Android commitText overloads.
-                    boolean accepted = Build.VERSION.SDK_INT >= 33 && index % 2 == 1
-                            ? connection.commitText(text, 1, null) : connection.commitText(text, 1);
+                    // Exercise standard entry points, without keyboard names.
+                    boolean accepted;
+                    if (Build.VERSION.SDK_INT >= 34 && index == 2) {
+                        accepted = connection.replaceText(2, 4, text, 1, null);
+                    } else if (Build.VERSION.SDK_INT >= 33 && index == 1) {
+                        accepted = connection.commitText(text, 1, null);
+                    } else {
+                        accepted = connection.commitText(text, 1);
+                    }
                     assertTrue("Keyboard clipboard commit accepted", accepted);
                 });
             } else {
@@ -386,6 +407,8 @@ public final class ClipboardUiTest extends FixtureActivity {
             transactions[sample] = transactionMs;
             paints[sample] = paintMs;
             samples.put(new JSONObject().put("transactionMs", transactionMs).put("paintMs", paintMs)
+                    .put("inputApi", keyboard ? Build.VERSION.SDK_INT >= 34 && sample == 2
+                            ? "replaceText" : sample == 1 ? "commitText-with-attributes" : "commitText" : route)
                     .put("requestToVerifiedMs", SystemClock.uptimeMillis() - requestStarted)
                     .put("baselineTransactionMs", baselineTransactionMs).put("baselinePaintMs", baselinePaintMs)
                     .put("phasesMs", new JSONObject(js("fixturePhaseMs"))).put("baselinePhasesMs", baselinePhases));

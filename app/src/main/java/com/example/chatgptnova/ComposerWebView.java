@@ -5,9 +5,14 @@ import android.annotation.TargetApi;
 import android.net.Uri;
 import android.os.Handler;
 import android.os.Looper;
+import android.os.Build;
+import android.os.Bundle;
 import android.text.InputType;
 import android.view.KeyEvent;
 import android.view.inputmethod.EditorInfo;
+import android.view.inputmethod.CompletionInfo;
+import android.view.inputmethod.CorrectionInfo;
+import android.view.inputmethod.InputContentInfo;
 import android.view.inputmethod.InputConnection;
 import android.view.inputmethod.InputConnectionWrapper;
 import android.view.inputmethod.TextAttribute;
@@ -50,16 +55,18 @@ final class ComposerWebView extends WebView {
         // Password fields and other origins never enter the adapter at all.
         if (connection == null || password || !MainActivity.isTrustedOrigin(page)
                 || !"chatgpt.com".equalsIgnoreCase(page.getHost())) return connection;
-        return connection == null ? null : new BulkConnection(connection);
+        if (Build.VERSION.SDK_INT >= 34) return new Api34Connection(connection);
+        if (Build.VERSION.SDK_INT >= 33) return new Api33Connection(connection);
+        return new BulkConnection(connection);
     }
 
-    private final class BulkConnection extends InputConnectionWrapper {
+    private class BulkConnection extends InputConnectionWrapper {
         private final int generation = documentGeneration;
         private final Handler inputHandler;
         private final ArrayDeque<Command> commands = new ArrayDeque<>();
         private boolean waiting;
         private boolean closed;
-        private boolean composing;
+        protected boolean composing;
 
         BulkConnection(InputConnection connection) {
             super(connection, false);
@@ -72,7 +79,7 @@ final class ComposerWebView extends WebView {
         // A JS transaction completes asynchronously. Keep following IME edits in
         // order until it has finished; otherwise a queued keystroke can overtake
         // the large commit and be inserted at the previous caret.
-        private synchronized boolean edit(BooleanSupplier operation) {
+        protected synchronized boolean edit(BooleanSupplier operation) {
             if (!current()) return false;
             if (!waiting) return operation.getAsBoolean();
             commands.add(done -> { operation.getAsBoolean(); done.run(); });
@@ -91,7 +98,7 @@ final class ComposerWebView extends WebView {
             });
         }
 
-        private boolean commit(CharSequence text, int cursor, BooleanSupplier original) {
+        protected boolean commit(CharSequence text, int cursor, BooleanSupplier original) {
             // Ordinary typing, non-default cursor semantics and active IME
             // composition retain the original connection. Firefox similarly
             // batches a whole replacement, but keeps composing commits native:
@@ -134,29 +141,13 @@ final class ComposerWebView extends WebView {
             return commit(text, cursor, () -> super.commitText(text, cursor));
         }
 
-        @TargetApi(33)
-        @Override public boolean commitText(CharSequence text, int cursor, TextAttribute attributes) {
-            return commit(text, cursor, () -> super.commitText(text, cursor, attributes));
-        }
-
         @Override public boolean setComposingText(CharSequence text, int cursor) {
             return edit(() -> { composing = text != null && text.length() > 0;
                 return super.setComposingText(text, cursor); });
         }
 
-        @TargetApi(33)
-        @Override public boolean setComposingText(CharSequence text, int cursor, TextAttribute attributes) {
-            return edit(() -> { composing = text != null && text.length() > 0;
-                return super.setComposingText(text, cursor, attributes); });
-        }
-
         @Override public boolean setComposingRegion(int start, int end) {
             return edit(() -> { composing = start != end; return super.setComposingRegion(start, end); });
-        }
-
-        @TargetApi(33)
-        @Override public boolean setComposingRegion(int start, int end, TextAttribute attributes) {
-            return edit(() -> { composing = start != end; return super.setComposingRegion(start, end, attributes); });
         }
 
         @Override public boolean finishComposingText() {
@@ -187,6 +178,22 @@ final class ComposerWebView extends WebView {
             return edit(() -> super.performEditorAction(action));
         }
 
+        @Override public boolean commitCompletion(CompletionInfo completion) {
+            return edit(() -> super.commitCompletion(completion));
+        }
+
+        @Override public boolean commitCorrection(CorrectionInfo correction) {
+            return edit(() -> super.commitCorrection(correction));
+        }
+
+        @Override public boolean commitContent(InputContentInfo content, int flags, Bundle options) {
+            return edit(() -> super.commitContent(content, flags, options));
+        }
+
+        @Override public boolean performPrivateCommand(String action, Bundle data) {
+            return edit(() -> super.performPrivateCommand(action, data));
+        }
+
         @Override public boolean beginBatchEdit() { return edit(super::beginBatchEdit); }
         @Override public boolean endBatchEdit() { return edit(super::endBatchEdit); }
 
@@ -194,6 +201,43 @@ final class ComposerWebView extends WebView {
             closed = true;
             commands.clear();
             super.closeConnection();
+        }
+    }
+
+    // Keep newer SDK types out of the connection instantiated on Android 8-12.
+    @TargetApi(33)
+    private class Api33Connection extends BulkConnection {
+        Api33Connection(InputConnection connection) { super(connection); }
+
+        @Override public boolean commitText(CharSequence text, int cursor, TextAttribute attributes) {
+            return commit(text, cursor, () -> super.commitText(text, cursor, attributes));
+        }
+
+        @Override public boolean setComposingText(CharSequence text, int cursor, TextAttribute attributes) {
+            return edit(() -> { composing = text != null && text.length() > 0;
+                return super.setComposingText(text, cursor, attributes); });
+        }
+
+        @Override public boolean setComposingRegion(int start, int end, TextAttribute attributes) {
+            return edit(() -> { composing = start != end; return super.setComposingRegion(start, end, attributes); });
+        }
+    }
+
+    @TargetApi(34)
+    private final class Api34Connection extends Api33Connection {
+        Api34Connection(InputConnection connection) { super(connection); }
+
+        @Override public boolean replaceText(int start, int end, CharSequence text,
+                                             int cursor, TextAttribute attributes) {
+            // Android specifies this as finish-composition, select, commit.
+            // Route that standard bulk-text entry through the same adapter,
+            // regardless of which keyboard called it.
+            beginBatchEdit();
+            try {
+                finishComposingText();
+                setSelection(start, end);
+                return commitText(text, cursor, attributes);
+            } finally { endBatchEdit(); }
         }
     }
 
