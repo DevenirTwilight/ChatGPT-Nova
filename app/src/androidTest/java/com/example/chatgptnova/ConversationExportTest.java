@@ -174,7 +174,7 @@ public final class ConversationExportTest extends FixtureActivity {
             AccessibilityNodeInfo root=instrument.getUiAutomation().getRootInActiveWindow();
             if(root!=null) {
                 for(AccessibilityNodeInfo button:root.findAccessibilityNodeInfosByViewId("com.android.printspooler:id/print_button"))
-                    if(button.isEnabled() && button.isClickable() && "Save as PDF".contentEquals(button.getContentDescription()))
+                    if(button.isEnabled() && button.isClickable() && "Save to PDF".contentEquals(button.getContentDescription()))
                         saved=button.performAction(AccessibilityNodeInfo.ACTION_CLICK);
             }
             if(!saved) android.os.SystemClock.sleep(200);
