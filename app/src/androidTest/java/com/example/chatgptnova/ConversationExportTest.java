@@ -139,6 +139,15 @@ public final class ConversationExportTest extends FixtureActivity {
             AccessibilityNodeInfo root=instrument.getUiAutomation().getRootInActiveWindow();
             return root!=null && "com.android.printspooler".contentEquals(root.getPackageName());
         });
+        // Android can initially show "Select a printer" rather than choosing PDF.
+        waitFor("printer destination selector",()-> {
+            AccessibilityNodeInfo root=instrument.getUiAutomation().getRootInActiveWindow();
+            if(root==null) return false;
+            for(AccessibilityNodeInfo selector:root.findAccessibilityNodeInfosByViewId("com.android.printspooler:id/destination_spinner"))
+                if(selector.isClickable()) return selector.performAction(AccessibilityNodeInfo.ACTION_CLICK);
+            return false;
+        });
+        click("Save as PDF");
         // The long document's preview is asynchronous; wait separately from extraction.
         long previewDeadline=android.os.SystemClock.uptimeMillis()+60000;
         boolean saved=false;
@@ -163,14 +172,19 @@ public final class ConversationExportTest extends FixtureActivity {
         waitFor("system PDF save finished",()->!busy());
         String path="/sdcard/Download/"+output().getName();
         String command="cat '"+path.replace("'","'\\''")+"'";
-        byte[] pdf;
-        try(android.os.ParcelFileDescriptor result=instrument.getUiAutomation().executeShellCommand(command);
-            java.io.InputStream input=new android.os.ParcelFileDescriptor.AutoCloseInputStream(result);
-            java.io.ByteArrayOutputStream data=new java.io.ByteArrayOutputStream()) {
-            byte[] buffer=new byte[8192];int count;while((count=input.read(buffer))!=-1)data.write(buffer,0,count);pdf=data.toByteArray();
-        }
+        byte[] pdf=new byte[0];
+        long fileDeadline=android.os.SystemClock.uptimeMillis()+20000;
+        do {
+            try(android.os.ParcelFileDescriptor result=instrument.getUiAutomation().executeShellCommand(command);
+                java.io.InputStream input=new android.os.ParcelFileDescriptor.AutoCloseInputStream(result);
+                java.io.ByteArrayOutputStream data=new java.io.ByteArrayOutputStream()) {
+                byte[] buffer=new byte[8192];int count;while((count=input.read(buffer))!=-1)data.write(buffer,0,count);pdf=data.toByteArray();
+            }
+            if(pdf.length>1000 && new String(pdf,0,5,StandardCharsets.US_ASCII).equals("%PDF-")) break;
+            android.os.SystemClock.sleep(200);
+        } while(android.os.SystemClock.uptimeMillis()<fileDeadline);
         assertTrue("System saved a PDF",pdf.length>1000);assertEquals("%PDF-",new String(pdf,0,5,StandardCharsets.US_ASCII));
-        File local=new File(activity.getCacheDir(),"printed-export.pdf");
+        File local=new File(activity.getFilesDir(),"printed-export.pdf");
         try(java.io.FileOutputStream out=new java.io.FileOutputStream(local)){out.write(pdf);}
         try(android.os.ParcelFileDescriptor fd=android.os.ParcelFileDescriptor.open(local,android.os.ParcelFileDescriptor.MODE_READ_ONLY);
             android.graphics.pdf.PdfRenderer renderer=new android.graphics.pdf.PdfRenderer(fd)) {

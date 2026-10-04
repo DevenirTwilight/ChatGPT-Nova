@@ -79,7 +79,7 @@ jobs:
             adb shell wm dismiss-keyguard
             export_test_status=0
             ./gradlew -PnovaExportTests :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.example.chatgptnova.ConversationExportTest,com.example.chatgptnova.WebShareTest,com.example.chatgptnova.NovaWebViewTest,com.example.chatgptnova.ClipboardUiTest,com.example.chatgptnova.ClipboardProbeTest --no-daemon || export_test_status=$?
-            adb exec-out run-as com.example.chatgptnova.debug cat cache/printed-export.pdf > android-export.pdf || true
+            adb exec-out run-as com.example.chatgptnova.debug cat files/printed-export.pdf > android-export.pdf || true
             adb exec-out run-as com.example.chatgptnova.debug cat cache/print-window.png > print-window.png || true
             adb logcat -d -v threadtime > android-export-logcat.txt || true
             exit "$export_test_status"

@@ -50,6 +50,8 @@
     const warnings = [], messages = [];
     for (const node of chain) {
       const m = node.message;
+      if (m?.author?.role === 'assistant' && m.status && m.status !== 'finished_successfully')
+        fail('当前分支仍有未完成的回复');
       if (!displayable(m)) continue;
       if (m.id !== node.id || m.status !== 'finished_successfully') fail('消息未完成或格式无法验证');
       const content = m.content;

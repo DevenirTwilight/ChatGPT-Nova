@@ -66,3 +66,9 @@ test('long fences keep literal shorter fences and correct terminators',()=> {
  const data=normalize(fixture());data.messages[0].markdown='````markdown\n```javascript\nconst text="English";\n```';
  assert.match(core.markdown(data),/const text="English";\n```\n````\n\n---/);
 });
+
+test('unfinished hidden assistant tail cannot masquerade as a complete branch',()=> {
+ const t=fixture();t.mapping.m3.children=['pending'];
+ t.mapping.pending={id:'pending',parent:'m3',children:[],message:{id:'pending',author:{role:'assistant'},channel:'analysis',status:'in_progress',content:{content_type:'text',parts:['hidden work']}}};
+ t.current_node='pending';assert.throws(()=>core.normalize(t,'fixture',['m3']),/未完成/);
+});
