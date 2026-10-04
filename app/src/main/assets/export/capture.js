@@ -23,7 +23,7 @@
   window.__novaReadConversation = async id => {
     const abort = new AbortController(), timeout = setTimeout(()=>abort.abort(),15000);
     try {
-      const response = await original('/backend-api/conversation/' + encodeURIComponent(id),
+      const response = await original('/backend-api/conversation/' + encodeURIComponent(id) + '?include_full_conversation=true',
         {credentials:'same-origin',cache:'no-store',signal:abort.signal});
       if (response.ok) {
         const raw = await response.text();

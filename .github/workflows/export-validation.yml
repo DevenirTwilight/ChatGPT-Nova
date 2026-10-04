@@ -1,0 +1,68 @@
+name: Conversation export validation
+on:
+  push:
+    branches: [feature/export-conversation]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node tools/export-tests/core.test.cjs
+      - run: npm install --prefix /tmp/nova-export-testing playwright-core@1.57.0 --no-audit --no-fund
+      - run: NOVA_PLAYWRIGHT_MODULE=/tmp/nova-export-testing/node_modules/playwright-core CHROMIUM_PATH=/usr/bin/google-chrome node tools/export-tests/browser.cjs
+      - run: ./gradlew -PnovaExportTests :app:assembleDebug :app:assembleDebugAndroidTest --no-daemon
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: export-build-and-samples
+          path: |
+            app/build/outputs/apk/debug/*.apk
+            app/build/outputs/apk/androidTest/debug/*.apk
+            samples/export/
+          if-no-files-found: warn
+  android:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        api: [33, 34, 35]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: ${{ matrix.api }}
+          target: google_apis
+          arch: x86_64
+          profile: pixel_6
+          disable-animations: true
+          script: ./gradlew -PnovaExportTests :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.example.chatgptnova.ConversationExportTest,com.example.chatgptnova.WebShareTest,com.example.chatgptnova.NovaWebViewTest --no-daemon
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: export-android-${{ matrix.api }}
+          path: app/build/reports/androidTests/
+          if-no-files-found: warn

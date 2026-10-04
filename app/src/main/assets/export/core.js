@@ -12,11 +12,14 @@
     // Require the terminal page message to equal the server-selected terminal node.
     // Reject switched/stale branches rather than guessing from tree.children ordering.
     let terminal = tree.current_node;
+    const hiddenSeen = new Set();
     while (map[terminal] && !displayable(map[terminal].message)) {
+      if (hiddenSeen.has(terminal)) fail("末尾消息循环");
+      hiddenSeen.add(terminal);
       terminal = map[terminal].parent;
       if (!terminal) fail('没有可导出的消息');
     }
-    if (ids[ids.length - 1] !== terminal) fail('页面末条消息与消息树分支不一致，请等待回复完成或刷新后重试');
+    if (ids[ids.length - 1] !== terminal) fail('页面末条消息与消息树分支不一致，请请滚动到当前分支末尾，等待回复完成或刷新后重试');
     const chain = [], seen = new Set();
     let id = tree.current_node;
     while (id != null) {
@@ -28,6 +31,9 @@
       chain.push(node);
       id = node.parent;
     }
+    const rootNode = chain[chain.length - 1];
+    if (rootNode.message && rootNode.message.author?.role !== 'system') fail('无法确认消息链起点');
+    if (tree.has_missing_conversation_data || tree.is_partial || tree.has_more) fail('消息树标记为不完整');
     if (ids.some(id => !seen.has(id))) fail('页面包含另一分支的消息');
     const warnings = [], messages = [];
     for (const node of chain.reverse()) {
@@ -57,7 +63,7 @@
   }
   function displayable(m) {
     return !!(m && m.author && ['user','assistant'].includes(m.author.role)
-      && (!m.recipient || m.recipient === 'all') && !(m.metadata && m.metadata.is_visually_hidden_from_conversation));
+      && m.channel !== 'analysis' && (!m.recipient || m.recipient === 'all') && !(m.metadata && m.metadata.is_visually_hidden_from_conversation));
   }
   function markdown(data) {
     return '# ' + data.title.replace(/[\r\n]/g, ' ') + '\n\n' +
@@ -65,6 +71,7 @@
       (data.warnings.length ? '\n\n---\n\n导出说明：\n' + data.warnings.map(s=>'- '+s).join('\n') : '') + '\n';
   }
   function safeUrl(value, image) {
+    if (typeof value !== 'string' || !value.trim()) return null;
     try {
       const u = new URL(value, 'https://chatgpt.com/');
       if (u.username || u.password) return null;
@@ -105,6 +112,7 @@
       '</h1><div class="role">ChatGPT · '+data.messages.length+' 条消息</div></header>'+body+
       '<footer>'+data.warnings.map(esc).join('<br>')+'</footer></main></body></html>';
   }
-  root.NovaExportCore = {normalize, markdown, html, safeUrl, clean, displayable};
-  if (typeof module !== 'undefined') module.exports = root.NovaExportCore;
+  const api = {normalize, markdown, html, safeUrl, clean, displayable};
+  if (typeof module !== 'undefined') module.exports = api;
+  else root.NovaExportCore = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this);

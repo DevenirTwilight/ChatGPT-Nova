@@ -12,7 +12,7 @@ android {
     namespace 'com.example.chatgptnova'
     compileSdk 35
     buildToolsVersion '35.0.0'
-    testBuildType 'release'
+    testBuildType project.hasProperty('novaExportTests') ? 'debug' : 'release'
 
     defaultConfig {
         applicationId 'com.example.chatgptnova'

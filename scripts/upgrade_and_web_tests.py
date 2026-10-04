@@ -96,20 +96,18 @@ try:
     share_count = independent('web-share', lambda: suite(PACKAGE+'.WebShareTest','web-share-fixtures.txt'))
     if share_count == 5:
         checks.append('Synthetic webpage navigator.share launches the Android Sharesheet with the supplied public URL; target callback, cancellation, invalid data, user gesture, SPA/reload and origin/frame restrictions are exercised')
-    # The suite grew from six to nine tests, including a third paired long-paste
-    # route. Scale only its whole-suite execution budget; individual paste
-    # transaction/paint limits and every assertion remain unchanged.
+    # Native clipboard menu coverage was removed with that product entry.
     clipboard_ui_count = independent('clipboard-ui', lambda: suite(PACKAGE+'.ClipboardUiTest','clipboard-ui.txt',timeout=360))
-    if clipboard_ui_count == 9:
-        checks.append('Clipboard menu preserves selections and SPA replacement; native-menu, system and keyboard commitText long pastes reach a page-owned transaction, retain undo and paint within the fixture budget; subsequent IME edits stay ordered and native composition/cursor/non-composer semantics remain intact')
+    if clipboard_ui_count == 5:
+        checks.append('System and keyboard commitText long pastes reach a page-owned transaction, retain undo and paint within the fixture budget; subsequent IME edits stay ordered and native composition/cursor/non-composer semantics remain intact')
     try:
         clipboard_count = 0
-        for method in ('nativeMenuPaste','imeCommitText','imePasteCommand','longPressSystemPaste'):
+        for method in ('imeCommitText','imePasteCommand','longPressSystemPaste'):
             value = independent('clipboard-'+method, lambda method=method: suite(PACKAGE+'.ClipboardProbeTest#'+method,'clipboard-'+method+'.txt'))
             if value == 1: clipboard_count += 1
     finally:
         adb('pull','/sdcard/Android/data/'+PACKAGE+'/files/clipboard-probe/.',str(OUT/'clipboard-probe'))
-    if clipboard_count == 4:
+    if clipboard_count == 3:
         checks.append('Required full-text clipboard checks: real long-press Paste, IME paste command and keyboard commitText; all 1/10/50 KB, multiline, Markdown, Chinese/English and emoji cases run without skips; textarea and contenteditable')
     count = independent('webview', lambda: suite(PACKAGE+'.NovaWebViewTest','webview-fixtures.txt'))
     if count == 9:
@@ -125,7 +123,7 @@ try:
     # Export only timings from our synthetic editor. This keeps failure
     # evidence available in Actions logs, without clipboard or draft text.
     paste_timings = []
-    for route in ('native', 'system', 'keyboard'):
+    for route in ('system', 'keyboard'):
         path = OUT / 'clipboard-probe' / ('page-editor-' + route + '.json')
         if not path.is_file():
             continue

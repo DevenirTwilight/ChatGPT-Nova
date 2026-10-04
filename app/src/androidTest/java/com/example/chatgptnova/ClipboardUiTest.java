@@ -37,32 +37,6 @@ public final class ClipboardUiTest extends FixtureActivity {
         if (scenario != null) scenario.close();
     }
 
-    @Test public void nativePasteRestoresComposerSelectionForContentEditable() {
-        clickWeb("prompt-textarea");
-        js("""
-                (() => {
-                  const e = document.getElementById('prompt-textarea');
-                  e.textContent = 'hello';
-                  e.focus();
-                  const r = document.createRange();
-                  r.selectNodeContents(e);
-                  r.collapse(false);
-                  const s = getSelection();
-                  s.removeAllRanges();
-                  s.addRange(r);
-                  return e.textContent;
-                })()
-                """);
-        putClipboard(" world");
-
-        click("菜单");
-        click("从剪贴板粘贴");
-
-        waitFor("contenteditable paste", () -> "hello world".equals(js(
-                "document.getElementById('prompt-textarea').textContent")));
-        assertEquals("hello world", js("document.getElementById('prompt-textarea').textContent"));
-    }
-
     @Test public void nativePastePrefersLiveSelectionOverSavedCache() {
         clickWeb("prompt-textarea");
         assertEquals("abXYef", js("""
@@ -83,68 +57,6 @@ public final class ClipboardUiTest extends FixtureActivity {
                   return e.textContent;
                 })()
                 """));
-    }
-
-    @Test public void nativePasteSurvivesSpaComposerReplacement() {
-        clickWeb("prompt-textarea");
-        js("""
-                (() => {
-                  const old = document.getElementById('prompt-textarea');
-                  old.textContent = 'before';
-                  old.focus();
-                  const s = getSelection();
-                  const r = document.createRange();
-                  r.selectNodeContents(old);
-                  r.collapse(false);
-                  s.removeAllRanges();
-                  s.addRange(r);
-                  history.pushState({}, '', '/c/spa-fixture');
-                  old.replaceWith(Object.assign(document.createElement('div'), {
-                    id:'prompt-textarea', className:'ProseMirror'
-                  }));
-                  const current = document.getElementById('prompt-textarea');
-                  current.contentEditable = 'true';
-                  current.textContent = 'after';
-                  current.focus();
-                  const range = document.createRange();
-                  range.selectNodeContents(current);
-                  range.collapse(false);
-                  s.removeAllRanges();
-                  s.addRange(range);
-                  return location.pathname + ':' + current.textContent;
-                })()
-                """);
-        putClipboard(" route");
-        click("菜单");
-        click("从剪贴板粘贴");
-        waitFor("SPA replacement paste", () -> "after route".equals(js(
-                "document.getElementById('prompt-textarea').textContent")));
-        assertEquals("after route", js("document.getElementById('prompt-textarea').textContent"));
-    }
-
-    @Test public void nativePasteReplacesTextareaSelection() {
-        clickWeb("mobile-composer-prompt");
-        js("""
-                (() => {
-                  const e = document.getElementById('mobile-composer-prompt');
-                  e.value = 'abcdef';
-                  e.focus();
-                  e.setSelectionRange(2, 4);
-                  return e.value;
-                })()
-                """);
-        putClipboard("XY");
-
-        click("菜单");
-        click("从剪贴板粘贴");
-
-        waitFor("textarea paste", () -> "abXYef".equals(js(
-                "document.getElementById('mobile-composer-prompt').value")));
-        assertEquals("abXYef", js("document.getElementById('mobile-composer-prompt').value"));
-    }
-
-    @Test public void nativeLongPasteUsesPageTransactionAndUndo() throws Exception {
-        pageOwnedLongPaste("native-menu");
     }
 
     @Test public void systemLongPasteUsesPageTransactionAndUndo() throws Exception {
@@ -243,7 +155,6 @@ public final class ClipboardUiTest extends FixtureActivity {
     }
 
     private void pageOwnedLongPaste(String route) throws Exception {
-        boolean nativeMenu = "native-menu".equals(route);
         boolean keyboard = "keyboard-commit-text".equals(route);
         // A test-owned editor with its own paste transaction and history. This
         // tests DOM event ownership, not the live ChatGPT editor implementation.
@@ -356,16 +267,8 @@ public final class ClipboardUiTest extends FixtureActivity {
             putClipboard(text);
             SystemClock.sleep(400);
             selectRangeForPaste();
-            if (nativeMenu) {
-                js("(()=>{fixtureReset();const data=new DataTransfer();data.setData('text/plain'," + JSONObject.quote(text) + ");"
-                        + "document.getElementById('prompt-textarea').dispatchEvent(new ClipboardEvent('paste',"
-                        + "{bubbles:true,cancelable:true,clipboardData:data}));return true})()");
-            } else {
-                // The reference is the editor's normal clipboard transaction.
-                // Raw multiline IME commit is the failing path being replaced;
-                // do not claim this reference measures unadapted IME performance.
-                systemPaste();
-            }
+            // The reference remains the editor's normal clipboard transaction.
+            systemPaste();
             waitFor("editor paste baseline painted", () -> "true".equals(js("fixturePaintMs !== null")));
             assertEquals("baseline uses one paste event", "1", js("fixturePasteCount"));
             assertLongTextEquals("ab" + text + "ef", js("fixtureModel"));
@@ -387,10 +290,7 @@ public final class ClipboardUiTest extends FixtureActivity {
             selectRangeForPaste();
             js("fixtureTotalRangeReads = 0");
             long requestStarted = SystemClock.uptimeMillis();
-            if (nativeMenu) {
-                click("菜单");
-                click("从剪贴板粘贴");
-            } else if (keyboard) {
+            if (keyboard) {
                 int index = sample;
                 keyboardInput(connection -> {
                     assertTrue(connection.setSelection(2, 4));
@@ -449,7 +349,7 @@ public final class ClipboardUiTest extends FixtureActivity {
         File directory = new File(instrument.getTargetContext().getExternalFilesDir(null), "clipboard-probe");
         assertTrue(directory.isDirectory() || directory.mkdirs());
         try (FileOutputStream out = new FileOutputStream(new File(directory,
-                nativeMenu ? "page-editor-native.json" : keyboard ? "page-editor-keyboard.json" : "page-editor-system.json"))) {
+                keyboard ? "page-editor-keyboard.json" : "page-editor-system.json"))) {
             out.write(result.toString(2).getBytes(StandardCharsets.UTF_8));
         }
         assertTrue("Long paste transaction took " + transactionMs + " ms; editor baseline " + baselineTransactionMs,

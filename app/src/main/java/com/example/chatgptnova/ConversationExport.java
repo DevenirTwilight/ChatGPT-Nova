@@ -6,11 +6,12 @@ import android.content.ClipData;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.CancellationSignal;
-import android.os.ParcelFileDescriptor;
 import android.print.PageRange;
 import android.print.PrintAttributes;
 import android.print.PrintDocumentAdapter;
-import android.print.PrintDocumentInfo;
+import android.print.PrintManager;
+import android.print.PrintJob;
+import android.os.Bundle;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.Toast;
@@ -44,9 +45,7 @@ final class ConversationExport {
     private File file;
     private String mime;
     private WebView printWeb;
-    private ParcelFileDescriptor printFd;
-    private CancellationSignal printCancel;
-    private PrintDocumentAdapter printAdapter;
+    private PrintJob printJob;
     private Runnable deadline;
 
     ConversationExport(Activity activity, WebView web, BooleanSupplier active) {
@@ -78,7 +77,9 @@ final class ConversationExport {
     }
     private String asset(String name) {
         try (java.io.InputStream input=activity.getAssets().open("export/"+name)) {
-            return new String(input.readAllBytes(),StandardCharsets.UTF_8);
+            java.io.ByteArrayOutputStream out=new java.io.ByteArrayOutputStream();
+            copy(input,out);
+            return out.toString(StandardCharsets.UTF_8.name());
         } catch (Exception e) { throw new IllegalStateException("Missing export asset",e); }
     }
     void pageFinished() {
@@ -94,13 +95,18 @@ final class ConversationExport {
         busy=true; nonce=UUID.randomUUID().toString(); address=web.getUrl(); incoming.setLength(0);
         deadline=()->fail("无法确认完整会话：读取超时，请等待页面加载完成后重试。");
         web.postDelayed(deadline,30000);
-        String script=asset("capture.js")+"\n"+asset("marked.js")+"\n"+asset("core.js")+"\n"+
-            asset("run.js").replace("__NOVA_NONCE__",JSONObject.quote(nonce));
+        String script=asset("capture.js")+"\n(() => { const module={exports:{}}; const exports=module.exports;\n"
+            +asset("marked.js")+"\nconst marked=module.exports.marked;\n"+asset("core.js")
+            +"\nconst NovaExportCore=module.exports;\n"
+            +asset("run.js").replace("__NOVA_NONCE__",JSONObject.quote(nonce))+"\n})();";
         web.evaluateJavascript(script,null);
         toast("正在验证完整会话…");
     }
     private void chooseFormat(JSONObject data) {
-        String warnings=data.optJSONArray("warnings")==null ? "" : data.optJSONArray("warnings").join("\n").replace("\"","");
+        StringBuilder details=new StringBuilder();
+        org.json.JSONArray list=data.optJSONArray("warnings");
+        if (list!=null) for (int i=0;i<list.length();i++) details.append(list.optString(i)).append("\n");
+        String warnings=details.toString().trim();
         if (!warnings.isEmpty()) {
             new AlertDialog.Builder(activity).setTitle("导出内容说明").setMessage(warnings)
                 .setPositiveButton("继续导出",(d,w)->format(data)).setNegativeButton("取消",(d,w)->busy=false)
@@ -122,10 +128,14 @@ final class ConversationExport {
                     file=new File(dir,filename(data.optString("title"),extension));
                     if (index==2) pdf(data.getString("html"));
                     else {
-                        try (FileOutputStream out=new FileOutputStream(file)) {
-                            out.write(data.getString(index==0 ? "html" : "markdown").getBytes(StandardCharsets.UTF_8));
-                        }
-                        actions();
+                        File target=file;
+                        String content=data.getString(index==0 ? "html" : "markdown");
+                        new Thread(()-> {
+                            try (FileOutputStream out=new FileOutputStream(target)) {
+                                out.write(content.getBytes(StandardCharsets.UTF_8));
+                                activity.runOnUiThread(()-> { if (!destroyed) actions(); });
+                            } catch (Exception error) { activity.runOnUiThread(()->fail("无法生成导出文件。")); }
+                        },"conversation-export-render").start();
                     }
                 } catch (Exception error) { fail("无法生成导出文件。"); }
             }).setNegativeButton("取消",(d,w)->busy=false).setOnCancelListener(d->busy=false).show();
@@ -147,38 +157,40 @@ final class ConversationExport {
         printWeb.setWebViewClient(new WebViewClient() {
             @Override public void onPageFinished(WebView view,String url) {
                 view.postVisualStateCallback(1,new WebView.VisualStateCallback() {
-                    @Override public void onComplete(long requestId) { if (view==printWeb && printAdapter==null) writePdf(); }
+                    @Override public void onComplete(long requestId) { if (view==printWeb && printJob==null) printPdf(); }
                 });
             }
         });
         deadline=()->fail("PDF 生成超时，请重试。"); web.postDelayed(deadline,60000);
         printWeb.loadDataWithBaseURL("https://nova-export.invalid/",html,"text/html","UTF-8",null);
     }
-    private void writePdf() {
+    private void printPdf() {
         try {
-            printAdapter=printWeb.createPrintDocumentAdapter(file.getName()); printAdapter.onStart();
-            printCancel=new CancellationSignal();
+            PrintManager manager=(PrintManager)activity.getSystemService(Activity.PRINT_SERVICE);
+            if (manager==null) throw new IllegalStateException("Print service unavailable");
+            PrintDocumentAdapter document=printWeb.createPrintDocumentAdapter(file.getName());
+            PrintDocumentAdapter lifecycle=new PrintDocumentAdapter() {
+                @Override public void onStart() { document.onStart(); }
+                @Override public void onLayout(PrintAttributes oldAttributes,PrintAttributes newAttributes,
+                    CancellationSignal cancellation,LayoutResultCallback callback,Bundle extras) {
+                    document.onLayout(oldAttributes,newAttributes,cancellation,callback,extras);
+                }
+                @Override public void onWrite(PageRange[] pages,android.os.ParcelFileDescriptor destination,
+                    CancellationSignal cancellation,WriteResultCallback callback) {
+                    document.onWrite(pages,destination,cancellation,callback);
+                }
+                @Override public void onFinish() {
+                    document.onFinish();
+                    activity.runOnUiThread(()-> { finishPrint(); busy=false; });
+                }
+            };
             PrintAttributes attributes=new PrintAttributes.Builder().setMediaSize(PrintAttributes.MediaSize.ISO_A4)
                 .setResolution(new PrintAttributes.Resolution("export","PDF",300,300))
                 .setMinMargins(new PrintAttributes.Margins(630,630,630,630)).setColorMode(PrintAttributes.COLOR_MODE_COLOR).build();
-            printAdapter.onLayout(null,attributes,printCancel,new PrintDocumentAdapter.LayoutResultCallback() {
-                @Override public void onLayoutFinished(PrintDocumentInfo info,boolean changed) {
-                    if (destroyed || printAdapter==null) return;
-                    try {
-                        printFd=ParcelFileDescriptor.open(file,ParcelFileDescriptor.MODE_CREATE|ParcelFileDescriptor.MODE_TRUNCATE|ParcelFileDescriptor.MODE_READ_WRITE);
-                        printAdapter.onWrite(new PageRange[]{PageRange.ALL_PAGES},printFd,printCancel,new PrintDocumentAdapter.WriteResultCallback() {
-                            @Override public void onWriteFinished(PageRange[] pages) {
-                                finishPrint(); if (!destroyed && file!=null && file.length()>0) actions();
-                            }
-                            @Override public void onWriteFailed(CharSequence error) { fail("PDF 生成失败。"); }
-                            @Override public void onWriteCancelled() { fail("PDF 已取消。"); }
-                        });
-                    } catch (Exception error) { fail("PDF 文件无法写入。"); }
-                }
-                @Override public void onLayoutFailed(CharSequence error) { fail("PDF 排版失败。"); }
-                @Override public void onLayoutCancelled() { fail("PDF 已取消。"); }
-            },null);
-        } catch (Exception error) { fail("设备无法生成 PDF。"); }
+            stopDeadline();
+            printJob=manager.print(file.getName(),lifecycle,attributes);
+            toast("请选择“保存为 PDF”和保存位置。保存后可从文件管理器打开或分享。 ");
+        } catch (Exception error) { fail("设备无法启动 PDF 保存界面。"); }
     }
     private void actions() {
         stopDeadline(); busy=false;
@@ -209,7 +221,7 @@ final class ConversationExport {
         new Thread(()-> {
             String message="已保存导出文件。";
             try (java.io.InputStream in=new java.io.FileInputStream(source); OutputStream out=activity.getContentResolver().openOutputStream(destination,"wt")) {
-                if (out==null) throw new Exception(); in.transferTo(out);
+                if (out==null) throw new Exception(); copy(in,out);
             } catch (Exception error) { message="保存失败，请重新导出并选择位置。"; }
             String outcome=message; activity.runOnUiThread(()-> {busy=false; if (!destroyed) toast(outcome);});
         },"conversation-export-save").start();
@@ -219,12 +231,14 @@ final class ConversationExport {
     private void stopDeadline() { if (deadline!=null) web.removeCallbacks(deadline); deadline=null; }
     private void finishPrint() {
         stopDeadline();
-        if (printCancel!=null) printCancel.cancel(); printCancel=null;
-        if (printFd!=null) try {printFd.close();} catch (Exception ignored) {} printFd=null;
-        if (printAdapter!=null) printAdapter.onFinish(); printAdapter=null;
+        printJob=null;
         if (printWeb!=null) printWeb.destroy(); printWeb=null;
     }
     private void fail(String message) { stopDeadline(); nonce=null; incoming.setLength(0); busy=false; finishPrint(); if (!destroyed) toast(message); }
+    private static void copy(java.io.InputStream in, OutputStream out) throws java.io.IOException {
+        byte[] buffer=new byte[16384]; int count;
+        while ((count=in.read(buffer))!=-1) out.write(buffer,0,count);
+    }
     private void toast(String message) { Toast.makeText(activity,message,Toast.LENGTH_LONG).show(); }
     void destroy() {
         destroyed=true; fail("");
