@@ -41,15 +41,23 @@ public final class ConversationExportTest extends FixtureActivity {
         return result.get();
     }
     private void click(String label) {
-        waitFor("export control "+label,()-> {
-            AccessibilityNodeInfo root=instrument.getUiAutomation().getRootInActiveWindow();
-            if (root==null) return false;
-            for (AccessibilityNodeInfo n:root.findAccessibilityNodeInfosByText(label)) {
-                if (n.getText()==null || !label.equalsIgnoreCase(n.getText().toString())) continue;
-                for (AccessibilityNodeInfo p=n;p!=null;p=p.getParent()) if (p.isClickable()) return p.performAction(AccessibilityNodeInfo.ACTION_CLICK);
-            }
-            return false;
-        });
+        long until=android.os.SystemClock.uptimeMillis()+20000;
+        do {
+            AccessibilityNodeInfo node=findControl(instrument.getUiAutomation().getRootInActiveWindow(),label);
+            if(node!=null) for(AccessibilityNodeInfo p=node;p!=null;p=p.getParent())
+                if(p.isClickable() && p.performAction(AccessibilityNodeInfo.ACTION_CLICK)) return;
+            android.os.SystemClock.sleep(100);
+        } while(android.os.SystemClock.uptimeMillis()<until);
+        fail("Timed out: export control "+label+"\n"+dumpPrintWindow(instrument.getUiAutomation().getRootInActiveWindow()));
+    }
+    private static AccessibilityNodeInfo findControl(AccessibilityNodeInfo node,String label) {
+        if(node==null) return null;
+        if(node.getText()!=null && label.equalsIgnoreCase(node.getText().toString())
+            || node.getContentDescription()!=null && label.equalsIgnoreCase(node.getContentDescription().toString())) return node;
+        for(int i=0;i<node.getChildCount();i++) {
+            AccessibilityNodeInfo found=findControl(node.getChild(i),label);if(found!=null) return found;
+        }
+        return null;
     }
     private void conversation(String body) {
         js("""
@@ -155,17 +163,14 @@ public final class ConversationExportTest extends FixtureActivity {
             AccessibilityNodeInfo root=instrument.getUiAutomation().getRootInActiveWindow();
             if(root!=null) {
                 for(AccessibilityNodeInfo button:root.findAccessibilityNodeInfosByViewId("com.android.printspooler:id/print_button"))
-                    if(button.isEnabled() && button.isClickable()) saved=button.performAction(AccessibilityNodeInfo.ACTION_CLICK);
+                    if(button.isEnabled() && button.isClickable() && "Save as PDF".contentEquals(button.getContentDescription()))
+                        saved=button.performAction(AccessibilityNodeInfo.ACTION_CLICK);
             }
             if(!saved) android.os.SystemClock.sleep(200);
         } while(!saved && android.os.SystemClock.uptimeMillis()<previewDeadline);
         String diagnostic="";
         if(!saved) {
             diagnostic=dumpPrintWindow(instrument.getUiAutomation().getRootInActiveWindow());
-            android.graphics.Bitmap screenshot=instrument.getUiAutomation().takeScreenshot();
-            if(screenshot!=null) try(java.io.FileOutputStream out=new java.io.FileOutputStream(new File(activity.getCacheDir(),"print-window.png"))) {
-                screenshot.compress(android.graphics.Bitmap.CompressFormat.PNG,100,out);
-            }
         }
         assertTrue("System print preview must enable Save as PDF\n"+diagnostic,saved);
         click("Save");

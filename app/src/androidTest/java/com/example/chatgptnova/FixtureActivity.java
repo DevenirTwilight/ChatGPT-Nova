@@ -46,7 +46,16 @@ abstract class FixtureActivity {
         instrument.getUiAutomation().setServiceInfo(info);
         instrument.getUiAutomation().getRootInActiveWindow();
         scenario = ActivityScenario.launch(new Intent(instrument.getTargetContext(), MainActivity.class));
-        scenario.onActivity(value -> { activity = value; web = web(value); });
+        scenario.onActivity(value -> {
+            activity = value; web = web(value);
+            // Emulator-only test window: keep the device awake and dismiss an idle keyguard.
+            activity.getWindow().addFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+            if(android.os.Build.VERSION.SDK_INT>=27) {
+                activity.setShowWhenLocked(true);activity.setTurnScreenOn(true);
+            }
+            android.app.KeyguardManager keyguard=activity.getSystemService(android.app.KeyguardManager.class);
+            if(keyguard!=null && keyguard.isKeyguardLocked()) keyguard.requestDismissKeyguard(activity,null);
+        });
         fixture(PAGE);
         focus();
     }
