@@ -193,8 +193,8 @@ public class MainActivity extends Activity {
 
               const selector = '#prompt-textarea, #mobile-composer-prompt';
               // Track the target without reading selection/layout during edits.
-              // Range snapshots are taken only when leaving the editor or opening
-              // a native menu; explicit paste prefers the current live selection.
+              // Range snapshots are taken only when opening a native menu;
+              // explicit paste prefers the current live selection.
               const isComposer = e => !!e && (e.id === 'prompt-textarea' || e.id === 'mobile-composer-prompt')
                 && e.isConnected && !e.disabled && !e.readOnly
                 && (e.isContentEditable || e.tagName === 'TEXTAREA');
@@ -244,10 +244,6 @@ public class MainActivity extends Activity {
                 const composer = resolveComposer(e.target);
                 if (composer) window.__novaPasteTarget = composer;
               }, true);
-              document.addEventListener('focusout', e => {
-                if (isComposer(e.target)) remember(e.target);
-              }, true);
-              window.addEventListener('blur', () => remember(document.activeElement));
               window.__novaRememberPasteSelection = () => {
                 remember(document.activeElement);
                 return true;

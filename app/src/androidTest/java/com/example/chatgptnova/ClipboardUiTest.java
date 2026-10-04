@@ -156,12 +156,20 @@ public final class ClipboardUiTest extends FixtureActivity {
                   window.fixturePasteCount = 0;
                   window.fixtureNativeEdits = 0;
                   window.fixturePaintMs = null;
+                  window.fixtureApplying = false;
+                  window.fixtureRangeReads = 0;
+                  const originalGetRangeAt = Selection.prototype.getRangeAt;
+                  Selection.prototype.getRangeAt = function(...args) {
+                    if (fixtureApplying) fixtureRangeReads++;
+                    return originalGetRangeAt.apply(this, args);
+                  };
                   const original = document.execCommand;
                   document.execCommand = function(...args) {
                     fixtureNativeEdits++;
                     return original.apply(this, args);
                   };
                   window.fixtureApplyPaste = (text, started = performance.now()) => {
+                    fixtureApplying = true;
                     const phases = {};
                     let phaseStarted = started;
                     const mark = name => {
@@ -187,6 +195,7 @@ public final class ClipboardUiTest extends FixtureActivity {
                       bubbles:true, inputType:'insertFromPaste', data:text
                     }));
                     mark('input');
+                    fixtureApplying = false;
                     window.fixturePhaseMs = phases;
                     window.fixtureTransactionMs = performance.now() - started;
                     requestAnimationFrame(() => requestAnimationFrame(() => {
@@ -214,6 +223,7 @@ public final class ClipboardUiTest extends FixtureActivity {
                     fixturePaintMs = null;
                     window.fixtureTransactionMs = null;
                     window.fixturePhaseMs = null;
+                    fixtureRangeReads = 0;
                     const r = document.createRange();
                     r.setStart(e.firstChild, 2);
                     r.setEnd(e.firstChild, 4);
@@ -279,6 +289,7 @@ public final class ClipboardUiTest extends FixtureActivity {
             waitFor("page editor long paste painted", () -> "true".equals(js("fixturePaintMs !== null")));
             assertEquals("one page transaction", "1", js("fixturePasteCount"));
             assertEquals("handled paste must bypass native HTML editing", "0", js("fixtureNativeEdits"));
+            assertEquals("handled paste must not trigger adapter Range reads", "1", js("fixtureRangeReads"));
             assertLongTextEquals("ab" + text + "ef", js("fixtureModel"));
             assertLongTextEquals("ab" + text + "ef", js("document.getElementById('prompt-textarea').innerText"));
             assertEquals("plain text never creates executable elements", "0", js(
