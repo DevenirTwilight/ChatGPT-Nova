@@ -33,7 +33,6 @@ final class NovaWebView extends WebView {
 
     @Override public InputConnection onCreateInputConnection(EditorInfo info) {
         InputConnection original = super.onCreateInputConnection(info);
-        if (connection != null && connection.isActiveFor(original)) return connection;
         invalidateInputConnection();
         if (original == null) return null;
         connection = new ComposerConnection(original);
@@ -55,19 +54,13 @@ final class NovaWebView extends WebView {
         private final Object lock = new Object();
         private final ArrayDeque<BooleanSupplier> waiting = new ArrayDeque<>();
         private final Handler inputHandler;
-        private final InputConnection original;
         private boolean active = true;
         private boolean pending;
 
         ComposerConnection(InputConnection original) {
             super(original, false);
-            this.original = original;
             Handler handler = original.getHandler();
             inputHandler = handler == null ? new Handler(getContext().getMainLooper()) : handler;
-        }
-
-        boolean isActiveFor(InputConnection candidate) {
-            synchronized (lock) { return active && candidate == original; }
         }
 
         private boolean dispatch(BooleanSupplier command) {

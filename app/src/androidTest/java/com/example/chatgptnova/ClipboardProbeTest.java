@@ -186,17 +186,20 @@ public final class ClipboardProbeTest extends FixtureActivity {
 
     @Test public void navigationCancelsPendingCommit() throws Exception {
         route="ime-cancelled";
-        clickWeb("mobile-composer-prompt");
-        AtomicReference<InputConnection> ref=new AtomicReference<>();
-        main(()->{
-            InputConnection connection=web.onCreateInputConnection(new EditorInfo());
-            ref.set(connection);
-            assertTrue(connection.commitText("old document\nclipboard",1));
-            ((NovaWebView)web).invalidateInputConnection();
-        });
-        instrument.waitForIdleSync();
-        assertEquals("",editorText("mobile-composer-prompt"));
-        assertFalse(ref.get().commitText("late stale command",1));
+        for(boolean recreate:new boolean[]{false,true}) {
+            clickWeb("mobile-composer-prompt");
+            AtomicReference<InputConnection> ref=new AtomicReference<>();
+            main(()->{
+                InputConnection connection=web.onCreateInputConnection(new EditorInfo());
+                ref.set(connection);
+                assertTrue(connection.commitText("old document\nclipboard",1));
+                if(recreate) assertNotSame(connection,web.onCreateInputConnection(new EditorInfo()));
+                else ((NovaWebView)web).invalidateInputConnection();
+            });
+            instrument.waitForIdleSync();
+            assertEquals("",editorText("mobile-composer-prompt"));
+            assertFalse(ref.get().commitText("late stale command",1));
+        }
     }
 
     private String editorText(String id) {
