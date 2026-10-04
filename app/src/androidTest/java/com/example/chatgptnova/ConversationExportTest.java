@@ -121,6 +121,10 @@ public final class ConversationExportTest extends FixtureActivity {
     }
     @Test public void pdfSavedBySystemOpensWithMultiplePages() throws Exception {
         StringBuilder text=new StringBuilder();for(int i=0;i<80;i++) text.append("段落 ").append(i).append(" 中文 English [link](https://example.org)\n\n");
+        text.append("## Code / 表格 / 数学\n\n```java\nString name = \"中文\";\n")
+            .append("long-code-".repeat(200)).append("LONG_LINE_END\n```\n\n")
+            .append("| 名称 | Value | Link |\n| --- | --- | --- |\n| export-table-row | **中文** | [target](https://example.org/android-pdf-target) |\n\n")
+            .append("Inline `code` and $E = mc^2$。\n\n");
         conversation(text.toString());export("PDF");
         waitFor("print PDF save button",()-> {
             AccessibilityNodeInfo root=instrument.getUiAutomation().getRootInActiveWindow();
