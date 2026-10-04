@@ -157,9 +157,13 @@ public final class ClipboardUiTest extends FixtureActivity {
 
     @Test public void keyboardBulkCommitKeepsFollowingEditsInOrder() throws Exception {
         clickWeb("mobile-composer-prompt");
-        js("(()=>{const e=document.getElementById('mobile-composer-prompt');e.value='abcdef';e.focus();return true})()");
         String text = "中文 English 😀\n\n".repeat(128);
         keyboardInput(connection -> {
+            // Prepare the draft through the same native connection. Setting
+            // textarea.value in JS immediately before creating an IME connection
+            // can leave Chromium's native editing state on the previous draft.
+            assertTrue(connection.finishComposingText());
+            assertTrue(connection.commitText("abcdef", 1));
             assertTrue(connection.setSelection(2, 4));
             assertTrue(connection.beginBatchEdit());
             assertTrue(connection.commitText(text, 1));

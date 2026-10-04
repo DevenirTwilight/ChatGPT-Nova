@@ -122,7 +122,22 @@ try:
                'Confirmed clear removes synthetic cookies and localStorage',
                'Browser login requires explicit consent, starts a fresh official login URL and preserves independent WebView data',
                'Visible account controls drive signed-in, signed-out and unknown menus; sensitive actions stay in settings with confirmation']
+    # Export only timings from our synthetic editor. This keeps failure
+    # evidence available in Actions logs, without clipboard or draft text.
+    paste_timings = []
+    for route in ('native', 'system', 'keyboard'):
+        path = OUT / 'clipboard-probe' / ('page-editor-' + route + '.json')
+        if not path.is_file():
+            continue
+        try:
+            value = json.loads(path.read_text())
+            paste_timings.append({key: value.get(key) for key in
+                ('route', 'utf8Bytes', 'utf16Units', 'transactionMs', 'paintMs',
+                 'baselineTransactionMs', 'baselinePaintMs', 'aggregation', 'samples')})
+        except (OSError, ValueError) as error:
+            diagnostics.append({'suite': 'paste-timing-evidence', 'error': str(error)})
     report = {'api':int(api),'passed':not failures,'checks':checks,'failures':failures,'diagnostics':diagnostics,
+              'paste_timings':paste_timings,
               'not_tested':['Real ChatGPT account authentication, long-term authenticated session and provider OAuth',
                             'The live ChatGPT conversation Share button and actual delivery to external share targets on a physical device',
                             'Physical camera, live microphone capture and real authenticated ChatGPT attachments']}
