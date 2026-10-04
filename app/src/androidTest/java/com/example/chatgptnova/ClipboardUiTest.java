@@ -169,8 +169,18 @@ public final class ClipboardUiTest extends FixtureActivity {
             connection.endBatchEdit();
         });
         String expected = "ab" + text + "?ef";
-        waitFor("keyboard bulk commit and following edits", () -> expected.equals(js(
-                "document.getElementById('mobile-composer-prompt').value")));
+        AtomicReference<String> actual = new AtomicReference<>("");
+        try {
+            waitFor("keyboard bulk commit and following edits", () -> {
+                actual.set(js("document.getElementById('mobile-composer-prompt').value"));
+                return expected.equals(actual.get());
+            });
+        } catch (AssertionError failure) {
+            String value = actual.get();
+            throw new AssertionError("Keyboard edit order: expected length " + expected.length()
+                    + ", actual length " + value.length() + ", fixture tail "
+                    + value.substring(Math.max(0, value.length() - 24)), failure);
+        }
         assertLongTextEquals(expected, js("document.getElementById('mobile-composer-prompt').value"));
         assertEquals("one offered clipboard transaction", "1", js("pasteEvents.length"));
     }

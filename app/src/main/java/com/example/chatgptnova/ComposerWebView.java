@@ -82,7 +82,12 @@ final class ComposerWebView extends WebView {
         protected synchronized boolean edit(BooleanSupplier operation) {
             if (!current()) return false;
             if (!waiting) return operation.getAsBoolean();
-            commands.add(done -> { operation.getAsBoolean(); done.run(); });
+            commands.add(done -> {
+                try {
+                    operation.getAsBoolean();
+                    if (current()) super.getTextBeforeCursor(0, 0);
+                } finally { done.run(); }
+            });
             return true;
         }
 
@@ -124,6 +129,11 @@ final class ComposerWebView extends WebView {
                     // editor's single transaction. Intermediate DOM/selection
                     // changes must not trigger separate IME synchronization.
                     boolean batched = super.beginBatchEdit();
+                    // Native edits and evaluateJavascript use different UI
+                    // queues. Request state on the original IME handler before
+                    // crossing to JS, so the preceding selection is applied.
+                    // Zero characters are returned to Nova.
+                    super.getTextBeforeCursor(0, 0);
                     Runnable finish = () -> {
                         if (batched) super.endBatchEdit();
                         done.run();
@@ -137,6 +147,7 @@ final class ComposerWebView extends WebView {
                                 synchronized (BulkConnection.this) {
                                     if (current() && !Boolean.TRUE.equals(handled)) original.getAsBoolean();
                                 }
+                                if (current()) super.getTextBeforeCursor(0, 0);
                             } finally { finish.run(); }
                         }));
                     });
