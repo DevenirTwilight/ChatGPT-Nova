@@ -193,7 +193,7 @@ public final class ClipboardUiTest extends FixtureActivity {
                 "document.getElementById('mobile-composer-prompt').value")));
         assertEquals("native cursor position is preserved", "0", js(
                 "document.getElementById('mobile-composer-prompt').selectionStart"));
-        js("(()=>{const e=document.createElement('textarea');e.id='other-input';document.body.append(e);return true})()");
+        js("(()=>{const e=document.createElement('textarea');e.id='other-input';document.body.append(e);e.scrollIntoView({block:'center'});return true})()");
         clickWeb("other-input");
         keyboardInput(connection -> assertTrue(connection.commitText(text, 1)));
         waitFor("non-composer input uses native connection", () -> text.equals(js(
@@ -201,6 +201,16 @@ public final class ClipboardUiTest extends FixtureActivity {
         assertEquals("IME text never targets a remembered composer", text, js(
                 "document.getElementById('mobile-composer-prompt').value"));
         assertEquals("non-composer commit does not synthesize paste", "0", js("pasteEvents.length"));
+        js("(()=>{const e=document.createElement('input');e.type='password';e.id='fixture-password';document.body.append(e);e.scrollIntoView({block:'center'});return true})()");
+        clickWeb("fixture-password");
+        keyboardInput(connection -> {
+            assertTrue("password input never receives Nova's wrapper",
+                    !connection.getClass().getName().contains("ComposerWebView"));
+            assertTrue(connection.commitText("synthetic-secret", 1));
+        });
+        waitFor("test-owned password retains native input", () -> "synthetic-secret".equals(js(
+                "document.getElementById('fixture-password').value")));
+        assertEquals("password input never emits a Nova paste", "0", js("pasteEvents.length"));
     }
 
     private void pageOwnedLongPaste(String route) throws Exception {

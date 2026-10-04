@@ -2,8 +2,10 @@ package com.example.chatgptnova;
 
 import android.content.Context;
 import android.annotation.TargetApi;
+import android.net.Uri;
 import android.os.Handler;
 import android.os.Looper;
+import android.text.InputType;
 import android.view.KeyEvent;
 import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputConnection;
@@ -37,6 +39,17 @@ final class ComposerWebView extends WebView {
 
     @Override public InputConnection onCreateInputConnection(EditorInfo editorInfo) {
         InputConnection connection = super.onCreateInputConnection(editorInfo);
+        Uri page = Uri.parse(getUrl() == null ? "" : getUrl());
+        int kind = editorInfo.inputType & InputType.TYPE_MASK_CLASS;
+        int variation = editorInfo.inputType & InputType.TYPE_MASK_VARIATION;
+        boolean password = kind == InputType.TYPE_CLASS_TEXT
+                && (variation == InputType.TYPE_TEXT_VARIATION_PASSWORD
+                    || variation == InputType.TYPE_TEXT_VARIATION_WEB_PASSWORD
+                    || variation == InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD)
+                || kind == InputType.TYPE_CLASS_NUMBER && variation == InputType.TYPE_NUMBER_VARIATION_PASSWORD;
+        // Password fields and other origins never enter the adapter at all.
+        if (connection == null || password || !MainActivity.isTrustedOrigin(page)
+                || !"chatgpt.com".equalsIgnoreCase(page.getHost())) return connection;
         return connection == null ? null : new BulkConnection(connection);
     }
 
