@@ -57,3 +57,12 @@ test('page-selected regenerated leaf can differ from server current_node',()=> {
 test('DOM message order must follow the verified branch',()=> {
  assert.throws(()=>normalize(fixture(),['m1','m0','m3']),/顺序/);
 });
+
+test('unclosed user code fence cannot swallow the next role separator',()=> {
+ const data=normalize(fixture());data.messages[0].markdown='```python\nprint("中文")';
+ const md=core.markdown(data);assert.match(md,/print\("中文"\)\n```\n\n---\n\n## Assistant/);
+});
+test('long fences keep literal shorter fences and correct terminators',()=> {
+ const data=normalize(fixture());data.messages[0].markdown='````markdown\n```javascript\nconst text="English";\n```';
+ assert.match(core.markdown(data),/const text="English";\n```\n````\n\n---/);
+});

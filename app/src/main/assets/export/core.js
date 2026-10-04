@@ -115,9 +115,22 @@
     return !!(m && m.author && ['user','assistant'].includes(m.author.role)
       && m.channel !== 'analysis' && (!m.recipient || m.recipient === 'all') && !(m.metadata && m.metadata.is_visually_hidden_from_conversation));
   }
+  function closeFence(text) {
+    let fence = null;
+    for (const line of text.split(/\r?\n/)) {
+      const match = /^ {0,3}(`{3,}|~{3,})(.*)$/.exec(line);
+      if (!match) continue;
+      const marker=match[1], rest=match[2];
+      if (!fence) {
+        if (marker[0]==='`' && rest.includes('`')) continue;
+        fence={char:marker[0],length:marker.length};
+      } else if (marker[0]===fence.char && marker.length>=fence.length && !rest.trim()) fence=null;
+    }
+    return fence ? text+'\n'+fence.char.repeat(fence.length) : text;
+  }
   function markdown(data) {
     return '# ' + data.title.replace(/[\r\n]/g, ' ') + '\n\n' +
-      data.messages.map(m => '## ' + (m.role === 'user' ? 'User' : 'Assistant') + '\n\n' + m.markdown).join('\n\n---\n\n') +
+      data.messages.map(m => '## ' + (m.role === 'user' ? 'User' : 'Assistant') + '\n\n' + closeFence(m.markdown)).join('\n\n---\n\n') +
       (data.warnings.length ? '\n\n---\n\n导出说明：\n' + data.warnings.map(s=>'- '+s).join('\n') : '') + '\n';
   }
   function safeUrl(value, image) {
