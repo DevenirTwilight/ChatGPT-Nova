@@ -81,10 +81,15 @@ public class MainActivity extends Activity {
 
     private static final String INSERT_COMPOSER_TEXT = """
             (text => {
-              const e = document.activeElement;
-              if (!e || !['prompt-textarea','mobile-composer-prompt'].includes(e.id)
+              if (location.origin !== 'https://chatgpt.com') return false;
+              const active = document.activeElement;
+              const e = active && active.closest('#prompt-textarea, #mobile-composer-prompt');
+              if (!e || (active !== e && !active.isContentEditable)
                   || e.disabled || e.readOnly || !e.getClientRects().length
                   || !(e.isContentEditable || e.tagName === 'TEXTAREA')) return false;
+              // HTML editors normalize CR/CRLF to LF. Check against that same value
+              // so a successful normalized insert is not replayed by native fallback.
+              text = text.replace(/\\r\\n?/g, '\\n');
               if (e.tagName === 'TEXTAREA') {
                 const start = e.selectionStart, end = e.selectionEnd;
                 const value = e.value.slice(0, start) + text + e.value.slice(end);
@@ -95,6 +100,9 @@ public class MainActivity extends Activity {
                 e.dispatchEvent(new InputEvent('input', {bubbles:true, inputType:'insertFromPaste', data:text}));
                 return e.value === value;
               }
+              const selection = window.getSelection();
+              if (!selection || !selection.rangeCount
+                  || !e.contains(selection.getRangeAt(0).commonAncestorContainer)) return false;
               // A single escaped, whitespace-preserving fragment avoids thousands
               // of insertText paragraph edits. Clipboard markup remains inert text.
               const span = document.createElement('span');
@@ -107,9 +115,15 @@ public class MainActivity extends Activity {
             (() => {
               if (window.__novaLongPasteInstalled) return;
               window.__novaLongPasteInstalled = true;
+              // Metadata only: Java-side composition flags can outlive a DOM reset.
+              document.addEventListener('compositionstart', event => {
+                window.__novaComposingEditor = event.target.closest
+                  ? event.target.closest('#prompt-textarea, #mobile-composer-prompt') : null;
+              }, true);
+              document.addEventListener('compositionend', () => { window.__novaComposingEditor = null; }, true);
               document.addEventListener('paste', event => {
                 const text = event.clipboardData && event.clipboardData.getData('text/plain');
-                if (!text || (text.length < 4096 && !text.includes('\\n'))) return;
+                if (!text || (text.length < 4096 && !/[\\r\\n]/.test(text))) return;
                 const insert = INSERT_FUNCTION;
                 // Suppress the website/default paste only after insertion succeeds.
                 // Clipboard text stays plain text; never interpret it as HTML.
@@ -237,7 +251,17 @@ public class MainActivity extends Activity {
                 ViewGroup.LayoutParams.MATCH_PARENT, dp(2)));
 
         FrameLayout content = new FrameLayout(this);
-        webView = new WebView(this);
+        webView = new NovaWebView(this, new NovaWebView.ComposerEditor() {
+            @Override public void prepare(ValueCallback<Boolean> result) {
+                prepareImeComposer(webView, result);
+            }
+            @Override public void commit(String text, ValueCallback<Boolean> result) {
+                tryInsertComposerText(webView, text, result);
+            }
+            @Override public void paste(ValueCallback<Boolean> result) {
+                tryPasteComposer(webView, false, result);
+            }
+        });
         content.addView(webView, new FrameLayout.LayoutParams(-1, -1));
         ScrollView errors = new ScrollView(this);
         errorPanel = new LinearLayout(this);
@@ -303,6 +327,7 @@ public class MainActivity extends Activity {
             @Override
             public void onPageStarted(WebView view, String url, Bitmap favicon) {
                 if (view != webView || clearing) return;
+                ((NovaWebView) view).invalidateInputConnection();
                 accountUiState = AccountUiState.UNKNOWN;
                 accountQuerySerial++;
                 cancelPageRequests();
@@ -706,39 +731,76 @@ public class MainActivity extends Activity {
     // Explicit user action only. Insert plain text into the focused composer;
     // never read login fields, persist clipboard content or submit the draft.
     void pasteFromClipboard() {
-        WebView page = webView;
+        tryPasteComposer(webView, true, ignored -> { });
+    }
+
+    private boolean canEditComposer(WebView page) {
         String address = page == null ? null : page.getUrl();
         Uri uri = Uri.parse(address == null ? "" : address);
-        if (clearing || page == null || !"https".equals(uri.getScheme())
-                || !"chatgpt.com".equals(uri.getHost()) || uri.getUserInfo() != null
-                || (uri.getPort() != -1 && uri.getPort() != 443)) return;
-        page.requestFocus();
+        return !clearing && page != null && page == webView && isTrustedOrigin(uri)
+                && "chatgpt.com".equals(uri.getHost());
+    }
+
+    private void tryInsertComposerText(WebView page, String text, ValueCallback<Boolean> result) {
+        if (!canEditComposer(page)) { result.onReceiveValue(false); return; }
+        String address = page.getUrl();
+        String plainText = JSONObject.quote(text).replace("\u2028", "\\u2028").replace("\u2029", "\\u2029");
+        page.evaluateJavascript(INSERT_COMPOSER_TEXT + "(" + plainText + ")", inserted ->
+                result.onReceiveValue(canEditComposer(page) && address.equals(page.getUrl())
+                        && "true".equals(inserted)));
+    }
+
+    private void prepareImeComposer(WebView page, ValueCallback<Boolean> result) {
+        if (!canEditComposer(page)) { result.onReceiveValue(false); return; }
+        String address = page.getUrl();
+        page.evaluateJavascript("""
+                (() => {
+                  if (location.origin !== 'https://chatgpt.com') return false;
+                  const active = document.activeElement;
+                  const e = active && active.closest('#prompt-textarea, #mobile-composer-prompt');
+                  if (!e || (active !== e && !active.isContentEditable)
+                      || e.disabled || e.readOnly || !e.getClientRects().length
+                      || !(e.isContentEditable || e.tagName === 'TEXTAREA')) return false;
+                  return window.__novaComposingEditor !== e
+                    || !(e.tagName === 'TEXTAREA' ? e.value.length : e.textContent.length);
+                })()
+                """, ready -> result.onReceiveValue(canEditComposer(page)
+                        && address.equals(page.getUrl()) && "true".equals(ready)));
+    }
+
+    private void tryPasteComposer(WebView page, boolean notify, ValueCallback<Boolean> result) {
+        if (!canEditComposer(page)) { result.onReceiveValue(false); return; }
+        String address = page.getUrl();
+        if (notify) page.requestFocus();
         // Never target login fields, arbitrary inputs, or external pages.
         page.evaluateJavascript("""
                 (() => {
-                  const e = document.activeElement;
-                  return !!e && (e.id === 'prompt-textarea' || e.id === 'mobile-composer-prompt')
+                  if (location.origin !== 'https://chatgpt.com') return false;
+                  const active = document.activeElement;
+                  const e = active && active.closest('#prompt-textarea, #mobile-composer-prompt');
+                  return !!e && (active === e || active.isContentEditable)
                     && !e.disabled && !e.readOnly && !!e.getClientRects().length
                     && (e.isContentEditable || e.tagName === 'TEXTAREA');
                 })()
-                """, result -> {
-            if (page != webView || clearing || !address.equals(page.getUrl())) return;
-            if (!"true".equals(result)) {
-                Toast.makeText(this, "请先点一下聊天输入框，再从菜单粘贴。", Toast.LENGTH_LONG).show();
+                """, eligible -> {
+            if (!canEditComposer(page) || !address.equals(page.getUrl())) { result.onReceiveValue(false); return; }
+            if (!"true".equals(eligible)) {
+                if (notify) Toast.makeText(this, "请先点一下聊天输入框，再从菜单粘贴。", Toast.LENGTH_LONG).show();
+                result.onReceiveValue(false);
                 return;
             }
             ClipboardManager clipboard = (ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
             ClipData clip = clipboard.getPrimaryClip();
             CharSequence text = clip == null || clip.getItemCount() == 0 ? null : clip.getItemAt(0).getText();
             if (text == null || text.length() == 0) {
-                Toast.makeText(this, "剪贴板中没有文本。", Toast.LENGTH_SHORT).show();
+                if (notify) Toast.makeText(this, "剪贴板中没有文本。", Toast.LENGTH_SHORT).show();
+                result.onReceiveValue(false);
                 return;
             }
-            String plainText = JSONObject.quote(text.toString())
-                    .replace("\u2028", "\\u2028").replace("\u2029", "\\u2029");
-            page.evaluateJavascript(INSERT_COMPOSER_TEXT + "(" + plainText + ")", inserted -> {
-                if (!"true".equals(inserted) && page == webView && !clearing)
+            tryInsertComposerText(page, text.toString(), inserted -> {
+                if (notify && !inserted && canEditComposer(page))
                     Toast.makeText(this, "未能粘贴，请重新点一下聊天输入框。", Toast.LENGTH_LONG).show();
+                result.onReceiveValue(inserted);
             });
         });
     }
@@ -767,7 +829,7 @@ public class MainActivity extends Activity {
     }
 
     private void showAbout() {
-        new AlertDialog.Builder(this).setTitle("ChatGPT Nova 1.3.6")
+        new AlertDialog.Builder(this).setTitle("ChatGPT Nova 1.3.7")
                 .setIcon(R.mipmap.ic_launcher)
                 .setMessage("ChatGPT Nova 是用于访问 chatgpt.com 的个人客户端，与官方 ChatGPT App 独立存储登录状态。\n\n这是非官方第三方客户端，不由 OpenAI 发布、维护或背书。应用内登录使用 chatgpt.com 官方登录页，但登录/会话仍运行在 Nova 的 WebView 中。第三方客户端可能与官方客户端存在不同的安全验证、访问限制或账号风险；这不表示使用非官方客户端一定会封号。若不愿承担这项不确定性，请使用官方 ChatGPT App 或浏览器。应用本身不读取或保存账号密码。")
                 .setPositiveButton("知道了", null).show();

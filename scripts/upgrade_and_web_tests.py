@@ -4,6 +4,7 @@ import json
 import re
 import subprocess
 import sys
+import time
 from pathlib import Path
 
 OUT = Path('instrumented-results')
@@ -52,18 +53,29 @@ try:
     assert suite(PACKAGE+'.UpgradeTest#testSeedUpgradeData','v1-seed.txt') == 1
     adb('shell','am','force-stop',PACKAGE)
     install(release)
+    ime = PACKAGE + '.test/com.example.chatgptnova.ClipboardProbeIme'
+    until = time.monotonic() + 30
+    while ime not in adb('shell','ime','list','-a','-s').splitlines():
+        if time.monotonic() >= until:
+            raise RuntimeError('Probe IME not registered: ' + adb('shell','ime','list','-a','-s'))
+        time.sleep(0.5)
+    adb('shell', 'ime', 'enable', ime)
+    adb('shell', 'ime', 'set', ime)
     upgrade_count = independent('upgrade', lambda: suite(PACKAGE+'.UpgradeTest#testUpgradeDataPreserved','upgrade.txt'))
     if upgrade_count == 1:
         checks.append('Original signed v1 is upgraded with install -r; synthetic cookie and localStorage survive process restart')
     try:
         clipboard_count = 0
-        for method in ('nativeMenuPaste','imeCommitText','imePasteCommand','longPressSystemPaste'):
-            value = independent('clipboard-'+method, lambda method=method: suite(PACKAGE+'.ClipboardProbeTest#'+method,'clipboard-'+method+'.txt'), required=method!='imeCommitText')
+        methods = ('nativeMenuPaste','imeCommitText','imeCommitTextWithAttributes','imePasteCommand','longPressSystemPaste',
+                   'selectionAndFollowingTypingStayInOrder','chineseCompositionKeepsNativeReplacement',
+                   'ordinaryFieldsUseNativeFallback','navigationCancelsPendingCommit')
+        for method in methods:
+            value = independent('clipboard-'+method, lambda method=method: suite(PACKAGE+'.ClipboardProbeTest#'+method,'clipboard-'+method+'.txt'))
             if value == 1: clipboard_count += 1
     finally:
         adb('pull','/sdcard/Android/data/'+PACKAGE+'/files/clipboard-probe/.',str(OUT/'clipboard-probe'))
-    if clipboard_count == 4:
-        checks.append('Baseline full-text clipboard checks: real long-press Paste, IME paste command and IME commitText; 1/10/50 KB, multiline, Markdown, Chinese/English and emoji; textarea and contenteditable')
+    if clipboard_count == len(methods):
+        checks.append('Required clipboard checks: long-press, IME paste, both IME commitText overloads and native menu; 1/10/50 KB, multiline, Markdown, Unicode and emoji; selection, command ordering, composition, native fallback and cancellation')
     count = independent('webview', lambda: suite(PACKAGE+'.NovaWebViewTest','webview-fixtures.txt'))
     if count == 9:
         checks += ['Real WebView multiple-file input reads two synthetic documents and correct MIME types',

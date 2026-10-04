@@ -1,3 +1,10 @@
+# 1.3.7 (versionCode 11)
+
+- 补上输入法剪贴板历史直接通过 `InputConnection.commitText` 提交的通路：长文本和多行文本使用聊天框纯文本插入逻辑，兼容 Android 13+ 带 TextAttribute 的重载；IME 粘贴命令也使用同一逻辑。
+- 等待异步插入时按顺序处理后续输入、选区与 batch edit，页面切换和输入连接关闭时取消待执行命令。普通短文本、Enter、组合输入和不适用的输入框保持 WebView 的原生处理。
+- 不再跳过多行 IME commitText，也不再把它作为可忽略的 CI 诊断；增加短文本、CRLF、选区替换、连续输入、中文组合输入、原生回退和取消测试。
+- 增加独立的 PR 调试构建与 Android 13/14/15 剪贴板回归工作流；正式版仍由原签名工作流构建。参考 Firefox 的原生输入连接设计，详见 `docs/IME-CLIPBOARD.md`。
+
 # 1.3.6 (versionCode 10)
 
 - 继续 1.3.5 的系统粘贴修复，解决旧 WebView 在大量换行的编辑命令中卡住：textarea 使用原生值 setter、保留选区并通知 input；contenteditable 使用一次性纯文本转义片段，保留浏览器编辑撤销路径。

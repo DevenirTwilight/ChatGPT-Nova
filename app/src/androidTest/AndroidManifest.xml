@@ -1,5 +1,11 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <application>
+        <!-- Synthetic InputConnection probes use one writer, without Gboard autocorrection. -->
+        <service android:name="com.example.chatgptnova.ClipboardProbeIme"
+            android:permission="android.permission.BIND_INPUT_METHOD" android:exported="true">
+            <intent-filter><action android:name="android.view.InputMethod" /></intent-filter>
+            <meta-data android:name="android.view.im" android:resource="@xml/clipboard_probe_ime" />
+        </service>
         <!-- Test-only HTTPS handler makes browser handoff deterministic without a real account. -->
         <activity android:name="com.example.chatgptnova.FixtureBrowser" android:exported="true">
             <intent-filter>
