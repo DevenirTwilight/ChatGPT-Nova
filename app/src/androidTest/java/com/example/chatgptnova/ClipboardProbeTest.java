@@ -178,7 +178,9 @@ public final class ClipboardProbeTest extends FixtureActivity {
             clickWeb("ordinary-field");
             waitFor("focused ordinary field",()->"ordinary-field".equals(js("document.activeElement.id")));
             input(connection -> assertTrue(connection.commitText("fallback\n中文",1)));
-            String expected="textarea".equals(type)?"fallback\n中文":"fallback中文";
+            // Blink's TextFieldInputType replaces an interior line break with a
+            // space in single-line inputs; textarea keeps the newline unchanged.
+            String expected="textarea".equals(type)?"fallback\n中文":"fallback 中文";
             expectText("ordinary-field",expected,"native fallback in "+type);
             js("document.getElementById('ordinary-field').remove()");
         }
