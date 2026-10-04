@@ -175,7 +175,7 @@ public final class ConversationExportTest extends FixtureActivity {
             if(root!=null) {
                 for(AccessibilityNodeInfo button:root.findAccessibilityNodeInfosByViewId("com.android.printspooler:id/print_button"))
                     if(button.isEnabled() && button.isClickable() && "Save to PDF".contentEquals(button.getContentDescription()))
-                        saved=button.performAction(AccessibilityNodeInfo.ACTION_CLICK);
+                        saved=true;
             }
             if(!saved) android.os.SystemClock.sleep(200);
         } while(!saved && android.os.SystemClock.uptimeMillis()<previewDeadline);
@@ -184,6 +184,7 @@ public final class ConversationExportTest extends FixtureActivity {
             diagnostic=dumpPrintWindow(instrument.getUiAutomation().getRootInActiveWindow());
         }
         assertTrue("System print preview must enable Save as PDF\n"+diagnostic,saved);
+        click("Save to PDF");
         click("Save");
         waitFor("system PDF save finished",()->!busy());
         String path="/sdcard/Download/"+output().getName();

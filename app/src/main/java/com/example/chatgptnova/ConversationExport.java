@@ -5,13 +5,10 @@ import android.app.AlertDialog;
 import android.content.ClipData;
 import android.content.Intent;
 import android.net.Uri;
-import android.os.CancellationSignal;
-import android.print.PageRange;
 import android.print.PrintAttributes;
 import android.print.PrintDocumentAdapter;
 import android.print.PrintManager;
 import android.print.PrintJob;
-import android.os.Bundle;
 import android.webkit.WebView;
 import android.view.View;
 import android.view.ViewGroup;
@@ -41,7 +38,7 @@ final class ConversationExport {
     private final WebView web;
     private final BooleanSupplier active;
     private ScriptHandler capture;
-    private boolean installed, busy, destroyed;
+    private boolean installed, busy, destroyed, printPaused;
     private String nonce, address;
     private final StringBuilder incoming = new StringBuilder();
     private File file;
@@ -183,26 +180,12 @@ final class ConversationExport {
             PrintManager manager=(PrintManager)activity.getSystemService(Activity.PRINT_SERVICE);
             if (manager==null) throw new IllegalStateException("Print service unavailable");
             PrintDocumentAdapter document=printWeb.createPrintDocumentAdapter(file.getName());
-            PrintDocumentAdapter lifecycle=new PrintDocumentAdapter() {
-                @Override public void onStart() { document.onStart(); }
-                @Override public void onLayout(PrintAttributes oldAttributes,PrintAttributes newAttributes,
-                    CancellationSignal cancellation,LayoutResultCallback callback,Bundle extras) {
-                    document.onLayout(oldAttributes,newAttributes,cancellation,callback,extras);
-                }
-                @Override public void onWrite(PageRange[] pages,android.os.ParcelFileDescriptor destination,
-                    CancellationSignal cancellation,WriteResultCallback callback) {
-                    document.onWrite(pages,destination,cancellation,callback);
-                }
-                @Override public void onFinish() {
-                    document.onFinish();
-                    activity.runOnUiThread(()-> { finishPrint(); busy=false; });
-                }
-            };
             PrintAttributes attributes=new PrintAttributes.Builder().setMediaSize(PrintAttributes.MediaSize.ISO_A4)
                 .setResolution(new PrintAttributes.Resolution("export","PDF",300,300))
                 .setMinMargins(new PrintAttributes.Margins(630,630,630,630)).setColorMode(PrintAttributes.COLOR_MODE_COLOR).build();
             stopDeadline();
-            printJob=manager.print(file.getName(),lifecycle,attributes);
+            // Keep the WebView alive through preview, printer changes and the final write.
+            printJob=manager.print(file.getName(),document,attributes);
             toast("请选择“保存为 PDF”和保存位置。保存后可从文件管理器打开或分享。 ");
         } catch (Exception error) { fail("设备无法启动 PDF 保存界面。"); }
     }
@@ -241,11 +224,15 @@ final class ConversationExport {
         },"conversation-export-save").start();
         return true;
     }
+    void activityPaused() { if(printJob!=null) printPaused=true; }
+    void activityResumed() {
+        if(printPaused) { finishPrint();busy=false; }
+    }
     void navigationStarted() { if (nonce!=null) fail("页面已切换，导出已取消。"); }
     private void stopDeadline() { if (deadline!=null) web.removeCallbacks(deadline); deadline=null; }
     private void finishPrint() {
         stopDeadline();
-        printJob=null;
+        printJob=null;printPaused=false;
         if (printWeb!=null) {
             if (printWeb.getParent() instanceof ViewGroup) ((ViewGroup)printWeb.getParent()).removeView(printWeb);
             printWeb.destroy();

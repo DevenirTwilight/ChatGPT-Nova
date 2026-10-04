@@ -1056,6 +1056,7 @@ public class MainActivity extends Activity {
 
     @Override
     protected void onPause() {
+        if (conversationExport != null) conversationExport.activityPaused();
         CookieManager.getInstance().flush();
         if (webView != null) webView.onPause();
         super.onPause();
@@ -1065,6 +1066,7 @@ public class MainActivity extends Activity {
     protected void onResume() {
         super.onResume();
         if (webView != null) webView.onResume();
+        if (conversationExport != null) conversationExport.activityResumed();
     }
 
     @Override
