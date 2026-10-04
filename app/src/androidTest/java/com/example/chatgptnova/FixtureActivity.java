@@ -28,6 +28,7 @@ import static org.junit.Assert.*;
 
 abstract class FixtureActivity {
     static final String PAGE = "https://chatgpt.com/nova-fixture";
+    static final String CLIPBOARD_REFERENCE = "https://nova-paste-baseline.invalid/nova-fixture";
     static final Uri OUTPUT = Uri.parse("content://com.example.chatgptnova.test.documents/output.bin");
     final Instrumentation instrument = InstrumentationRegistry.getInstrumentation();
     ActivityScenario<MainActivity> scenario;
@@ -97,7 +98,8 @@ abstract class FixtureActivity {
         web.setWebViewClient(new WebViewClient() {
             @Override public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) {
                 // Served locally inside instrumentation, without requesting chatgpt.com or reading credentials.
-                if (clipboardFixture && PAGE.equals(request.getUrl().toString())) {
+                if (clipboardFixture && (PAGE.equals(request.getUrl().toString())
+                        || CLIPBOARD_REFERENCE.equals(request.getUrl().toString()))) {
                     return new WebResourceResponse("text/html", "UTF-8", new ByteArrayInputStream(CLIPBOARD_HTML.getBytes(StandardCharsets.UTF_8)));
                 }
                 if (nativeFixture && MainActivity.isTrustedOrigin(request.getUrl())) {

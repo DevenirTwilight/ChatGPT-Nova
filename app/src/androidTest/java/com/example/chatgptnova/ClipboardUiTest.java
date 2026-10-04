@@ -147,7 +147,6 @@ public final class ClipboardUiTest extends FixtureActivity {
     private void pageOwnedLongPaste(boolean nativeMenu) throws Exception {
         // A test-owned editor with its own paste transaction and history. This
         // tests DOM event ownership, not the live ChatGPT editor implementation.
-        clickWeb("prompt-textarea");
         String setup = """
                 (() => {
                   const e = document.getElementById('prompt-textarea');
@@ -225,7 +224,6 @@ public final class ClipboardUiTest extends FixtureActivity {
                   return fixtureReset();
                 })()
                 """;
-        js(setup);
         String text = "# Heading\n\n中文 English 😀 <script> & literal\n- **bold**\n\n".repeat(4096);
         double[] transactions = new double[3], paints = new double[3];
         double[] baselineTransactions = new double[3], baselinePaints = new double[3];
@@ -233,50 +231,41 @@ public final class ClipboardUiTest extends FixtureActivity {
         // Shared emulator scheduling varies between single pastes. Use three
         // paired samples; preserve the existing median regression thresholds.
         for (int sample = 0; sample < transactions.length; sample++) {
+            // Use the same top-level WebView for both samples. An iframe has
+            // different selection/layout and IME behavior, even with identical CSS.
+            // The test-only reference origin receives no Nova paste scripts.
+            fixture(CLIPBOARD_REFERENCE);
+            assertEquals("reference must not run Nova paste listeners", "undefined", js(
+                    "typeof window.__novaPasteCompatibilityInstalled"));
+            clickWeb("prompt-textarea");
+            js(setup);
             String editorSize = js("(()=>{const e=document.getElementById('prompt-textarea');"
                     + "return e.clientWidth+':'+e.clientHeight})()");
-            // The reference must use the same paste route, not a direct DOM update:
-            // old WebViews also do selection/IME work around clipboard events.
-            // This same-origin test iframe has identical editor CSS but no Nova
-            // paste/selection listeners (the production script is top-frame only).
-            js("(()=>{const f=document.createElement('iframe');f.id='paste-baseline';"
-                    + "f.style='position:fixed;inset:0;width:100%;height:100%;border:0;z-index:99999';"
-                    + "f.srcdoc=" + JSONObject.quote(CLIPBOARD_HTML) + ";document.body.append(f);return true})()");
-            waitFor("baseline iframe ready", () -> "true".equals(js(
-                    "document.getElementById('paste-baseline')?.contentDocument?.getElementById('ready')?.textContent === 'ready'")));
-            assertEquals("reference must not run Nova paste listeners", "undefined", js(
-                    "typeof document.getElementById('paste-baseline').contentWindow.__novaPasteCompatibilityInstalled"));
-            assertEquals("reference editor has the same dimensions", editorSize, js(
-                    "(()=>{const e=document.getElementById('paste-baseline').contentDocument.getElementById('prompt-textarea');"
-                            + "return e.clientWidth+':'+e.clientHeight})()"));
-            js("document.getElementById('paste-baseline').contentWindow.eval(" + JSONObject.quote(setup) + ");true");
-            js("(()=>{const f=document.getElementById('paste-baseline');"
-                    + "f.contentDocument.getElementById('prompt-textarea').focus();return f.contentWindow.fixtureReset()})()");
             putClipboard(text);
             SystemClock.sleep(400);
             if (nativeMenu) {
-                js("(()=>{const f=document.getElementById('paste-baseline'),w=f.contentWindow;"
-                        + "const data=new w.DataTransfer();data.setData('text/plain'," + JSONObject.quote(text) + ");"
-                        + "f.contentDocument.getElementById('prompt-textarea').dispatchEvent(new w.ClipboardEvent('paste',"
+                js("(()=>{const data=new DataTransfer();data.setData('text/plain'," + JSONObject.quote(text) + ");"
+                        + "document.getElementById('prompt-textarea').dispatchEvent(new ClipboardEvent('paste',"
                         + "{bubbles:true,cancelable:true,clipboardData:data}));return true})()");
             } else {
                 systemPaste();
             }
-            waitFor("editor paste baseline painted", () -> "true".equals(js(
-                    "document.getElementById('paste-baseline').contentWindow.fixturePaintMs !== null")));
-            assertEquals("baseline uses one paste event", "1", js(
-                    "document.getElementById('paste-baseline').contentWindow.fixturePasteCount"));
-            assertLongTextEquals("ab" + text + "ef", js(
-                    "document.getElementById('paste-baseline').contentWindow.fixtureModel"));
+            waitFor("editor paste baseline painted", () -> "true".equals(js("fixturePaintMs !== null")));
+            assertEquals("baseline uses one paste event", "1", js("fixturePasteCount"));
+            assertLongTextEquals("ab" + text + "ef", js("fixtureModel"));
             double baselinePaintMs = Double.parseDouble(js(
-                    "document.getElementById('paste-baseline').contentWindow.fixturePaintMs"));
+                    "fixturePaintMs"));
             double baselineTransactionMs = Double.parseDouble(js(
-                    "document.getElementById('paste-baseline').contentWindow.fixtureTransactionMs"));
+                    "fixtureTransactionMs"));
             JSONObject baselinePhases = new JSONObject(js(
-                    "document.getElementById('paste-baseline').contentWindow.fixturePhaseMs"));
-            js("document.getElementById('paste-baseline').remove();true");
+                    "fixturePhaseMs"));
+            fixture(PAGE);
+            assertEquals("candidate runs the production paste adapter", "function", js("typeof window.__novaPasteText"));
             clickWeb("prompt-textarea");
-            js("fixtureReset()");
+            js(setup);
+            assertEquals("reference editor has the same dimensions", editorSize, js(
+                    "(()=>{const e=document.getElementById('prompt-textarea');"
+                            + "return e.clientWidth+':'+e.clientHeight})()"));
             putClipboard(text);
             SystemClock.sleep(400); // Let Chromium observe the new OS clipboard value.
             if (nativeMenu) {
@@ -314,7 +303,7 @@ public final class ClipboardUiTest extends FixtureActivity {
                 .put("paintMs", paintMs).put("baselineTransactionMs", baselineTransactionMs)
                 .put("baselinePaintMs", baselinePaintMs).put("aggregation", "median of three paired samples")
                 .put("samples", samples)
-                .put("baseline", "same paste route in an identical iframe without Nova paste listeners");
+                .put("baseline", "same paste route and top-level WebView; identical test editor at an untrusted test-only origin without Nova paste listeners");
         File directory = new File(instrument.getTargetContext().getExternalFilesDir(null), "clipboard-probe");
         assertTrue(directory.isDirectory() || directory.mkdirs());
         try (FileOutputStream out = new FileOutputStream(new File(directory,
