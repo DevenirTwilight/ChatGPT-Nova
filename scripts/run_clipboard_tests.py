@@ -4,6 +4,7 @@ import json
 import re
 import subprocess
 import sys
+import time
 from pathlib import Path
 
 out = Path('clipboard-results')
@@ -12,7 +13,9 @@ package = 'com.example.chatgptnova.debug'
 runner = package + '.test/androidx.test.runner.AndroidJUnitRunner'
 
 def adb(*args, timeout=120):
-    result = subprocess.run(['adb', *args], capture_output=True, timeout=timeout, check=True)
+    result = subprocess.run(['adb', *args], capture_output=True, timeout=timeout)
+    if result.returncode:
+        raise RuntimeError('adb ' + ' '.join(args) + ': ' + result.stdout.decode(errors='replace') + result.stderr.decode(errors='replace'))
     return result.stdout.decode(errors='replace')
 
 passed = False
@@ -21,6 +24,12 @@ try:
     for path in (apk, tests):
         assert 'Success' in adb('install', '-r', path)
     ime = package + '.test/com.example.chatgptnova.ClipboardProbeIme'
+    until = time.monotonic() + 30
+    while ime not in adb('shell', 'ime', 'list', '-a', '-s').splitlines():
+        if time.monotonic() >= until:
+            raise RuntimeError('Probe IME not registered after install: ' + adb('shell', 'ime', 'list', '-a', '-s')
+                               + adb('shell', 'dumpsys', 'package', package + '.test'))
+        time.sleep(0.5)
     adb('shell', 'ime', 'enable', ime)
     adb('shell', 'ime', 'set', ime)
     adb('shell', 'input', 'keyevent', '224')

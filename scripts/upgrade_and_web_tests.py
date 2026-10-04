@@ -4,6 +4,7 @@ import json
 import re
 import subprocess
 import sys
+import time
 from pathlib import Path
 
 OUT = Path('instrumented-results')
@@ -53,6 +54,11 @@ try:
     adb('shell','am','force-stop',PACKAGE)
     install(release)
     ime = PACKAGE + '.test/com.example.chatgptnova.ClipboardProbeIme'
+    until = time.monotonic() + 30
+    while ime not in adb('shell','ime','list','-a','-s').splitlines():
+        if time.monotonic() >= until:
+            raise RuntimeError('Probe IME not registered: ' + adb('shell','ime','list','-a','-s'))
+        time.sleep(0.5)
     adb('shell', 'ime', 'enable', ime)
     adb('shell', 'ime', 'set', ime)
     upgrade_count = independent('upgrade', lambda: suite(PACKAGE+'.UpgradeTest#testUpgradeDataPreserved','upgrade.txt'))
