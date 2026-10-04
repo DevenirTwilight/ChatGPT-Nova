@@ -65,7 +65,7 @@ public final class ConversationExportTest extends FixtureActivity {
               window.__novaReadConversation=async()=>tree;
               return true;
             })()
-            """.formatted(org.json.JSONObject.quote(body)));
+            """.replace("%s",org.json.JSONObject.quote(body)));
     }
     private void export(String format) { main(()->exporter().start());click(format); }
     private void external(java.util.function.Function<Intent,Instrumentation.ActivityResult> action) {

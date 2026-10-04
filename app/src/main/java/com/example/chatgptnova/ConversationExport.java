@@ -13,6 +13,8 @@ import android.print.PrintManager;
 import android.print.PrintJob;
 import android.os.Bundle;
 import android.webkit.WebView;
+import android.view.View;
+import android.view.ViewGroup;
 import android.webkit.WebViewClient;
 import android.widget.Toast;
 import androidx.core.content.FileProvider;
@@ -150,15 +152,25 @@ final class ConversationExport {
     }
     private void pdf(String html) {
         printWeb=new WebView(activity);
+        printWeb.setVisibility(View.INVISIBLE);
+        printWeb.setFocusable(false);
+        printWeb.setFocusableInTouchMode(false);
+        printWeb.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS);
+        ViewGroup parent=(ViewGroup)activity.getWindow().getDecorView();
+        android.util.DisplayMetrics metrics=activity.getResources().getDisplayMetrics();
+        parent.addView(printWeb,new ViewGroup.LayoutParams(metrics.widthPixels,metrics.heightPixels));
         printWeb.getSettings().setJavaScriptEnabled(false);
         printWeb.getSettings().setAllowFileAccess(false);
         printWeb.getSettings().setAllowContentAccess(false);
         printWeb.getSettings().setBlockNetworkLoads(true);
         printWeb.setWebViewClient(new WebViewClient() {
             @Override public void onPageFinished(WebView view,String url) {
-                // Printing an unattached WebView follows the public onPageFinished flow.
-                // Visual-state callbacks require an attached/rasterized view on some providers.
-                view.post(()-> { if (view==printWeb && printJob==null) printPdf(); });
+                // Wait for the loaded document's visual state before starting PrintManager.
+                view.postVisualStateCallback(1,new WebView.VisualStateCallback() {
+                    @Override public void onComplete(long requestId) {
+                        if (view==printWeb && printJob==null) printPdf();
+                    }
+                });
             }
         });
         deadline=()->fail("PDF 生成超时，请重试。"); web.postDelayed(deadline,60000);
@@ -232,7 +244,11 @@ final class ConversationExport {
     private void finishPrint() {
         stopDeadline();
         printJob=null;
-        if (printWeb!=null) printWeb.destroy(); printWeb=null;
+        if (printWeb!=null) {
+            if (printWeb.getParent() instanceof ViewGroup) ((ViewGroup)printWeb.getParent()).removeView(printWeb);
+            printWeb.destroy();
+        }
+        printWeb=null;
     }
     private void fail(String message) {
         stopDeadline(); nonce=null; incoming.setLength(0); busy=false; finishPrint();

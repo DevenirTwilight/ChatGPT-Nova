@@ -65,11 +65,18 @@ jobs:
           arch: x86_64
           profile: pixel_6
           disable-animations: true
+          cores: 2
+          ram-size: 2048M
+          heap-size: 512M
+          emulator-options: -no-window -gpu swiftshader -feature -Vulkan -no-snapshot -noaudio -no-boot-anim -camera-back emulated -dns-server 8.8.8.8,1.1.1.1
           script: |
             ./gradlew -PnovaExportTests :app:assembleDebug :app:assembleDebugAndroidTest --no-daemon
             adb install -r app/build/outputs/apk/debug/app-debug.apk
             adb shell pm grant com.example.chatgptnova.debug android.permission.CAMERA
             adb shell pm grant com.example.chatgptnova.debug android.permission.RECORD_AUDIO
+            adb shell settings put system screen_off_timeout 1800000
+            adb shell input keyevent 224
+            adb shell wm dismiss-keyguard
             export_test_status=0
             ./gradlew -PnovaExportTests :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.example.chatgptnova.ConversationExportTest,com.example.chatgptnova.WebShareTest,com.example.chatgptnova.NovaWebViewTest,com.example.chatgptnova.ClipboardUiTest,com.example.chatgptnova.ClipboardProbeTest --no-daemon || export_test_status=$?
             adb exec-out run-as com.example.chatgptnova.debug cat cache/printed-export.pdf > android-export.pdf || true
