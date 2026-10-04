@@ -72,3 +72,20 @@ test('unfinished hidden assistant tail cannot masquerade as a complete branch',(
  t.mapping.pending={id:'pending',parent:'m3',children:[],message:{id:'pending',author:{role:'assistant'},channel:'analysis',status:'in_progress',content:{content_type:'text',parts:['hidden work']}}};
  t.current_node='pending';assert.throws(()=>core.normalize(t,'fixture',['m3']),/未完成/);
 });
+
+test('backslash-delimited LaTeX survives Markdown rendering',()=> {
+ const {marked}=require('../../app/src/main/assets/export/marked.js');
+ const formula=String.raw`Equation \(E = mc^2\).
+
+\[
+\frac{1}{2}
+\]
+`;
+ const html=core.renderMarkdown(formula,marked);assert(html.includes(String.raw`\(E = mc^2\)`));assert(html.includes(String.raw`\frac{1}{2}`));assert(html.includes('<pre><code>'));
+});
+test('math evidence compares TeX bodies and does not alter document rendering',()=> {
+ const {marked}=require('../../app/src/main/assets/export/marked.js');
+ const formula=String.raw`Equation \(E = mc^2\) and $x^2$.`;
+ const evidence=core.renderMarkdown(formula,marked,true);assert(!evidence.includes(String.raw`\(`));assert(!evidence.includes('$x^2$'));
+ const html=core.renderMarkdown(formula,marked);assert(html.includes(String.raw`\(E = mc^2\)`));assert(html.includes('$x^2$'));
+});

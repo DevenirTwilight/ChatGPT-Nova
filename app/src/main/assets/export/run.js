@@ -15,18 +15,18 @@
     const last = data.messages[data.messages.length-1];
     const rendered = document.querySelector('[data-message-id="'+CSS.escape(last.id)+'"]');
     const temp = document.createElement('div');
-    temp.innerHTML = NovaExportCore.clean(NovaExportCore.renderMarkdown(last.evidenceMarkdown.replace(/\uE200[^\uE201]*\uE201/g,'NOVA_REFERENCE_BREAK'),marked),document);
+    temp.innerHTML = NovaExportCore.clean(NovaExportCore.renderMarkdown(last.evidenceMarkdown.replace(/\uE200[^\uE201]*\uE201/g,'NOVA_REFERENCE_BREAK'),marked,true),document);
     const text = s=>s.replace(/\s+/g,'').trim();
     const evidence=rendered?.cloneNode(true);
     if (evidence) {
       for (const control of evidence.querySelectorAll('button,[role="button"]')) control.remove();
       for (const math of evidence.querySelectorAll('.katex-display')) {
         const source=math.querySelector('annotation[encoding="application/x-tex"]');
-        if (source) math.replaceWith(document.createTextNode('$$'+source.textContent+'$$'));
+        if (source) math.replaceWith(document.createTextNode(source.textContent));
       }
       for (const math of evidence.querySelectorAll('.katex')) {
         const source=math.querySelector('annotation[encoding="application/x-tex"]');
-        if (source) math.replaceWith(document.createTextNode('$'+source.textContent+'$'));
+        if (source) math.replaceWith(document.createTextNode(source.textContent));
       }
     }
     const actual=text(evidence?.textContent || '');

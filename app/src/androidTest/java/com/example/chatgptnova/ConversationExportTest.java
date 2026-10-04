@@ -44,8 +44,18 @@ public final class ConversationExportTest extends FixtureActivity {
         long until=android.os.SystemClock.uptimeMillis()+20000;
         do {
             AccessibilityNodeInfo node=findControl(instrument.getUiAutomation().getRootInActiveWindow(),label);
-            if(node!=null) for(AccessibilityNodeInfo p=node;p!=null;p=p.getParent())
-                if(p.isClickable() && p.performAction(AccessibilityNodeInfo.ACTION_CLICK)) return;
+            if(node!=null && node.isVisibleToUser() && node.isEnabled()) {
+                android.graphics.Rect bounds=new android.graphics.Rect();node.getBoundsInScreen(bounds);
+                if(!bounds.isEmpty()) {
+                    long now=android.os.SystemClock.uptimeMillis();
+                    android.view.MotionEvent down=android.view.MotionEvent.obtain(now,now,android.view.MotionEvent.ACTION_DOWN,bounds.centerX(),bounds.centerY(),0);
+                    android.view.MotionEvent up=android.view.MotionEvent.obtain(now,now+10,android.view.MotionEvent.ACTION_UP,bounds.centerX(),bounds.centerY(),0);
+                    down.setSource(android.view.InputDevice.SOURCE_TOUCHSCREEN);up.setSource(android.view.InputDevice.SOURCE_TOUCHSCREEN);
+                    boolean pressed=instrument.getUiAutomation().injectInputEvent(down,true);
+                    boolean released=instrument.getUiAutomation().injectInputEvent(up,true);
+                    down.recycle();up.recycle();if(pressed && released) return;
+                }
+            }
             android.os.SystemClock.sleep(100);
         } while(android.os.SystemClock.uptimeMillis()<until);
         fail("Timed out: export control "+label+"\n"+dumpPrintWindow(instrument.getUiAutomation().getRootInActiveWindow()));
@@ -155,6 +165,7 @@ public final class ConversationExportTest extends FixtureActivity {
                 if(selector.isClickable()) return selector.performAction(AccessibilityNodeInfo.ACTION_CLICK);
             return false;
         });
+        android.os.SystemClock.sleep(250);
         click("Save as PDF");
         // The long document's preview is asynchronous; wait separately from extraction.
         long previewDeadline=android.os.SystemClock.uptimeMillis()+60000;

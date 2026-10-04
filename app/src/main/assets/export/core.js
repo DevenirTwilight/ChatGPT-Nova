@@ -99,19 +99,26 @@
   }
   // Preserve LaTeX as readable source without external script/font dependencies.
   // Register once on this isolated renderer; never change the website's parser.
-  function renderMarkdown(text, marked) {
+  function renderMarkdown(text, marked, evidence = false) {
     if (!marked.__novaMath) {
       marked.use({extensions:[
         {name:'novaMathBlock',level:'block',start:src=>src.indexOf('$$'),
           tokenizer:src=> { const match=/^\$\$[ \t]*\n([\s\S]*?)\n\$\$(?:\n|$)/.exec(src); return match && {type:'novaMathBlock',raw:match[0],text:match[1]}; },
-          renderer:token=>'<pre><code>'+esc('$$\n'+token.text+'\n$$')+'</code></pre>'},
+          renderer:token=>'<pre><code>'+esc(marked.__novaMathEvidence ? token.text : '$$\n'+token.text+'\n$$')+'</code></pre>'},
         {name:'novaMathInline',level:'inline',start:src=>src.indexOf('$'),
           tokenizer:src=> { const match=/^\$(?!\$)([^\n$]+)\$/.exec(src); return match && {type:'novaMathInline',raw:match[0],text:match[1]}; },
-          renderer:token=>'<code>'+esc(token.raw)+'</code>'}
+          renderer:token=>'<code>'+esc(marked.__novaMathEvidence ? token.text : token.raw)+'</code>'},
+        {name:'novaMathBracketBlock',level:'block',start:src=>src.indexOf('\\['),
+          tokenizer:src=> { const match=/^\\\[[ \t]*\n?([\s\S]*?)\\\](?:[ \t]*\n|$)/.exec(src); return match && {type:'novaMathBracketBlock',raw:match[0],text:match[1]}; },
+          renderer:token=>'<pre><code>'+esc(marked.__novaMathEvidence ? token.text : token.raw)+'</code></pre>'},
+        {name:'novaMathParenInline',level:'inline',start:src=>src.indexOf('\\('),
+          tokenizer:src=> { const match=/^\\\(([^\n]*?)\\\)/.exec(src); return match && {type:'novaMathParenInline',raw:match[0],text:match[1]}; },
+          renderer:token=>'<code>'+esc(marked.__novaMathEvidence ? token.text : token.raw)+'</code>'}
       ]});
       marked.__novaMath=true;
     }
-    return marked.parse(text,{gfm:true});
+    const previous=marked.__novaMathEvidence; marked.__novaMathEvidence=evidence;
+    try { return marked.parse(text,{gfm:true}); } finally { marked.__novaMathEvidence=previous; }
   }
   function displayable(m) {
     return !!(m && m.author && ['user','assistant'].includes(m.author.role)
