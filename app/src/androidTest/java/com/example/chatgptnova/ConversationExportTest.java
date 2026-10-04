@@ -126,13 +126,23 @@ public final class ConversationExportTest extends FixtureActivity {
             .append("| 名称 | Value | Link |\n| --- | --- | --- |\n| export-table-row | **中文** | [target](https://example.org/android-pdf-target) |\n\n")
             .append("Inline `code` and $E = mc^2$。\n\n");
         conversation(text.toString());export("PDF");
-        waitFor("print PDF save button",()-> {
+        waitFor("print service window",()-> {
             AccessibilityNodeInfo root=instrument.getUiAutomation().getRootInActiveWindow();
-            if(root==null) return false;
-            for(AccessibilityNodeInfo button:root.findAccessibilityNodeInfosByViewId("com.android.printspooler:id/print_button"))
-                if(button.isEnabled() && button.isClickable()) return button.performAction(AccessibilityNodeInfo.ACTION_CLICK);
-            return false;
+            return root!=null && "com.android.printspooler".contentEquals(root.getPackageName());
         });
+        // The long document's preview is asynchronous; wait separately from extraction.
+        long previewDeadline=android.os.SystemClock.uptimeMillis()+60000;
+        boolean saved=false;
+        do {
+            AccessibilityNodeInfo root=instrument.getUiAutomation().getRootInActiveWindow();
+            if(root!=null) {
+                for(AccessibilityNodeInfo button:root.findAccessibilityNodeInfosByViewId("com.android.printspooler:id/print_button"))
+                    if(button.isEnabled() && button.isClickable()) saved=button.performAction(AccessibilityNodeInfo.ACTION_CLICK);
+            }
+            if(!saved) android.os.SystemClock.sleep(200);
+        } while(!saved && android.os.SystemClock.uptimeMillis()<previewDeadline);
+        if(!saved) dumpPrintWindow(instrument.getUiAutomation().getRootInActiveWindow());
+        assertTrue("System print preview must enable Save as PDF",saved);
         click("Save");
         waitFor("system PDF save finished",()->!busy());
         String path="/sdcard/Download/"+output().getName();
@@ -151,6 +161,12 @@ public final class ConversationExportTest extends FixtureActivity {
             assertTrue("Long HTML became multiple PDF pages",renderer.getPageCount()>1);
             try(android.graphics.pdf.PdfRenderer.Page page=renderer.openPage(0)){assertTrue(page.getWidth()>0);assertTrue(page.getHeight()>0);}
         }
+    }
+    private static void dumpPrintWindow(AccessibilityNodeInfo node) {
+        if(node==null) return;
+        android.util.Log.e("NovaExportPrintTest",node.toString());
+        System.out.println("PRINT_WINDOW "+node);
+        for(int i=0;i<node.getChildCount();i++) dumpPrintWindow(node.getChild(i));
     }
     @Test public void unconfirmedBranchRefusesFileAndShowsPersistentError() {
         conversation("user text");
