@@ -90,17 +90,17 @@ try:
     if share_count == 5:
         checks.append('Synthetic webpage navigator.share launches the Android Sharesheet with the supplied public URL; target callback, cancellation, invalid data, user gesture, SPA/reload and origin/frame restrictions are exercised')
     clipboard_ui_count = independent('clipboard-ui', lambda: suite(PACKAGE+'.ClipboardUiTest','clipboard-ui.txt'))
-    if clipboard_ui_count == 6:
-        checks.append('Clipboard menu preserves selections and SPA replacement; native-menu and system long pastes reach a page-owned transaction, retain undo and paint within the fixture budget')
+    if clipboard_ui_count == 9:
+        checks.append('Clipboard menu preserves selections and SPA replacement; native-menu, system and keyboard commitText long pastes reach a page-owned transaction, retain undo and paint within the fixture budget; subsequent IME edits stay ordered and native composition/cursor/non-composer semantics remain intact')
     try:
         clipboard_count = 0
         for method in ('nativeMenuPaste','imeCommitText','imePasteCommand','longPressSystemPaste'):
-            value = independent('clipboard-'+method, lambda method=method: suite(PACKAGE+'.ClipboardProbeTest#'+method,'clipboard-'+method+'.txt'), required=method!='imeCommitText')
+            value = independent('clipboard-'+method, lambda method=method: suite(PACKAGE+'.ClipboardProbeTest#'+method,'clipboard-'+method+'.txt'))
             if value == 1: clipboard_count += 1
     finally:
         adb('pull','/sdcard/Android/data/'+PACKAGE+'/files/clipboard-probe/.',str(OUT/'clipboard-probe'))
     if clipboard_count == 4:
-        checks.append('Baseline full-text clipboard checks: real long-press Paste, IME paste command and IME commitText; 1/10/50 KB, multiline, Markdown, Chinese/English and emoji; textarea and contenteditable')
+        checks.append('Required full-text clipboard checks: real long-press Paste, IME paste command and keyboard commitText; all 1/10/50 KB, multiline, Markdown, Chinese/English and emoji cases run without skips; textarea and contenteditable')
     count = independent('webview', lambda: suite(PACKAGE+'.NovaWebViewTest','webview-fixtures.txt'))
     if count == 9:
         checks += ['Real WebView multiple-file input reads two synthetic documents and correct MIME types',

@@ -3,6 +3,8 @@ package com.example.chatgptnova;
 import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.os.SystemClock;
+import android.os.Build;
+import android.os.Handler;
 import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputConnection;
 import java.io.File;
@@ -10,6 +12,10 @@ import java.io.FileOutputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.junit.After;
@@ -137,14 +143,69 @@ public final class ClipboardUiTest extends FixtureActivity {
     }
 
     @Test public void nativeLongPasteUsesPageTransactionAndUndo() throws Exception {
-        pageOwnedLongPaste(true);
+        pageOwnedLongPaste("native-menu");
     }
 
     @Test public void systemLongPasteUsesPageTransactionAndUndo() throws Exception {
-        pageOwnedLongPaste(false);
+        pageOwnedLongPaste("system-paste");
     }
 
-    private void pageOwnedLongPaste(boolean nativeMenu) throws Exception {
+    @Test public void keyboardLongCommitUsesPageTransactionAndUndo() throws Exception {
+        pageOwnedLongPaste("keyboard-commit-text");
+    }
+
+    @Test public void keyboardBulkCommitKeepsFollowingEditsInOrder() throws Exception {
+        clickWeb("mobile-composer-prompt");
+        js("(()=>{const e=document.getElementById('mobile-composer-prompt');e.value='abcdef';e.focus();return true})()");
+        String text = "中文 English 😀\n\n".repeat(128);
+        keyboardInput(connection -> {
+            assertTrue(connection.setSelection(2, 4));
+            assertTrue(connection.beginBatchEdit());
+            assertTrue(connection.commitText(text, 1));
+            assertTrue(connection.commitText("!", 1));
+            assertTrue(connection.deleteSurroundingText(1, 0));
+            assertTrue(connection.commitText("?", 1));
+            connection.endBatchEdit();
+        });
+        String expected = "ab" + text + "?ef";
+        waitFor("keyboard bulk commit and following edits", () -> expected.equals(js(
+                "document.getElementById('mobile-composer-prompt').value")));
+        assertLongTextEquals(expected, js("document.getElementById('mobile-composer-prompt').value"));
+        assertEquals("one offered clipboard transaction", "1", js("pasteEvents.length"));
+    }
+
+    @Test public void keyboardNativeSemanticsRemainOutsideBulkComposerPath() throws Exception {
+        clickWeb("mobile-composer-prompt");
+        String text = "x".repeat(2048);
+        keyboardInput(connection -> {
+            assertTrue(connection.setComposingText("draft", 1));
+            assertTrue(connection.commitText(text, 1));
+        });
+        waitFor("native composing replacement", () -> text.equals(js(
+                "document.getElementById('mobile-composer-prompt').value")));
+        assertEquals("active composition stays native", "0", js("pasteEvents.length"));
+        js("(()=>{const e=document.getElementById('mobile-composer-prompt');e.value='';return true})()");
+        keyboardInput(connection -> {
+            assertTrue(connection.setSelection(0, 0));
+            assertTrue(connection.commitText(text, 0));
+        });
+        waitFor("non-default cursor commit", () -> text.equals(js(
+                "document.getElementById('mobile-composer-prompt').value")));
+        assertEquals("native cursor position is preserved", "0", js(
+                "document.getElementById('mobile-composer-prompt').selectionStart"));
+        js("(()=>{const e=document.createElement('textarea');e.id='other-input';document.body.append(e);return true})()");
+        clickWeb("other-input");
+        keyboardInput(connection -> assertTrue(connection.commitText(text, 1)));
+        waitFor("non-composer input uses native connection", () -> text.equals(js(
+                "document.getElementById('other-input').value")));
+        assertEquals("IME text never targets a remembered composer", text, js(
+                "document.getElementById('mobile-composer-prompt').value"));
+        assertEquals("non-composer commit does not synthesize paste", "0", js("pasteEvents.length"));
+    }
+
+    private void pageOwnedLongPaste(String route) throws Exception {
+        boolean nativeMenu = "native-menu".equals(route);
+        boolean keyboard = "keyboard-commit-text".equals(route);
         // A test-owned editor with its own paste transaction and history. This
         // tests DOM event ownership, not the live ChatGPT editor implementation.
         String setup = """
@@ -259,6 +320,9 @@ public final class ClipboardUiTest extends FixtureActivity {
                         + "document.getElementById('prompt-textarea').dispatchEvent(new ClipboardEvent('paste',"
                         + "{bubbles:true,cancelable:true,clipboardData:data}));return true})()");
             } else {
+                // The reference is the editor's normal clipboard transaction.
+                // Raw multiline IME commit is the failing path being replaced;
+                // do not claim this reference measures unadapted IME performance.
                 systemPaste();
             }
             waitFor("editor paste baseline painted", () -> "true".equals(js("fixturePaintMs !== null")));
@@ -280,9 +344,19 @@ public final class ClipboardUiTest extends FixtureActivity {
             putClipboard(text);
             SystemClock.sleep(400); // Let Chromium observe the new OS clipboard value.
             selectRangeForPaste();
+            long requestStarted = SystemClock.uptimeMillis();
             if (nativeMenu) {
                 click("菜单");
                 click("从剪贴板粘贴");
+            } else if (keyboard) {
+                int index = sample;
+                keyboardInput(connection -> {
+                    assertTrue(connection.setSelection(2, 4));
+                    // Exercise both Android commitText overloads.
+                    boolean accepted = Build.VERSION.SDK_INT >= 33 && index % 2 == 1
+                            ? connection.commitText(text, 1, null) : connection.commitText(text, 1);
+                    assertTrue("Keyboard clipboard commit accepted", accepted);
+                });
             } else {
                 systemPaste();
             }
@@ -302,6 +376,7 @@ public final class ClipboardUiTest extends FixtureActivity {
             transactions[sample] = transactionMs;
             paints[sample] = paintMs;
             samples.put(new JSONObject().put("transactionMs", transactionMs).put("paintMs", paintMs)
+                    .put("requestToVerifiedMs", SystemClock.uptimeMillis() - requestStarted)
                     .put("baselineTransactionMs", baselineTransactionMs).put("baselinePaintMs", baselinePaintMs)
                     .put("phasesMs", new JSONObject(js("fixturePhaseMs"))).put("baselinePhasesMs", baselinePhases));
             assertEquals("one undo restores the pre-paste draft", "abcdef", js("fixtureUndo()"));
@@ -310,17 +385,19 @@ public final class ClipboardUiTest extends FixtureActivity {
         double transactionMs = median(transactions), paintMs = median(paints);
         double baselineTransactionMs = median(baselineTransactions), baselinePaintMs = median(baselinePaints);
         JSONObject result = new JSONObject().put("page", "test-owned paste transaction and history")
-                .put("route", nativeMenu ? "native-menu" : "system-paste")
+                .put("route", route)
                 .put("utf8Bytes", text.getBytes(StandardCharsets.UTF_8).length)
                 .put("utf16Units", text.length()).put("transactionMs", transactionMs)
                 .put("paintMs", paintMs).put("baselineTransactionMs", baselineTransactionMs)
                 .put("baselinePaintMs", baselinePaintMs).put("aggregation", "median of three paired samples")
                 .put("samples", samples)
-                .put("baseline", "same paste route and top-level WebView; identical test editor at an untrusted test-only origin without Nova paste listeners");
+                .put("baseline", keyboard
+                        ? "normal OS paste transaction in the same top-level WebView; identical test editor at an untrusted test-only origin without Nova adapters; not raw IME commit performance"
+                        : "same paste route and top-level WebView; identical test editor at an untrusted test-only origin without Nova paste listeners");
         File directory = new File(instrument.getTargetContext().getExternalFilesDir(null), "clipboard-probe");
         assertTrue(directory.isDirectory() || directory.mkdirs());
         try (FileOutputStream out = new FileOutputStream(new File(directory,
-                nativeMenu ? "page-editor-native.json" : "page-editor-system.json"))) {
+                nativeMenu ? "page-editor-native.json" : keyboard ? "page-editor-keyboard.json" : "page-editor-system.json"))) {
             out.write(result.toString(2).getBytes(StandardCharsets.UTF_8));
         }
         assertTrue("Long paste transaction took " + transactionMs + " ms; editor baseline " + baselineTransactionMs,
@@ -341,6 +418,24 @@ public final class ClipboardUiTest extends FixtureActivity {
         double[] sorted = values.clone();
         Arrays.sort(sorted);
         return sorted[sorted.length / 2];
+    }
+
+    private void keyboardInput(Consumer<InputConnection> operation) throws Exception {
+        AtomicReference<InputConnection> reference = new AtomicReference<>();
+        main(() -> reference.set(web.onCreateInputConnection(new EditorInfo())));
+        InputConnection connection = reference.get();
+        assertTrue("Keyboard input connection available", connection != null);
+        CountDownLatch completed = new CountDownLatch(1);
+        AtomicReference<Throwable> failure = new AtomicReference<>();
+        Runnable action = () -> {
+            try { operation.accept(connection); }
+            catch (Throwable error) { failure.set(error); }
+            finally { completed.countDown(); }
+        };
+        Handler handler = connection.getHandler();
+        if (handler == null) main(action); else handler.post(action);
+        assertTrue("Keyboard input call returns without blocking on the long draft", completed.await(5, TimeUnit.SECONDS));
+        if (failure.get() != null) throw new AssertionError(failure.get());
     }
 
     private void selectRangeForPaste() {

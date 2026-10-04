@@ -80,7 +80,7 @@ public class MainActivity extends Activity {
             """;
 
     private static final String INSERT_COMPOSER_TEXT = """
-            ((text, originalPaste) => {
+            ((text, originalPaste, requireFocused) => {
               const isComposer = e => !!e && (e.id === 'prompt-textarea' || e.id === 'mobile-composer-prompt')
                 && !e.disabled && !e.readOnly && !!e.getClientRects().length
                 && (e.isContentEditable || e.tagName === 'TEXTAREA');
@@ -98,8 +98,11 @@ public class MainActivity extends Activity {
                 return document.querySelector('#prompt-textarea, #mobile-composer-prompt');
               };
 
-              const target = findComposer(document.activeElement);
-              if (!target) return false;
+              const focused = document.activeElement;
+              const target = requireFocused
+                ? (isComposer(focused) ? focused : focused?.closest?.('#prompt-textarea, #mobile-composer-prompt'))
+                : findComposer(focused);
+              if (!isComposer(target)) return false;
 
               // Give the page's editor its paste transaction before modifying its
               // DOM. In particular, a ProseMirror editor maintains its own model,
@@ -141,8 +144,8 @@ public class MainActivity extends Activity {
 
               const selection = window.getSelection();
               if (!selection) return false;
-              // Tracking is deferred to a frame; its saved Range can lag behind
-              // the user's selection. Capture the live Range before focus changes.
+              // The menu's saved Range can lag behind the user's selection.
+              // Capture the live Range before focus changes.
               let range = null;
               try {
                 const current = selection.getRangeAt(0);
@@ -403,7 +406,7 @@ public class MainActivity extends Activity {
                 ViewGroup.LayoutParams.MATCH_PARENT, dp(2)));
 
         FrameLayout content = new FrameLayout(this);
-        webView = new WebView(this);
+        webView = new ComposerWebView(this, this::pasteFromInputMethod);
         content.addView(webView, new FrameLayout.LayoutParams(-1, -1));
         ScrollView errors = new ScrollView(this);
         errorPanel = new LinearLayout(this);
@@ -473,6 +476,7 @@ public class MainActivity extends Activity {
             @Override
             public void onPageStarted(WebView view, String url, Bitmap favicon) {
                 if (view != webView || clearing) return;
+                ((ComposerWebView) view).navigationStarted();
                 if (webShare != null) webShare.navigationStarted();
                 accountUiState = AccountUiState.UNKNOWN;
                 accountQuerySerial++;
@@ -883,6 +887,26 @@ public class MainActivity extends Activity {
                 complete.run();
             });
         } catch (RuntimeException error) { complete.run(); }
+    }
+
+    // Keyboard clipboard chips call commitText rather than dispatching paste.
+    // Deliver the text supplied by the IME in one editor-owned transaction;
+    // never reread the OS clipboard or use the remembered menu target here.
+    private void pasteFromInputMethod(String text, ValueCallback<Boolean> complete) {
+        WebView page = webView;
+        Uri uri = Uri.parse(page == null || page.getUrl() == null ? "" : page.getUrl());
+        if (clearing || page == null || !isTrustedOrigin(uri)
+                || !"chatgpt.com".equalsIgnoreCase(uri.getHost())) {
+            complete.onReceiveValue(false);
+            return;
+        }
+        String plainText = JSONObject.quote(text)
+                .replace("\u2028", "\\u2028").replace("\u2029", "\\u2029");
+        try {
+            page.evaluateJavascript("(() => { if (location.origin !== 'https://chatgpt.com') return false; return "
+                    + INSERT_COMPOSER_TEXT + "(" + plainText + ", null, true); })()",
+                    result -> complete.onReceiveValue("true".equals(result)));
+        } catch (RuntimeException error) { complete.onReceiveValue(false); }
     }
 
     // Explicit user action only. Insert plain text into the focused composer;
