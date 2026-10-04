@@ -243,8 +243,9 @@ public final class ClipboardUiTest extends FixtureActivity {
                     + "return e.clientWidth+':'+e.clientHeight})()");
             putClipboard(text);
             SystemClock.sleep(400);
+            selectRangeForPaste();
             if (nativeMenu) {
-                js("(()=>{const data=new DataTransfer();data.setData('text/plain'," + JSONObject.quote(text) + ");"
+                js("(()=>{fixtureReset();const data=new DataTransfer();data.setData('text/plain'," + JSONObject.quote(text) + ");"
                         + "document.getElementById('prompt-textarea').dispatchEvent(new ClipboardEvent('paste',"
                         + "{bubbles:true,cancelable:true,clipboardData:data}));return true})()");
             } else {
@@ -268,6 +269,7 @@ public final class ClipboardUiTest extends FixtureActivity {
                             + "return e.clientWidth+':'+e.clientHeight})()"));
             putClipboard(text);
             SystemClock.sleep(400); // Let Chromium observe the new OS clipboard value.
+            selectRangeForPaste();
             if (nativeMenu) {
                 click("菜单");
                 click("从剪贴板粘贴");
@@ -328,6 +330,25 @@ public final class ClipboardUiTest extends FixtureActivity {
         double[] sorted = values.clone();
         Arrays.sort(sorted);
         return sorted[sorted.length / 2];
+    }
+
+    private void selectRangeForPaste() {
+        AtomicBoolean accepted = new AtomicBoolean();
+        main(() -> {
+            InputConnection connection = web.onCreateInputConnection(new EditorInfo());
+            accepted.set(connection != null && connection.setSelection(2, 4));
+        });
+        assertTrue("IME selected range accepted", accepted.get());
+        SystemClock.sleep(100);
+        waitFor("selected editor range 2 to 4", () -> "true".equals(js("""
+                (() => {
+                  try {
+                    const r = getSelection().getRangeAt(0);
+                    const e = document.getElementById('prompt-textarea');
+                    return e.contains(r.commonAncestorContainer) && r.startOffset === 2 && r.endOffset === 4;
+                  } catch (ignored) { return false; }
+                })()
+                """)));
     }
 
     private void systemPaste() {
