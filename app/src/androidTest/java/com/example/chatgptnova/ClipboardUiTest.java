@@ -474,7 +474,10 @@ public final class ClipboardUiTest extends FixtureActivity {
 
     private void keyboardInput(Consumer<InputConnection> operation) throws Exception {
         AtomicReference<InputConnection> reference = new AtomicReference<>();
-        main(() -> reference.set(web.onCreateInputConnection(new EditorInfo())));
+        waitFor("native keyboard input connection", () -> {
+            main(() -> reference.set(web.onCreateInputConnection(new EditorInfo())));
+            return reference.get() != null;
+        });
         InputConnection connection = reference.get();
         assertTrue("Keyboard input connection available", connection != null);
         CountDownLatch completed = new CountDownLatch(1);

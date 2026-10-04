@@ -146,6 +146,11 @@ abstract class FixtureActivity {
 
     void clickWeb(String id) {
         focus();
+        boolean editor = "true".equals(js("(()=>{const e=document.getElementById('"+id+"');"
+                + "e.scrollIntoView({block:'center',inline:'nearest'});"
+                + "return e.isContentEditable || e.tagName==='TEXTAREA' || "
+                + "(e.tagName==='INPUT' && ['text','search','url','tel','email','password','number'].includes(e.type))})()"));
+        if (editor) settleEditorViewport();
         String[] coords = js("(()=>{let r=document.getElementById('"+id+"').getBoundingClientRect();return [r.x+r.width/2,r.y+r.height/2].join(',')})()").split(",");
         int[] screen = new int[2];
         main(() -> web.getLocationOnScreen(screen));
@@ -156,6 +161,25 @@ abstract class FixtureActivity {
         MotionEvent down = MotionEvent.obtain(at,at,MotionEvent.ACTION_DOWN,x,y,0);
         MotionEvent up = MotionEvent.obtain(at,at+60,MotionEvent.ACTION_UP,x,y,0);
         instrument.sendPointerSync(down); instrument.sendPointerSync(up); down.recycle(); up.recycle();
+        if (editor) {
+            waitFor("focused web editor " + id, () -> "true".equals(js(
+                    "(()=>{const e=document.getElementById('"+id+"');return e===document.activeElement"
+                    + " || e.contains(document.activeElement)})()")));
+            settleEditorViewport();
+        }
+    }
+
+    // DOM focus can precede the Android input connection and IME resize.
+    // Do not start a clipboard timing sample while those frames are changing.
+    private void settleEditorViewport() {
+        AtomicReference<String> previous = new AtomicReference<>();
+        waitFor("stable editor viewport", () -> {
+            AtomicReference<String> nativeSize = new AtomicReference<>();
+            main(() -> nativeSize.set(web.getWidth() + ":" + web.getHeight()));
+            String current = nativeSize.get() + ":" + js(
+                    "[innerWidth,innerHeight,visualViewport?.width,visualViewport?.height].join(':')");
+            return current.equals(previous.getAndSet(current));
+        });
     }
 
     private void focus() {
