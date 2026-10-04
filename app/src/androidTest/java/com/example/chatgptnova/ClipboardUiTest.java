@@ -331,12 +331,19 @@ public final class ClipboardUiTest extends FixtureActivity {
     }
 
     private void systemPaste() {
+        AtomicBoolean selectionAccepted = new AtomicBoolean();
         AtomicBoolean accepted = new AtomicBoolean();
         main(() -> {
             InputConnection connection = web.onCreateInputConnection(new EditorInfo());
-            accepted.set(connection != null
-                    && connection.performContextMenuAction(android.R.id.paste));
+            if (connection != null) {
+                // A JS Range alone can race Chromium's cached IME selection.
+                // Establish the selected "cd" through the same OS input path
+                // that performs the paste, in renderer command order.
+                selectionAccepted.set(connection.setSelection(2, 4));
+                accepted.set(connection.performContextMenuAction(android.R.id.paste));
+            }
         });
+        assertTrue("IME selected range accepted", selectionAccepted.get());
         assertTrue("System paste command accepted", accepted.get());
     }
 
