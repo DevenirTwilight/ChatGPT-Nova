@@ -120,15 +120,24 @@ final class ComposerWebView extends WebView {
                         done.run();
                         return;
                     }
+                    // Match the browser's batch-edit boundary as well as the
+                    // editor's single transaction. Intermediate DOM/selection
+                    // changes must not trigger separate IME synchronization.
+                    boolean batched = super.beginBatchEdit();
+                    Runnable finish = () -> {
+                        if (batched) super.endBatchEdit();
+                        done.run();
+                    };
                     post(() -> {
                         synchronized (BulkConnection.this) {
-                            if (!current()) { done.run(); return; }
+                            if (!current()) { inputHandler.post(finish); return; }
                         }
                         bulkCommit.insert(plainText, handled -> inputHandler.post(() -> {
-                            synchronized (BulkConnection.this) {
-                                if (current() && !Boolean.TRUE.equals(handled)) original.getAsBoolean();
-                            }
-                            done.run();
+                            try {
+                                synchronized (BulkConnection.this) {
+                                    if (current() && !Boolean.TRUE.equals(handled)) original.getAsBoolean();
+                                }
+                            } finally { finish.run(); }
                         }));
                     });
                 });
