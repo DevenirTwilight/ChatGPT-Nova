@@ -9,6 +9,7 @@ import android.os.SystemClock;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.webkit.RenderProcessGoneDetail;
 import android.webkit.WebResourceError;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebResourceResponse;
@@ -21,11 +22,13 @@ import org.json.JSONTokener;
 import java.io.ByteArrayInputStream;
 import java.lang.reflect.Field;
 import java.nio.charset.StandardCharsets;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import static org.junit.Assert.*;
 
 abstract class FixtureActivity {
     static final String PAGE = "https://chatgpt.com/nova-fixture";
+    static final String CLIPBOARD_REFERENCE = "https://nova-paste-baseline.invalid/nova-fixture";
     static final Uri OUTPUT = Uri.parse("content://com.example.chatgptnova.test.documents/output.bin");
     final Instrumentation instrument = InstrumentationRegistry.getInstrumentation();
     ActivityScenario<MainActivity> scenario;
@@ -56,34 +59,72 @@ abstract class FixtureActivity {
     void main(Runnable action) { instrument.runOnMainSync(action); }
 
     void fixture(String address) {
-        main(() -> {
-            web.stopLoading();
-            WebViewClient original = web.getWebViewClient();
-            web.setWebViewClient(new WebViewClient() {
-                @Override public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) {
-                    // Served locally inside instrumentation, without requesting chatgpt.com or reading credentials.
-                    if (clipboardFixture && PAGE.equals(request.getUrl().toString())) {
-                        return new WebResourceResponse("text/html", "UTF-8", new ByteArrayInputStream(CLIPBOARD_HTML.getBytes(StandardCharsets.UTF_8)));
-                    }
-                    if (nativeFixture && MainActivity.isTrustedOrigin(request.getUrl())) {
-                        return new WebResourceResponse("text/html", "UTF-8", new ByteArrayInputStream(NATIVE_HTML.getBytes(StandardCharsets.UTF_8)));
-                    }
-                    String path=request.getUrl().getPath();
-                    if ((path!=null && path.startsWith("/nova-fixture"))
-                            || (loginFixture && "chatgpt.com".equals(request.getUrl().getHost()) && "/auth/login".equals(path))
-                            || (retryFixture && "127.0.0.1".equals(request.getUrl().getHost()) && "/network-error".equals(path))) {
-                        return new WebResourceResponse("text/html", "UTF-8", new ByteArrayInputStream(HTML.getBytes(StandardCharsets.UTF_8)));
-                    }
-                    return original.shouldInterceptRequest(view, request);
+        AtomicReference<WebView> fixtureView = new AtomicReference<>();
+        AtomicReference<String> result = new AtomicReference<>();
+        AtomicBoolean loaded = new AtomicBoolean();
+        AtomicBoolean evaluating = new AtomicBoolean();
+        waitFor("fixture loaded", () -> {
+            // A cold emulator can recreate the Activity during its initial
+            // configuration update. Bind the fixture to the resumed instance,
+            // rather than evaluating a destroyed WebView until timeout.
+            scenario.onActivity(value -> {
+                WebView current = web(value);
+                if (current != fixtureView.get()) {
+                    activity = value;
+                    web = current;
+                    fixtureView.set(current);
+                    loaded.set(false);
+                    evaluating.set(false);
+                    result.set(null);
+                    loadFixture(address, current, loaded);
                 }
-                @Override public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) { return original.shouldOverrideUrlLoading(view, request); }
-                @Override public void onPageStarted(WebView view, String url, Bitmap icon) { original.onPageStarted(view,url,icon); }
-                @Override public void onPageFinished(WebView view, String url) { original.onPageFinished(view,url); }
-                @Override public void onReceivedError(WebView view, WebResourceRequest request, WebResourceError error) { original.onReceivedError(view,request,error); }
+                if (loaded.get() && evaluating.compareAndSet(false, true)) {
+                    current.evaluateJavascript("location.href === " + org.json.JSONObject.quote(address)
+                            + " && document.getElementById('ready')?.textContent === 'ready'", answer -> {
+                        if (current == fixtureView.get()) {
+                            result.set(answer);
+                            evaluating.set(false);
+                        }
+                    });
+                }
             });
-            web.loadUrl(address);
+            return "true".equals(result.get());
         });
-        waitFor("fixture loaded", () -> "ready".equals(js("document.getElementById('ready')?.textContent")));
+    }
+
+    private void loadFixture(String address, WebView current, AtomicBoolean loaded) {
+        web.stopLoading();
+        WebViewClient original = web.getWebViewClient();
+        web.setWebViewClient(new WebViewClient() {
+            @Override public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) {
+                // Served locally inside instrumentation, without requesting chatgpt.com or reading credentials.
+                if (clipboardFixture && (PAGE.equals(request.getUrl().toString())
+                        || CLIPBOARD_REFERENCE.equals(request.getUrl().toString()))) {
+                    return new WebResourceResponse("text/html", "UTF-8", new ByteArrayInputStream(CLIPBOARD_HTML.getBytes(StandardCharsets.UTF_8)));
+                }
+                if (nativeFixture && MainActivity.isTrustedOrigin(request.getUrl())) {
+                    return new WebResourceResponse("text/html", "UTF-8", new ByteArrayInputStream(NATIVE_HTML.getBytes(StandardCharsets.UTF_8)));
+                }
+                String path=request.getUrl().getPath();
+                if ((path!=null && path.startsWith("/nova-fixture"))
+                        || (loginFixture && "chatgpt.com".equals(request.getUrl().getHost()) && "/auth/login".equals(path))
+                        || (retryFixture && "127.0.0.1".equals(request.getUrl().getHost()) && "/network-error".equals(path))) {
+                    return new WebResourceResponse("text/html", "UTF-8", new ByteArrayInputStream(HTML.getBytes(StandardCharsets.UTF_8)));
+                }
+                return original.shouldInterceptRequest(view, request);
+            }
+            @Override public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) { return original.shouldOverrideUrlLoading(view, request); }
+            @Override public void onPageStarted(WebView view, String url, Bitmap icon) { original.onPageStarted(view,url,icon); }
+            @Override public void onPageFinished(WebView view, String url) {
+                original.onPageFinished(view,url);
+                if (view == current && address.equals(url)) loaded.set(true);
+            }
+            @Override public void onReceivedError(WebView view, WebResourceRequest request, WebResourceError error) { original.onReceivedError(view,request,error); }
+            @Override public boolean onRenderProcessGone(WebView view, RenderProcessGoneDetail detail) {
+                return original.onRenderProcessGone(view, detail);
+            }
+        });
+        web.loadUrl(address);
     }
 
     String js(String expression) {
@@ -105,6 +146,11 @@ abstract class FixtureActivity {
 
     void clickWeb(String id) {
         focus();
+        boolean editor = "true".equals(js("(()=>{const e=document.getElementById('"+id+"');"
+                + "e.scrollIntoView({block:'center',inline:'nearest'});"
+                + "return e.isContentEditable || e.tagName==='TEXTAREA' || "
+                + "(e.tagName==='INPUT' && ['text','search','url','tel','email','password','number'].includes(e.type))})()"));
+        if (editor) settleEditorViewport();
         String[] coords = js("(()=>{let r=document.getElementById('"+id+"').getBoundingClientRect();return [r.x+r.width/2,r.y+r.height/2].join(',')})()").split(",");
         int[] screen = new int[2];
         main(() -> web.getLocationOnScreen(screen));
@@ -115,6 +161,25 @@ abstract class FixtureActivity {
         MotionEvent down = MotionEvent.obtain(at,at,MotionEvent.ACTION_DOWN,x,y,0);
         MotionEvent up = MotionEvent.obtain(at,at+60,MotionEvent.ACTION_UP,x,y,0);
         instrument.sendPointerSync(down); instrument.sendPointerSync(up); down.recycle(); up.recycle();
+        if (editor) {
+            waitFor("focused web editor " + id, () -> "true".equals(js(
+                    "(()=>{const e=document.getElementById('"+id+"');return e===document.activeElement"
+                    + " || e.contains(document.activeElement)})()")));
+            settleEditorViewport();
+        }
+    }
+
+    // DOM focus can precede the Android input connection and IME resize.
+    // Do not start a clipboard timing sample while those frames are changing.
+    private void settleEditorViewport() {
+        AtomicReference<String> previous = new AtomicReference<>();
+        waitFor("stable editor viewport", () -> {
+            AtomicReference<String> nativeSize = new AtomicReference<>();
+            main(() -> nativeSize.set(web.getWidth() + ":" + web.getHeight()));
+            String current = nativeSize.get() + ":" + js(
+                    "[innerWidth,innerHeight,visualViewport?.width,visualViewport?.height].join(':')");
+            return current.equals(previous.getAndSet(current));
+        });
     }
 
     private void focus() {

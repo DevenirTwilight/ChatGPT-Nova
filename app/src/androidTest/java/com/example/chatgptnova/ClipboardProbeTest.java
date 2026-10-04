@@ -28,7 +28,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import static org.junit.Assert.*;
 
-/** Baseline: real WebView paste commands, not JS setting a draft or synthesizing paste. */
+/** Real Android input/paste entry points, including keyboard clipboard commitText. */
 public final class ClipboardProbeTest extends FixtureActivity {
     private final JSONArray results = new JSONArray();
     private String route;
@@ -59,9 +59,6 @@ public final class ClipboardProbeTest extends FixtureActivity {
                 {"trailing-newlines",repeat("中文\n\n",1024)},
                 {"unicode-emoji",repeat("中文 English 👩🏽‍💻 🇨🇳 😀 e\u0301 \u2028 \u2029\n\n",51200)+"结束 END"}};
         for(String id:new String[]{"mobile-composer-prompt","prompt-textarea"})for(String[] item:cases) {
-            // commitText is typing, not the clipboard Paste command; old Chromium
-            // stalls on multiline commitText independently of paste handling.
-            if ("ime-commit-text".equals(route) && item[1].contains("\n")) continue;
             String expected=item[1];
             js("(()=>{let e=document.getElementById('"+id+"');if(e.tagName==='TEXTAREA')e.value='';else e.textContent='';pasteEvents=[];inputEvents=[];e.scrollTop=0;})()");
             clickWeb(id);
@@ -76,6 +73,7 @@ public final class ClipboardProbeTest extends FixtureActivity {
                 return expected.equals(value.get());
             });
             SystemClock.sleep(400);
+            long pasteStarted = SystemClock.uptimeMillis();
             if("long-press".equals(route))longPress(id);
             else if("native-menu".equals(route)) menuPaste();
             else input(expected,"ime-context-paste".equals(route));
@@ -91,6 +89,7 @@ public final class ClipboardProbeTest extends FixtureActivity {
             actual=js("(()=>{let e=document.getElementById('"+id+"');return e.tagName==='TEXTAREA'?e.value:e.innerText})()");
             JSONObject result=new JSONObject().put("case",item[0]).put("editor",id).put("utf8Bytes",expected.getBytes(StandardCharsets.UTF_8).length)
                     .put("utf16Units",expected.length()).put("actualUnits",actual.length()).put("exactMatch",expected.equals(actual))
+                    .put("requestToVerifiedMs",SystemClock.uptimeMillis() - pasteStarted)
                     .put("pasteEvents",new JSONArray(js("JSON.stringify(pasteEvents)"))).put("inputEvents",new JSONArray(js("JSON.stringify(inputEvents)"))).put("htmlTail", js("document.getElementById('"+id+"').innerHTML.slice(-200)"));
             results.put(result);
             System.out.println("NOVA_CLIPBOARD_CASE " + result.toString());
