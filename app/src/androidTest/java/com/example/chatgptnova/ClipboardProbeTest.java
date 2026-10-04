@@ -48,10 +48,17 @@ public final class ClipboardProbeTest extends FixtureActivity {
     @Test public void imePasteCommand() throws Exception { route="ime-context-paste"; matrix(); }
     @Test public void nativeMenuPaste() throws Exception { route="native-menu"; matrix(); }
     @Test public void imeCommitText() throws Exception { route="ime-commit-text"; matrix(); }
+    @Test public void imeCommitTextWithAttributes() throws Exception {
+        route="ime-commit-text-attributed";
+        org.junit.Assume.assumeTrue(Build.VERSION.SDK_INT >= 33);
+        matrix();
+    }
 
     private void matrix() throws Exception {
         int failures=0;
-        String[][] cases={{"1KB",repeat("a",1024)},{"10KB",repeat("b",10240)},{"50KB",repeat("c",51200)},
+        String[][] cases={{"short-chinese","你好 😀"},{"short-multiline","第一行\n第二行"},
+                {"CRLF","第一行\r\n第二行\r第三行"},
+                {"1KB",repeat("a",1024)},{"10KB",repeat("b",10240)},{"50KB",repeat("c",51200)},
                 {"multiline-1KB",repeat("中文段落 English\n\n第二段 😀\n",1024)+"结束 END"},
                 {"multiline-10KB",repeat("one\n\ntwo\nthree\n",10240)+"结束 END"},
                 {"multiline-50KB",repeat("中文段落 English\n\n第二段 😀\n",51200)+"结束 END"},
@@ -59,26 +66,24 @@ public final class ClipboardProbeTest extends FixtureActivity {
                 {"trailing-newlines",repeat("中文\n\n",1024)},
                 {"unicode-emoji",repeat("中文 English 👩🏽‍💻 🇨🇳 😀 e\u0301 \u2028 \u2029\n\n",51200)+"结束 END"}};
         for(String id:new String[]{"mobile-composer-prompt","prompt-textarea"})for(String[] item:cases) {
-            // commitText is typing, not the clipboard Paste command; old Chromium
-            // stalls on multiline commitText independently of paste handling.
-            if ("ime-commit-text".equals(route) && item[1].contains("\n")) continue;
-            String expected=item[1];
+            String source=item[1];
+            String expected=source.replace("\r\n","\n").replace('\r','\n');
             js("(()=>{let e=document.getElementById('"+id+"');if(e.tagName==='TEXTAREA')e.value='';else e.textContent='';pasteEvents=[];inputEvents=[];e.scrollTop=0;})()");
             clickWeb(id);
             waitFor("focused editor",()->id.equals(js("document.activeElement.id")));
-            main(()->((ClipboardManager)activity.getSystemService(Context.CLIPBOARD_SERVICE)).setPrimaryClip(ClipData.newPlainText("synthetic paste fixture",expected)));
+            main(()->((ClipboardManager)activity.getSystemService(Context.CLIPBOARD_SERVICE)).setPrimaryClip(ClipData.newPlainText("synthetic paste fixture",source)));
             // Chromium receives clipboard-change notifications asynchronously.
             // Wait for the OS value and then allow its renderer clipboard cache to update.
             waitFor("clipboard published", () -> {
                 AtomicReference<String> value = new AtomicReference<>();
                 main(() -> { ClipData clip = ((ClipboardManager)activity.getSystemService(Context.CLIPBOARD_SERVICE)).getPrimaryClip();
                     value.set(clip == null ? null : String.valueOf(clip.getItemAt(0).getText())); });
-                return expected.equals(value.get());
+                return source.equals(value.get());
             });
             SystemClock.sleep(400);
             if("long-press".equals(route))longPress(id);
             else if("native-menu".equals(route)) menuPaste();
-            else input(expected,"ime-context-paste".equals(route));
+            else input(source,"ime-context-paste".equals(route));
             // Observe the asynchronous paste result without repeating the action.
             long until = SystemClock.uptimeMillis() + 5000;
             String actual;
@@ -116,15 +121,84 @@ public final class ClipboardProbeTest extends FixtureActivity {
     }
 
     private void input(String text,boolean paste) throws Exception {
+        input(connection -> {
+            if (paste) assertTrue(connection.performContextMenuAction(android.R.id.paste));
+            else if ("ime-commit-text-attributed".equals(route))
+                assertTrue(connection.commitText(text,1,new android.view.inputmethod.TextAttribute.Builder().build()));
+            else assertTrue(connection.commitText(text,1));
+        });
+    }
+
+    private void input(java.util.function.Consumer<InputConnection> action) throws Exception {
         AtomicReference<InputConnection> ref=new AtomicReference<>();
         main(()->ref.set(web.onCreateInputConnection(new EditorInfo())));
         InputConnection connection=ref.get();assertNotNull(connection);
-        CountDownLatch done=new CountDownLatch(1);AtomicReference<Boolean> accepted=new AtomicReference<>();
-        Runnable operation=()->{try{accepted.set(paste?connection.performContextMenuAction(android.R.id.paste):connection.commitText(text,1));}finally{done.countDown();}};
+        CountDownLatch done=new CountDownLatch(1);AtomicReference<Throwable> error=new AtomicReference<>();
+        Runnable operation=()->{try{action.accept(connection);}catch(Throwable failure){error.set(failure);}finally{done.countDown();}};
         Handler handler=connection.getHandler();
         if(handler!=null)handler.post(operation);else operation.run();
         assertTrue("IME command completes",done.await(15,TimeUnit.SECONDS));
-        assertEquals(Boolean.TRUE,accepted.get());
+        if(error.get()!=null)throw new AssertionError("IME command failed",error.get());
+    }
+
+    @Test public void selectionAndFollowingTypingStayInOrder() throws Exception {
+        route="ime-ordering";
+        for(String id:new String[]{"mobile-composer-prompt","prompt-textarea"}) {
+            clickWeb(id);
+            input(connection -> assertTrue(connection.commitText("prefix old suffix",1)));
+            waitFor("initial draft",()->"prefix old suffix".equals(editorText(id)));
+            input(connection -> {
+                assertTrue(connection.beginBatchEdit());
+                assertTrue(connection.setSelection(7,10));
+                assertTrue(connection.commitText("中文\n多行 😀",1));
+                assertTrue(connection.commitText("!",1));
+                assertTrue(connection.endBatchEdit());
+            });
+            waitFor("selection replacement followed by typing",()->"prefix 中文\n多行 😀! suffix".equals(editorText(id)));
+        }
+    }
+
+    @Test public void chineseCompositionKeepsNativeReplacement() throws Exception {
+        route="ime-composition";
+        for(String id:new String[]{"mobile-composer-prompt","prompt-textarea"}) {
+            clickWeb(id);
+            input(connection -> {
+                assertTrue(connection.setComposingText("ni",1));
+                assertTrue(connection.setComposingText("你",1));
+                assertTrue(connection.commitText("你好",1));
+            });
+            waitFor("Chinese composition replaced",()->"你好".equals(editorText(id)));
+        }
+    }
+
+    @Test public void ordinaryFieldsUseNativeFallback() throws Exception {
+        route="ime-native-fallback";
+        for(String type:new String[]{"textarea","password"}) {
+            js("(()=>{let e=document.createElement('"+("textarea".equals(type)?"textarea":"input")+"');e.id='ordinary-field';e.type='"+type+"';document.body.prepend(e);e.focus()})()");
+            input(connection -> assertTrue(connection.commitText("fallback\n中文",1)));
+            String expected="textarea".equals(type)?"fallback\n中文":"fallback中文";
+            waitFor("native fallback in "+type,()->expected.equals(js("document.getElementById('ordinary-field').value")));
+            js("document.getElementById('ordinary-field').remove()");
+        }
+    }
+
+    @Test public void navigationCancelsPendingCommit() throws Exception {
+        route="ime-cancelled";
+        clickWeb("mobile-composer-prompt");
+        AtomicReference<InputConnection> ref=new AtomicReference<>();
+        main(()->{
+            InputConnection connection=web.onCreateInputConnection(new EditorInfo());
+            ref.set(connection);
+            assertTrue(connection.commitText("old document\nclipboard",1));
+            ((NovaWebView)web).invalidateInputConnection();
+        });
+        instrument.waitForIdleSync();
+        assertEquals("",editorText("mobile-composer-prompt"));
+        assertFalse(ref.get().commitText("late stale command",1));
+    }
+
+    private String editorText(String id) {
+        return js("(()=>{let e=document.getElementById('"+id+"');return e.tagName==='TEXTAREA'?e.value:e.innerText})()");
     }
 
     private void longPress(String id) {
