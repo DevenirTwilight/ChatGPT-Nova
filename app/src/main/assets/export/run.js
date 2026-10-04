@@ -44,7 +44,9 @@
       const src = image.getAttribute('src');
       if (/^data:image\/(png|jpeg|webp|gif);base64,/i.test(src)) continue;
       // Only embed already loaded page images. Never fetch arbitrary model-written URLs.
-      const live = [...document.images].find(i=>i.src === src && i.complete && i.naturalWidth);
+      const ids=new Set(data.messages.map(m=>m.id));
+      const live = [...document.querySelectorAll('[data-message-id] img')].find(i=>
+        ids.has(i.closest('[data-message-id]').getAttribute('data-message-id')) && i.src === src && i.complete && i.naturalWidth);
       try {
         if (!live) throw new Error();
         const canvas=document.createElement('canvas');

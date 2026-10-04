@@ -114,6 +114,13 @@ public final class ConversationExportTest extends FixtureActivity {
         instrument.sendKeyDownUpSync(android.view.KeyEvent.KEYCODE_BACK);
         waitFor("PDF cancel releases exporter",()->!busy());
     }
+    @Test public void unconfirmedBranchRefusesFileAndShowsPersistentError() {
+        conversation("user text");
+        js("(()=>{const original=window.__novaReadConversation;window.__novaReadConversation=async()=>{const tree=await original();tree.current_node='u';return tree;};return true;})()");
+        main(()->exporter().start());
+        click("知道了");
+        assertFalse(busy());assertNull(output());
+    }
     @Test public void filenamesHandleUnicodeInvalidCharactersAndDuplicates() {
         String a=ConversationExport.filename("中文 / : * ? \" <> | "+"😀".repeat(80),"html");
         String b=ConversationExport.filename("中文 / : * ? \" <> | "+"😀".repeat(80),"html");

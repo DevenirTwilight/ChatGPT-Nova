@@ -6,8 +6,8 @@ function fixture(rounds=2) {
    message:{id:'m'+i,author:{role:i%2?'assistant':'user'},recipient:'all',status:'finished_successfully',
     content:{content_type:'text',parts:[i===rounds*2-1?rich:`第 ${i+1} 条消息。Chinese / English ${'完整正文。'.repeat(15)}`]}}};
  }
- mapping.root.children.push('other');
- mapping.other={id:'other',parent:'root',children:[],message:{id:'other',author:{role:'assistant'},status:'finished_successfully',content:{content_type:'text',parts:['OTHER BRANCH MUST NOT EXPORT']}}};
+ mapping.m0.children.push('other');
+ mapping.other={id:'other',parent:'m0',children:[],message:{id:'other',author:{role:'assistant'},status:'finished_successfully',content:{content_type:'text',parts:['OTHER BRANCH MUST NOT EXPORT']}}};
  return {conversation_id:'fixture',title:'中文会话 / Conversation: 富文本',current_node:'m'+(rounds*2-1),mapping};
 }
 module.exports={fixture,rich};

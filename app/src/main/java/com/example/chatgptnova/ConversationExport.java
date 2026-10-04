@@ -156,9 +156,9 @@ final class ConversationExport {
         printWeb.getSettings().setBlockNetworkLoads(true);
         printWeb.setWebViewClient(new WebViewClient() {
             @Override public void onPageFinished(WebView view,String url) {
-                view.postVisualStateCallback(1,new WebView.VisualStateCallback() {
-                    @Override public void onComplete(long requestId) { if (view==printWeb && printJob==null) printPdf(); }
-                });
+                // Printing an unattached WebView follows the public onPageFinished flow.
+                // Visual-state callbacks require an attached/rasterized view on some providers.
+                view.post(()-> { if (view==printWeb && printJob==null) printPdf(); });
             }
         });
         deadline=()->fail("PDF 生成超时，请重试。"); web.postDelayed(deadline,60000);
@@ -234,7 +234,13 @@ final class ConversationExport {
         printJob=null;
         if (printWeb!=null) printWeb.destroy(); printWeb=null;
     }
-    private void fail(String message) { stopDeadline(); nonce=null; incoming.setLength(0); busy=false; finishPrint(); if (!destroyed) toast(message); }
+    private void fail(String message) {
+        stopDeadline(); nonce=null; incoming.setLength(0); busy=false; finishPrint();
+        if (!destroyed && !activity.isFinishing() && !activity.isDestroyed()) {
+            new AlertDialog.Builder(activity).setTitle("未能导出会话").setMessage(message)
+                .setPositiveButton("知道了",null).show();
+        }
+    }
     private static void copy(java.io.InputStream in, OutputStream out) throws java.io.IOException {
         byte[] buffer=new byte[16384]; int count;
         while ((count=in.read(buffer))!=-1) out.write(buffer,0,count);
