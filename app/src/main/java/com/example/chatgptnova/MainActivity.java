@@ -192,8 +192,9 @@ public class MainActivity extends Activity {
               window.__novaPasteCompatibilityInstalled = true;
 
               const selector = '#prompt-textarea, #mobile-composer-prompt';
-              // Selection tracking must not force layout after a large edit.
-              // Visibility is checked only when a paste actually needs fallback.
+              // Track the target without reading selection/layout during edits.
+              // Range snapshots are taken only when leaving the editor or opening
+              // a native menu; explicit paste prefers the current live selection.
               const isComposer = e => !!e && (e.id === 'prompt-textarea' || e.id === 'mobile-composer-prompt')
                 && e.isConnected && !e.disabled && !e.readOnly
                 && (e.isContentEditable || e.tagName === 'TEXTAREA');
@@ -239,21 +240,24 @@ public class MainActivity extends Activity {
                 }
               };
 
-              document.addEventListener('focusin', e => remember(e.target), true);
-              let selectionFrame = 0;
-              document.addEventListener('selectionchange', () => {
-                if (selectionFrame) return;
-                selectionFrame = requestAnimationFrame(() => {
-                  selectionFrame = 0;
-                  remember(document.activeElement);
-                });
+              document.addEventListener('focusin', e => {
+                const composer = resolveComposer(e.target);
+                if (composer) window.__novaPasteTarget = composer;
               }, true);
+              document.addEventListener('focusout', e => {
+                if (isComposer(e.target)) remember(e.target);
+              }, true);
+              window.addEventListener('blur', () => remember(document.activeElement));
+              window.__novaRememberPasteSelection = () => {
+                remember(document.activeElement);
+                return true;
+              };
 
               const markSpaNavigation = () => {
                 clearStaleSelection();
                 window.__novaPasteRange = null;
                 const current = resolveComposer(null);
-                if (current) remember(current);
+                if (current) window.__novaPasteTarget = current;
               };
               for (const method of ['pushState', 'replaceState']) {
                 const original = history[method];
@@ -278,7 +282,7 @@ public class MainActivity extends Activity {
                 const data = event.clipboardData;
                 const text = data ? data.getData('text/plain') : '';
                 if (!text) return;
-                remember(composer);
+                window.__novaPasteTarget = composer;
                 if (window.__novaPasteText(text, event)) {
                   event.preventDefault();
                 }
@@ -806,6 +810,10 @@ public class MainActivity extends Activity {
 
     private void showMenu() {
         if (clearing || webView == null) return;
+        Uri page = Uri.parse(webView.getUrl() == null ? "" : webView.getUrl());
+        if (isTrustedOrigin(page) && "chatgpt.com".equalsIgnoreCase(page.getHost())) {
+            webView.evaluateJavascript("window.__novaRememberPasteSelection?.()", null);
+        }
         refreshAccountUiState(() -> {
             if (overflowMenu != null) overflowMenu.dismiss();
             overflowMenu = new PopupMenu(this, menuButton);

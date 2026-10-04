@@ -56,7 +56,7 @@ public final class ClipboardUiTest extends FixtureActivity {
         assertEquals("hello world", js("document.getElementById('prompt-textarea').textContent"));
     }
 
-    @Test public void nativePastePrefersLiveSelectionOverDeferredCache() {
+    @Test public void nativePastePrefersLiveSelectionOverSavedCache() {
         clickWeb("prompt-textarea");
         assertEquals("abXYef", js("""
                 (() => {
@@ -163,19 +163,32 @@ public final class ClipboardUiTest extends FixtureActivity {
                     return original.apply(this, args);
                   };
                   window.fixtureApplyPaste = (text, started = performance.now()) => {
+                    const phases = {};
+                    let phaseStarted = started;
+                    const mark = name => {
+                      const now = performance.now();
+                      phases[name] = now - phaseStarted;
+                      phaseStarted = now;
+                    };
                     const range = getSelection().getRangeAt(0);
                     const start = range.startOffset, end = range.endOffset;
+                    mark('selection');
                     fixtureHistory.push(fixtureModel);
                     fixtureModel = fixtureModel.slice(0, start) + text + fixtureModel.slice(end);
+                    mark('model');
                     e.textContent = fixtureModel;
+                    mark('dom');
                     const caret = document.createRange();
                     caret.setStart(e.firstChild, start + text.length);
                     caret.collapse(true);
                     getSelection().removeAllRanges();
                     getSelection().addRange(caret);
+                    mark('caret');
                     e.dispatchEvent(new InputEvent('input', {
                       bubbles:true, inputType:'insertFromPaste', data:text
                     }));
+                    mark('input');
+                    window.fixturePhaseMs = phases;
                     window.fixtureTransactionMs = performance.now() - started;
                     requestAnimationFrame(() => requestAnimationFrame(() => {
                       fixturePaintMs = performance.now() - started;
@@ -201,6 +214,7 @@ public final class ClipboardUiTest extends FixtureActivity {
                     fixturePasteCount = fixtureNativeEdits = 0;
                     fixturePaintMs = null;
                     window.fixtureTransactionMs = null;
+                    window.fixturePhaseMs = null;
                     const r = document.createRange();
                     r.setStart(e.firstChild, 2);
                     r.setEnd(e.firstChild, 4);
@@ -258,6 +272,8 @@ public final class ClipboardUiTest extends FixtureActivity {
                     "document.getElementById('paste-baseline').contentWindow.fixturePaintMs"));
             double baselineTransactionMs = Double.parseDouble(js(
                     "document.getElementById('paste-baseline').contentWindow.fixtureTransactionMs"));
+            JSONObject baselinePhases = new JSONObject(js(
+                    "document.getElementById('paste-baseline').contentWindow.fixturePhaseMs"));
             js("document.getElementById('paste-baseline').remove();true");
             clickWeb("prompt-textarea");
             js("fixtureReset()");
@@ -284,7 +300,8 @@ public final class ClipboardUiTest extends FixtureActivity {
             transactions[sample] = transactionMs;
             paints[sample] = paintMs;
             samples.put(new JSONObject().put("transactionMs", transactionMs).put("paintMs", paintMs)
-                    .put("baselineTransactionMs", baselineTransactionMs).put("baselinePaintMs", baselinePaintMs));
+                    .put("baselineTransactionMs", baselineTransactionMs).put("baselinePaintMs", baselinePaintMs)
+                    .put("phasesMs", new JSONObject(js("fixturePhaseMs"))).put("baselinePhasesMs", baselinePhases));
             assertEquals("one undo restores the pre-paste draft", "abcdef", js("fixtureUndo()"));
             assertEquals("abcdef", js("document.getElementById('prompt-textarea').innerText"));
         }
