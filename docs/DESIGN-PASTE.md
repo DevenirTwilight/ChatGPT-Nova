@@ -14,7 +14,7 @@
 
 1. 使用 IME 已提供的文本，不读取或改写系统剪贴板。
 2. Java 和 JS 均确认当前页面为可信 HTTPS `chatgpt.com`；JS 只允许当前聚焦的、可编辑的聊天输入框。不会使用原生菜单记住的目标。
-3. 在原有输入连接的 batch edit 内，将纯文本提供给网页的粘贴处理。网页接管时不重写 DOM；未处理时使用既有的一次性纯文本回退。编辑器完成后才结束 batch，合并中间的输入法同步。
+3. 在原有输入连接的 batch edit 内，将纯文本提供给网页的粘贴处理。键盘入口已聚焦并已确认原生选区，先提供 paste 事件，不重复聚焦或读取/重建 DOM Range；网页接管时完全保留它的选区、模型与历史处理。未处理时使用既有的一次性纯文本回退，不重复发送 paste。编辑器完成后才结束 batch，合并中间的输入法同步。
 4. 在异步事务完成前排队保存后续输入、删除、选区和 batch 操作，随后按原顺序交回原有 InputConnection。不会把正文拆成逐行插入。
 5. 在原生选区与 JS 插入之间、JS 完成之后以及排队的原生编辑之间，使用原连接的 `getTextBeforeCursor(0, 0)` 确认状态。调用在原连接的 IME handler 上执行，返回零个字符，不读取字段正文。Chromium 的原生编辑通过自己的 UI task runner 派发，不能仅凭 Android `View.post` 的顺序确认已经执行；外层 batch 尚未结束时，仅结束内部 batch 也不足以同步。依据：[Chromium ThreadedInputConnection](https://chromium.googlesource.com/chromium/src/+/refs/heads/main/content/public/android/java/src/org/chromium/content/browser/input/ThreadedInputConnection.java)。
 
@@ -25,6 +25,7 @@
 - 所有四种 Android 粘贴入口的 1/10/50 KB、多行、Markdown、中英文、emoji、结尾换行用例均为必测，不再跳过 IME 多行。
 - 网页自有编辑器的约 248 KiB 夹具新增真正的 `commitText` 入口，覆盖两种重载，以及 Android 14/15 的 `replaceText`，检查单次事务、完整文本、原选区替换、纯文本标记、光标及一次撤销。记录标准接口名称、请求到验证耗时与事务/绘制阶段耗时。
 - 键盘路径的性能参考是相同 WebView/相同编辑器的正常 OS 粘贴事务，明确不把它称为未适配 IME 的性能基线。原有时间阈值保持不变。
+- 键盘夹具同时检查网页接管前后总共只有网页自己的那一次 Range 读取，避免适配器的预处理引入额外布局。
 - 额外检查大文本之后立即打字、删除再打字的顺序，以及组合文本替换、非默认光标参数、非聊天输入框的原生语义；合成密码字段确认没有安装 Nova 输入法 wrapper。
 
 受控夹具通过仍不等于真实 ChatGPT 编辑器及用户手机已经通过。版本保持 1.3.7 / versionCode 11；PR #1 在实际键盘剪贴板和网页 Share 验收之前保持未合并。

@@ -258,8 +258,10 @@ public final class ClipboardUiTest extends FixtureActivity {
                   window.fixturePaintMs = null;
                   window.fixtureApplying = false;
                   window.fixtureRangeReads = 0;
+                  window.fixtureTotalRangeReads = 0;
                   const originalGetRangeAt = Selection.prototype.getRangeAt;
                   Selection.prototype.getRangeAt = function(...args) {
+                    fixtureTotalRangeReads++;
                     if (fixtureApplying) fixtureRangeReads++;
                     return originalGetRangeAt.apply(this, args);
                   };
@@ -383,6 +385,7 @@ public final class ClipboardUiTest extends FixtureActivity {
             putClipboard(text);
             SystemClock.sleep(400); // Let Chromium observe the new OS clipboard value.
             selectRangeForPaste();
+            js("fixtureTotalRangeReads = 0");
             long requestStarted = SystemClock.uptimeMillis();
             if (nativeMenu) {
                 click("菜单");
@@ -409,6 +412,8 @@ public final class ClipboardUiTest extends FixtureActivity {
             assertEquals("one page transaction", "1", js("fixturePasteCount"));
             assertEquals("handled paste must bypass native HTML editing", "0", js("fixtureNativeEdits"));
             assertEquals("handled paste must not trigger adapter Range reads", "1", js("fixtureRangeReads"));
+            if (keyboard) assertEquals("focused IME paste must leave Range handling to the page",
+                    "1", js("fixtureTotalRangeReads"));
             assertLongTextEquals("ab" + text + "ef", js("fixtureModel"));
             assertLongTextEquals("ab" + text + "ef", js("document.getElementById('prompt-textarea').innerText"));
             assertEquals("plain text never creates executable elements", "0", js(

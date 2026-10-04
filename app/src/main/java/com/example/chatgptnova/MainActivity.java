@@ -107,8 +107,10 @@ public class MainActivity extends Activity {
               // Give the page's editor its paste transaction before modifying its
               // DOM. In particular, a ProseMirror editor maintains its own model,
               // selection and undo history; native DOM edits bypass that path.
+              let offeredToEditor = false;
               const offerToEditor = () => {
-                if (originalPaste) return false; // The real event already reached it.
+                if (originalPaste || offeredToEditor) return false;
+                offeredToEditor = true;
                 try {
                   const data = new DataTransfer();
                   data.setData('text/plain', text);
@@ -119,6 +121,12 @@ public class MainActivity extends Activity {
                   return event.defaultPrevented;
                 } catch (ignored) { return false; }
               };
+
+              // The IME path already has a focused composer and an acknowledged
+              // native selection. Let its editor own the paste before touching
+              // focus or rebuilding DOM ranges; old WebViews can force extra
+              // layout when those ranges are changed before a large transaction.
+              if (requireFocused && offerToEditor()) return true;
 
               if (target.tagName === 'TEXTAREA') {
                 const hasCurrentSelection = document.activeElement === target;
