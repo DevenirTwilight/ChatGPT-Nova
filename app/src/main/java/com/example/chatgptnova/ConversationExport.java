@@ -152,13 +152,15 @@ final class ConversationExport {
     }
     private void pdf(String html) {
         printWeb=new WebView(activity);
-        printWeb.setVisibility(View.INVISIBLE);
+        // A visible, attached view keeps Chromium rendering for the print preview.
+        // Place it behind the existing opaque content; it never takes focus or input.
+        printWeb.setVisibility(View.VISIBLE);
         printWeb.setFocusable(false);
         printWeb.setFocusableInTouchMode(false);
         printWeb.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS);
-        ViewGroup parent=(ViewGroup)activity.getWindow().getDecorView();
+        ViewGroup parent=activity.findViewById(android.R.id.content);
         android.util.DisplayMetrics metrics=activity.getResources().getDisplayMetrics();
-        parent.addView(printWeb,new ViewGroup.LayoutParams(metrics.widthPixels,metrics.heightPixels));
+        parent.addView(printWeb,0,new ViewGroup.LayoutParams(metrics.widthPixels,metrics.heightPixels));
         printWeb.getSettings().setJavaScriptEnabled(false);
         printWeb.getSettings().setAllowFileAccess(false);
         printWeb.getSettings().setAllowContentAccess(false);

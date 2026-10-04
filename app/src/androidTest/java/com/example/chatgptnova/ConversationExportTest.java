@@ -116,8 +116,17 @@ public final class ConversationExportTest extends FixtureActivity {
             AccessibilityNodeInfo root=instrument.getUiAutomation().getRootInActiveWindow();
             return root!=null && "com.android.printspooler".contentEquals(root.getPackageName());
         });
-        instrument.sendKeyDownUpSync(android.view.KeyEvent.KEYCODE_BACK);
-        waitFor("PDF cancel releases exporter",()->!busy());
+        long[] nextBack={0};
+        waitFor("PDF cancel releases exporter",()-> {
+            if(!busy()) return true;
+            AccessibilityNodeInfo root=instrument.getUiAutomation().getRootInActiveWindow();
+            long now=android.os.SystemClock.uptimeMillis();
+            if(root!=null && "com.android.printspooler".contentEquals(root.getPackageName()) && now>=nextBack[0]) {
+                instrument.sendKeyDownUpSync(android.view.KeyEvent.KEYCODE_BACK);
+                nextBack[0]=now+2000;
+            }
+            return false;
+        });
     }
     @Test public void pdfSavedBySystemOpensWithMultiplePages() throws Exception {
         StringBuilder text=new StringBuilder();for(int i=0;i<80;i++) text.append("段落 ").append(i).append(" 中文 English [link](https://example.org)\n\n");
@@ -141,8 +150,15 @@ public final class ConversationExportTest extends FixtureActivity {
             }
             if(!saved) android.os.SystemClock.sleep(200);
         } while(!saved && android.os.SystemClock.uptimeMillis()<previewDeadline);
-        if(!saved) dumpPrintWindow(instrument.getUiAutomation().getRootInActiveWindow());
-        assertTrue("System print preview must enable Save as PDF",saved);
+        String diagnostic="";
+        if(!saved) {
+            diagnostic=dumpPrintWindow(instrument.getUiAutomation().getRootInActiveWindow());
+            android.graphics.Bitmap screenshot=instrument.getUiAutomation().takeScreenshot();
+            if(screenshot!=null) try(java.io.FileOutputStream out=new java.io.FileOutputStream(new File(activity.getCacheDir(),"print-window.png"))) {
+                screenshot.compress(android.graphics.Bitmap.CompressFormat.PNG,100,out);
+            }
+        }
+        assertTrue("System print preview must enable Save as PDF\n"+diagnostic,saved);
         click("Save");
         waitFor("system PDF save finished",()->!busy());
         String path="/sdcard/Download/"+output().getName();
@@ -162,11 +178,11 @@ public final class ConversationExportTest extends FixtureActivity {
             try(android.graphics.pdf.PdfRenderer.Page page=renderer.openPage(0)){assertTrue(page.getWidth()>0);assertTrue(page.getHeight()>0);}
         }
     }
-    private static void dumpPrintWindow(AccessibilityNodeInfo node) {
-        if(node==null) return;
-        android.util.Log.e("NovaExportPrintTest",node.toString());
-        System.out.println("PRINT_WINDOW "+node);
-        for(int i=0;i<node.getChildCount();i++) dumpPrintWindow(node.getChild(i));
+    private static String dumpPrintWindow(AccessibilityNodeInfo node) {
+        if(node==null) return "No active window";
+        StringBuilder dump=new StringBuilder(node.toString()).append('\n');
+        for(int i=0;i<node.getChildCount();i++) dump.append(dumpPrintWindow(node.getChild(i)));
+        return dump.toString();
     }
     @Test public void unconfirmedBranchRefusesFileAndShowsPersistentError() {
         conversation("user text");
