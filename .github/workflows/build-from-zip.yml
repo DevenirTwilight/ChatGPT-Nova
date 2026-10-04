@@ -140,6 +140,7 @@ jobs:
           with zipfile.ZipFile('dist/ChatGPT-Nova.apk') as apk:
               assert not any('FixtureDocuments' in apk.read(n).decode('latin1') for n in dex)
               assert not any('FixtureBrowser' in apk.read(n).decode('latin1') for n in dex)
+              assert not any('ClipboardProbeIme' in apk.read(n).decode('latin1') for n in dex)
           assert 'com.example.chatgptnova.test.documents' not in manifest
           Path('dist/APK-dex.txt').write_text('DEX headers verified; no signing secrets packaged.\n')
           report = []

@@ -17,7 +17,7 @@
 
 IME Paste / Paste as plain text 在适用的聊天框中使用同一插入函数。原生剪贴板仅在用户触发粘贴且已确认聊天框之后读取。直接 commitText 使用输入法已经给出的文本，不访问系统剪贴板。
 
-插入仅适用于 `https://chatgpt.com` 上可见、可编辑且获得焦点的聊天框；不适用的输入委托原始连接。异步 JS 插入完成前，后续编辑命令按顺序排队，完成后回到原输入连接的 Handler。导航、重新创建连接或 closeConnection 取消旧连接的待执行命令。CR/CRLF 按 HTML 编辑器规则归一化为 LF，避免成功插入后错误回退造成重复。
+插入仅适用于 `https://chatgpt.com` 上可见、可编辑且获得焦点的聊天框；不适用的输入委托原始连接。预检通过网页的 compositionstart/end 元数据判断活动组合输入，避免 Java 标志在 DOM 重置后过期；预检的渲染器往返也允许先前的原生选区命令完成。异步 JS 插入完成前，后续编辑命令按顺序排队，完成后回到原输入连接的 Handler。调用 Chromium 委托方法时不持有包装层锁，因为 endBatchEdit 等方法可能等待渲染器响应。导航、更换连接或 closeConnection 取消旧连接的待执行命令。CR/CRLF 按 HTML 编辑器规则归一化为 LF，避免成功插入后错误回退造成重复。
 
 ## 回归验证
 
@@ -25,4 +25,4 @@ IME Paste / Paste as plain text 在适用的聊天框中使用同一插入函数
 
 文本矩阵逐字比较 textarea 和 contenteditable 的短中文、短多行、CRLF、1/10/50 KB、Markdown、尾部换行及 Unicode/emoji。不再跳过多行 commitText。`.github/workflows/clipboard-regression.yml` 在 PR 中构建调试 APK 并运行 Android API 33/34/35；原正式签名流程也将所有剪贴板检查设为必需。
 
-这些检查使用测试 APK 本地提供的受控网页；它们不等同于特定厂商输入法、真实账号下的 ChatGPT 编辑器或物理设备实测。CI 状态和原始文本比较结果以对应 Actions 运行及其 Artifact 为准。
+这些检查使用测试 APK 本地提供的受控网页和不发送编辑命令的 ClipboardProbeIme；测试通过真实 InputConnection 发送编辑命令，避免同时启动的 Gboard 自动纠错成为第二个写入者。长按粘贴仍使用系统菜单。该 IME 仅在测试 APK 中声明，不进入用户安装包。这些检查不等同于特定厂商输入法、真实账号下的 ChatGPT 编辑器或物理设备实测。CI 状态和原始文本比较结果以对应 Actions 运行及其 Artifact 为准。

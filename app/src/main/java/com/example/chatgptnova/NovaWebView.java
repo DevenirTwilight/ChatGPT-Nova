@@ -18,6 +18,7 @@ import java.util.function.BooleanSupplier;
 /** Keeps keyboard clipboard commits on the same composer path as explicit paste. */
 final class NovaWebView extends WebView {
     interface ComposerEditor {
+        void prepare(ValueCallback<Boolean> result);
         void commit(String text, ValueCallback<Boolean> result);
         void paste(ValueCallback<Boolean> result);
     }
@@ -57,7 +58,6 @@ final class NovaWebView extends WebView {
         private final InputConnection original;
         private boolean active = true;
         private boolean pending;
-        private boolean composing;
 
         ComposerConnection(InputConnection original) {
             super(original, false);
@@ -77,8 +77,10 @@ final class NovaWebView extends WebView {
                     waiting.add(command);
                     return true;
                 }
-                return command.getAsBoolean();
             }
+            // Chromium can wait for a renderer response (e.g. endBatchEdit).
+            // Its UI must remain able to close/recreate this connection meanwhile.
+            return command.getAsBoolean();
         }
 
         private boolean compatibleCommit(CharSequence text, int cursor, BooleanSupplier nativeCommit) {
@@ -88,26 +90,33 @@ final class NovaWebView extends WebView {
             if (text == null) return dispatch(nativeCommit);
             String plainText = text.toString();
             return dispatch(() -> {
-                if (!composing && cursor == 1 && (plainText.length() >= 4096
+                if (cursor == 1 && (plainText.length() >= 4096
                         || (plainText.length() > 1 && (plainText.indexOf('\n') >= 0
                         || plainText.indexOf('\r') >= 0)))) {
                     return compatibility(result -> editor.commit(plainText, result), nativeCommit);
                 }
-                boolean accepted = nativeCommit.getAsBoolean();
-                if (accepted) composing = false;
-                return accepted;
+                return nativeCommit.getAsBoolean();
             });
         }
 
         private boolean compatibility(java.util.function.Consumer<ValueCallback<Boolean>> action,
                                       BooleanSupplier fallback) {
-            pending = true;
+            synchronized (lock) { pending = true; }
             boolean posted = NovaWebView.this.post(() -> {
                 synchronized (lock) { if (!active) return; }
-                try { action.accept(handled -> complete(Boolean.TRUE.equals(handled), fallback)); }
+                try {
+                    // This renderer round trip also lets earlier native selection
+                    // edits settle before the composer insertion is evaluated.
+                    editor.prepare(ready -> {
+                        synchronized (lock) { if (!active) return; }
+                        if (!Boolean.TRUE.equals(ready)) { complete(false, fallback); return; }
+                        try { action.accept(handled -> complete(Boolean.TRUE.equals(handled), fallback)); }
+                        catch (RuntimeException error) { complete(false, fallback); }
+                    });
+                }
                 catch (RuntimeException error) { complete(false, fallback); }
             });
-            if (!posted) pending = false;
+            if (!posted) synchronized (lock) { pending = false; }
             return posted;
         }
 
@@ -115,11 +124,16 @@ final class NovaWebView extends WebView {
             // Never block the UI waiting for JS, and resume on Chromium's own IME
             // handler. Later keystrokes/batch edits cannot overtake a pending paste.
             inputHandler.post(() -> {
-                synchronized (lock) {
-                    if (!active) return;
-                    if (!handled) fallback.getAsBoolean();
-                    pending = false;
-                    while (active && !pending && !waiting.isEmpty()) waiting.remove().getAsBoolean();
+                synchronized (lock) { if (!active) return; }
+                if (!handled) fallback.getAsBoolean();
+                synchronized (lock) { pending = false; }
+                while (true) {
+                    BooleanSupplier next;
+                    synchronized (lock) {
+                        if (!active || pending || waiting.isEmpty()) return;
+                        next = waiting.remove();
+                    }
+                    next.getAsBoolean();
                 }
             });
         }
@@ -139,52 +153,32 @@ final class NovaWebView extends WebView {
 
         @Override public boolean performContextMenuAction(int id) {
             return dispatch(() -> {
-                if (!composing && (id == android.R.id.paste || id == android.R.id.pasteAsPlainText))
+                if (id == android.R.id.paste || id == android.R.id.pasteAsPlainText)
                     return compatibility(editor::paste, () -> super.performContextMenuAction(id));
                 return super.performContextMenuAction(id);
             });
         }
 
         @Override public boolean setComposingText(CharSequence text, int cursor) {
-            return dispatch(() -> {
-                boolean accepted = super.setComposingText(text, cursor);
-                if (accepted) composing = text != null && text.length() > 0;
-                return accepted;
-            });
+            return dispatch(() -> super.setComposingText(text, cursor));
         }
 
         @RequiresApi(33)
         @Override public boolean setComposingText(CharSequence text, int cursor, TextAttribute attribute) {
-            return dispatch(() -> {
-                boolean accepted = super.setComposingText(text, cursor, attribute);
-                if (accepted) composing = text != null && text.length() > 0;
-                return accepted;
-            });
+            return dispatch(() -> super.setComposingText(text, cursor, attribute));
         }
 
         @Override public boolean setComposingRegion(int start, int end) {
-            return dispatch(() -> {
-                boolean accepted = super.setComposingRegion(start, end);
-                if (accepted) composing = start != end;
-                return accepted;
-            });
+            return dispatch(() -> super.setComposingRegion(start, end));
         }
 
         @RequiresApi(33)
         @Override public boolean setComposingRegion(int start, int end, TextAttribute attribute) {
-            return dispatch(() -> {
-                boolean accepted = super.setComposingRegion(start, end, attribute);
-                if (accepted) composing = start != end;
-                return accepted;
-            });
+            return dispatch(() -> super.setComposingRegion(start, end, attribute));
         }
 
         @Override public boolean finishComposingText() {
-            return dispatch(() -> {
-                boolean accepted = super.finishComposingText();
-                if (accepted) composing = false;
-                return accepted;
-            });
+            return dispatch(super::finishComposingText);
         }
 
         @Override public boolean beginBatchEdit() { return dispatch(super::beginBatchEdit); }

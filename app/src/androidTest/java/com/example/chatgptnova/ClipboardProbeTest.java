@@ -154,7 +154,7 @@ public final class ClipboardProbeTest extends FixtureActivity {
                 assertTrue(connection.commitText("!",1));
                 assertTrue(connection.endBatchEdit());
             });
-            waitFor("selection replacement followed by typing",()->"prefix 中文\n多行 😀! suffix".equals(editorText(id)));
+            expectText(id,"prefix 中文\n多行 😀! suffix","selection replacement followed by typing");
         }
     }
 
@@ -167,17 +167,19 @@ public final class ClipboardProbeTest extends FixtureActivity {
                 assertTrue(connection.setComposingText("你",1));
                 assertTrue(connection.commitText("你好",1));
             });
-            waitFor("Chinese composition replaced",()->"你好".equals(editorText(id)));
+            expectText(id,"你好","Chinese composition replaced");
         }
     }
 
     @Test public void ordinaryFieldsUseNativeFallback() throws Exception {
         route="ime-native-fallback";
         for(String type:new String[]{"textarea","password"}) {
-            js("(()=>{let e=document.createElement('"+("textarea".equals(type)?"textarea":"input")+"');e.id='ordinary-field';e.type='"+type+"';document.body.prepend(e);e.focus()})()");
+            js("(()=>{let e=document.createElement('"+("textarea".equals(type)?"textarea":"input")+"');e.id='ordinary-field';e.type='"+type+"';document.body.prepend(e)})()");
+            clickWeb("ordinary-field");
+            waitFor("focused ordinary field",()->"ordinary-field".equals(js("document.activeElement.id")));
             input(connection -> assertTrue(connection.commitText("fallback\n中文",1)));
             String expected="textarea".equals(type)?"fallback\n中文":"fallback中文";
-            waitFor("native fallback in "+type,()->expected.equals(js("document.getElementById('ordinary-field').value")));
+            expectText("ordinary-field",expected,"native fallback in "+type);
             js("document.getElementById('ordinary-field').remove()");
         }
     }
@@ -198,7 +200,15 @@ public final class ClipboardProbeTest extends FixtureActivity {
     }
 
     private String editorText(String id) {
-        return js("(()=>{let e=document.getElementById('"+id+"');return e.tagName==='TEXTAREA'?e.value:e.innerText})()");
+        return js("(()=>{let e=document.getElementById('"+id+"');return e.tagName==='TEXTAREA'||e.tagName==='INPUT'?e.value:e.innerText})()");
+    }
+
+    private void expectText(String id,String expected,String label) {
+        try { waitFor(label,()->expected.equals(editorText(id))); }
+        catch(AssertionError failure) {
+            assertEquals(label+" ("+id+")",expected,editorText(id));
+            throw failure;
+        }
     }
 
     private void longPress(String id) {

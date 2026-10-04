@@ -6,6 +6,8 @@
 
 ## 使用
 
+1.3.7 补充输入法剪贴板历史的 `commitText` 通路。此类提交可能没有网页 `paste` 事件，旧版网页监听无法覆盖；新版将长文本、多行文本及 IME 粘贴命令接入同一聊天框插入逻辑，并保留正常中文组合输入和选区。修复原理、Firefox 参考代码及回归检查见 [输入法剪贴板说明](docs/IME-CLIPBOARD.md)。
+
 启动后进入官网，顶部显示 ChatGPT Nova 和当前域名。右上角菜单提供刷新、ChatGPT 首页、用浏览器打开和设置；页面明确显示未登录时增加“登录”。设置集中放置退出当前账号（明确已登录时）、清除登录与网站数据、登录帮助和关于 ChatGPT Nova。退出与数据清除都有确认，不影响官方 App 或浏览器。文件上传支持系统文件 / 图片选择器以及拍照；相机和麦克风只为 HTTPS 的 chatgpt.com 及其子域请求 Android 权限。Cookie 在页面完成和应用暂停时写入本地；清除时等待 Cookie 删除完成再加载首页。
 
 HTTPS 下载与 blob 下载均通过系统保存对话框写入用户选择的位置，不需要存储权限。HTTPS 在后台线程流式写入，只向下载开始时的 ChatGPT 同源地址发送 Cookie；一旦跨源，后续全程不携带 Cookie，拒绝 HTTPS 降级为 HTTP；blob 分块保存，上限 256 MiB。下载进行时请保持 Nova 运行，清除数据或销毁 Activity 会取消未完成下载；失败时保存位置可能有不完整文件。不会将 Cookie 发给代理服务。HTTP 页面及 HTTP 下载通过浏览器打开。支持安全处理 intent 链接和其它外部 scheme，拒绝本地 file/content/javascript/data 页面跳转。TLS 验证和 Safe Browsing 保持启用。
@@ -43,6 +45,7 @@ Nova 是非官方第三方客户端，不由 OpenAI 发布、维护或背书。N
 - compileSdk / targetSdk: 35；Build Tools: 35.0.0
 - AGP: 8.7.3；Gradle: 8.9；Java: 17
 - 构建：`gradle :app:clean :app:assembleRelease`
+- 调试剪贴板测试：`./gradlew -PnovaTestBuildType=debug :app:assembleDebug :app:assembleDebugAndroidTest :app:lintDebug`；PR 工作流在 Android 13/14/15 上运行独立测试 APK，不需要正式签名配置。
 - CI 还运行 lint、apksigner、Manifest / DEX 和 SHA-256 检查。
 - 本地签名配置见 `keystore.properties.example`；真实私钥和 properties 不在源码内。
 - GitHub Secrets: `NOVA_STORE_PASSWORD`、`NOVA_KEY_ALIAS`、`NOVA_KEY_PASSWORD`、`NOVA_KEYSTORE_B64`。

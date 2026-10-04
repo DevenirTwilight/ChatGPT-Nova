@@ -115,6 +115,12 @@ public class MainActivity extends Activity {
             (() => {
               if (window.__novaLongPasteInstalled) return;
               window.__novaLongPasteInstalled = true;
+              // Metadata only: Java-side composition flags can outlive a DOM reset.
+              document.addEventListener('compositionstart', event => {
+                window.__novaComposingEditor = event.target.closest
+                  ? event.target.closest('#prompt-textarea, #mobile-composer-prompt') : null;
+              }, true);
+              document.addEventListener('compositionend', () => { window.__novaComposingEditor = null; }, true);
               document.addEventListener('paste', event => {
                 const text = event.clipboardData && event.clipboardData.getData('text/plain');
                 if (!text || (text.length < 4096 && !/[\\r\\n]/.test(text))) return;
@@ -246,6 +252,9 @@ public class MainActivity extends Activity {
 
         FrameLayout content = new FrameLayout(this);
         webView = new NovaWebView(this, new NovaWebView.ComposerEditor() {
+            @Override public void prepare(ValueCallback<Boolean> result) {
+                prepareImeComposer(webView, result);
+            }
             @Override public void commit(String text, ValueCallback<Boolean> result) {
                 tryInsertComposerText(webView, text, result);
             }
@@ -739,6 +748,24 @@ public class MainActivity extends Activity {
         page.evaluateJavascript(INSERT_COMPOSER_TEXT + "(" + plainText + ")", inserted ->
                 result.onReceiveValue(canEditComposer(page) && address.equals(page.getUrl())
                         && "true".equals(inserted)));
+    }
+
+    private void prepareImeComposer(WebView page, ValueCallback<Boolean> result) {
+        if (!canEditComposer(page)) { result.onReceiveValue(false); return; }
+        String address = page.getUrl();
+        page.evaluateJavascript("""
+                (() => {
+                  if (location.origin !== 'https://chatgpt.com') return false;
+                  const active = document.activeElement;
+                  const e = active && active.closest('#prompt-textarea, #mobile-composer-prompt');
+                  if (!e || (active !== e && !active.isContentEditable)
+                      || e.disabled || e.readOnly || !e.getClientRects().length
+                      || !(e.isContentEditable || e.tagName === 'TEXTAREA')) return false;
+                  return window.__novaComposingEditor !== e
+                    || !(e.tagName === 'TEXTAREA' ? e.value.length : e.textContent.length);
+                })()
+                """, ready -> result.onReceiveValue(canEditComposer(page)
+                        && address.equals(page.getUrl()) && "true".equals(ready)));
     }
 
     private void tryPasteComposer(WebView page, boolean notify, ValueCallback<Boolean> result) {

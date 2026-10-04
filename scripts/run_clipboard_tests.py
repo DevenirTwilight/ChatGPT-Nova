@@ -20,12 +20,16 @@ try:
     apk, tests, api = sys.argv[1:]
     for path in (apk, tests):
         assert 'Success' in adb('install', '-r', path)
+    ime = package + '.test/com.example.chatgptnova.ClipboardProbeIme'
+    adb('shell', 'ime', 'enable', ime)
+    adb('shell', 'ime', 'set', ime)
     adb('shell', 'input', 'keyevent', '224')
     adb('shell', 'wm', 'dismiss-keyguard')
     adb('shell', 'am', 'force-stop', 'com.google.android.apps.nexuslauncher')
     result = adb('shell', 'am', 'instrument', '-w', '-r', '-e', 'class',
                  'com.example.chatgptnova.ClipboardProbeTest', runner, timeout=900)
     (out / 'instrumentation.txt').write_text(result)
+    print(result)
     passed = bool(re.search(r'OK \(9 tests\)', result)) and not any(
         marker in result for marker in ('FAILURES!!!', 'INSTRUMENTATION_FAILED', 'Process crashed'))
     (out / 'result.json').write_text(json.dumps({'api': int(api), 'passed': passed,

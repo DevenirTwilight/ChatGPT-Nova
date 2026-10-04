@@ -52,6 +52,9 @@ try:
     assert suite(PACKAGE+'.UpgradeTest#testSeedUpgradeData','v1-seed.txt') == 1
     adb('shell','am','force-stop',PACKAGE)
     install(release)
+    ime = PACKAGE + '.test/com.example.chatgptnova.ClipboardProbeIme'
+    adb('shell', 'ime', 'enable', ime)
+    adb('shell', 'ime', 'set', ime)
     upgrade_count = independent('upgrade', lambda: suite(PACKAGE+'.UpgradeTest#testUpgradeDataPreserved','upgrade.txt'))
     if upgrade_count == 1:
         checks.append('Original signed v1 is upgraded with install -r; synthetic cookie and localStorage survive process restart')
