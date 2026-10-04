@@ -55,11 +55,49 @@
         warnings.push('附件文件不包含在导出中；附件中的正文无法确认完整。');
         fail('当前分支包含附件，无法确认附件正文完整');
       }
-      messages.push({id:m.id, role:m.author.role, markdown:parts.join('\n\n')});
+      messages.push({id:m.id, role:m.author.role, evidenceMarkdown:parts.join('\n\n'), markdown:withSources(parts.join('\n\n'),m.metadata,warnings)});
     }
     if (!messages.length) fail('会话为空');
     return {conversationId, title:tree.title || '未命名会话', messages, warnings:[...new Set(warnings)],
       completeness:{root:chain[0].id, terminal:tree.current_node, nodes:chain.length, messages:messages.length}};
+  }
+  function withSources(text, metadata, warnings) {
+    const entries = [...(Array.isArray(metadata?.citations) ? metadata.citations : []),
+      ...(Array.isArray(metadata?.content_references) ? metadata.content_references : [])];
+    const urls = new Map();
+    for (const reference of entries) {
+      const sources = [reference, reference?.metadata,
+        ...(Array.isArray(reference?.items) ? reference.items : []),
+        ...(Array.isArray(reference?.sources) ? reference.sources : [])];
+      const links = [];
+      for (const source of sources) {
+        const url = safeUrl(source?.url, false);
+        if (!url) continue;
+        const title = String(source.title || source.name || url).replace(/[\[\]\r\n]/g,' ');
+        const link = '[' + title + '](<' + url.replace(/[<>]/g,encodeURIComponent) + '>)';
+        urls.set(url,link); links.push(link);
+      }
+      if (reference?.matched_text && links.length) text = text.split(reference.matched_text).join(links.join(' '));
+    }
+    if (urls.size) text += '\n\n### Sources\n\n' + [...urls.values()].map(link=>'- '+link).join('\n');
+    if (/\uE200cite/.test(text)) warnings.push('部分网页引用未提供可验证 URL；已保留引用原文。');
+    return text;
+  }
+  // Preserve LaTeX as readable source without external script/font dependencies.
+  // Register once on this isolated renderer; never change the website's parser.
+  function renderMarkdown(text, marked) {
+    if (!marked.__novaMath) {
+      marked.use({extensions:[
+        {name:'novaMathBlock',level:'block',start:src=>src.indexOf('$$'),
+          tokenizer:src=> { const match=/^\$\$[ \t]*\n([\s\S]*?)\n\$\$(?:\n|$)/.exec(src); return match && {type:'novaMathBlock',raw:match[0],text:match[1]}; },
+          renderer:token=>'<pre><code>'+esc('$$\n'+token.text+'\n$$')+'</code></pre>'},
+        {name:'novaMathInline',level:'inline',start:src=>src.indexOf('$'),
+          tokenizer:src=> { const match=/^\$(?!\$)([^\n$]+)\$/.exec(src); return match && {type:'novaMathInline',raw:match[0],text:match[1]}; },
+          renderer:token=>'<code>'+esc(token.raw)+'</code>'}
+      ]});
+      marked.__novaMath=true;
+    }
+    return marked.parse(text,{gfm:true});
   }
   function displayable(m) {
     return !!(m && m.author && ['user','assistant'].includes(m.author.role)
@@ -105,14 +143,14 @@
   const css = `:root{color-scheme:light dark;--bg:#f6f5f1;--paper:#fff;--text:#24272b;--muted:#626b75;--line:#dce0e3;--user:#edf4f4;--link:#196caa}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:17px/1.75 system-ui,-apple-system,sans-serif;overflow-wrap:anywhere}main{max-width:860px;margin:32px auto;padding:36px;background:var(--paper);border-radius:16px}header{border-bottom:1px solid var(--line);padding-bottom:24px}h1{font-size:1.8em;line-height:1.3}h2,h3,h4,h5,h6{line-height:1.4;margin-top:1.6em}article{padding:22px 0;border-bottom:1px solid var(--line)}article.user{background:var(--user);padding:20px;border-radius:10px;margin-top:24px}.role{font-size:.78em;letter-spacing:.06em;color:var(--muted);font-weight:700}a{color:var(--link);overflow-wrap:anywhere}pre{overflow-x:auto;white-space:pre;padding:16px;background:var(--bg);border:1px solid var(--line);border-radius:8px;font-size:.85em;line-height:1.5}code{font-family:ui-monospace,SFMono-Regular,Consolas,monospace}p code,li code{background:var(--bg);padding:2px 4px;border-radius:3px}blockquote{margin-left:0;border-left:3px solid var(--line);padding-left:18px;color:var(--muted)}.table-scroll{overflow-x:auto}table{border-collapse:collapse;font-size:.9em;min-width:100%}th,td{border:1px solid var(--line);padding:8px 12px;text-align:left}img{max-width:100%;height:auto}footer{font-size:.8em;color:var(--muted);margin-top:24px}@media(max-width:600px){main{margin:0;padding:20px 16px;border-radius:0}body{font-size:16px}article.user{padding:14px}}@media(prefers-color-scheme:dark){:root{--bg:#171b20;--paper:#20262c;--text:#e2e7eb;--muted:#aab6bf;--line:#3b454e;--user:#25383c;--link:#8bcaff}}@media print{:root{color-scheme:light;--bg:#fff;--paper:#fff;--text:#111;--muted:#444;--line:#ccc;--user:#f4f6f6;--link:#174d75}body{font-size:11pt}main{margin:0;padding:0;max-width:none}pre{white-space:pre-wrap;overflow:visible;overflow-wrap:anywhere;font-size:8pt}.table-scroll{overflow:visible}table{width:100%;table-layout:fixed}td,th{overflow-wrap:anywhere;padding:5px}tr,img{break-inside:avoid}h1,h2,h3,.role{break-after:avoid}article{break-inside:auto}a{color:var(--link)}@page{size:A4;margin:16mm}}`;
   function html(data, marked, document) {
     const body = data.messages.map(m => '<article class="' + m.role + '"><div class="role">' +
-      (m.role === 'user' ? 'User' : 'ChatGPT') + '</div>' + clean(marked.parse(m.markdown,{gfm:true}),document) + '</article>').join('');
+      (m.role === 'user' ? 'User' : 'ChatGPT') + '</div>' + clean(renderMarkdown(m.markdown,marked),document) + '</article>').join('');
     return '<!doctype html><html lang="zh"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">' +
       '<meta http-equiv="Content-Security-Policy" content="default-src \'none\'; style-src \'unsafe-inline\'; img-src data:; base-uri \'none\'; form-action \'none\'">' +
       '<title>'+esc(data.title)+'</title><style>'+css+'</style></head><body><main><header><h1>'+esc(data.title)+
       '</h1><div class="role">ChatGPT · '+data.messages.length+' 条消息</div></header>'+body+
       '<footer>'+data.warnings.map(esc).join('<br>')+'</footer></main></body></html>';
   }
-  const api = {normalize, markdown, html, safeUrl, clean, displayable};
+  const api = {normalize, markdown, html, safeUrl, clean, displayable, renderMarkdown};
   if (typeof module !== 'undefined') module.exports = api;
   else root.NovaExportCore = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this);

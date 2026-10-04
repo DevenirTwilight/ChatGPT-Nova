@@ -31,3 +31,13 @@ test('links keep targets and reject active schemes',()=> {
  assert.equal(core.safeUrl('https://example.com/a?q=1#part',false),'https://example.com/a?q=1#part');
  for(const s of ['javascript:alert(1)','file:///secret','https://user:password@example.com']) assert.equal(core.safeUrl(s,false),null);
 });
+
+test('metadata citation URLs are retained without guessing targets',()=> {
+ const t=fixture();t.mapping.m1.message.content.parts=['See \uE200cite\uE202turn0search0\uE201'];
+ t.mapping.m1.message.metadata={content_references:[{matched_text:'\uE200cite\uE202turn0search0\uE201',url:'https://example.org/real-source',title:'Actual source'}]};
+ const data=normalize(t);assert.match(data.messages[1].markdown,/https:\/\/example.org\/real-source/);assert(!data.messages[1].markdown.includes('turn0search0'));
+});
+test('partial flags and missing root sentinel are rejected',()=> {
+ const t=fixture();t.has_more=true;assert.throws(()=>normalize(t),/不完整/);
+ delete t.has_more;t.mapping.m0.parent=null;assert.throws(()=>normalize(t),/起点/);
+});

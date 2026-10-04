@@ -20,6 +20,9 @@ const root=path.resolve(__dirname,'../..'), assets=path.join(root,'app/src/main/
   fs.writeFileSync(path.join(root,'samples/export/conversation.md'),result.markdown);
   const unsafe=await page.evaluate(()=>NovaExportCore.clean('<script>alert(1)</script><a href="javascript:alert(1)" onclick="bad()">link</a><img src="file:///secret" onerror="bad()"><table><tr><td>x</td></tr></table>',document));
   assert(!unsafe.includes('<script'));assert(!unsafe.includes('onclick'));assert(!unsafe.includes('onerror'));assert(!unsafe.includes('javascript:'));assert(unsafe.includes('table-scroll'));
+  assert(result.html.includes('\\frac{1}{3}'));
+  assert(result.html.includes('https://example.org/table'));
+  assert(result.html.includes('data:image/png;base64,'));
   if (process.env.NOVA_OFFLINE_DOCUMENT_URL) {
    await page.route(process.env.NOVA_OFFLINE_DOCUMENT_URL,r=>r.fulfill({contentType:'text/html',body:result.html}));
    await page.goto(process.env.NOVA_OFFLINE_DOCUMENT_URL);
@@ -38,6 +41,7 @@ const root=path.resolve(__dirname,'../..'), assets=path.join(root,'app/src/main/
   const dark=await page.locator('body').evaluate(el=>getComputedStyle(el).backgroundColor);
   assert.notEqual(light,dark);
   await page.screenshot({path:path.join(root,'samples/export/mobile-dark.png')});
+  await page.locator('article').last().screenshot({path:path.join(root,'samples/export/rich-content.png')});
   await page.pdf({path:path.join(root,'samples/export/conversation.pdf'),preferCSSPageSize:true,printBackground:true});
   // Exercise the production extraction and chunk transport on a synthetic HTTPS page.
   await page.unroute('**/*');

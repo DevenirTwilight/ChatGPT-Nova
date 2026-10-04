@@ -15,9 +15,27 @@
     const last = data.messages[data.messages.length-1];
     const rendered = document.querySelector('[data-message-id="'+CSS.escape(last.id)+'"]');
     const temp = document.createElement('div');
-    temp.innerHTML = NovaExportCore.clean(marked.parse(last.markdown),document);
+    temp.innerHTML = NovaExportCore.clean(NovaExportCore.renderMarkdown(last.evidenceMarkdown.replace(/\uE200[^\uE201]*\uE201/g,'NOVA_REFERENCE_BREAK'),marked),document);
     const text = s=>s.replace(/\s+/g,'').trim();
-    if (!rendered || !text(rendered.textContent).includes(text(temp.textContent)))
+    const evidence=rendered?.cloneNode(true);
+    if (evidence) {
+      for (const control of evidence.querySelectorAll('button,[role="button"]')) control.remove();
+      for (const math of evidence.querySelectorAll('.katex-display')) {
+        const source=math.querySelector('annotation[encoding="application/x-tex"]');
+        if (source) math.replaceWith(document.createTextNode('$$'+source.textContent+'$$'));
+      }
+      for (const math of evidence.querySelectorAll('.katex')) {
+        const source=math.querySelector('annotation[encoding="application/x-tex"]');
+        if (source) math.replaceWith(document.createTextNode('$'+source.textContent+'$'));
+      }
+    }
+    const actual=text(evidence?.textContent || '');
+    let position=0;
+    const matches=temp.textContent.split('NOVA_REFERENCE_BREAK').every(part=> {
+      const expected=text(part), index=actual.indexOf(expected,position);
+      if (index<0) return false; position=index+expected.length; return true;
+    });
+    if (!evidence || !matches)
       throw new Error('无法确认完整会话：末条消息内容与消息树不同');
     let html = NovaExportCore.html(data,marked,document);
     const parsed = new DOMParser().parseFromString(html,'text/html');
