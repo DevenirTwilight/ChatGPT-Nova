@@ -1,0 +1,110 @@
+/* Normalized current-branch export. No account, cookie, or storage access. */
+(function (root) {
+  'use strict';
+  const fail = detail => { throw new Error('无法确认完整会话：' + detail); };
+  const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  function normalize(tree, conversationId, visibleIds) {
+    if (!tree || tree.conversation_id !== conversationId || !tree.mapping || !tree.current_node)
+      fail('当前会话消息树不可用');
+    const map = tree.mapping, ids = [...new Set(visibleIds)];
+    if (!ids.length || ids.some(id => !map[id])) fail('无法核对页面消息 ID');
+    // A DOM subset is only evidence of the selected branch, never its content source.
+    // Require the terminal page message to equal the server-selected terminal node.
+    // Reject switched/stale branches rather than guessing from tree.children ordering.
+    let terminal = tree.current_node;
+    while (map[terminal] && !displayable(map[terminal].message)) {
+      terminal = map[terminal].parent;
+      if (!terminal) fail('没有可导出的消息');
+    }
+    if (ids[ids.length - 1] !== terminal) fail('页面末条消息与消息树分支不一致，请等待回复完成或刷新后重试');
+    const chain = [], seen = new Set();
+    let id = tree.current_node;
+    while (id != null) {
+      if (seen.has(id) || !map[id] || map[id].id !== id) fail('消息链断裂或循环');
+      seen.add(id);
+      const node = map[id];
+      if (node.parent != null && (!map[node.parent] || !Array.isArray(map[node.parent].children)
+          || !map[node.parent].children.includes(id))) fail('父子关系不完整');
+      chain.push(node);
+      id = node.parent;
+    }
+    if (ids.some(id => !seen.has(id))) fail('页面包含另一分支的消息');
+    const warnings = [], messages = [];
+    for (const node of chain.reverse()) {
+      const m = node.message;
+      if (!displayable(m)) continue;
+      if (m.id !== node.id || m.status !== 'finished_successfully') fail('消息未完成或格式无法验证');
+      const content = m.content;
+      if (!content || !['text','multimodal_text'].includes(content.content_type) || !Array.isArray(content.parts))
+        fail('不支持的消息类型，无法可靠保留正文');
+      const parts = content.parts.map(part => {
+        if (typeof part === 'string') return part;
+        if (part && part.content_type === 'image_asset_pointer') {
+          warnings.push('部分原始图片只有资源指针，无法离线获取；已保留占位说明。');
+          return '[图片：当前页面未提供可直接保存的原始资源]';
+        }
+        fail('消息含无法可靠保存的内容');
+      });
+      if (m.metadata && m.metadata.attachments && m.metadata.attachments.length) {
+        warnings.push('附件文件不包含在导出中；附件中的正文无法确认完整。');
+        fail('当前分支包含附件，无法确认附件正文完整');
+      }
+      messages.push({id:m.id, role:m.author.role, markdown:parts.join('\n\n')});
+    }
+    if (!messages.length) fail('会话为空');
+    return {conversationId, title:tree.title || '未命名会话', messages, warnings:[...new Set(warnings)],
+      completeness:{root:chain[0].id, terminal:tree.current_node, nodes:chain.length, messages:messages.length}};
+  }
+  function displayable(m) {
+    return !!(m && m.author && ['user','assistant'].includes(m.author.role)
+      && (!m.recipient || m.recipient === 'all') && !(m.metadata && m.metadata.is_visually_hidden_from_conversation));
+  }
+  function markdown(data) {
+    return '# ' + data.title.replace(/[\r\n]/g, ' ') + '\n\n' +
+      data.messages.map(m => '## ' + (m.role === 'user' ? 'User' : 'Assistant') + '\n\n' + m.markdown).join('\n\n---\n\n') +
+      (data.warnings.length ? '\n\n---\n\n导出说明：\n' + data.warnings.map(s=>'- '+s).join('\n') : '') + '\n';
+  }
+  function safeUrl(value, image) {
+    try {
+      const u = new URL(value, 'https://chatgpt.com/');
+      if (u.username || u.password) return null;
+      return (image ? u.protocol === 'https:' || /^data:image\/(png|jpeg|webp|gif);base64,/i.test(value)
+        : ['https:','http:','mailto:'].includes(u.protocol)) ? u.href : null;
+    } catch (_) { return null; }
+  }
+  function clean(html, document) {
+    const parsed = document.createElement('template'); parsed.innerHTML = html;
+    const allowed = new Set('P BR STRONG EM DEL H1 H2 H3 H4 H5 H6 UL OL LI BLOCKQUOTE PRE CODE TABLE THEAD TBODY TR TH TD A IMG HR SUP SUB'.split(' '));
+    for (const el of [...parsed.content.querySelectorAll('*')]) {
+      if (!allowed.has(el.tagName)) { el.replaceWith(document.createTextNode(el.textContent || '')); continue; }
+      const href = el.getAttribute('href'), src = el.getAttribute('src'), alt = el.getAttribute('alt');
+      const start = el.getAttribute('start');
+      for (const a of [...el.attributes]) el.removeAttribute(a.name);
+      if (el.tagName === 'A' && safeUrl(href, false)) {
+        el.setAttribute('href',safeUrl(href,false)); el.setAttribute('rel','noreferrer noopener');
+      }
+      if (el.tagName === 'IMG') {
+        const url = safeUrl(src,true);
+        if (url) { el.setAttribute('src',url); el.setAttribute('alt',alt || '图片'); }
+        else el.replaceWith(document.createTextNode('[图片无法安全保存]'));
+      }
+      if (el.tagName === 'OL' && /^\d+$/.test(start || '')) el.setAttribute('start',start);
+    }
+    for (const table of parsed.content.querySelectorAll('table')) {
+      const wrap = document.createElement('div'); wrap.className='table-scroll'; table.replaceWith(wrap); wrap.append(table);
+    }
+    return parsed.innerHTML;
+  }
+  const css = `:root{color-scheme:light dark;--bg:#f6f5f1;--paper:#fff;--text:#24272b;--muted:#626b75;--line:#dce0e3;--user:#edf4f4;--link:#196caa}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:17px/1.75 system-ui,-apple-system,sans-serif;overflow-wrap:anywhere}main{max-width:860px;margin:32px auto;padding:36px;background:var(--paper);border-radius:16px}header{border-bottom:1px solid var(--line);padding-bottom:24px}h1{font-size:1.8em;line-height:1.3}h2,h3,h4,h5,h6{line-height:1.4;margin-top:1.6em}article{padding:22px 0;border-bottom:1px solid var(--line)}article.user{background:var(--user);padding:20px;border-radius:10px;margin-top:24px}.role{font-size:.78em;letter-spacing:.06em;color:var(--muted);font-weight:700}a{color:var(--link);overflow-wrap:anywhere}pre{overflow-x:auto;white-space:pre;padding:16px;background:var(--bg);border:1px solid var(--line);border-radius:8px;font-size:.85em;line-height:1.5}code{font-family:ui-monospace,SFMono-Regular,Consolas,monospace}p code,li code{background:var(--bg);padding:2px 4px;border-radius:3px}blockquote{margin-left:0;border-left:3px solid var(--line);padding-left:18px;color:var(--muted)}.table-scroll{overflow-x:auto}table{border-collapse:collapse;font-size:.9em;min-width:100%}th,td{border:1px solid var(--line);padding:8px 12px;text-align:left}img{max-width:100%;height:auto}footer{font-size:.8em;color:var(--muted);margin-top:24px}@media(max-width:600px){main{margin:0;padding:20px 16px;border-radius:0}body{font-size:16px}article.user{padding:14px}}@media(prefers-color-scheme:dark){:root{--bg:#171b20;--paper:#20262c;--text:#e2e7eb;--muted:#aab6bf;--line:#3b454e;--user:#25383c;--link:#8bcaff}}@media print{:root{color-scheme:light;--bg:#fff;--paper:#fff;--text:#111;--muted:#444;--line:#ccc;--user:#f4f6f6;--link:#174d75}body{font-size:11pt}main{margin:0;padding:0;max-width:none}pre{white-space:pre-wrap;overflow:visible;overflow-wrap:anywhere;font-size:8pt}.table-scroll{overflow:visible}table{width:100%;table-layout:fixed}td,th{overflow-wrap:anywhere;padding:5px}tr,img{break-inside:avoid}h1,h2,h3,.role{break-after:avoid}article{break-inside:auto}a{color:var(--link)}@page{size:A4;margin:16mm}}`;
+  function html(data, marked, document) {
+    const body = data.messages.map(m => '<article class="' + m.role + '"><div class="role">' +
+      (m.role === 'user' ? 'User' : 'ChatGPT') + '</div>' + clean(marked.parse(m.markdown,{gfm:true}),document) + '</article>').join('');
+    return '<!doctype html><html lang="zh"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">' +
+      '<meta http-equiv="Content-Security-Policy" content="default-src \'none\'; style-src \'unsafe-inline\'; img-src data:; base-uri \'none\'; form-action \'none\'">' +
+      '<title>'+esc(data.title)+'</title><style>'+css+'</style></head><body><main><header><h1>'+esc(data.title)+
+      '</h1><div class="role">ChatGPT · '+data.messages.length+' 条消息</div></header>'+body+
+      '<footer>'+data.warnings.map(esc).join('<br>')+'</footer></main></body></html>';
+  }
+  root.NovaExportCore = {normalize, markdown, html, safeUrl, clean, displayable};
+  if (typeof module !== 'undefined') module.exports = root.NovaExportCore;
+})(typeof globalThis !== 'undefined' ? globalThis : this);

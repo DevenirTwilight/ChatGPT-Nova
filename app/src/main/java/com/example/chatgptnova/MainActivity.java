@@ -5,8 +5,6 @@ import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.ActivityNotFoundException;
 import android.content.Context;
-import android.content.ClipData;
-import android.content.ClipboardManager;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
@@ -317,6 +315,7 @@ public class MainActivity extends Activity {
     private AccountUiState accountUiState = AccountUiState.UNKNOWN;
     private int accountQuerySerial;
     private WebShareAdapter webShare;
+    private ConversationExport conversationExport;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -466,6 +465,8 @@ public class MainActivity extends Activity {
         cm.setAcceptThirdPartyCookies(webView, true);
 
         WebView shareView = webView;
+        conversationExport = new ConversationExport(this, shareView,
+                () -> !clearing && webView == shareView);
         webShare = new WebShareAdapter(this, shareView,
                 () -> !clearing && webView == shareView);
 
@@ -486,6 +487,7 @@ public class MainActivity extends Activity {
                 if (view != webView || clearing) return;
                 ((ComposerWebView) view).navigationStarted();
                 if (webShare != null) webShare.navigationStarted();
+                if (conversationExport != null) conversationExport.navigationStarted();
                 accountUiState = AccountUiState.UNKNOWN;
                 accountQuerySerial++;
                 cancelPageRequests();
@@ -505,6 +507,7 @@ public class MainActivity extends Activity {
                 Uri pageOrigin = Uri.parse(view.getUrl() == null ? "" : view.getUrl());
                 if (isTrustedOrigin(pageOrigin) && "chatgpt.com".equals(pageOrigin.getHost())) {
                     if (webShare != null) webShare.pageFinished();
+                    if (conversationExport != null) conversationExport.pageFinished();
                     view.evaluateJavascript(PASTE_COMPATIBILITY, null);
                 }
                 refreshAccountUiState(null);
@@ -538,6 +541,7 @@ public class MainActivity extends Activity {
                 if (view != webView) { view.destroy(); return true; }
                 if (blobDownload != null) { blobDownload.cancel(); blobDownload = null; }
                 cancelPageRequests();
+                if (conversationExport != null) { conversationExport.destroy(); conversationExport = null; }
                 if (webShare != null) { webShare.destroy(); webShare = null; }
                 if (view.getParent() instanceof ViewGroup) ((ViewGroup) view.getParent()).removeView(view);
                 view.destroy();
@@ -818,10 +822,6 @@ public class MainActivity extends Activity {
 
     private void showMenu() {
         if (clearing || webView == null) return;
-        Uri page = Uri.parse(webView.getUrl() == null ? "" : webView.getUrl());
-        if (isTrustedOrigin(page) && "chatgpt.com".equalsIgnoreCase(page.getHost())) {
-            webView.evaluateJavascript("window.__novaRememberPasteSelection?.()", null);
-        }
         refreshAccountUiState(() -> {
             if (overflowMenu != null) overflowMenu.dismiss();
             overflowMenu = new PopupMenu(this, menuButton);
@@ -830,9 +830,7 @@ public class MainActivity extends Activity {
             items.add(0, 2, 1, "ChatGPT 首页");
             if (accountUiState == AccountUiState.SIGNED_OUT) items.add(0, 3, 2, "登录");
             items.add(0, 4, 3, "用浏览器打开");
-            if (canShareCurrentPage()) items.add(0, 7, 4, "分享当前页面");
-            if ("chatgpt.com".equals(Uri.parse(webView.getUrl() == null ? "" : webView.getUrl()).getHost()))
-                items.add(0, 6, 5, "从剪贴板粘贴");
+            if (canExportConversation()) items.add(0, 7, 4, "导出当前会话");
             items.add(0, 5, 6, "设置");
             overflowMenu.setOnMenuItemClickListener(item -> {
                 if (clearing || webView == null) return true;
@@ -850,12 +848,7 @@ public class MainActivity extends Activity {
                         openCurrentPageInBrowser();
                         break;
                     case 7:
-                        shareCurrentPage();
-                        break;
-                    case 6:
-                        // Finish popup/IME focus transitions before editing the draft.
-                        overflowMenu.dismiss();
-                        webView.postDelayed(this::pasteFromClipboard, 150);
+                        if (conversationExport != null) conversationExport.start();
                         break;
                     case 5:
                         showSettings();
@@ -917,40 +910,6 @@ public class MainActivity extends Activity {
         } catch (RuntimeException error) { complete.onReceiveValue(false); }
     }
 
-    // Explicit user action only. Insert plain text into the focused composer;
-    // never read login fields, persist clipboard content or submit the draft.
-    void pasteFromClipboard() {
-        WebView page = webView;
-        String address = page == null ? null : page.getUrl();
-        Uri uri = Uri.parse(address == null ? "" : address);
-        if (clearing || page == null || !"https".equals(uri.getScheme())
-                || !"chatgpt.com".equals(uri.getHost()) || uri.getUserInfo() != null
-                || (uri.getPort() != -1 && uri.getPort() != 443)) return;
-
-        CharSequence text;
-        try {
-            ClipboardManager clipboard = (ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
-            ClipData clip = clipboard == null ? null : clipboard.getPrimaryClip();
-            text = clip == null || clip.getItemCount() == 0
-                    ? null : clip.getItemAt(0).coerceToText(this);
-        } catch (RuntimeException error) {
-            Toast.makeText(this, "无法读取系统剪贴板，请重试。", Toast.LENGTH_LONG).show();
-            return;
-        }
-        if (text == null || text.length() == 0) {
-            Toast.makeText(this, "剪贴板中没有可粘贴的文本。", Toast.LENGTH_SHORT).show();
-            return;
-        }
-
-        String plainText = JSONObject.quote(text.toString())
-                .replace("\u2028", "\\u2028").replace("\u2029", "\\u2029");
-        page.evaluateJavascript(INSERT_COMPOSER_TEXT + "(" + plainText + ")", inserted -> {
-            if (!"true".equals(inserted) && page == webView && !clearing) {
-                Toast.makeText(this, "未能粘贴，请先点一下聊天输入框后重试。", Toast.LENGTH_LONG).show();
-            }
-        });
-    }
-
     private void showSettings() {
         if (clearing || webView == null) return;
         refreshAccountUiState(() -> {
@@ -981,31 +940,10 @@ public class MainActivity extends Activity {
                 .setPositiveButton("知道了", null).show();
     }
 
-    private boolean canShareCurrentPage() {
+    private boolean canExportConversation() {
         if (clearing || webView == null) return false;
         Uri uri = Uri.parse(webView.getUrl() == null ? "" : webView.getUrl());
         return isTrustedOrigin(uri) && "chatgpt.com".equalsIgnoreCase(uri.getHost());
-    }
-
-    private void shareCurrentPage() {
-        if (!canShareCurrentPage()) {
-            Toast.makeText(this, "当前页面不能通过 Nova 分享。", Toast.LENGTH_SHORT).show();
-            return;
-        }
-        String url = webView.getUrl();
-        if (url == null || url.isEmpty()) {
-            Toast.makeText(this, "当前页面没有可分享的链接。", Toast.LENGTH_SHORT).show();
-            return;
-        }
-        Intent send = new Intent(Intent.ACTION_SEND)
-                .setType("text/plain")
-                .putExtra(Intent.EXTRA_TEXT, url)
-                .putExtra(Intent.EXTRA_TITLE, "ChatGPT Nova");
-        try {
-            startActivity(Intent.createChooser(send, "分享当前页面"));
-        } catch (ActivityNotFoundException ignored) {
-            Toast.makeText(this, "设备上没有可用的分享应用。", Toast.LENGTH_LONG).show();
-        }
     }
 
     private void openCurrentPageInBrowser() {
@@ -1072,7 +1010,8 @@ public class MainActivity extends Activity {
                     accountUiState = AccountUiState.UNKNOWN;
                     accountQuerySerial++;
                     cancelPageRequests();
-                    if (webShare != null) { webShare.destroy(); webShare = null; }
+                    if (conversationExport != null) { conversationExport.destroy(); conversationExport = null; }
+                if (webShare != null) { webShare.destroy(); webShare = null; }
                     cancelDownloads();
                     webView.stopLoading();
                     webView.clearCache(true);
@@ -1149,6 +1088,7 @@ public class MainActivity extends Activity {
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
+        if (conversationExport != null && conversationExport.activityResult(requestCode, resultCode, data)) return;
         if (webShare != null && webShare.activityResult(requestCode, resultCode)) return;
         if (requestCode == UploadController.PICK_FILE) uploads.result(resultCode, data);
         if (requestCode == SAVE_BLOB) {
@@ -1188,7 +1128,8 @@ public class MainActivity extends Activity {
         cancelPageRequests();
         cancelDownloads();
         if (webView != null) {
-            if (webShare != null) { webShare.destroy(); webShare = null; }
+            if (conversationExport != null) { conversationExport.destroy(); conversationExport = null; }
+                if (webShare != null) { webShare.destroy(); webShare = null; }
             webView.stopLoading();
             webView.setWebChromeClient(null);
             webView.setWebViewClient(null);
