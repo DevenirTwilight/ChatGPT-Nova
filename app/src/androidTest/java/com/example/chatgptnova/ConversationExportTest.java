@@ -57,14 +57,11 @@ public final class ConversationExportTest extends FixtureActivity {
         } while(android.os.SystemClock.uptimeMillis()<until);
         fail("Timed out: export control "+label+"\n"+dumpPrintWindow(instrument.getUiAutomation().getRootInActiveWindow()));
     }
-    private void capturePrintPdf(String name) {
-        // Diagnostic data only on the fresh rooted CI emulator; contains this fixture.
-        String command="mkdir -p /sdcard/Download; for p in /data/user/0/com.android.printspooler/files/print_job_*.pdf; do "
-            +"[ -f \"$p\" ] && cp \"$p\" /sdcard/Download/nova-fixture-"+name+"; done";
-        try(android.os.ParcelFileDescriptor fd=instrument.getUiAutomation().executeShellCommand("su 0 sh -c '"+command+"'")) {
-            java.io.InputStream input=new android.os.ParcelFileDescriptor.AutoCloseInputStream(fd);
-            while(input.read()!=-1) { /* Wait for the diagnostic copy. */ }
-        } catch(Exception ignored) { /* Root is optional; saving must pass independently. */ }
+    private static String shellScript(String script) {
+        // UiAutomation uses Runtime.exec rather than a shell parser. A whitespace-
+        // free sh -c argument preserves the quoted UTF-8 filename as one command.
+        String encoded=android.util.Base64.encodeToString(script.getBytes(StandardCharsets.UTF_8),android.util.Base64.NO_WRAP);
+        return "sh -c eval${IFS}$(echo${IFS}"+encoded+"|base64${IFS}-d)";
     }
     private static AccessibilityNodeInfo findControl(AccessibilityNodeInfo node,String label) {
         if(node==null) return null;
@@ -194,17 +191,15 @@ public final class ConversationExportTest extends FixtureActivity {
             diagnostic=dumpPrintWindow(instrument.getUiAutomation().getRootInActiveWindow());
         }
         assertTrue("System print preview must enable Save as PDF\n"+diagnostic,saved);
-        capturePrintPdf("preview.pdf");
         click("Save to PDF");
-        try { click("Save"); }
-        catch(AssertionError failure) { capturePrintPdf("write-failure.pdf");throw failure; }
+        click("Save");
         waitFor("system PDF save finished",()->!busy());
         String path="/sdcard/Download/"+output().getName();
         String command="cat '"+path.replace("'","'\\''")+"'";
         byte[] pdf=new byte[0];
         long fileDeadline=android.os.SystemClock.uptimeMillis()+20000;
         do {
-            try(android.os.ParcelFileDescriptor result=instrument.getUiAutomation().executeShellCommand(command);
+            try(android.os.ParcelFileDescriptor result=instrument.getUiAutomation().executeShellCommand(shellScript(command));
                 java.io.InputStream input=new android.os.ParcelFileDescriptor.AutoCloseInputStream(result);
                 java.io.ByteArrayOutputStream data=new java.io.ByteArrayOutputStream()) {
                 byte[] buffer=new byte[8192];int count;while((count=input.read(buffer))!=-1)data.write(buffer,0,count);pdf=data.toByteArray();
