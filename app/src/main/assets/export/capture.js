@@ -259,8 +259,15 @@
         await bounded(()=>readers.initial(options),signal);
         head=await observed(from,'head',null);
       }
-      if (tree?.__paginatedConversationPage) readHead=()=>reader.fn(id,{includeFullConversation:false,
-        forceNetworkFetch:true,...routeContext(),signal,onConversationLoadedFromNetwork:()=>{}});
+      if (tree?.__paginatedConversationPage) {
+        // Recheck through the same public initial-page helper and the exact
+        // window the ordinary reader used. Calling the high-level reader again
+        // can choose a fresh/default window after older pages were traversed.
+        const turns=Number.isInteger(tree.__paginatedConversationPage.numTurns) &&
+          tree.__paginatedConversationPage.numTurns>=0 && tree.__paginatedConversationPage.numTurns<=400 ?
+          tree.__paginatedConversationPage.numTurns : options.numTurns;
+        readHead=()=>readers.initial({...options,numTurns:turns});
+      }
       const collector=NovaExportPagination.create(id).start(head,id);
       diagnostics.pages=1;
       while (collector.nextCursor()!==null) {

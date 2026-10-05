@@ -29,7 +29,7 @@ export async function reader(id,options={}) {
   // builds do; it must resolve to the same loaded dependency.
   if (false) await older({additionalHeaders:context,clientThreadId:id,cursor:'unused',moderationResults:[],numTurns:20,signal:options.signal});
   const data=await initial({additionalHeaders:context,clientThreadId:id,numTurns:20,signal:options.signal});
-  const tree={conversation_id:id,current_node:data.serverCurrentLeafId,mapping:{},__paginatedConversationPage:true};
+  const tree={conversation_id:id,current_node:data.serverCurrentLeafId,mapping:{},__paginatedConversationPage:{numTurns:20}};
   options.onConversationLoadedFromNetwork(tree);return tree;
 }
 `;
@@ -129,7 +129,7 @@ async function complete(browser,mode,expectedWindow) {
       assert.equal(message.evidenceMarkdown,conversation.mapping[message.id].message.content.parts.join('\n\n'));
     assert.deepEqual(tree.__novaPaginationProof,{method:'cursor-pagination',pages:2,exhausted:true});
     assert.equal(result.completeness.root,'paginated-complete:fixture');
-    assert.equal(requests.full,1);assert.equal(requests.legacy,mode.sourceDenied ? 2 : expectedWindow===20 ? 2 : 1);
+    assert.equal(requests.full,1);assert.equal(requests.legacy,1);
     assert.deepEqual(requests.heads,mode.sourceDenied ? [20,20] : expectedWindow===20 ? [20,20] : [20,50,50]);
     assert.deepEqual(requests.older,['older-'+(mode.sourceDenied ? 20 : expectedWindow)]);
     assert.equal(await page.evaluate(()=>window.__novaExportCapture.collectPages),false);
