@@ -96,6 +96,7 @@
   const paginationReaders = async (reader,signal) => {
     // Resolve only the direct dependency called by the discovered reader's
     // normal paginated path. All source/imports are already loaded public JS.
+    diagnostics.pageStage='discovery-binding';
     const source=Function.prototype.toString.call(reader.fn);
     const callees=[...new Set([...source.matchAll(/await\s+([\w$]+)\(\{\s*additionalHeaders:[^,}]+,\s*clientThreadId:/g)].map(m=>m[1]))];
     // The current site reader names the initial and older-page helpers
@@ -106,10 +107,12 @@
     // The reader module is already executing in this page. Re-read its public
     // source with the page's same-origin fetch context; some WebViews reject
     // an otherwise valid static asset when credentials are explicitly omitted.
+    diagnostics.pageStage='discovery-source';
     const response=await bounded(()=>original(reader.url,{credentials:'same-origin',cache:'force-cache',signal}),signal);
     if (!response.ok) throw Error('Public module unavailable');
     const moduleSource=await bounded(()=>response.text(),signal);
     if (moduleSource.length>4*1024*1024) throw Error('Public module too large');
+    diagnostics.pageStage='discovery-import';
     const dependencies=new Set();
     for (const match of moduleSource.matchAll(/import\s*\{([^}]+)\}\s*from\s*([`"'])\s*([^`"']+)\2/g)) {
       if (match[1].split(',').some(binding=>callees.includes(binding.trim().split(/\s+as\s+/).at(-1)))) {
@@ -122,12 +125,16 @@
     // was loaded through an import graph. The static import above still binds
     // this module to the discovered reader, and the origin/path allow-list
     // prevents importing arbitrary page code.
+    diagnostics.pageStage='discovery-markers';
     const exports=await bounded(()=>import([...dependencies][0]),signal);
     const functions=[...new Set(Object.values(exports))].filter(fn=>typeof fn==='function');
     const initial=functions.filter(fn=> {
       const s=Function.prototype.toString.call(fn);
-      return s.includes('/conversations/{conversation_id}') && !s.includes('/conversations/{conversation_id}/messages') &&
-        s.includes('include_has_versions') && s.includes('messagesLeafToRoot') && s.includes('serverCurrentLeafId');
+      // The initial helper has an includeMessageId argument. Some WebViews or
+      // bundler revisions expose the nested older-route literal in its source,
+      // so route absence is not a safe discriminator by itself.
+      return s.includes('/conversations/{conversation_id}') && s.includes('include_has_versions') &&
+        s.includes('includeMessageId') && (s.includes('messagesLeafToRoot') || s.includes('serverCurrentLeafId'));
     });
     const older=functions.filter(fn=> {
       const s=Function.prototype.toString.call(fn);

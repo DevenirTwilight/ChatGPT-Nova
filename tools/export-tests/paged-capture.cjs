@@ -40,7 +40,7 @@ const api={safeGet:async(path,{additionalHeaders,signal})=> {
     throw Error('Expected current project route context');
   return fetch('/backend-api'+path,{signal});
 }};
-export async function initial({clientThreadId,numTurns,signal,additionalHeaders}) {
+export async function initial({clientThreadId,includeMessageId,numTurns,signal,additionalHeaders}) {
   const endpoint='/conversations/{conversation_id}',include_has_versions=true;
   const response=await api.safeGet('/conversations/'+clientThreadId+'?num_turns='+numTurns+'&include_has_versions='+include_has_versions,{additionalHeaders,signal});
   if (!response.ok) {const error=Error('Initial page unavailable');error.status=response.status;throw error;}
