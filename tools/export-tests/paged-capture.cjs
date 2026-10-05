@@ -59,13 +59,17 @@ export async function older({clientThreadId,cursor,moderationResults,signal,addi
 
 async function setup(browser,mode={}) {
   const page=await browser.newPage();
-  const requests={full:0,legacy:0,heads:[],older:[]},headReads=new Map();
+  const requests={full:0,legacy:0,heads:[],older:[],readerSource:0},headReads=new Map();
   await page.route('https://chatgpt.com/**',async route=> {
     // Scope mocks by public origin/path only; never inspect headers or credentials.
     const url=new URL(route.request().url());
     assert.equal(url.origin,'https://chatgpt.com');
-    if (url.pathname==='/cdn/assets/conversation-paged-fixture.js')
+    if (url.pathname==='/cdn/assets/conversation-paged-fixture.js') {
+      requests.readerSource++;
+      if (mode.sourceDenied && requests.readerSource>1)
+        return route.fulfill({status:403,contentType:'text/plain',body:'module source unavailable'});
       return route.fulfill({contentType:'application/javascript',body:readerModule});
+    }
     if (url.pathname==='/cdn/assets/page-helper-fixture.js')
       return route.fulfill({contentType:'application/javascript',body:helperModule});
     if (url.pathname==='/backend-api/conversation/fixture') {
@@ -125,9 +129,9 @@ async function complete(browser,mode,expectedWindow) {
       assert.equal(message.evidenceMarkdown,conversation.mapping[message.id].message.content.parts.join('\n\n'));
     assert.deepEqual(tree.__novaPaginationProof,{method:'cursor-pagination',pages:2,exhausted:true});
     assert.equal(result.completeness.root,'paginated-complete:fixture');
-    assert.equal(requests.full,1);assert.equal(requests.legacy,expectedWindow===20 ? 2 : 1);
-    assert.deepEqual(requests.heads,expectedWindow===20 ? [20,20] : [20,50,50]);
-    assert.deepEqual(requests.older,['older-'+expectedWindow]);
+    assert.equal(requests.full,1);assert.equal(requests.legacy,mode.sourceDenied ? 2 : expectedWindow===20 ? 2 : 1);
+    assert.deepEqual(requests.heads,mode.sourceDenied ? [20,20] : expectedWindow===20 ? [20,20] : [20,50,50]);
+    assert.deepEqual(requests.older,['older-'+(mode.sourceDenied ? 20 : expectedWindow)]);
     assert.equal(await page.evaluate(()=>window.__novaExportCapture.collectPages),false);
   } finally {await page.close();}
 }
@@ -155,6 +159,8 @@ async function refuses(browser,name,mode) {
     console.log('PASS: full/legacy/normal 403 fall back to the loaded helper; two raw pages verify all 400 messages');
     await complete(browser,{},20);
     console.log('PASS: successful normal pagination rechecks its 20-turn reader window instead of the 50-turn direct window');
+    await complete(browser,{sourceDenied:true},50);
+    console.log('PASS: loaded-asset marker fallback survives a blocked reader source refetch');
     for (const [name,mode] of [
       ['older-page 403',{olderDenied:true}],
       ['missing initial exhaustion boolean',{missingBoolean:'head'}],

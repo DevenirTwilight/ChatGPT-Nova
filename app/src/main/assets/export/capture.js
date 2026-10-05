@@ -107,42 +107,74 @@
     // The reader module is already executing in this page. Re-read its public
     // source with the page's same-origin fetch context; some WebViews reject
     // an otherwise valid static asset when credentials are explicitly omitted.
-    diagnostics.pageStage='discovery-source';
-    const response=await bounded(()=>original(reader.url,{credentials:'same-origin',cache:'force-cache',signal}),signal);
-    if (!response.ok) throw Error('Public module unavailable');
-    const moduleSource=await bounded(()=>response.text(),signal);
-    if (moduleSource.length>4*1024*1024) throw Error('Public module too large');
-    diagnostics.pageStage='discovery-import';
-    const dependencies=new Set();
-    for (const match of moduleSource.matchAll(/import\s*\{([^}]+)\}\s*from\s*([`"'])\s*([^`"']+)\2/g)) {
-      if (match[1].split(',').some(binding=>callees.includes(binding.trim().split(/\s+as\s+/).at(-1)))) {
-        const dependency=new URL(match[3],reader.url);
-        if (publicAsset(dependency)) dependencies.add(dependency.href);
+    const findReaders = exports => {
+      const functions=[...new Set(Object.values(exports))].filter(fn=>typeof fn==='function');
+      const initial=functions.filter(fn=> {
+        const s=Function.prototype.toString.call(fn);
+        // The initial helper has an includeMessageId argument. Some WebViews
+        // or bundler revisions expose the nested older-route literal in its
+        // source, so route absence is not a safe discriminator by itself.
+        return s.includes('/conversations/{conversation_id}') && s.includes('include_has_versions') &&
+          s.includes('includeMessageId') && (s.includes('messagesLeafToRoot') || s.includes('serverCurrentLeafId'));
+      });
+      const older=functions.filter(fn=> {
+        const s=Function.prototype.toString.call(fn);
+        return s.includes('/conversations/{conversation_id}/messages') && s.includes('include_has_versions') &&
+          s.includes('moderationResults') && s.includes('cursor');
+      });
+      return initial.length===1 && older.length===1 ? {initial:initial[0],older:older[0]} : null;
+    };
+    let sourceFailure=false;
+    try {
+      diagnostics.pageStage='discovery-source';
+      const response=await bounded(()=>original(reader.url,{credentials:'same-origin',cache:'force-cache',signal}),signal);
+      if (!response.ok) throw Error('Public module unavailable');
+      const moduleSource=await bounded(()=>response.text(),signal);
+      if (moduleSource.length>4*1024*1024) throw Error('Public module too large');
+      diagnostics.pageStage='discovery-import';
+      const dependencies=new Set();
+      for (const match of moduleSource.matchAll(/import\s*\{([^}]+)\}\s*from\s*([`"'])\s*([^`"']+)\2/g)) {
+        if (match[1].split(',').some(binding=>callees.includes(binding.trim().split(/\s+as\s+/).at(-1)))) {
+          const dependency=new URL(match[3],reader.url);
+          if (publicAsset(dependency)) dependencies.add(dependency.href);
+        }
       }
+      if (dependencies.size!==1) throw Error('Pagination dependency ambiguous');
+      diagnostics.pageStage='discovery-markers';
+      const found=findReaders(await bounded(()=>import([...dependencies][0]),signal));
+      if (!found) throw Error('Pagination readers ambiguous');
+      return found;
+    } catch (error) {
+      if (signal.aborted) throw error;
+      sourceFailure=true;
     }
-    if (dependencies.size!==1) throw Error('Pagination dependency ambiguous');
-    // ResourceTiming is advisory only: Android WebView can omit a module that
-    // was loaded through an import graph. The static import above still binds
-    // this module to the discovered reader, and the origin/path allow-list
-    // prevents importing arbitrary page code.
-    diagnostics.pageStage='discovery-markers';
-    const exports=await bounded(()=>import([...dependencies][0]),signal);
-    const functions=[...new Set(Object.values(exports))].filter(fn=>typeof fn==='function');
-    const initial=functions.filter(fn=> {
-      const s=Function.prototype.toString.call(fn);
-      // The initial helper has an includeMessageId argument. Some WebViews or
-      // bundler revisions expose the nested older-route literal in its source,
-      // so route absence is not a safe discriminator by itself.
-      return s.includes('/conversations/{conversation_id}') && s.includes('include_has_versions') &&
-        s.includes('includeMessageId') && (s.includes('messagesLeafToRoot') || s.includes('serverCurrentLeafId'));
-    });
-    const older=functions.filter(fn=> {
-      const s=Function.prototype.toString.call(fn);
-      return s.includes('/conversations/{conversation_id}/messages') && s.includes('include_has_versions') &&
-        s.includes('moderationResults') && s.includes('cursor');
-    });
-    if (initial.length!==1 || older.length!==1) throw Error('Pagination readers ambiguous');
-    return {initial:initial[0],older:older[0]};
+    // A WebView may allow an ESM import but reject a follow-up fetch of that
+    // module (for example because its script request has different fetch
+    // metadata). Use only public JS modules already observed in this page and
+    // select the unique pair by the same route/response markers. This remains
+    // bounded and never walks stores, account objects, or arbitrary globals.
+    if (sourceFailure) {
+      diagnostics.pageStage='discovery-loaded-assets';
+      performance.getEntriesByType('resource').forEach(e=>remember(e.name));
+      document.querySelectorAll('script[src],link[rel="modulepreload"]').forEach(e=>remember(e.src || e.href));
+      const loaded=[...assetUrls].filter(url=>url!==reader.url).slice(-96);
+      let found=null;
+      for (const url of loaded) {
+        try {
+          const candidate=findReaders(await bounded(()=>import(url),signal));
+          if (candidate) {
+            if (found) throw Error('Pagination readers ambiguous');
+            found=candidate;
+          }
+        } catch (error) {
+          if (signal.aborted) throw error;
+          if (error?.message==='Pagination readers ambiguous') throw error;
+        }
+      }
+      if (found) return found;
+      throw Error('Pagination readers unavailable');
+    }
+    throw Error('Pagination readers unavailable');
   };
   // Some site builds retain the raw tree in current-message React props.
   // Inspect only explicit conversation fields on that message's ancestors; do
