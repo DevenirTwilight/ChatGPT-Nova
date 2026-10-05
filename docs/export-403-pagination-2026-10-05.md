@@ -51,3 +51,13 @@ Native 加载新验证器，并将读取预算调整为 120 秒；完整读取 1
 新增固定诊断分类：`head-title-changed`、`head-update-time-changed`、`head-moderation-changed`、`head-link-metadata-changed` 和 `replay-messages-changed`。复读阶段分别为 `replay-older`、`replay-recheck-request`、`replay-recheck-response`、`replay-recheck-verify`、`replay-compare`，仍不输出实际字段值或账号信息。
 
 本地核心 33/33、分页纯逻辑 83/83、分页捕获浏览器 41/41，以及既有完整捕获和渲染回归通过。新增覆盖独立复读、轮换游标、旧消息及引用/角色/隐藏标记变化、未完成复核、外来收集器、关键元数据变化、两遍共享上限、延迟旧阶段响应排除，以及冻结请求选项的缓存覆盖与 AbortSignal 保留。Android 生产资源夹具新增 400 条消息复读成功及未渲染祖先变化拒绝文件场景，共 11 项导出测试。Debug 与 instrumentation APK 编译和 lintDebug 通过（0 errors / 20 warnings）。Android 设备执行和签名构建结果在交付前核对并保存在对应工作流和交付验证记录中。
+
+## API 35 冷启动桌面 ANR 的测试准备
+
+实现提交 `3fced4a` 的 [导出验证 37331207047](https://github.com/DevenirTwilight/ChatGPT-Nova/actions/runs/37331207047) 中，API 34 导出 11/11、原有回归 22/22 通过。API 35 的 11 项均在测试准备阶段因窗口焦点超时失败，未运行导出断言，也未运行后续基线，不能将该结果计为通过。
+
+日志证明 Pixel Launcher 在 15:18:56 出现 ANR，早于 15:21:12 的首个 Nova 测试；窗口报告的 `mCurrentFocus` 为 `Application Not Responding: com.google.android.apps.nexuslauncher`。失败时设备保持唤醒、已解锁，Nova 的 WebView 可见且已附着；真正阻挡的是系统桌面异常弹窗。
+
+测试夹具在 Activity 启动前核对精确焦点窗口，只在 ANR 包名等于系统解析的 HOME 包、且不是目标应用或 instrumentation 包时，停止这个已失败的桌面进程一次，并等待该弹窗消失。包名严格校验，清理前后窗口归属记录在 `NovaFixture` 日志；清理失败、未知弹窗、Nova ANR 或之后仍未获得焦点继续失败。原有 `activity.hasWindowFocus() && web.isShown()` 断言保持不变，不重试或忽略导出测试。
+
+本次追加只修改测试夹具和验证文档，所有生产源保持 `3fced4a` 不变。原签名 APK 的脚本与生产源码已逐字节核对，Android 导出测试的新报告应与这个相同生产实现关联；原失败报告保留用于审查。本地追加后的 Debug / instrumentation 编译和 lintDebug 通过。

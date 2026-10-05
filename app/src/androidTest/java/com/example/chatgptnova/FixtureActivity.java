@@ -39,6 +39,7 @@ abstract class FixtureActivity {
     volatile boolean nativeFixture;
     volatile boolean clipboardFixture;
     volatile String keyguardDismiss = "not-requested";
+    volatile String launcherPreparation = "not-needed";
 
     void start() {
         // Connect accessibility before showing an editor/toolbar, not midway through a paste.
@@ -46,6 +47,7 @@ abstract class FixtureActivity {
         info.flags |= android.accessibilityservice.AccessibilityServiceInfo.FLAG_RETRIEVE_INTERACTIVE_WINDOWS;
         instrument.getUiAutomation().setServiceInfo(info);
         instrument.getUiAutomation().getRootInActiveWindow();
+        clearPreexistingLauncherAnr();
         // UTP can reinstall the app between suites, and a cold emulator can lock
         // after android-ci.sh's one-time wakeup. Wake before every Activity launch.
         shell("input keyevent KEYCODE_WAKEUP");
@@ -57,6 +59,56 @@ abstract class FixtureActivity {
         fixture(PAGE);
         dismissKeyguard();
         focus();
+    }
+
+    private void clearPreexistingLauncherAnr() {
+        // The API 35 Google APIs image can leave a Pixel Launcher ANR dialog
+        // from cold boot before instrumentation starts. It blocks every Nova
+        // window even though Nova is resumed, drawn, awake and unlocked.
+        // Prepare only that pre-existing HOME failure; never dismiss a Nova
+        // failure, an arbitrary dialog, or a failure encountered by a test.
+        String before=currentWindowFocus();
+        java.util.regex.Matcher dialog=java.util.regex.Pattern.compile(
+                "^mCurrentFocus=Window\\{[a-fA-F0-9]+ u[0-9]+ Application Not Responding: "
+                +"([A-Za-z][A-Za-z0-9_]*(?:\\.[A-Za-z][A-Za-z0-9_]*)+)\\}$")
+                .matcher(before);
+        if(!dialog.matches()) return;
+        String failedPackage=dialog.group(1);
+        String resolved=shell("cmd package resolve-activity --brief -a android.intent.action.MAIN"
+                +" -c android.intent.category.HOME").trim();
+        String[] lines=resolved.split("\\r?\\n");
+        String component=lines[lines.length-1].trim();
+        java.util.regex.Matcher home=java.util.regex.Pattern.compile(
+                "^([A-Za-z][A-Za-z0-9_]*(?:\\.[A-Za-z][A-Za-z0-9_]*)+)/"
+                +"[A-Za-z0-9_.$]+$").matcher(component);
+        if(!home.matches() || !failedPackage.equals(home.group(1))
+                || failedPackage.equals(instrument.getTargetContext().getPackageName())
+                || failedPackage.equals(instrument.getContext().getPackageName())) return;
+        launcherPreparation="stopping "+failedPackage;
+        android.util.Log.w("NovaFixture","Pre-launch default launcher ANR: "+before);
+        shell("am force-stop "+failedPackage);
+        long until=SystemClock.uptimeMillis()+20000;
+        String after;
+        do {
+            after=currentWindowFocus();
+            if(!"mCurrentFocus=unavailable".equals(after)
+                    && !after.contains("Application Not Responding: "+failedPackage+"}")) {
+                launcherPreparation="cleared "+failedPackage;
+                android.util.Log.w("NovaFixture","Pre-launch focus after launcher cleanup: "+after);
+                return;
+            }
+            SystemClock.sleep(100);
+        } while(SystemClock.uptimeMillis()<until);
+        launcherPreparation="cleanup-failed "+failedPackage;
+        String details="Default launcher ANR cleanup failed; before="+before+"; after="+after;
+        android.util.Log.e("NovaFixture",details);
+        fail(details);
+    }
+
+    private String currentWindowFocus() {
+        for(String line:shell("dumpsys window").split("\n"))
+            if(line.trim().startsWith("mCurrentFocus=")) return line.trim();
+        return "mCurrentFocus=unavailable";
     }
 
     private void prepareWindow(MainActivity value) {
@@ -254,7 +306,7 @@ abstract class FixtureActivity {
                     +", webAttached="+web.isAttachedToWindow()+", size="+web.getWidth()+"x"+web.getHeight()
                     +", interactive="+(power!=null && power.isInteractive())
                     +", keyguardLocked="+(keyguard!=null && keyguard.isKeyguardLocked())
-                    +", dismiss="+keyguardDismiss);
+                    +", dismiss="+keyguardDismiss+", launcher="+launcherPreparation);
         });
         StringBuilder result=new StringBuilder(nativeState.get());
         for(android.view.accessibility.AccessibilityWindowInfo window:instrument.getUiAutomation().getWindows()) {
@@ -264,7 +316,7 @@ abstract class FixtureActivity {
                     .append(" package=").append(root==null ? "null" : root.getPackageName());
         }
         // Only window ownership/state, not page text, is needed for this failure.
-        for(String line:shell("dumpsys window windows").split("\n")) {
+        for(String line:shell("dumpsys window").split("\n")) {
             if(line.contains("mCurrentFocus=") || line.contains("mFocusedApp=")
                     || line.contains("mObscuringWindow=") || line.contains("mInputMethodWindow="))
                 result.append("\n").append(line.trim());
