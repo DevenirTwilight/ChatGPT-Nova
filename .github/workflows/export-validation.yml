@@ -71,6 +71,8 @@ jobs:
           emulator-options: -no-window -gpu swiftshader -feature -Vulkan -no-snapshot -noaudio -no-boot-anim -camera-back emulated -dns-server 8.8.8.8,1.1.1.1
           script: |
             ./gradlew -PnovaExportTests :app:assembleDebug :app:assembleDebugAndroidTest --no-daemon
+            adb root
+            adb wait-for-device
             adb install -r app/build/outputs/apk/debug/app-debug.apk
             adb shell pm grant com.example.chatgptnova.debug android.permission.CAMERA
             adb shell pm grant com.example.chatgptnova.debug android.permission.RECORD_AUDIO
@@ -78,7 +80,14 @@ jobs:
             adb shell input keyevent 224
             adb shell wm dismiss-keyguard
             export_test_status=0
-            ./gradlew -PnovaExportTests :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.example.chatgptnova.ConversationExportTest,com.example.chatgptnova.WebShareTest,com.example.chatgptnova.NovaWebViewTest,com.example.chatgptnova.ClipboardUiTest,com.example.chatgptnova.ClipboardProbeTest --no-daemon || export_test_status=$?
+            ./gradlew -PnovaExportTests :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.example.chatgptnova.ConversationExportTest --no-daemon || export_test_status=$?
+            cp -R app/build/reports/androidTests export-test-reports
+            if [ "$export_test_status" -eq 0 ]; then
+              adb install -r app/build/outputs/apk/debug/app-debug.apk
+              adb shell pm grant com.example.chatgptnova.debug android.permission.CAMERA
+              adb shell pm grant com.example.chatgptnova.debug android.permission.RECORD_AUDIO
+              ./gradlew -PnovaExportTests :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.example.chatgptnova.WebShareTest,com.example.chatgptnova.NovaWebViewTest,com.example.chatgptnova.ClipboardUiTest,com.example.chatgptnova.ClipboardProbeTest --no-daemon || export_test_status=$?
+            fi
             # connectedAndroidTest uninstalls the debug app; collect the system-saved file.
             adb pull /sdcard/Download android-saved-files || true
             adb logcat -d -v threadtime > android-export-logcat.txt || true
@@ -89,6 +98,7 @@ jobs:
           name: export-android-${{ matrix.api }}
           path: |
             app/build/reports/androidTests/
+            export-test-reports/
             android-saved-files/**/*.pdf
             android-export-logcat.txt
           if-no-files-found: warn

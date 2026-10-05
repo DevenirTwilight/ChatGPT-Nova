@@ -57,6 +57,15 @@ public final class ConversationExportTest extends FixtureActivity {
         } while(android.os.SystemClock.uptimeMillis()<until);
         fail("Timed out: export control "+label+"\n"+dumpPrintWindow(instrument.getUiAutomation().getRootInActiveWindow()));
     }
+    private void capturePrintPdf(String name) {
+        // Diagnostic data only on the fresh rooted CI emulator; contains this fixture.
+        String command="mkdir -p /sdcard/Download; for p in /data/user/0/com.android.printspooler/files/print_job_*.pdf; do "
+            +"[ -f \"$p\" ] && cp \"$p\" /sdcard/Download/nova-fixture-"+name+"; done";
+        try(android.os.ParcelFileDescriptor fd=instrument.getUiAutomation().executeShellCommand(command)) {
+            java.io.InputStream input=new android.os.ParcelFileDescriptor.AutoCloseInputStream(fd);
+            while(input.read()!=-1) { /* Wait for the diagnostic copy. */ }
+        } catch(Exception ignored) { /* Root is optional; saving must pass independently. */ }
+    }
     private static AccessibilityNodeInfo findControl(AccessibilityNodeInfo node,String label) {
         if(node==null) return null;
         if(node.getText()!=null && label.equalsIgnoreCase(node.getText().toString())
@@ -185,8 +194,10 @@ public final class ConversationExportTest extends FixtureActivity {
             diagnostic=dumpPrintWindow(instrument.getUiAutomation().getRootInActiveWindow());
         }
         assertTrue("System print preview must enable Save as PDF\n"+diagnostic,saved);
+        capturePrintPdf("preview.pdf");
         click("Save to PDF");
-        click("Save");
+        try { click("Save"); }
+        catch(AssertionError failure) { capturePrintPdf("write-failure.pdf");throw failure; }
         waitFor("system PDF save finished",()->!busy());
         String path="/sdcard/Download/"+output().getName();
         String command="cat '"+path.replace("'","'\\''")+"'";

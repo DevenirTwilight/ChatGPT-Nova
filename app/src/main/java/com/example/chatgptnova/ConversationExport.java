@@ -185,7 +185,21 @@ final class ConversationExport {
                 .setMinMargins(new PrintAttributes.Margins(630,630,630,630)).setColorMode(PrintAttributes.COLOR_MODE_COLOR).build();
             stopDeadline();
             // Keep the WebView alive through preview, printer changes and the final write.
-            printJob=manager.print(file.getName(),document,attributes);
+            PrintDocumentAdapter completeDocument=new PrintDocumentAdapter() {
+                @Override public void onStart() { document.onStart(); }
+                @Override public void onLayout(PrintAttributes oldAttributes,PrintAttributes newAttributes,
+                    android.os.CancellationSignal cancellation,LayoutResultCallback callback,android.os.Bundle extras) {
+                    document.onLayout(oldAttributes,newAttributes,cancellation,callback,extras);
+                }
+                @Override public void onWrite(android.print.PageRange[] pages,android.os.ParcelFileDescriptor destination,
+                    android.os.CancellationSignal cancellation,WriteResultCallback callback) {
+                    // Always render the complete document. The system can select pages
+                    // from it; a WebView's subset write must not truncate this export.
+                    document.onWrite(new android.print.PageRange[]{android.print.PageRange.ALL_PAGES},destination,cancellation,callback);
+                }
+                @Override public void onFinish() { document.onFinish(); }
+            };
+            printJob=manager.print(file.getName(),completeDocument,attributes);
             toast("请选择“保存为 PDF”和保存位置。保存后可从文件管理器打开或分享。 ");
         } catch (Exception error) { fail("设备无法启动 PDF 保存界面。"); }
     }
