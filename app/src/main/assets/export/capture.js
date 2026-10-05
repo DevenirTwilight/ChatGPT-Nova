@@ -103,7 +103,10 @@
     // be called from a cursor-restart path. Keep all discovered bindings and
     // resolve their single already-loaded static dependency below.
     if (!callees.length || callees.length>4) throw Error('Unsupported pagination binding');
-    const response=await bounded(()=>original(reader.url,{credentials:'omit',signal}),signal);
+    // The reader module is already executing in this page. Re-read its public
+    // source with the page's same-origin fetch context; some WebViews reject
+    // an otherwise valid static asset when credentials are explicitly omitted.
+    const response=await bounded(()=>original(reader.url,{credentials:'same-origin',cache:'force-cache',signal}),signal);
     if (!response.ok) throw Error('Public module unavailable');
     const moduleSource=await bounded(()=>response.text(),signal);
     if (moduleSource.length>4*1024*1024) throw Error('Public module too large');
@@ -114,8 +117,11 @@
         if (publicAsset(dependency)) dependencies.add(dependency.href);
       }
     }
-    performance.getEntriesByType('resource').forEach(e=>remember(e.name));
-    if (dependencies.size!==1 || !assetUrls.has([...dependencies][0])) throw Error('Pagination dependency not loaded');
+    if (dependencies.size!==1) throw Error('Pagination dependency ambiguous');
+    // ResourceTiming is advisory only: Android WebView can omit a module that
+    // was loaded through an import graph. The static import above still binds
+    // this module to the discovered reader, and the origin/path allow-list
+    // prevents importing arbitrary page code.
     const exports=await bounded(()=>import([...dependencies][0]),signal);
     const functions=[...new Set(Object.values(exports))].filter(fn=>typeof fn==='function');
     const initial=functions.filter(fn=> {
