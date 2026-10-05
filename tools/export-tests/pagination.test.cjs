@@ -125,11 +125,20 @@ test('exhausted pagination cannot emit without a fresh head recheck',()=> {
 for (const [name,mutate] of [
  ['same-ID text mutation',p=>p.messages.at(-1).content.parts=['new body']],
  ['server branch mutation',p=>p.current_node='m2'],
- ['initial cursor mutation',p=>p.page_info.start_cursor='new-cursor'],
  ['same-ID ancestor mutation',p=>p.messages[0].content.parts=['edited prompt']]
 ]) test('head recheck rejects '+name,()=> {
  const head=initial(), c=collector().start(head,'fixture');c.add(page(rows(0,2)),'fixture','older');
  const reread=clone(head);mutate(reread);assert.throws(()=>c.recheck(reread,'fixture'),/发生变化/);
+});
+test('head recheck accepts a newly issued opaque cursor',()=> {
+ const head=initial(), c=collector().start(head,'fixture');c.add(page(rows(0,2)),'fixture','older');
+ const reread=clone(head);reread.page_info.start_cursor='new-cursor';
+ assert.equal(c.recheck(reread,'fixture').finish().conversation_id,'fixture');
+});
+test('head recheck rejects changed exhaustion state',()=> {
+ const head=initial(), c=collector().start(head,'fixture');c.add(page(rows(0,2)),'fixture','older');
+ const reread=clone(head);reread.page_info.has_previous_page=false;
+ assert.throws(()=>c.recheck(reread,'fixture'),/发生变化/);
 });
 test('a failed recheck permanently prevents emission even if the caller catches it',()=> {
  const head=initial(rows(0,2),false), c=collector().start(head,'fixture'), changed=clone(head);changed.messages[1].content.parts=['changed'];

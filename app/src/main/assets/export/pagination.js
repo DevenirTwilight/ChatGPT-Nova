@@ -48,7 +48,13 @@
     };
     // Retain all initial metadata, including update_time: an edit to an older
     // message can change the conversation while its latest page stays identical.
-    const headEvidence=page=>fingerprint(page);
+    // The opaque start cursor is a newly issued pagination token on some
+    // servers, so it is deliberately excluded from the fresh-head comparison;
+    // the explicit has_previous_page boolean remains part of the proof.
+    const headEvidence=page=> {
+      const {page_info:info,...rest}=page;
+      return fingerprint({...rest,page_info:{has_previous_page:info?.has_previous_page}});
+    };
     const advance=page=> {
       const next=page.page_info.has_previous_page ? page.page_info.start_cursor : null;
       if (next!==null && cursors.has(next)) fail('分页游标未前进或重复');
