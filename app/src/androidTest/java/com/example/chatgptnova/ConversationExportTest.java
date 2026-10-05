@@ -61,7 +61,7 @@ public final class ConversationExportTest extends FixtureActivity {
         // Diagnostic data only on the fresh rooted CI emulator; contains this fixture.
         String command="mkdir -p /sdcard/Download; for p in /data/user/0/com.android.printspooler/files/print_job_*.pdf; do "
             +"[ -f \"$p\" ] && cp \"$p\" /sdcard/Download/nova-fixture-"+name+"; done";
-        try(android.os.ParcelFileDescriptor fd=instrument.getUiAutomation().executeShellCommand(command)) {
+        try(android.os.ParcelFileDescriptor fd=instrument.getUiAutomation().executeShellCommand("su 0 sh -c '"+command+"'")) {
             java.io.InputStream input=new android.os.ParcelFileDescriptor.AutoCloseInputStream(fd);
             while(input.read()!=-1) { /* Wait for the diagnostic copy. */ }
         } catch(Exception ignored) { /* Root is optional; saving must pass independently. */ }
