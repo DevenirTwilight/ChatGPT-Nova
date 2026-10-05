@@ -28,7 +28,7 @@ export async function reader(id,options={}) {
   // Keep a second, older-page binding in the reader source as current public
   // builds do; it must resolve to the same loaded dependency.
   if (false) await older({additionalHeaders:context,clientThreadId:id,cursor:'unused',moderationResults:[],numTurns:20,signal:options.signal});
-  const data=await initial({additionalHeaders:context,clientThreadId:id,numTurns:20,signal:options.signal});
+  const data=await initial({additionalHeaders:context,clientThreadId:id,includeMessageId:'m399',numTurns:20,signal:options.signal});
   const tree={conversation_id:id,current_node:data.serverCurrentLeafId,mapping:{},__paginatedConversationPage:{numTurns:20}};
   options.onConversationLoadedFromNetwork(tree);return tree;
 }
@@ -42,7 +42,7 @@ const api={safeGet:async(path,{additionalHeaders,signal})=> {
 }};
 export async function initial({clientThreadId,includeMessageId,numTurns,signal,additionalHeaders}) {
   const endpoint='/conversations/{conversation_id}',include_has_versions=true;
-  const response=await api.safeGet('/conversations/'+clientThreadId+'?num_turns='+numTurns+'&include_has_versions='+include_has_versions,{additionalHeaders,signal});
+  const response=await api.safeGet('/conversations/'+clientThreadId+'?num_turns='+numTurns+'&include_message_id='+encodeURIComponent(includeMessageId||'')+'&include_has_versions='+include_has_versions,{additionalHeaders,signal});
   if (!response.ok) {const error=Error('Initial page unavailable');error.status=response.status;throw error;}
   const raw=await response.json();
   const messagesLeafToRoot=raw.messages.slice().reverse(),serverCurrentLeafId=raw.current_node;
@@ -83,6 +83,8 @@ async function setup(browser,mode={}) {
       const count=(headReads.get(numTurns)||0)+1;headReads.set(numTurns,count);
       if (mode.normalDenied && numTurns===20)
         return route.fulfill({status:403,contentType:'application/json',body:'{"detail":"Normal reader unavailable"}'});
+      if (numTurns===20 && url.searchParams.get('include_message_id')!=='m399')
+        return route.fulfill({contentType:'application/json',body:JSON.stringify({conversation_id:'fixture',title:'different-window',current_node:'m399',messages:rows(320,400),page_info:{has_previous_page:true,start_cursor:'different'}})});
       // The normal reader uses a different window from the direct helper. A
       // successful traversal must recheck the same window that established it.
       const start=numTurns===20 ? 320 : 200;

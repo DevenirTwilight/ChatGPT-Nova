@@ -38,7 +38,7 @@
           return JSON.parse(raw);
         });
         body.catch(()=>{});
-        state.pages.push({id,kind,before:url.searchParams.get('before'),body});
+        state.pages.push({id,kind,before:url.searchParams.get('before'),includeMessageId:url.searchParams.get('include_message_id'),body});
       }
       if (id && url.origin === location.origin && url.pathname === '/backend-api/conversation/' + id &&
           url.searchParams.get('include_full_conversation') === 'true' && response.ok) {
@@ -266,7 +266,14 @@
         const turns=Number.isInteger(tree.__paginatedConversationPage.numTurns) &&
           tree.__paginatedConversationPage.numTurns>=0 && tree.__paginatedConversationPage.numTurns<=400 ?
           tree.__paginatedConversationPage.numTurns : options.numTurns;
-        readHead=()=>readers.initial({...options,numTurns:turns});
+        const initialRecord=state.pages.slice(from).find(record=>record.id===id && record.kind==='head' && record.before===null);
+        const visible=[...document.querySelectorAll('[data-message-id][data-message-author-role]')]
+          .filter(node=>['user','assistant'].includes(node.getAttribute('data-message-author-role')))
+          .at(-1)?.getAttribute('data-message-id');
+        const sameWindow={...options,numTurns:turns};
+        if (initialRecord?.includeMessageId || visible)
+          sameWindow.includeMessageId=initialRecord?.includeMessageId || visible;
+        readHead=()=>readers.initial(sameWindow);
       }
       const collector=NovaExportPagination.create(id).start(head,id);
       diagnostics.pages=1;
