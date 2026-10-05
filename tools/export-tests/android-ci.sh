@@ -6,7 +6,11 @@ install_fixture() {
   adb shell pm grant com.example.chatgptnova.debug android.permission.CAMERA
   adb shell pm grant com.example.chatgptnova.debug android.permission.RECORD_AUDIO
   adb shell settings put system screen_off_timeout 1800000
+  # Fresh CI emulator has no credentials; prevent an insecure keyguard blocking focus.
+  adb shell locksettings set-disabled true
+  adb shell settings put global stay_on_while_plugged_in 7
   adb shell input keyevent 224
+  adb shell input keyevent 82
   adb shell wm dismiss-keyguard
 }
 install_fixture
