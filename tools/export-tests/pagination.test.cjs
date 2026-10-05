@@ -140,6 +140,12 @@ test('head recheck rejects changed exhaustion state',()=> {
  const reread=clone(head);reread.page_info.has_previous_page=false;
  assert.throws(()=>c.recheck(reread,'fixture'),/发生变化/);
 });
+test('head recheck retains other pagination metadata while accepting a rotated start cursor',()=> {
+ const head=initial(), c=collector().start(head,'fixture');c.add(page(rows(0,2)),'fixture','older');
+ const reread=clone(head);reread.page_info.start_cursor='new-cursor';reread.page_info.revision=2;
+ assert.throws(()=>c.recheck(reread,'fixture'),error=>error.novaExportReason==='head-metadata-changed');
+ assert.throws(()=>c.finish(),/已经失败/);
+});
 test('a failed recheck permanently prevents emission even if the caller catches it',()=> {
  const head=initial(rows(0,2),false), c=collector().start(head,'fixture'), changed=clone(head);changed.messages[1].content.parts=['changed'];
  assert.throws(()=>c.recheck(changed,'fixture'));assert.throws(()=>c.recheck(head,'fixture'),/已经失败/);assert.throws(()=>c.finish(),/已经失败/);

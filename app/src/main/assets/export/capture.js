@@ -2,7 +2,7 @@
   if (window !== window.top || location.origin !== 'https://chatgpt.com' || window.__novaExportCapture) return;
   const original = window.fetch;
   const state = window.__novaExportCapture = {tree:null, id:null, generation:0,pages:[],collectPages:false};
-  const diagnostics={modules:0,imports:0,candidates:0,reader:'not-found',http:'not-requested',pagination:'not-requested',pages:0,pageStage:'not-requested'};
+  const diagnostics={modules:0,imports:0,candidates:0,reader:'not-found',http:'not-requested',pagination:'not-requested',pages:0,pageStage:'not-requested',pageFailure:'not-requested'};
   const moduleUrls=new Set(), assetUrls=new Set();
   const publicAsset=u=>(u.origin===location.origin || u.origin==='https://cdn.oaistatic.com') &&
     /\/(?:cdn\/)?assets\/[a-zA-Z0-9_-]+\.js$/.test(u.pathname);
@@ -38,7 +38,9 @@
           return JSON.parse(raw);
         });
         body.catch(()=>{});
-        state.pages.push({id,kind,before:url.searchParams.get('before'),includeMessageId:url.searchParams.get('include_message_id'),body});
+        state.pages.push({id,kind,before:url.searchParams.get('before'),
+          numTurns:url.searchParams.get('num_turns'),includeMessageId:url.searchParams.get('include_message_id'),
+          ambiguousWindow:['num_turns','include_message_id'].some(key=>url.searchParams.getAll(key).length>1),body});
       }
       if (id && url.origin === location.origin && url.pathname === '/backend-api/conversation/' + id &&
           url.searchParams.get('include_full_conversation') === 'true' && response.ok) {
@@ -252,48 +254,51 @@
       }
       const options={clientThreadId:id,numTurns:50,signal,...Object.keys(additionalHeaders).length?{additionalHeaders}:{}};
       diagnostics.pageStage='head';
-      let head,readHead=()=>readers.initial(options);
+      let head;
       if (tree?.__paginatedConversationPage) head=await observed(from,'head',null);
       else {
         from=state.pages.length;stable();
         await bounded(()=>readers.initial(options),signal);
         head=await observed(from,'head',null);
       }
-      if (tree?.__paginatedConversationPage) {
-        // Recheck through the same public initial-page helper and the exact
-        // window the ordinary reader used. Calling the high-level reader again
-        // can choose a fresh/default window after older pages were traversed.
-        const turns=Number.isInteger(tree.__paginatedConversationPage.numTurns) &&
-          tree.__paginatedConversationPage.numTurns>=0 && tree.__paginatedConversationPage.numTurns<=400 ?
-          tree.__paginatedConversationPage.numTurns : options.numTurns;
-        const initialRecord=state.pages.slice(from).find(record=>record.id===id && record.kind==='head' && record.before===null);
-        const visible=[...document.querySelectorAll('[data-message-id][data-message-author-role]')]
-          .filter(node=>['user','assistant'].includes(node.getAttribute('data-message-author-role')))
-          .at(-1)?.getAttribute('data-message-id');
-        const sameWindow={...options,numTurns:turns};
-        if (initialRecord?.includeMessageId || visible)
-          sameWindow.includeMessageId=initialRecord?.includeMessageId || visible;
-        readHead=()=>readers.initial(sameWindow);
+      // Preserve the two public pagination query parameters actually used for
+      // this head response, including their absence. DOM selection and the
+      // reader's normalized marker cannot establish the original request window.
+      // The page helper continues to supply authentication; no headers are read.
+      const initialRecord=state.pages.slice(from).find(record=>record.id===id && record.kind==='head' && record.before===null);
+      const sameWindow={...options};delete sameWindow.numTurns;
+      const invalidWindow=()=>{const error=Error('Unsupported pagination window');error.novaExportReason='request-window-invalid';throw error;};
+      if (!initialRecord || initialRecord.ambiguousWindow) invalidWindow();
+      if (initialRecord.numTurns!==null) {
+        if (!/^(0|[1-9][0-9]{0,2})$/.test(initialRecord.numTurns) || Number(initialRecord.numTurns)>400) invalidWindow();
+        sameWindow.numTurns=Number(initialRecord.numTurns);
+      }
+      if (initialRecord.includeMessageId!==null) {
+        if (!/^[a-zA-Z0-9-]{0,128}$/.test(initialRecord.includeMessageId)) invalidWindow();
+        sameWindow.includeMessageId=initialRecord.includeMessageId;
       }
       const collector=NovaExportPagination.create(id).start(head,id);
       diagnostics.pages=1;
       while (collector.nextCursor()!==null) {
         diagnostics.pageStage='older';
         const cursor=collector.nextCursor();from=state.pages.length;stable();
-        await bounded(()=>readers.older({...options,cursor,moderationResults:head.moderation_results || []}),signal);
+        await bounded(()=>readers.older({...sameWindow,cursor,moderationResults:head.moderation_results || []}),signal);
         collector.add(await observed(from,'older',cursor),id,cursor);
         diagnostics.pages++;
       }
-      diagnostics.pageStage='recheck';
+      diagnostics.pageStage='recheck-request';
       from=state.pages.length;stable();
-      await bounded(readHead,signal);
-      collector.recheck(await observed(from,'head',null),id);stable();
+      await bounded(()=>readers.initial(sameWindow),signal);
+      diagnostics.pageStage='recheck-response';
+      const freshHead=await observed(from,'head',null);
+      diagnostics.pageStage='recheck-verify';
+      collector.recheck(freshHead,id);stable();
       const complete=collector.finish();diagnostics.pagination='ok';diagnostics.pageStage='done';return complete;
     } finally {state.collectPages=false;}
   };
   // Used only by an explicit export gesture; no session/token endpoints.
   window.__novaReadConversation = async id => {
-    Object.assign(diagnostics,{modules:0,imports:0,candidates:0,reader:'not-found',http:'not-requested',pagination:'not-requested',pages:0,pageStage:'not-requested'});
+    Object.assign(diagnostics,{modules:0,imports:0,candidates:0,reader:'not-found',http:'not-requested',pagination:'not-requested',pages:0,pageStage:'not-requested',pageFailure:'not-requested'});
     if (id!==currentId()) throw new Error('会话发生变化，请重试');
     // An earlier response/export cannot establish the freshness of this gesture.
     // Only a full response started during this read can supply observed fallback.
@@ -325,7 +330,11 @@
     if (reader) {
       const pagesAbort=new AbortController(),pagesTimeout=setTimeout(()=>pagesAbort.abort(),75000);
       try {return await readPagination(id,reader,pagesAbort.signal);}
-      catch (error) {diagnostics.pagination='failed-'+category(error);}
+      catch (error) {
+        diagnostics.pagination='failed-'+category(error);
+        const reasons=['request-window-invalid','head-messages-changed','head-branch-changed','head-metadata-changed'];
+        diagnostics.pageFailure=reasons.includes(error?.novaExportReason) ? error.novaExportReason : 'unclassified';
+      }
       finally {clearTimeout(pagesTimeout);pagesAbort.abort();}
     }
     if (id!==currentId()) throw new Error('会话发生变化，请重试');
@@ -350,6 +359,6 @@
     const retained=pageTree(id);
     if (retained) return retained;
     if (state.id === id && state.tree) return state.tree;
-    throw new Error('无法确认完整会话：未能通过网页的完整会话读取流程取得消息树。不会导出仅已加载的内容。\n诊断 E2：模块=' + diagnostics.modules + '，导入=' + diagnostics.imports + '，读取器=' + diagnostics.candidates + '，状态=' + diagnostics.reader + '，接口=' + diagnostics.http+'，分页='+diagnostics.pagination+'，页数='+diagnostics.pages+'，阶段='+diagnostics.pageStage);
+    throw new Error('无法确认完整会话：未能通过网页的完整会话读取流程取得消息树。不会导出仅已加载的内容。\n诊断 E2：模块=' + diagnostics.modules + '，导入=' + diagnostics.imports + '，读取器=' + diagnostics.candidates + '，状态=' + diagnostics.reader + '，接口=' + diagnostics.http+'，分页='+diagnostics.pagination+'，页数='+diagnostics.pages+'，阶段='+diagnostics.pageStage+'，原因='+diagnostics.pageFailure);
   };
 })();

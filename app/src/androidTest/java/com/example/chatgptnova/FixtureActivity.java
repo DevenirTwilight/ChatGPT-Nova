@@ -38,6 +38,7 @@ abstract class FixtureActivity {
     volatile boolean loginFixture;
     volatile boolean nativeFixture;
     volatile boolean clipboardFixture;
+    volatile String keyguardDismiss = "not-requested";
 
     void start() {
         // Connect accessibility before showing an editor/toolbar, not midway through a paste.
@@ -45,19 +46,49 @@ abstract class FixtureActivity {
         info.flags |= android.accessibilityservice.AccessibilityServiceInfo.FLAG_RETRIEVE_INTERACTIVE_WINDOWS;
         instrument.getUiAutomation().setServiceInfo(info);
         instrument.getUiAutomation().getRootInActiveWindow();
+        // UTP can reinstall the app between suites, and a cold emulator can lock
+        // after android-ci.sh's one-time wakeup. Wake before every Activity launch.
+        shell("input keyevent KEYCODE_WAKEUP");
         scenario = ActivityScenario.launch(new Intent(instrument.getTargetContext(), MainActivity.class));
         scenario.onActivity(value -> {
             activity = value; web = web(value);
-            // Emulator-only test window: keep the device awake and dismiss an idle keyguard.
-            activity.getWindow().addFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
-            if(android.os.Build.VERSION.SDK_INT>=27) {
-                activity.setShowWhenLocked(true);activity.setTurnScreenOn(true);
-            }
-            android.app.KeyguardManager keyguard=activity.getSystemService(android.app.KeyguardManager.class);
-            if(keyguard!=null && keyguard.isKeyguardLocked()) keyguard.requestDismissKeyguard(activity,null);
+            prepareWindow(value);
         });
         fixture(PAGE);
+        dismissKeyguard();
         focus();
+    }
+
+    private void prepareWindow(MainActivity value) {
+        // Applied to each resumed instance, including a cold-emulator recreation.
+        value.getWindow().addFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+        if(android.os.Build.VERSION.SDK_INT>=27) {
+            value.setShowWhenLocked(true);value.setTurnScreenOn(true);
+        }
+    }
+
+    private void dismissKeyguard() {
+        // RESUMED does not prove a window is visible yet. requestDismissKeyguard
+        // can fail before its first frame; the old null callback hid that failure.
+        waitFor("visible fixture window", () -> {
+            AtomicBoolean shown=new AtomicBoolean();
+            main(() -> shown.set(activity.getWindow().getDecorView().isAttachedToWindow()
+                    && web.isShown() && web.getWidth()>0 && web.getHeight()>0));
+            return shown.get();
+        });
+        main(() -> {
+            android.app.KeyguardManager keyguard=activity.getSystemService(android.app.KeyguardManager.class);
+            if(keyguard==null || !keyguard.isKeyguardLocked()) { keyguardDismiss="already-unlocked";return; }
+            keyguardDismiss="pending";
+            keyguard.requestDismissKeyguard(activity,new android.app.KeyguardManager.KeyguardDismissCallback() {
+                @Override public void onDismissSucceeded() { keyguardDismiss="succeeded"; }
+                @Override public void onDismissCancelled() { keyguardDismiss="cancelled"; }
+                @Override public void onDismissError() { keyguardDismiss="error"; }
+            });
+        });
+        // Dismiss the insecure emulator keyguard after Nova is drawn as well as
+        // before launch. This does not enter a credential or weaken focus checks.
+        shell("wm dismiss-keyguard");
     }
 
     static WebView web(MainActivity activity) {
@@ -81,6 +112,7 @@ abstract class FixtureActivity {
                 if (current != fixtureView.get()) {
                     activity = value;
                     web = current;
+                    prepareWindow(value);
                     fixtureView.set(current);
                     loaded.set(false);
                     evaluating.set(false);
@@ -192,12 +224,52 @@ abstract class FixtureActivity {
     }
 
     private void focus() {
-        waitFor("focused Nova window", () -> {
-            AtomicReference<Boolean> ready=new AtomicReference<>(false);
+        long until=SystemClock.uptimeMillis()+20000;
+        do {
+            AtomicBoolean ready=new AtomicBoolean();
             main(() -> ready.set(activity.hasWindowFocus() && web.isShown()));
-            return ready.get();
+            if(ready.get()) { instrument.waitForIdleSync();return; }
+            SystemClock.sleep(100);
+        } while(SystemClock.uptimeMillis()<until);
+        String details=windowDiagnostics();
+        android.util.Log.e("NovaFixture",details);
+        fail("Timed out: focused Nova window\n"+details);
+    }
+
+    private String shell(String command) {
+        try(android.os.ParcelFileDescriptor descriptor=instrument.getUiAutomation().executeShellCommand(command);
+            java.io.InputStream input=new android.os.ParcelFileDescriptor.AutoCloseInputStream(descriptor)) {
+            return new String(input.readAllBytes(),StandardCharsets.UTF_8);
+        } catch(Exception error) { throw new AssertionError("Fixture shell command failed: "+command,error); }
+    }
+
+    private String windowDiagnostics() {
+        AtomicReference<String> nativeState=new AtomicReference<>();
+        String lifecycle=String.valueOf(scenario.getState());
+        main(() -> {
+            android.app.KeyguardManager keyguard=activity.getSystemService(android.app.KeyguardManager.class);
+            android.os.PowerManager power=activity.getSystemService(android.os.PowerManager.class);
+            nativeState.set("scenario="+lifecycle+", task="+activity.getTaskId()
+                    +", activityFocus="+activity.hasWindowFocus()+", webShown="+web.isShown()
+                    +", webAttached="+web.isAttachedToWindow()+", size="+web.getWidth()+"x"+web.getHeight()
+                    +", interactive="+(power!=null && power.isInteractive())
+                    +", keyguardLocked="+(keyguard!=null && keyguard.isKeyguardLocked())
+                    +", dismiss="+keyguardDismiss);
         });
-        instrument.waitForIdleSync();
+        StringBuilder result=new StringBuilder(nativeState.get());
+        for(android.view.accessibility.AccessibilityWindowInfo window:instrument.getUiAutomation().getWindows()) {
+            android.view.accessibility.AccessibilityNodeInfo root=window.getRoot();
+            result.append("\nwindow id=").append(window.getId()).append(" type=").append(window.getType())
+                    .append(" focused=").append(window.isFocused()).append(" active=").append(window.isActive())
+                    .append(" package=").append(root==null ? "null" : root.getPackageName());
+        }
+        // Only window ownership/state, not page text, is needed for this failure.
+        for(String line:shell("dumpsys window windows").split("\n")) {
+            if(line.contains("mCurrentFocus=") || line.contains("mFocusedApp=")
+                    || line.contains("mObscuringWindow=") || line.contains("mInputMethodWindow="))
+                result.append("\n").append(line.trim());
+        }
+        return result.toString();
     }
 
     View text(View view, String label) {

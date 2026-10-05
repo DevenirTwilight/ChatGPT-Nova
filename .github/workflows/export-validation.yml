@@ -82,4 +82,6 @@ jobs:
             export-test-reports/
             android-saved-files/**/*.pdf
             android-export-logcat.txt
+            android-export-windows.txt
+            android-export-power.txt
           if-no-files-found: warn

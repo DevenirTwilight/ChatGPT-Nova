@@ -219,8 +219,14 @@ public final class ConversationExportTest extends FixtureActivity {
                         String source=null,type="application/javascript";
                         if("/cdn/assets/conversation-pagination-fixture.js".equals(path)) source=conversationModule;
                         else if("/cdn/assets/4813494d-pagination-fixture.js".equals(path)) source=helperModule;
-                        else if("/backend-api/conversations/fixture".equals(path)) {source=initial;type="application/json";}
-                        else if("/backend-api/conversations/fixture/messages".equals(path)) {source=previous;type="application/json";}
+                        else if("/backend-api/conversations/fixture".equals(path) || "/backend-api/conversations/fixture/messages".equals(path)) {
+                            // The normal reader omits include_message_id. Adding
+                            // the rendered leaf for a recheck changes its window.
+                            // Older reads must retain the same turn parameter.
+                            if(url.getQueryParameterNames().contains("include_message_id") || !"50".equals(url.getQueryParameter("num_turns")))
+                                return new android.webkit.WebResourceResponse("application/json","UTF-8",400,"Bad Request",java.util.Collections.emptyMap(),new java.io.ByteArrayInputStream("{}".getBytes(StandardCharsets.UTF_8)));
+                            source="/backend-api/conversations/fixture".equals(path) ? initial : previous;type="application/json";
+                        }
                         else if("/backend-api/conversation/fixture".equals(path))
                             return new android.webkit.WebResourceResponse("application/json","UTF-8",403,"Forbidden",java.util.Collections.emptyMap(),new java.io.ByteArrayInputStream("{}".getBytes(StandardCharsets.UTF_8)));
                         if(source!=null) return new android.webkit.WebResourceResponse(type,"UTF-8",new java.io.ByteArrayInputStream(source.getBytes(StandardCharsets.UTF_8)));

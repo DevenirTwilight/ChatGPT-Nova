@@ -6,6 +6,10 @@ install_fixture() {
   adb shell pm grant com.example.chatgptnova.debug android.permission.CAMERA
   adb shell pm grant com.example.chatgptnova.debug android.permission.RECORD_AUDIO
   adb shell settings put system screen_off_timeout 1800000
+  # A newly booted Google APIs image can still be in setup when its keyguard
+  # receives these commands. Mark this disposable CI device as provisioned first.
+  adb shell settings put global device_provisioned 1
+  adb shell settings put secure user_setup_complete 1
   # Fresh CI emulator has no credentials; prevent an insecure keyguard blocking focus.
   adb shell locksettings set-disabled true
   adb shell settings put global stay_on_while_plugged_in 7
@@ -24,4 +28,6 @@ fi
 # UTP uninstalls the app; retain user-visible saved files and synthetic diagnostics.
 adb pull /sdcard/Download android-saved-files || true
 adb logcat -d -v threadtime > android-export-logcat.txt || true
+adb shell dumpsys window > android-export-windows.txt || true
+adb shell dumpsys power > android-export-power.txt || true
 exit "$export_test_status"

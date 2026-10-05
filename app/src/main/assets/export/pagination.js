@@ -13,7 +13,7 @@
     let broken=false, started=false, checked=false, pages=0, bytes=0, cursor=null;
     let head=null, headProof=null, messages=[];
     const cursors=new Set();
-    const fail=detail=>{broken=true;throw new Error('无法确认完整会话：'+detail);};
+    const fail=(detail,reason)=>{broken=true;const error=new Error('无法确认完整会话：'+detail);if(reason) error.novaExportReason=reason;throw error;};
     const healthy=()=>{if (broken) fail('分页验证已经失败');};
     if (typeof conversationId!=='string' || !conversationId) fail('分页会话 ID 无效');
     const rootId='paginated-complete:'+conversationId;
@@ -53,7 +53,8 @@
     // the explicit has_previous_page boolean remains part of the proof.
     const headEvidence=page=> {
       const {page_info:info,...rest}=page;
-      return fingerprint({...rest,page_info:{has_previous_page:info?.has_previous_page}});
+      const {start_cursor,...stableInfo}=info;
+      return fingerprint({...rest,page_info:stableInfo});
     };
     const advance=page=> {
       const next=page.page_info.has_previous_page ? page.page_info.start_cursor : null;
@@ -98,7 +99,9 @@
         healthy();
         if (!started || cursor!==null) fail('分页尚未读取完整');
         const page=readPage(raw,scopedPathId);
-        if (headEvidence(page)!==headProof) fail('分页读取期间会话正文或元数据发生变化');
+        if (page.current_node!==head.current_node) fail('分页读取期间服务器分支发生变化','head-branch-changed');
+        if (fingerprint(page.messages)!==fingerprint(head.messages)) fail('分页读取期间会话正文发生变化','head-messages-changed');
+        if (headEvidence(page)!==headProof) fail('分页读取期间会话元数据发生变化','head-metadata-changed');
         checked=true;
         return api;
       },
