@@ -2,6 +2,12 @@ name: Build ChatGPT Nova APK
 
 on:
   workflow_dispatch:
+    inputs:
+      publish_test_release:
+        description: Publish a permanent download for the export test APK
+        type: boolean
+        required: false
+        default: false
   push:
     branches: [main]
   pull_request:
@@ -201,6 +207,34 @@ jobs:
             --notes "Signed ChatGPT Nova APK built from commit ${{ github.sha }}. Download ChatGPT-Nova.apk below." \
             --target "${{ github.sha }}" \
             --latest
+
+      - name: Publish export test APK to GitHub Prerelease
+        if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/feature/export-conversation' && inputs.publish_test_release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          (cd dist && sha256sum --check ChatGPT-Nova.apk.sha256)
+          TAG="nova-export-test-${GITHUB_SHA::7}"
+          TEST_RELEASE_NOTES=$(mktemp)
+          cat > "$TEST_RELEASE_NOTES" <<EOF
+          ChatGPT Nova 导出修复测试包，原发布证书签名。
+
+          实现提交：${GITHUB_SHA}。
+
+          下载 ChatGPT-Nova.apk 后直接安装；无需解压。APK 与校验文件来自本次构建，已验证发布证书与 SHA256。
+
+          真实账号和用户真机导出尚待验证。Android 33 已知 keyboardLongCommitUsesPageTransactionAndUndo 性能门槛失败仍待解决，因此本测试发布不表示全部兼容性检查通过。
+
+          本次修复和验证：${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/blob/${GITHUB_SHA}/docs/export-403-pagination-2026-10-05.md
+          EOF
+          gh release create "$TAG" \
+            dist/ChatGPT-Nova.apk \
+            dist/ChatGPT-Nova.apk.sha256 \
+            --title "ChatGPT Nova 导出修复测试包 (${GITHUB_SHA::7})" \
+            --notes-file "$TEST_RELEASE_NOTES" \
+            --target "$GITHUB_SHA" \
+            --prerelease \
+            --latest=false
 
       - name: Upload complete source
         uses: actions/upload-artifact@v4

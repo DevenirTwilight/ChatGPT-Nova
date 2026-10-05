@@ -39,7 +39,8 @@ test('metadata citation URLs are retained without guessing targets',()=> {
 });
 test('partial flags and missing root sentinel are rejected',()=> {
  const t=fixture();t.has_more=true;assert.throws(()=>normalize(t),/不完整/);
- delete t.has_more;t.mapping.m0.parent=null;assert.throws(()=>normalize(t),/起点/);
+ delete t.has_more;t.__paginatedConversationPage={cursor:null};assert.throws(()=>normalize(t),/不完整/);
+ delete t.__paginatedConversationPage;t.mapping.m0.parent=null;assert.throws(()=>normalize(t),/起点/);
 });
 
 test('regenerated assistant branch follows server-selected leaf',()=> {

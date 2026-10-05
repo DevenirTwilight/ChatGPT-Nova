@@ -53,7 +53,8 @@
     }
     const rootNode = chain[chain.length - 1];
     if (rootNode.message && rootNode.message.author?.role !== 'system') fail('无法确认消息链起点');
-    if (tree.has_missing_conversation_data || tree.is_partial || tree.has_more) fail('消息树标记为不完整');
+    if (tree.has_missing_conversation_data || tree.is_partial || tree.has_more || tree.__paginatedConversationPage)
+      fail('消息树标记为不完整');
     if (ids.some(id => !seen.has(id))) fail('页面包含另一分支的消息');
     chain.reverse();
     const order = new Map(chain.map((node,index)=>[node.id,index]));
@@ -84,7 +85,10 @@
     }
     if (!messages.length) fail('会话为空');
     return {conversationId, title:tree.title || '未命名会话', messages, warnings:[...new Set(warnings)],
-      completeness:{root:chain[0].id, terminal:selected, nodes:chain.length, messages:messages.length}};
+      completeness:{root:chain[0].id, terminal:selected, nodes:chain.length, messages:messages.length,
+        ...(tree.__novaPaginationProof?.method==='cursor-pagination' && tree.__novaPaginationProof.exhausted===true &&
+          Number.isInteger(tree.__novaPaginationProof.pages) && tree.__novaPaginationProof.pages>0 ?
+          {method:'cursor-pagination',pages:tree.__novaPaginationProof.pages,exhausted:true} : {method:'message-tree'})}};
   }
   function withSources(text, metadata, warnings) {
     const entries = [...(Array.isArray(metadata?.citations) ? metadata.citations : []),

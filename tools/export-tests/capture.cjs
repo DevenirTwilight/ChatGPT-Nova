@@ -1,7 +1,7 @@
 const fs=require('node:fs'),path=require('node:path'),assert=require('node:assert/strict');
 const {chromium}=require(process.env.NOVA_PLAYWRIGHT_MODULE || 'playwright-core');
 const {fixture}=require('./fixture.cjs');
-const capture=fs.readFileSync(path.resolve(__dirname,'../../app/src/main/assets/export/capture.js'),'utf8');
+const capture=['pagination.js','capture.js'].map(file=>fs.readFileSync(path.resolve(__dirname,'../../app/src/main/assets/export/',file),'utf8')).join('\n');
 const core=require('../../app/src/main/assets/export/core.js');
 (async()=>{
  const browser=await chromium.launch({executablePath:process.env.CHROMIUM_PATH || '/usr/bin/chromium',args:['--no-sandbox']});

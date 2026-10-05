@@ -138,6 +138,125 @@ public final class ConversationExportTest extends FixtureActivity {
         assertTrue(new String(java.nio.file.Files.readAllBytes(output().toPath()),StandardCharsets.UTF_8).contains("Unrendered full-tree ancestor 中文"));
         instrument.sendKeyDownUpSync(android.view.KeyEvent.KEYCODE_BACK);
     }
+    private static String paginatedResponse(boolean initial, boolean omitFinalFlag) {
+        try {
+            org.json.JSONObject page=new org.json.JSONObject();
+            page.put("conversation_id","fixture");page.put("title","Android paginated reader 中文");
+            org.json.JSONArray messages=new org.json.JSONArray();
+            for(int index=initial ? 200 : 0;index<(initial ? 400 : 200);index++) {
+                String text=index==0 ? "Unrendered paginated ancestor 中文" : index==399 ? "reply" : "Paginated body "+index;
+                org.json.JSONObject message=new org.json.JSONObject();
+                message.put("id","m"+index);message.put("author",new org.json.JSONObject().put("role",index%2==0 ? "user" : "assistant"));
+                message.put("recipient","all");message.put("status","finished_successfully");
+                message.put("content",new org.json.JSONObject().put("content_type","text").put("parts",new org.json.JSONArray().put(text)));
+                messages.put(message);
+            }
+            page.put("messages",messages);
+            org.json.JSONObject info=new org.json.JSONObject();
+            if(initial || !omitFinalFlag) info.put("has_previous_page",initial);
+            info.put("start_cursor",initial ? "older-page" : org.json.JSONObject.NULL);
+            page.put("page_info",info);if(initial) page.put("current_node","m399");
+            return page.toString();
+        } catch(org.json.JSONException error) { throw new AssertionError(error); }
+    }
+    private void paginatedReaderFixture(boolean omitFinalFlag) {
+        js("""
+            (()=>{
+              history.replaceState({},'', '/c/fixture');
+              document.body.innerHTML='<div data-message-id="m399" data-message-author-role="assistant">reply</div>';
+              window.novaPaginationInitialCalls=0;window.novaPaginationPreviousCalls=0;window.novaPaginationFullCalls=0;
+              return true;
+            })()
+            """);
+        String conversationModule="""
+            import {initialPage as initial,previousPage as previous} from './4813494d-pagination-fixture.js';
+            export async function fullReader(id,options={}) {
+              if(!options.forceNetworkFetch || !options.onConversationLoadedFromNetwork) throw Error('reader options required');
+              if(options.includeFullConversation) {
+                window.novaPaginationFullCalls++;
+                throw Object.assign(new Error('Synthetic full reader unavailable'),{status:403});
+              }
+              const context={};
+              return await initial({additionalHeaders:context,clientThreadId:id,numTurns:50,signal:options.signal});
+            }
+            window.novaPaginationModuleLoaded=typeof initial==='function' && typeof previous==='function';
+            """;
+        // Match the public website helpers' safeGet parameters and result shape.
+        // Only actual plural response JSON can prove exhaustion: the helper's
+        // normalized cursor becomes null even if a response omits its boolean.
+        String helperModule="""
+            const api={async safeGet(path,{parameters,signal}) {
+              const url=new URL('/backend-api'+path.replace('{conversation_id}',parameters.path.conversation_id),location.origin);
+              for(const [key,value] of Object.entries(parameters.query)) if(value!==undefined) url.searchParams.set(key,String(value));
+              const response=await fetch(url,{signal});if(!response.ok) throw Object.assign(new Error('Synthetic page failed'),{status:response.status});
+              return response.json();
+            }};
+            export async function initialPage({clientThreadId,includeMessageId,numTurns,signal,onNetworkAttempt,additionalHeaders}) {
+              window.novaPaginationInitialCalls++;
+              const raw=await api.safeGet('/conversations/{conversation_id}',{parameters:{path:{conversation_id:clientThreadId},query:{include_message_id:includeMessageId,include_has_versions:true,num_turns:numTurns}},signal,onNetworkAttempt,...additionalHeaders?{additionalHeaders}:{}});
+              const messagesLeafToRoot=[...raw.messages].reverse();
+              const cursor=raw.page_info.has_previous_page?raw.page_info.start_cursor:null;
+              const rootId='paginated-root:'+clientThreadId,mapping={[rootId]:{id:rootId,parent:'',children:[raw.messages[0].id]}};
+              raw.messages.forEach((message,index)=>mapping[message.id]={id:message.id,message,parent:index?raw.messages[index-1].id:rootId,children:index+1<raw.messages.length?[raw.messages[index+1].id]:[]});
+              return {conversation_id:clientThreadId,title:raw.title,current_node:raw.current_node,mapping,
+                __paginatedConversationPage:{cursor,messagesLeafToRoot,numTurns,moderationResults:[],oldestMessageId:messagesLeafToRoot.at(-1)?.id??null,serverCurrentLeafId:raw.current_node}};
+            }
+            export async function previousPage({clientThreadId,cursor,moderationResults,numTurns,signal,onNetworkAttempt,additionalHeaders}) {
+              window.novaPaginationPreviousCalls++;
+              if(cursor!=='older-page') throw Error('Unexpected synthetic cursor');
+              const raw=await api.safeGet('/conversations/{conversation_id}/messages',{parameters:{path:{conversation_id:clientThreadId},query:{before:cursor,include_has_versions:true,num_turns:numTurns}},signal,onNetworkAttempt,...additionalHeaders?{additionalHeaders}:{}});
+              return {cursor:raw.page_info.has_previous_page?raw.page_info.start_cursor:null,messagesLeafToRoot:[...raw.messages].reverse(),moderationResults,numTurns,oldestMessageId:raw.messages[0]?.id??null};
+            }
+            export {initialPage as initialAlias,previousPage as previousAlias};
+            """;
+        String initial=paginatedResponse(true,false),previous=paginatedResponse(false,omitFinalFlag);
+        main(()-> {
+            android.webkit.WebViewClient original=web.getWebViewClient();
+            web.setWebViewClient(new android.webkit.WebViewClient() {
+                @Override public android.webkit.WebResourceResponse shouldInterceptRequest(android.webkit.WebView view,android.webkit.WebResourceRequest request) {
+                    Uri url=request.getUrl();String path=url.getPath();
+                    if("chatgpt.com".equals(url.getHost())) {
+                        String source=null,type="application/javascript";
+                        if("/cdn/assets/conversation-pagination-fixture.js".equals(path)) source=conversationModule;
+                        else if("/cdn/assets/4813494d-pagination-fixture.js".equals(path)) source=helperModule;
+                        else if("/backend-api/conversations/fixture".equals(path)) {source=initial;type="application/json";}
+                        else if("/backend-api/conversations/fixture/messages".equals(path)) {source=previous;type="application/json";}
+                        else if("/backend-api/conversation/fixture".equals(path))
+                            return new android.webkit.WebResourceResponse("application/json","UTF-8",403,"Forbidden",java.util.Collections.emptyMap(),new java.io.ByteArrayInputStream("{}".getBytes(StandardCharsets.UTF_8)));
+                        if(source!=null) return new android.webkit.WebResourceResponse(type,"UTF-8",new java.io.ByteArrayInputStream(source.getBytes(StandardCharsets.UTF_8)));
+                    }
+                    return original.shouldInterceptRequest(view,request);
+                }
+            });
+        });
+        js("(()=>{const script=document.createElement('script');script.type='module';script.src='/cdn/assets/conversation-pagination-fixture.js';document.head.append(script);return true;})()");
+        waitFor("website pagination module loaded",()->"true".equals(js("window.novaPaginationModuleLoaded===true")));
+        // Native start must load all production assets and install its observer;
+        // this fixture never supplies a replacement conversation reader or tree.
+        js("window.__novaExportCapture=null;delete window.__novaReadConversation;true");
+    }
+    @Test public void paginatedPageHelpersExportCompleteUnrenderedBranch() throws Exception {
+        paginatedReaderFixture(false);
+        export("HTML 阅读版（推荐）");
+        waitFor("complete paginated export written",()->output()!=null && output().isFile());
+        String document=new String(java.nio.file.Files.readAllBytes(output().toPath()),StandardCharsets.UTF_8);
+        assertTrue(document.contains("Unrendered paginated ancestor 中文"));
+        assertTrue(document.contains("Paginated body 199"));assertTrue(document.contains("Paginated body 200"));
+        assertEquals(400,document.split("<article",-1).length-1);
+        assertEquals("2",js("window.novaPaginationInitialCalls"));
+        assertEquals("1",js("window.novaPaginationPreviousCalls"));
+        assertEquals("1",js("window.novaPaginationFullCalls"));
+        instrument.sendKeyDownUpSync(android.view.KeyEvent.KEYCODE_BACK);
+    }
+    @Test public void paginatedPageMissingExhaustionFlagRefusesFile() {
+        paginatedReaderFixture(true);
+        main(()->exporter().start());
+        waitFor("persistent pagination refusal",()->findControl(instrument.getUiAutomation().getRootInActiveWindow(),"未能导出会话")!=null);
+        assertTrue(dumpPrintWindow(instrument.getUiAutomation().getRootInActiveWindow()).contains("无法确认完整会话"));
+        assertFalse(busy());assertNull(output());
+        assertEquals("1",js("window.novaPaginationPreviousCalls"));
+        click("知道了");
+    }
     @Test public void htmlSavesUnrenderedMessagesAndRealLink() throws Exception {
         conversation("# 未渲染标题\n\n**中文 English** [link](https://example.com/path?q=1#target)\n\n```java\ncode\n```\n");
         AtomicReference<Intent> captured=new AtomicReference<>();

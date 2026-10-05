@@ -71,7 +71,7 @@ final class ConversationExport {
             });
         installed=true;
         if (WebViewFeature.isFeatureSupported(WebViewFeature.DOCUMENT_START_SCRIPT)) {
-            capture=WebViewCompat.addDocumentStartJavaScript(web,asset("capture.js"),Collections.singleton("https://chatgpt.com"));
+            capture=WebViewCompat.addDocumentStartJavaScript(web,captureScript(),Collections.singleton("https://chatgpt.com"));
         }
     }
     private String asset(String name) {
@@ -81,8 +81,11 @@ final class ConversationExport {
             return out.toString(StandardCharsets.UTF_8.name());
         } catch (Exception e) { throw new IllegalStateException("Missing export asset",e); }
     }
+    private String captureScript() {
+        return asset("pagination.js")+"\n"+asset("capture.js");
+    }
     void pageFinished() {
-        if (installed && active.getAsBoolean() && trusted()) web.evaluateJavascript(asset("capture.js"),null);
+        if (installed && active.getAsBoolean() && trusted()) web.evaluateJavascript(captureScript(),null);
     }
     private boolean trusted() {
         Uri u=Uri.parse(web.getUrl()==null ? "" : web.getUrl());
@@ -93,8 +96,8 @@ final class ConversationExport {
         if (!installed || !trusted() || !active.getAsBoolean()) { toast("当前页面无法导出会话。"); return; }
         busy=true; nonce=UUID.randomUUID().toString(); address=web.getUrl(); incoming.setLength(0);
         deadline=()->fail("无法确认完整会话：读取超时，请等待页面加载完成后重试。");
-        web.postDelayed(deadline,30000);
-        String script=asset("capture.js")+"\n(() => { const module={exports:{}}; const exports=module.exports;\n"
+        web.postDelayed(deadline,120000);
+        String script=captureScript()+"\n(() => { const module={exports:{}}; const exports=module.exports;\n"
             +asset("marked.js")+"\nconst marked=module.exports.marked;\n"+asset("core.js")
             +"\nconst NovaExportCore=module.exports;\n"
             +asset("run.js").replace("__NOVA_NONCE__",JSONObject.quote(nonce))+"\n})();";
