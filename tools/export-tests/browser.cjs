@@ -61,6 +61,17 @@ const root=path.resolve(__dirname,'../..'), assets=path.join(root,'app/src/main/
   assert.equal(out.marked,'website-owned-marked');
   assert(!out.out[0].error,JSON.stringify(out.out));
   const data=JSON.parse(out.out.map(p=>p.chunk).join(''));assert.equal(data.proof.messages,4);assert(data.markdown.includes('第 1 条消息'));
+  // A stale prefix cannot pass as the terminal message's entire body.
+  await page.evaluate(()=>{out=[];document.querySelector('[data-message-id]').textContent='terminal reply with a newer suffix';});
+  await page.evaluate(source);await page.waitForFunction(()=>out.length>0);
+  assert.match(await page.evaluate(()=>out[0].error),/末条消息内容与消息树不同/);
+  const codeTree=fixture();codeTree.mapping.m3.message.content.parts=['```javascript\nterminal reply\n```'];
+  await page.evaluate(t=>{
+   out=[];window.__novaReadConversation=async()=>t;
+   document.querySelector('[data-message-id]').innerHTML='<pre><div>javascript<button>Copy code</button></div><code>terminal reply\n</code></pre>';
+  },codeTree);
+  await page.evaluate(source);await page.waitForFunction(()=>out.length>0);
+  assert(!await page.evaluate(()=>out[0].error),'code language labels are presentation controls');
   const mathTree=fixture();mathTree.mapping.m3.message.content.parts=[String.raw`Equation \(E = mc^2\)`];
   await page.evaluate(t=> {
    out=[];window.__novaReadConversation=async()=>t;
@@ -71,12 +82,25 @@ const root=path.resolve(__dirname,'../..'), assets=path.join(root,'app/src/main/
   await page.evaluate(()=>{out=[];document.querySelector('[data-message-id]').setAttribute('data-message-id','m1');});
   await page.evaluate(source);await page.waitForFunction(()=>out.length>0);
   assert.match(await page.evaluate(()=>out[0].error),/无法确认完整会话/);
+  // Same-ID streaming/edit changes during the read cancel this export.
+  await page.evaluate(t=>{
+   out=[];document.querySelector('[data-message-id]').setAttribute('data-message-id','m3');
+   document.querySelector('[data-message-id]').textContent='terminal reply';
+   window.__novaReadConversation=async()=>{
+    document.querySelector('[data-message-id]').textContent='terminal reply changed during read';
+    return t;
+   };
+  },t);
+  await page.evaluate(source);await page.waitForFunction(()=>out.length>0);
+  assert.match(await page.evaluate(()=>out[0].error),/会话发生变化/);
   // A response observer only captures the matching current conversation.
   await page.evaluate(()=>{window.fetch=async()=>new Response(JSON.stringify({conversation_id:'fixture',mapping:{},current_node:'root'}),{status:200});});
   await page.evaluate(fs.readFileSync(path.join(assets,'capture.js'),'utf8'));
   await page.evaluate(()=>fetch('/backend-api/conversation/elsewhere'));
   assert.equal(await page.evaluate(()=>__novaExportCapture.tree),null);
   await page.evaluate(()=>fetch('/backend-api/conversation/fixture'));
+  assert.equal(await page.evaluate(()=>__novaExportCapture.tree),null,'a default/paginated read has no full-read provenance');
+  await page.evaluate(()=>fetch('/backend-api/conversation/fixture?include_full_conversation=true'));
   await page.waitForFunction(()=>__novaExportCapture.id==='fixture');
   console.log('PASS: browser sanitizer, full-branch extraction, branch rejection, origin-scoped capture, 320/390/844/1280px layouts, light/dark, standalone HTML, Markdown and Chromium PDF samples');
  } finally { await browser.close(); }

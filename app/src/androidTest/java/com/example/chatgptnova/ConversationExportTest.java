@@ -96,9 +96,11 @@ public final class ConversationExportTest extends FixtureActivity {
     }
     @Test public void pageOwnedReaderLoadsViaAndroidEvaluateJavascript() throws Exception {
         conversation("Unrendered full-tree ancestor 中文");
+        js("history.replaceState({},'', '/g/g-p-1234567890abcdef1234567890abcdef-project-title/c/fixture?owner_user_id=user-fixture');true");
         String module = """
             export async function fullReader(id, options={}) {
               if (!options.includeFullConversation || !options.forceNetworkFetch) throw Error('full read required');
+              if (options.projectId!=='g-p-1234567890abcdef1234567890abcdef' || options.ownerUserId!=='user-fixture') throw Error('project and owner context required');
               const message=(id,role,text)=>({id,author:{role},recipient:'all',status:'finished_successfully',content:{content_type:'text',parts:[text]}});
               const tree={conversation_id:id,title:'Android reader',current_node:'a',mapping:{
                 root:{id:'root',parent:null,children:['u'],message:null},
@@ -107,6 +109,7 @@ public final class ConversationExportTest extends FixtureActivity {
               }};
               options.onConversationLoadedFromNetwork(tree);
               window.novaReaderCalled=true;
+              window.novaReaderContext={projectId:options.projectId,ownerUserId:options.ownerUserId};
               return {normalized:true};
             }
             export {fullReader as alias};
@@ -131,6 +134,7 @@ public final class ConversationExportTest extends FixtureActivity {
         export("HTML 阅读版（推荐）");
         waitFor("reader export written",()->output()!=null && output().isFile());
         assertEquals("true",js("window.novaReaderCalled===true"));
+        assertEquals("true",js("window.novaReaderContext.projectId==='g-p-1234567890abcdef1234567890abcdef' && window.novaReaderContext.ownerUserId==='user-fixture'"));
         assertTrue(new String(java.nio.file.Files.readAllBytes(output().toPath()),StandardCharsets.UTF_8).contains("Unrendered full-tree ancestor 中文"));
         instrument.sendKeyDownUpSync(android.view.KeyEvent.KEYCODE_BACK);
     }

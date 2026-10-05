@@ -6,10 +6,14 @@
     const visible = () => [...document.querySelectorAll('[data-message-id][data-message-author-role]')]
       .filter(el => ['user','assistant'].includes(el.getAttribute('data-message-author-role')))
       .map(el=>el.getAttribute('data-message-id'));
-    const before = visible();
+    // IDs alone do not detect streaming or edits that keep the same message ID.
+    const evidenceText = () => [...document.querySelectorAll('[data-message-id][data-message-author-role]')]
+      .filter(el => ['user','assistant'].includes(el.getAttribute('data-message-author-role')))
+      .map(el=>el.textContent || '');
+    const before = visible(), beforeText=JSON.stringify(evidenceText());
     if (document.querySelector('[data-testid="stop-button"]')) throw new Error('请等待回复完成后再导出');
     const tree = await window.__novaReadConversation(id);
-    if (location.href !== startUrl || JSON.stringify(before) !== JSON.stringify(visible())) throw new Error('会话发生变化，请重试');
+    if (location.href !== startUrl || (JSON.stringify(before) !== JSON.stringify(visible()) || beforeText !== JSON.stringify(evidenceText()))) throw new Error('会话发生变化，请重试');
     const data = NovaExportCore.normalize(tree,id,before);
     // Require the terminal rendered message's text to agree with the tree, too.
     const last = data.messages[data.messages.length-1];
@@ -20,6 +24,12 @@
     const evidence=rendered?.cloneNode(true);
     if (evidence) {
       for (const control of evidence.querySelectorAll('button,[role="button"]')) control.remove();
+      // Site code blocks may wrap their body with a language label/toolbar.
+      // Compare the code body rather than those presentation controls.
+      for (const block of evidence.querySelectorAll('pre')) {
+        const code=block.querySelector('code');
+        if (code) block.replaceChildren(document.createTextNode(code.textContent));
+      }
       for (const math of evidence.querySelectorAll('.katex-display')) {
         const source=math.querySelector('annotation[encoding="application/x-tex"]');
         if (source) math.replaceWith(document.createTextNode(source.textContent));
@@ -31,7 +41,8 @@
     }
     const actual=text(evidence?.textContent || '');
     let position=0;
-    const matches=temp.textContent.split('NOVA_REFERENCE_BREAK').every(part=> {
+    const parts=temp.textContent.split('NOVA_REFERENCE_BREAK');
+    const matches=parts.length===1 ? actual===text(temp.textContent) : parts.every(part=> {
       const expected=text(part), index=actual.indexOf(expected,position);
       if (index<0) return false; position=index+expected.length; return true;
     });
@@ -64,7 +75,7 @@
     data.warnings=[...new Set(data.warnings)];
     parsed.querySelector('footer').textContent=data.warnings.join(' ');
     html='<!doctype html>'+parsed.documentElement.outerHTML;
-    if (location.href !== startUrl || JSON.stringify(before) !== JSON.stringify(visible())) throw new Error('会话发生变化，请重试');
+    if (location.href !== startUrl || (JSON.stringify(before) !== JSON.stringify(visible()) || beforeText !== JSON.stringify(evidenceText()))) throw new Error('会话发生变化，请重试');
     const raw=JSON.stringify({title:data.title,html,markdown:NovaExportCore.markdown(data),warnings:data.warnings,proof:data.completeness});
     if (raw.length>16*1024*1024) throw new Error('会话过大，无法安全导出');
     // Chunking avoids a single oversized WebMessage/JavaScript result.

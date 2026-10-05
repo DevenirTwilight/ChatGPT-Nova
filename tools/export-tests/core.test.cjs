@@ -54,6 +54,29 @@ test('page-selected regenerated leaf can differ from server current_node',()=> {
  assert.deepEqual(data.messages.map(m=>m.id),['m0','other']);
  assert.equal(data.completeness.terminal,'other');
 });
+test('a nonterminal server current_node cannot export a scrolled-up prefix',()=> {
+ const tree=fixture();tree.current_node='m1';
+ assert.throws(()=>normalize(tree,['m1']),/末端不是完整叶节点/);
+});
+test('a terminal requires an explicit empty children list',()=> {
+ const tree=fixture();delete tree.mapping.m3.children;
+ assert.throws(()=>normalize(tree),/末端不是完整叶节点/);
+});
+for (const terminal of ['m3','other']) test('a claimed '+terminal+' leaf cannot conceal a mapped descendant',()=> {
+ const tree=fixture();
+ tree.mapping.continuation={id:'continuation',parent:terminal,children:[],message:{id:'continuation',author:{role:'user'},status:'finished_successfully',content:{content_type:'text',parts:['Unexported continuation']}}};
+ assert.throws(()=>normalize(tree,[terminal]),/无法确认完整会话/);
+});
+test('an inherited ancestor is not evidence of a complete mapping',()=> {
+ const tree=fixture(), root=tree.mapping.root;delete tree.mapping.root;
+ Object.setPrototypeOf(tree.mapping,{root});
+ assert.throws(()=>normalize(tree),/父子关系不完整/);
+});
+test('an inherited current_node is rejected before branch selection',()=> {
+ const tree=fixture(), m3=tree.mapping.m3;delete tree.mapping.m3;
+ Object.setPrototypeOf(tree.mapping,{m3});
+ assert.throws(()=>normalize(tree),/末端缺失/);
+});
 test('DOM message order must follow the verified branch',()=> {
  assert.throws(()=>normalize(fixture(),['m1','m0','m3']),/顺序/);
 });
@@ -71,6 +94,20 @@ test('unfinished hidden assistant tail cannot masquerade as a complete branch',(
  const t=fixture();t.mapping.m3.children=['pending'];
  t.mapping.pending={id:'pending',parent:'m3',children:[],message:{id:'pending',author:{role:'assistant'},channel:'analysis',status:'in_progress',content:{content_type:'text',parts:['hidden work']}}};
  t.current_node='pending';assert.throws(()=>core.normalize(t,'fixture',['m3']),/未完成/);
+});
+test('a finished hidden terminal preserves the complete visible branch',()=> {
+ const tree=fixture();tree.mapping.m3.children=['hidden'];
+ tree.mapping.hidden={id:'hidden',parent:'m3',children:[],message:{id:'hidden',author:{role:'assistant'},channel:'analysis',status:'finished_successfully',content:{content_type:'text',parts:['hidden work']}}};
+ tree.current_node='hidden';
+ const data=normalize(tree);
+ assert.deepEqual(data.messages.map(message=>message.id),['m0','m1','m2','m3']);
+ assert.equal(data.completeness.terminal,'hidden');assert.equal(data.completeness.nodes,6);
+});
+test('a finished hidden current_node with descendants is still nonterminal',()=> {
+ const tree=fixture();tree.mapping.m3.children=['hidden'];
+ tree.mapping.hidden={id:'hidden',parent:'m3',children:['missing'],message:{id:'hidden',author:{role:'assistant'},channel:'analysis',status:'finished_successfully',content:{content_type:'text',parts:['hidden work']}}};
+ tree.current_node='hidden';
+ assert.throws(()=>normalize(tree),/末端不是完整叶节点/);
 });
 
 test('backslash-delimited LaTeX survives Markdown rendering',()=> {

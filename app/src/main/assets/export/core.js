@@ -7,36 +7,47 @@
     if (!tree || tree.conversation_id !== conversationId || !tree.mapping || !tree.current_node)
       fail('当前会话消息树不可用');
     const map = tree.mapping, ids = [...new Set(visibleIds)];
-    if (!map[tree.current_node]) fail('消息树末端缺失');
-    if (!ids.length || ids.some(id => !map[id])) fail('无法核对页面消息 ID');
+    if (typeof map !== 'object' || Array.isArray(map)) fail('当前会话消息树不可用');
+    const nodeAt = id => typeof id === 'string' ? Object.getOwnPropertyDescriptor(map,id)?.value : undefined;
+    if (!nodeAt(tree.current_node)) fail('消息树末端缺失');
+    if (!ids.length || ids.some(id => !nodeAt(id))) fail('无法核对页面消息 ID');
+    // Empty children alone cannot prove a leaf when another mapped node names
+    // it as a parent. Check both directions before accepting either terminal.
+    const mappedParents = new Set(Object.keys(map).map(id=>nodeAt(id)?.parent).filter(id=>id!=null));
+    const isLeaf = id => {
+      const node = nodeAt(id);
+      return !!node && Array.isArray(node.children) && node.children.length === 0 && !mappedParents.has(id);
+    };
     // A DOM subset is only evidence of the selected branch, never its content source.
     // Server current_node may retain a different regenerated reply. The page may
     // select another terminal leaf only when the complete tree proves it has no
     // descendants. A scrolled-up ancestor cannot select a truncated branch.
     let selected = tree.current_node;
+    if (!isLeaf(selected)) fail('消息树末端不是完整叶节点');
     let terminal = selected;
     const hiddenSeen = new Set();
-    while (map[terminal] && !displayable(map[terminal].message)) {
+    while (nodeAt(terminal) && !displayable(nodeAt(terminal).message)) {
       if (hiddenSeen.has(terminal)) fail("末尾消息循环");
       hiddenSeen.add(terminal);
-      terminal = map[terminal].parent;
+      terminal = nodeAt(terminal).parent;
       if (!terminal) fail('没有可导出的消息');
     }
 
     if (ids[ids.length - 1] !== terminal) {
-      const leaf = ids[ids.length - 1], node = map[leaf];
-      if (!displayable(node?.message) || !Array.isArray(node.children) || node.children.length)
+      const leaf = ids[ids.length - 1], node = nodeAt(leaf);
+      if (!displayable(node?.message) || !isLeaf(leaf))
         fail('当前分支末尾无法确认，请滚动到末尾，等待回复完成或刷新后重试');
       selected = leaf;
     }
     const chain = [], seen = new Set();
     let id = selected;
     while (id != null) {
-      if (seen.has(id) || !map[id] || map[id].id !== id) fail('消息链断裂或循环');
+      const node = nodeAt(id);
+      if (seen.has(id) || !node || node.id !== id) fail('消息链断裂或循环');
       seen.add(id);
-      const node = map[id];
-      if (node.parent != null && (!map[node.parent] || !Array.isArray(map[node.parent].children)
-          || !map[node.parent].children.includes(id))) fail('父子关系不完整');
+      const parent = nodeAt(node.parent);
+      if (node.parent != null && (!parent || !Array.isArray(parent.children)
+          || !parent.children.includes(id))) fail('父子关系不完整');
       chain.push(node);
       id = node.parent;
     }
