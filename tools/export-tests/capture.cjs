@@ -43,7 +43,14 @@ const core=require('../../app/src/main/assets/export/core.js');
   const fresh=await browser.newPage();
   await fresh.route('https://chatgpt.com/**',r=>r.fulfill({status:r.request().url().includes('/backend-api/')?401:200,body:'visible message'}));
   await fresh.goto('https://chatgpt.com/c/fixture'); await fresh.evaluate(capture);
-  await assert.rejects(()=>fresh.evaluate(()=>window.__novaReadConversation('fixture')),/无法确认完整会话/);
+  await assert.rejects(()=>fresh.evaluate(()=>window.__novaReadConversation('fixture')),/诊断 E2：模块=0，导入=0，读取器=0，状态=not-found，接口=401/);
+  // Discovery still works when ResourceTiming no longer contains the module.
+  await page.evaluate(()=>{
+   fixture.conversation_id='fixture';
+   const link=document.createElement('link');link.rel='modulepreload';link.href='/cdn/assets/conversation-small-test.js';document.head.append(link);
+   performance.getEntriesByType=()=>[];
+  });
+  assert.equal((await page.evaluate(()=>window.__novaReadConversation('fixture'))).conversation_id,'fixture');
   console.log('PASS: page-owned full reader, project route, 400-message chain, alias deduplication, partial/wrong-ID rejection, unauthorized fail-closed');
  } finally {await browser.close();}
 })().catch(error=>{console.error(error);process.exitCode=1;});

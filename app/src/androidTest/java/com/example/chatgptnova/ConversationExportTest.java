@@ -94,6 +94,46 @@ public final class ConversationExportTest extends FixtureActivity {
             @Override public Instrumentation.ActivityResult onStartActivity(Intent intent) {return action.apply(intent);}
         };instrument.addMonitor(monitor);
     }
+    @Test public void pageOwnedReaderLoadsViaAndroidEvaluateJavascript() throws Exception {
+        conversation("Unrendered full-tree ancestor 中文");
+        String module = """
+            export async function fullReader(id, options={}) {
+              if (!options.includeFullConversation || !options.forceNetworkFetch) throw Error('full read required');
+              const message=(id,role,text)=>({id,author:{role},recipient:'all',status:'finished_successfully',content:{content_type:'text',parts:[text]}});
+              const tree={conversation_id:id,title:'Android reader',current_node:'a',mapping:{
+                root:{id:'root',parent:null,children:['u'],message:null},
+                u:{id:'u',parent:'root',children:['a'],message:message('u','user','Unrendered full-tree ancestor 中文')},
+                a:{id:'a',parent:'u',children:[],message:message('a','assistant','reply')}
+              }};
+              options.onConversationLoadedFromNetwork(tree);
+              window.novaReaderCalled=true;
+              return {normalized:true};
+            }
+            export {fullReader as alias};
+            window.novaReaderModuleLoaded=true;
+            """;
+        main(()-> {
+            android.webkit.WebViewClient previous=web.getWebViewClient();
+            web.setWebViewClient(new android.webkit.WebViewClient() {
+                @Override public android.webkit.WebResourceResponse shouldInterceptRequest(android.webkit.WebView view,android.webkit.WebResourceRequest request) {
+                    if ("https://chatgpt.com/cdn/assets/conversation-fixture.js".equals(request.getUrl().toString()))
+                        return new android.webkit.WebResourceResponse("application/javascript","UTF-8",new java.io.ByteArrayInputStream(module.getBytes(StandardCharsets.UTF_8)));
+                    return previous.shouldInterceptRequest(view,request);
+                }
+            });
+        });
+        // Load as the website does; then exercise production evaluateJavascript import.
+        js("(()=>{const s=document.createElement('script');s.type='module';s.src='/cdn/assets/conversation-fixture.js';document.head.append(s);return true;})()");
+        waitFor("website module loaded",()->"true".equals(js("window.novaReaderModuleLoaded===true")));
+        String capture;
+        try (java.io.InputStream input=activity.getAssets().open("export/capture.js")) { capture=new String(input.readAllBytes(),StandardCharsets.UTF_8); }
+        js("window.__novaExportCapture=null;"+capture);
+        export("HTML 阅读版（推荐）");
+        waitFor("reader export written",()->output()!=null && output().isFile());
+        assertEquals("true",js("window.novaReaderCalled===true"));
+        assertTrue(new String(java.nio.file.Files.readAllBytes(output().toPath()),StandardCharsets.UTF_8).contains("Unrendered full-tree ancestor 中文"));
+        instrument.sendKeyDownUpSync(android.view.KeyEvent.KEYCODE_BACK);
+    }
     @Test public void htmlSavesUnrenderedMessagesAndRealLink() throws Exception {
         conversation("# 未渲染标题\n\n**中文 English** [link](https://example.com/path?q=1#target)\n\n```java\ncode\n```\n");
         AtomicReference<Intent> captured=new AtomicReference<>();
