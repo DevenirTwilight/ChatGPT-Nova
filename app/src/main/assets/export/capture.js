@@ -1,7 +1,7 @@
 (() => {
   if (window !== window.top || location.origin !== 'https://chatgpt.com' || window.__novaExportCapture) return;
   const original = window.fetch;
-  const state = window.__novaExportCapture = {tree:null, id:null, generation:0,pages:[],collectPages:false};
+  const state = window.__novaExportCapture = {tree:null, id:null, generation:0,pages:[],collectPages:false,pagePhase:0};
   const diagnostics={modules:0,imports:0,candidates:0,reader:'not-found',http:'not-requested',pagination:'not-requested',pages:0,pageStage:'not-requested',pageFailure:'not-requested'};
   const moduleUrls=new Set(), assetUrls=new Set();
   const publicAsset=u=>(u.origin===location.origin || u.origin==='https://cdn.oaistatic.com') &&
@@ -21,28 +21,40 @@
   const currentId = () => location.pathname.match(/\/c\/([a-zA-Z0-9-]+)\/?$/)?.[1];
   // Observe only the current conversation response. Never inspect request headers.
   window.fetch = async function (...args) {
-    const generation=state.generation;
-    const response = await original.apply(this,args);
+    const generation=state.generation,phase=state.pagePhase,collecting=state.collectPages;
+    let url,id,kind,method,tracked=false;
     try {
-      const url = new URL(typeof args[0] === 'string' || args[0] instanceof URL ? String(args[0]) : args[0].url,location.href);
-      const id = currentId();
-      const method=args[1]?.method || (typeof args[0]==='object' && !(args[0] instanceof URL) ? args[0].method : null) || 'GET';
-      const kind=url.pathname==='/backend-api/conversations/'+id ? 'head' :
+      url=new URL(typeof args[0] === 'string' || args[0] instanceof URL ? String(args[0]) : args[0].url,location.href);
+      id=currentId();
+      method=args[1]?.method || (typeof args[0]==='object' && !(args[0] instanceof URL) ? args[0].method : null) || 'GET';
+      kind=url.pathname==='/backend-api/conversations/'+id ? 'head' :
         url.pathname==='/backend-api/conversations/'+id+'/messages' ? 'older' : null;
-      if (id && kind && method.toUpperCase()==='GET' && url.origin===location.origin && response.ok &&
-          generation===state.generation && state.collectPages && state.pages.length<802) {
+      tracked=!!(collecting && id && kind && method.toUpperCase()==='GET' && url.origin===location.origin);
+    } catch (_) {}
+    let requestArgs=args;
+    if (tracked) {
+      // Forward the page's options opaquely and override only this read's cache
+      // mode. The website still handles its own credentials and headers.
+      const init=Object.create(args[1] || null);
+      Object.defineProperty(init,'cache',{value:'no-store',enumerable:true});
+      requestArgs=[args[0],init,...args.slice(2)];
+    }
+    const response = await original.apply(this,requestArgs);
+    try {
+      if (tracked && response.ok && currentId()===id && generation===state.generation &&
+          collecting && state.collectPages && phase===state.pagePhase && state.pages.length<802) {
         // Body-only observation is bound to this read's exact conversation path
         // and opaque cursor. No request/response headers or credentials are read.
         const body=response.clone().text().then(raw=> {
-          if (raw.length>16*1024*1024 || generation!==state.generation || currentId()!==id) throw Error('Invalid page');
+          if (raw.length>16*1024*1024 || generation!==state.generation || phase!==state.pagePhase || currentId()!==id) throw Error('Invalid page');
           return JSON.parse(raw);
         });
         body.catch(()=>{});
-        state.pages.push({id,kind,before:url.searchParams.get('before'),
+        state.pages.push({id,kind,phase,before:url.searchParams.get('before'),
           numTurns:url.searchParams.get('num_turns'),includeMessageId:url.searchParams.get('include_message_id'),
-          ambiguousWindow:['num_turns','include_message_id'].some(key=>url.searchParams.getAll(key).length>1),body});
+          ambiguousWindow:['num_turns','include_message_id','before'].some(key=>url.searchParams.getAll(key).length>1),body});
       }
-      if (id && url.origin === location.origin && url.pathname === '/backend-api/conversation/' + id &&
+      if (id && url && url.origin === location.origin && url.pathname === '/backend-api/conversation/' + id &&
           url.searchParams.get('include_full_conversation') === 'true' && response.ok) {
         response.clone().text().then(raw => {
           if (raw.length > 16 * 1024 * 1024 || currentId() !== id || generation!==state.generation) return;
@@ -218,19 +230,27 @@
   };
   const readPagination = async (id,reader,signal) => {
     if (!window.NovaExportPagination) throw Error('Pagination verifier unavailable');
-    const startUrl=location.href;
-    const stable=()=>{if (id!==currentId() || location.href!==startUrl) throw Error('Conversation changed');};
-    const observed=async (from,kind,cursor) => {
+    const startUrl=location.href,generation=state.generation;
+    const stable=()=>{if (generation!==state.generation || id!==currentId() || location.href!==startUrl) throw Error('Conversation changed');};
+    const invalidWindow=()=>{const error=Error('Unsupported pagination window');error.novaExportReason='request-window-invalid';throw error;};
+    // Bind each response to the operation that actually started its request.
+    // A background request already in flight cannot satisfy a later guard.
+    const beginRead=()=>{stable();return {from:state.pages.length,phase:++state.pagePhase};};
+    const observed=async (read,kind,cursor,expectedWindow) => {
       stable();
-      const records=state.pages.slice(from).filter(r=>r.id===id && r.kind===kind && r.before===cursor);
+      const records=state.pages.slice(read.from).filter(r=>r.phase===read.phase && r.id===id && r.kind===kind && r.before===cursor);
       if (records.length!==1) throw Error('Pagination response missing or ambiguous');
-      return bounded(()=>records[0].body,signal);
+      const record=records[0];
+      if (record.ambiguousWindow || expectedWindow &&
+          (record.numTurns!==expectedWindow.numTurns || record.includeMessageId!==expectedWindow.includeMessageId)) invalidWindow();
+      const body=await bounded(()=>record.body,signal);stable();
+      return {body,record};
     };
     state.collectPages=true;
     try {
       // First let the ordinary page reader supply its own current route context.
       // A legacy full graph is acceptable; a partial synthetic graph is not.
-      let from=state.pages.length, tree=null;
+      let read=beginRead(), tree=null;
       diagnostics.pageStage='normal';
       try {
         let raw=null;
@@ -254,20 +274,20 @@
       }
       const options={clientThreadId:id,numTurns:50,signal,...Object.keys(additionalHeaders).length?{additionalHeaders}:{}};
       diagnostics.pageStage='head';
-      let head;
-      if (tree?.__paginatedConversationPage) head=await observed(from,'head',null);
+      let initial;
+      if (tree?.__paginatedConversationPage) initial=await observed(read,'head',null);
       else {
-        from=state.pages.length;stable();
+        read=beginRead();
         await bounded(()=>readers.initial(options),signal);
-        head=await observed(from,'head',null);
+        initial=await observed(read,'head',null);
       }
+      const head=initial.body;
       // Preserve the two public pagination query parameters actually used for
       // this head response, including their absence. DOM selection and the
       // reader's normalized marker cannot establish the original request window.
       // The page helper continues to supply authentication; no headers are read.
-      const initialRecord=state.pages.slice(from).find(record=>record.id===id && record.kind==='head' && record.before===null);
+      const initialRecord=initial.record;
       const sameWindow={...options};delete sameWindow.numTurns;
-      const invalidWindow=()=>{const error=Error('Unsupported pagination window');error.novaExportReason='request-window-invalid';throw error;};
       if (!initialRecord || initialRecord.ambiguousWindow) invalidWindow();
       if (initialRecord.numTurns!==null) {
         if (!/^(0|[1-9][0-9]{0,2})$/.test(initialRecord.numTurns) || Number(initialRecord.numTurns)>400) invalidWindow();
@@ -277,24 +297,44 @@
         if (!/^[a-zA-Z0-9-]{0,128}$/.test(initialRecord.includeMessageId)) invalidWindow();
         sameWindow.includeMessageId=initialRecord.includeMessageId;
       }
+      const headWindow={numTurns:initialRecord.numTurns,includeMessageId:initialRecord.includeMessageId};
+      const olderWindow={numTurns:initialRecord.numTurns,includeMessageId:null};
       const collector=NovaExportPagination.create(id).start(head,id);
       diagnostics.pages=1;
-      while (collector.nextCursor()!==null) {
-        diagnostics.pageStage='older';
-        const cursor=collector.nextCursor();from=state.pages.length;stable();
-        await bounded(()=>readers.older({...sameWindow,cursor,moderationResults:head.moderation_results || []}),signal);
-        collector.add(await observed(from,'older',cursor),id,cursor);
-        diagnostics.pages++;
-      }
+      const traverse=async (target,seed,stage)=> {
+        while (target.nextCursor()!==null) {
+          diagnostics.pageStage=stage;
+          const cursor=target.nextCursor();read=beginRead();
+          await bounded(()=>readers.older({...sameWindow,cursor,moderationResults:seed.moderation_results || []}),signal);
+          target.add((await observed(read,'older',cursor,olderWindow)).body,id,cursor);
+          diagnostics.pages++;
+        }
+      };
+      await traverse(collector,head,'older');
       diagnostics.pageStage='recheck-request';
-      from=state.pages.length;stable();
+      read=beginRead();
       await bounded(()=>readers.initial(sameWindow),signal);
       diagnostics.pageStage='recheck-response';
-      const freshHead=await observed(from,'head',null);
+      const freshHead=(await observed(read,'head',null,headWindow)).body;
       diagnostics.pageStage='recheck-verify';
-      collector.recheck(freshHead,id);stable();
+      const replay=collector.review(freshHead,id);
+      if (replay) {
+        // Unknown metadata drift alone cannot establish completeness. Re-read
+        // every raw message with this fresh head's cursor, then guard that read
+        // with a third head before comparing the two exhausted traversals.
+        diagnostics.pages++;
+        await traverse(replay,freshHead,'replay-older');
+        diagnostics.pageStage='replay-recheck-request';read=beginRead();
+        await bounded(()=>readers.initial(sameWindow),signal);
+        diagnostics.pageStage='replay-recheck-response';
+        const finalHead=(await observed(read,'head',null,headWindow)).body;
+        diagnostics.pageStage='replay-recheck-verify';
+        replay.recheck(finalHead,id);
+        diagnostics.pageStage='replay-compare';collector.confirmReplay(replay);
+      }
+      stable();
       const complete=collector.finish();diagnostics.pagination='ok';diagnostics.pageStage='done';return complete;
-    } finally {state.collectPages=false;}
+    } finally {if (generation===state.generation) state.collectPages=false;}
   };
   // Used only by an explicit export gesture; no session/token endpoints.
   window.__novaReadConversation = async id => {
@@ -332,7 +372,8 @@
       try {return await readPagination(id,reader,pagesAbort.signal);}
       catch (error) {
         diagnostics.pagination='failed-'+category(error);
-        const reasons=['request-window-invalid','head-messages-changed','head-branch-changed','head-metadata-changed'];
+        const reasons=['request-window-invalid','head-messages-changed','head-branch-changed','head-metadata-changed',
+          'head-title-changed','head-update-time-changed','head-moderation-changed','head-link-metadata-changed','replay-messages-changed'];
         diagnostics.pageFailure=reasons.includes(error?.novaExportReason) ? error.novaExportReason : 'unclassified';
       }
       finally {clearTimeout(pagesTimeout);pagesAbort.abort();}

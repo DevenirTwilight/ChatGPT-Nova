@@ -8,13 +8,19 @@
     Object.fromEntries(Object.keys(value).sort().map(key=>[key,canonical(value[key])])) : value;
   const fingerprint=value=>JSON.stringify(canonical(value));
   const byteLength=value=>new TextEncoder().encode(value).length;
+  const internals=new WeakMap();
 
   function create(conversationId) {
-    let broken=false, started=false, checked=false, pages=0, bytes=0, cursor=null;
+    return collect(conversationId,{pages:0,bytes:0,broken:false},null);
+  }
+  function collect(conversationId,budget,replayOwner,seed) {
+    let started=false, checked=false, cursor=null, replay=null;
     let head=null, headProof=null, messages=[];
     const cursors=new Set();
-    const fail=(detail,reason)=>{broken=true;const error=new Error('无法确认完整会话：'+detail);if(reason) error.novaExportReason=reason;throw error;};
-    const healthy=()=>{if (broken) fail('分页验证已经失败');};
+    // An independent replay shares both resource limits and failure state with
+    // the original traversal. A failed replay can never leave an exportable one.
+    const fail=(detail,reason)=>{budget.broken=true;const error=new Error('无法确认完整会话：'+detail);if(reason) error.novaExportReason=reason;throw error;};
+    const healthy=()=>{if (budget.broken) fail('分页验证已经失败');};
     if (typeof conversationId!=='string' || !conversationId) fail('分页会话 ID 无效');
     const rootId='paginated-complete:'+conversationId;
 
@@ -28,8 +34,8 @@
       let serialized;
       try {serialized=JSON.stringify(raw);} catch (_) {fail('分页响应无法验证');}
       if (typeof serialized!=='string') fail('分页响应无法验证');
-      bytes+=byteLength(serialized);
-      if (bytes>MAX_BYTES) fail('分页会话数据过大');
+      budget.bytes+=byteLength(serialized);
+      if (budget.bytes>MAX_BYTES) fail('分页会话数据过大');
       // Retain JSON data rather than live objects or accessors supplied by a page.
       const page=JSON.parse(serialized), info=page.page_info;
       if (page.has_missing_conversation_data===true || page.is_partial===true)
@@ -56,29 +62,49 @@
       const {start_cursor,...stableInfo}=info;
       return fingerprint({...rest,page_info:stableInfo});
     };
+    const sameField=(left,right,key)=>own(left,key)===own(right,key) && fingerprint(left[key])===fingerprint(right[key]);
+    const consistentHead=page=> {
+      if (page.current_node!==head.current_node) fail('分页读取期间服务器分支发生变化','head-branch-changed');
+      if (fingerprint(page.messages)!==fingerprint(head.messages)) fail('分页读取期间会话正文发生变化','head-messages-changed');
+      if (!sameField(page,head,'title')) fail('分页读取期间会话元数据发生变化（标题）','head-title-changed');
+      if (page.page_info.has_previous_page!==head.page_info.has_previous_page)
+        fail('分页读取期间会话元数据发生变化（完整性）','head-metadata-changed');
+      if (!sameField(page,head,'update_time')) fail('分页读取期间会话元数据发生变化（更新时间）','head-update-time-changed');
+      if (!sameField(page,head,'moderation_results')) fail('分页读取期间会话元数据发生变化（审核结果）','head-moderation-changed');
+      if (['safe_urls','blocked_urls'].some(key=>!sameField(page,head,key)))
+        fail('分页读取期间会话元数据发生变化（链接状态）','head-link-metadata-changed');
+    };
     const advance=page=> {
       const next=page.page_info.has_previous_page ? page.page_info.start_cursor : null;
       if (next!==null && cursors.has(next)) fail('分页游标未前进或重复');
       if (next!==null) cursors.add(next);
       cursor=next;
     };
+    const initialize=page=> {
+      if (budget.pages>=MAX_PAGES) fail('分页数量超出限制');
+      if (!page.messages.length || typeof page.current_node!=='string' ||
+          page.messages[page.messages.length-1].id!==page.current_node)
+        fail('分页末条消息与服务器分支不一致');
+      head=page;headProof=headEvidence(page);messages=page.messages.slice();
+      started=true;budget.pages++;advance(page);
+    };
+    const ready=()=> {
+      healthy();
+      if (!started || cursor!==null) fail('分页尚未读取完整');
+      if (replay) fail('独立复读验证尚未完成');
+    };
     const api={
       start(raw,scopedPathId) {
         healthy();
         if (started) fail('分页读取已经开始');
-        const page=readPage(raw,scopedPathId);
-        if (!page.messages.length || typeof page.current_node!=='string' ||
-            page.messages[page.messages.length-1].id!==page.current_node)
-          fail('分页末条消息与服务器分支不一致');
-        head=page;headProof=headEvidence(page);messages=page.messages.slice();
-        started=true;pages=1;advance(page);
+        initialize(readPage(raw,scopedPathId));
         return api;
       },
       nextCursor() {healthy();if (!started) fail('分页读取尚未开始');return cursor;},
       add(raw,scopedPathId,requestedCursor) {
         healthy();
         if (!started || cursor===null || requestedCursor!==cursor) fail('分页请求游标不匹配');
-        if (pages>=MAX_PAGES) fail('分页数量超出限制');
+        if (budget.pages>=MAX_PAGES) fail('分页数量超出限制');
         const page=readPage(raw,scopedPathId);
         if (own(page,'current_node') && page.current_node!==head.current_node) fail('分页读取期间服务器分支发生变化');
         const positions=new Map(messages.map((message,index)=>[message.id,index]));
@@ -92,22 +118,45 @@
           older=page.messages.slice(0,firstOverlap);
         }
         if (!older.length && page.page_info.has_previous_page) fail('分页未提供更早消息');
-        advance(page);messages=older.concat(messages);pages++;checked=false;
+        advance(page);messages=older.concat(messages);budget.pages++;checked=false;
         return api;
       },
       recheck(raw,scopedPathId) {
-        healthy();
-        if (!started || cursor!==null) fail('分页尚未读取完整');
+        ready();
         const page=readPage(raw,scopedPathId);
-        if (page.current_node!==head.current_node) fail('分页读取期间服务器分支发生变化','head-branch-changed');
-        if (fingerprint(page.messages)!==fingerprint(head.messages)) fail('分页读取期间会话正文发生变化','head-messages-changed');
-        if (headEvidence(page)!==headProof) fail('分页读取期间会话元数据发生变化','head-metadata-changed');
+        consistentHead(page);
+        if (!replayOwner && headEvidence(page)!==headProof) fail('分页读取期间会话元数据发生变化','head-metadata-changed');
+        checked=true;
+        return api;
+      },
+      // A metadata-only difference is insufficient to emit. The fresh head is
+      // instead the start of one independent, fully exhausted cursor traversal.
+      review(raw,scopedPathId) {
+        ready();
+        if (replayOwner) fail('独立复读不能重复恢复');
+        const page=readPage(raw,scopedPathId);
+        consistentHead(page);
+        if (headEvidence(page)===headProof) {checked=true;return null;}
+        checked=false;
+        replay=collect(conversationId,budget,api,page);
+        return replay;
+      },
+      confirmReplay(candidate) {
+        healthy();
+        const proof=internals.get(candidate);
+        if (replayOwner || !replay || candidate!==replay || !proof || proof.owner!==api ||
+            proof.budget!==budget || proof.id!==conversationId || !proof.complete())
+          fail('独立复读完整性或末端复核尚未完成');
+        const fresh=proof.head();
+        consistentHead(fresh);
+        if (fingerprint(proof.messages())!==fingerprint(messages))
+          fail('独立复读期间会话正文发生变化','replay-messages-changed');
         checked=true;
         return api;
       },
       finish() {
         healthy();
-        if (!started || cursor!==null || !checked) fail('分页完整性或末端复核尚未完成');
+        if (replayOwner || !started || cursor!==null || !checked) fail('分页完整性或末端复核尚未完成');
         const mapping=Object.create(null);
         mapping[rootId]={id:rootId,parent:null,children:[messages[0].id],message:null};
         messages.forEach((message,index)=> {
@@ -115,11 +164,17 @@
             children:index+1<messages.length ? [messages[index+1].id] : []};
         });
         const tree={conversation_id:conversationId,title:head.title || '未命名会话',current_node:head.current_node,mapping,
-          __novaPaginationProof:{method:'cursor-pagination',pages,exhausted:true}};
+          __novaPaginationProof:{method:'cursor-pagination',pages:budget.pages,exhausted:true}};
         if (byteLength(JSON.stringify(tree))>MAX_BYTES) fail('分页会话数据过大');
         return tree;
       }
     };
+    internals.set(api,{id:conversationId,owner:replayOwner,budget,
+      complete:()=>started && cursor===null && checked && !budget.broken,
+      head:()=>head,messages:()=>messages});
+    // review() already validated and charged this response body. Count it once
+    // as the new traversal's head rather than charging its bytes a second time.
+    if (seed) initialize(seed);
     return api;
   }
   const api={create};

@@ -185,3 +185,140 @@ test('reserved synthetic root IDs cannot overwrite the proof root',()=> {
  const head=initial([{...message('m1'),id:'paginated-complete:fixture'}],false);
  assert.throws(()=>collector().start(head,'fixture'),/消息 ID/);
 });
+
+const completeFirst=head=> {
+ const c=collector().start(head,'fixture');
+ if (c.nextCursor()!==null) c.add(page(rows(0,2)),'fixture',c.nextCursor());
+ return c;
+};
+const driftingHead=head=> {
+ const fresh=clone(head);fresh.server_metadata={request:'second'};
+ fresh.page_info.start_cursor='fresh-older';fresh.page_info.end_cursor='fresh-end';
+ return fresh;
+};
+test('review retains the strict single-traversal fast path',()=> {
+ const head=initial(), c=completeFirst(head), fresh=clone(head);fresh.page_info.start_cursor='rotated';
+ assert.equal(c.review(fresh,'fixture'),null);
+ assert.deepEqual(c.finish().__novaPaginationProof,{method:'cursor-pagination',pages:2,exhausted:true});
+});
+test('unknown metadata drift requires a complete independent traversal and end-head guard',()=> {
+ const head=initial(), c=completeFirst(head), fresh=driftingHead(head), replay=c.review(fresh,'fixture');
+ assert.equal(replay.nextCursor(),'fresh-older');
+ replay.add(page(rows(0,2)),'fixture','fresh-older');
+ const final=clone(fresh);final.server_metadata={request:'third'};final.page_info.end_cursor='another-end';
+ final.page_info.start_cursor='another-opaque-token';
+ replay.recheck(final,'fixture');
+ const tree=c.confirmReplay(replay).finish();
+ assert.deepEqual(tree.__novaPaginationProof,{method:'cursor-pagination',pages:4,exhausted:true});
+ assert.deepEqual(core.normalize(tree,'fixture',['m3']).messages.map(m=>m.id),['m0','m1','m2','m3']);
+});
+test('review cannot emit after accepting only identical latest messages',()=> {
+ const head=initial(), c=completeFirst(head);c.review(driftingHead(head),'fixture');
+ assert.throws(()=>c.finish(),/尚未完成/);
+});
+test('an independently checked replay cannot emit before comparison with the original traversal',()=> {
+ const head=initial(), c=completeFirst(head), fresh=driftingHead(head), replay=c.review(fresh,'fixture');
+ replay.add(page(rows(0,2)),'fixture','fresh-older').recheck(fresh,'fixture');
+ assert.throws(()=>replay.finish(),/尚未完成/);
+ assert.throws(()=>c.confirmReplay(replay),/已经失败/);
+});
+test('an exhausted replay without a final head guard cannot confirm completeness',()=> {
+ const head=initial(), c=completeFirst(head), replay=c.review(driftingHead(head),'fixture');
+ replay.add(page(rows(0,2)),'fixture','fresh-older');
+ assert.throws(()=>c.confirmReplay(replay),/末端复核尚未完成/);
+});
+test('an unexhausted replay cannot confirm completeness',()=> {
+ const head=initial(), c=completeFirst(head), replay=c.review(driftingHead(head),'fixture');
+ assert.throws(()=>c.confirmReplay(replay),/末端复核尚未完成/);
+});
+test('a checked foreign collector is not an independent proof for this traversal',()=> {
+ const head=initial(), c=completeFirst(head), fresh=driftingHead(head);c.review(fresh,'fixture');
+ const foreign=completeFirst(fresh).recheck(fresh,'fixture');
+ assert.throws(()=>c.confirmReplay(foreign),/末端复核尚未完成/);
+});
+test('a replay cannot recursively recover from further unknown metadata drift',()=> {
+ const head=initial(), c=completeFirst(head), fresh=driftingHead(head), replay=c.review(fresh,'fixture');
+ replay.add(page(rows(0,2)),'fixture','fresh-older');
+ assert.throws(()=>replay.review({...fresh,other_metadata:1},'fixture'),/不能重复恢复/);
+ assert.throws(()=>c.finish(),/已经失败/);
+});
+test('the original collector cannot replace its pending replay with a second review',()=> {
+ const head=initial(), c=completeFirst(head), fresh=driftingHead(head);c.review(fresh,'fixture');
+ assert.throws(()=>c.review(fresh,'fixture'),/独立复读验证尚未完成/);
+});
+for (const [name,mutate] of [
+ ['older text',m=>m.content.parts=['edited old prompt']],
+ ['older citations',m=>m.metadata={citations:[{url:'https://example.com/changed'}]}],
+ ['older role',m=>m.author.role='assistant'],
+ ['older hidden status',m=>m.metadata={is_visually_hidden_from_conversation:true}],
+ ['older completion status',m=>m.status='in_progress']
+]) test('independent replay rejects changed '+name+' despite identical recent messages',()=> {
+ const head=initial(), c=completeFirst(head), fresh=driftingHead(head), replay=c.review(fresh,'fixture');
+ const old=rows(0,2);mutate(old[0]);
+ replay.add(page(old),'fixture','fresh-older').recheck(fresh,'fixture');
+ assert.throws(()=>c.confirmReplay(replay),error=>error.novaExportReason==='replay-messages-changed');
+ assert.throws(()=>c.finish(),/已经失败/);
+});
+for (const [name,older] of [
+ ['inserted ancestor',[message('m-extra'),...rows(0,2)]],
+ ['deleted ancestor',[message('m1')]],
+ ['reordered ancestors',[message('m1'),message('m0')]]
+]) test('independent replay rejects '+name+' despite identical recent messages',()=> {
+ const head=initial(), c=completeFirst(head), fresh=driftingHead(head), replay=c.review(fresh,'fixture');
+ replay.add(page(older),'fixture','fresh-older').recheck(fresh,'fixture');
+ assert.throws(()=>c.confirmReplay(replay),error=>error.novaExportReason==='replay-messages-changed');
+});
+for (const [name,mutate,reason] of [
+ ['title',p=>p.title='Changed title','head-title-changed'],
+ ['known update time',p=>p.update_time=1001,'head-update-time-changed'],
+ ['known moderation data',p=>p.moderation_results=[{blocked:true}],'head-moderation-changed'],
+ ['known safe URLs',p=>p.safe_urls=['https://example.com/new'],'head-link-metadata-changed'],
+ ['known blocked URLs',p=>p.blocked_urls=['https://example.com/new'],'head-link-metadata-changed'],
+ ['exhaustion state',p=>p.page_info.has_previous_page=false,'head-metadata-changed']
+]) test('review rejects changed '+name+' instead of recovering',()=> {
+ const head=initial();head.update_time=1000;head.moderation_results=[];head.safe_urls=[];head.blocked_urls=[];
+ const c=completeFirst(head), fresh=driftingHead(head);mutate(fresh);
+ assert.throws(()=>c.review(fresh,'fixture'),error=>error.novaExportReason===reason);
+ assert.throws(()=>c.finish(),/已经失败/);
+});
+test('replay end-head guard continues to reject recognized version changes',()=> {
+ const head=initial();head.update_time=1000;
+ const c=completeFirst(head), fresh=driftingHead(head), replay=c.review(fresh,'fixture');
+ replay.add(page(rows(0,2)),'fixture','fresh-older');
+ assert.throws(()=>replay.recheck({...fresh,update_time:1001},'fixture'),error=>error.novaExportReason==='head-update-time-changed');
+ assert.throws(()=>c.confirmReplay(replay),/已经失败/);
+});
+test('replay end-head guard rejects latest message changes',()=> {
+ const head=initial(), c=completeFirst(head), fresh=driftingHead(head), replay=c.review(fresh,'fixture');
+ replay.add(page(rows(0,2)),'fixture','fresh-older');
+ const final=clone(fresh);final.messages[0].content.parts=['changed again'];
+ assert.throws(()=>replay.recheck(final,'fixture'),error=>error.novaExportReason==='head-messages-changed');
+ assert.throws(()=>c.finish(),/已经失败/);
+});
+test('a replay page with missing exhaustion cannot establish an independent proof',()=> {
+ const head=initial(), c=completeFirst(head), replay=c.review(driftingHead(head),'fixture'), old=page(rows(0,2));
+ delete old.page_info.has_previous_page;
+ assert.throws(()=>replay.add(old,'fixture','fresh-older'),/完整性标记缺失/);
+ assert.throws(()=>c.finish(),/已经失败/);
+});
+test('replay must use its freshly issued cursor rather than the original cursor',()=> {
+ const head=initial(), c=completeFirst(head), replay=c.review(driftingHead(head),'fixture');
+ assert.throws(()=>replay.add(page(rows(0,2)),'fixture','older'),/游标不匹配/);
+ assert.throws(()=>c.finish(),/已经失败/);
+});
+test('both traversals share the cumulative 400-page limit',()=> {
+ const head=initial([message('m200')],true,'a1'), c=collector().start(head,'fixture');
+ for (let n=1;n<=199;n++) c.add(page([message('m'+(200-n))],n<199,'a'+(n+1)),'fixture','a'+n);
+ const fresh=driftingHead(head), replay=c.review(fresh,'fixture');
+ for (let n=1;n<=199;n++) replay.add(page([message('m'+(200-n))],true,'b'+(n+1)),'fixture',n===1?'fresh-older':'b'+n);
+ assert.throws(()=>replay.add(page([]),'fixture','b200'),/分页数量/);
+ assert.throws(()=>c.finish(),/已经失败/);
+});
+test('all response bodies across both traversals share the cumulative 16 MiB limit',()=> {
+ const head=initial();head.large_metadata='x'.repeat(4*1024*1024);
+ const c=completeFirst(head), fresh=driftingHead(head), replay=c.review(fresh,'fixture');
+ replay.add(page(rows(0,2)),'fixture','fresh-older');
+ const final=clone(fresh);final.large_metadata='y'.repeat(9*1024*1024);
+ assert.throws(()=>replay.recheck(final,'fixture'),/数据过大/);
+ assert.throws(()=>c.finish(),/已经失败/);
+});

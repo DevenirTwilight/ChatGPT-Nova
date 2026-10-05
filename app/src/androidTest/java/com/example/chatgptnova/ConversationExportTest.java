@@ -8,6 +8,7 @@ import android.view.accessibility.AccessibilityNodeInfo;
 import java.io.File;
 import java.lang.reflect.Field;
 import java.nio.charset.StandardCharsets;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.After;
 import org.junit.Before;
@@ -138,13 +139,14 @@ public final class ConversationExportTest extends FixtureActivity {
         assertTrue(new String(java.nio.file.Files.readAllBytes(output().toPath()),StandardCharsets.UTF_8).contains("Unrendered full-tree ancestor 中文"));
         instrument.sendKeyDownUpSync(android.view.KeyEvent.KEYCODE_BACK);
     }
-    private static String paginatedResponse(boolean initial, boolean omitFinalFlag) {
+    private static String paginatedResponse(boolean initial, boolean omitFinalFlag, int headSequence, boolean mutateAncestor) {
         try {
             org.json.JSONObject page=new org.json.JSONObject();
             page.put("conversation_id","fixture");page.put("title","Android paginated reader 中文");
             org.json.JSONArray messages=new org.json.JSONArray();
             for(int index=initial ? 200 : 0;index<(initial ? 400 : 200);index++) {
                 String text=index==0 ? "Unrendered paginated ancestor 中文" : index==399 ? "reply" : "Paginated body "+index;
+                if(index==0 && mutateAncestor) text="Changed replay ancestor 中文";
                 org.json.JSONObject message=new org.json.JSONObject();
                 message.put("id","m"+index);message.put("author",new org.json.JSONObject().put("role",index%2==0 ? "user" : "assistant"));
                 message.put("recipient","all");message.put("status","finished_successfully");
@@ -154,12 +156,18 @@ public final class ConversationExportTest extends FixtureActivity {
             page.put("messages",messages);
             org.json.JSONObject info=new org.json.JSONObject();
             if(initial || !omitFinalFlag) info.put("has_previous_page",initial);
-            info.put("start_cursor",initial ? "older-page" : org.json.JSONObject.NULL);
+            info.put("start_cursor",initial ? headSequence>0 ? "older-page-"+headSequence : "older-page" : org.json.JSONObject.NULL);
             page.put("page_info",info);if(initial) page.put("current_node","m399");
+            // Synthetic request-specific metadata varies on every fresh head;
+            // the exported messages and all recognized consistency fields do not.
+            if(initial && headSequence>0) page.put("request_metadata",new org.json.JSONObject().put("sequence",headSequence));
             return page.toString();
         } catch(org.json.JSONException error) { throw new AssertionError(error); }
     }
     private void paginatedReaderFixture(boolean omitFinalFlag) {
+        paginatedReaderFixture(omitFinalFlag,false,false);
+    }
+    private void paginatedReaderFixture(boolean omitFinalFlag, boolean metadataDrift, boolean mutateReplayAncestor) {
         js("""
             (()=>{
               history.replaceState({},'', '/c/fixture');
@@ -203,13 +211,13 @@ public final class ConversationExportTest extends FixtureActivity {
             }
             export async function previousPage({clientThreadId,cursor,moderationResults,numTurns,signal,onNetworkAttempt,additionalHeaders}) {
               window.novaPaginationPreviousCalls++;
-              if(cursor!=='older-page') throw Error('Unexpected synthetic cursor');
+              if(cursor!=='older-page' && !/^older-page-[1-9][0-9]*$/.test(cursor)) throw Error('Unexpected synthetic cursor');
               const raw=await api.safeGet('/conversations/{conversation_id}/messages',{parameters:{path:{conversation_id:clientThreadId},query:{before:cursor,include_has_versions:true,num_turns:numTurns}},signal,onNetworkAttempt,...additionalHeaders?{additionalHeaders}:{}});
               return {cursor:raw.page_info.has_previous_page?raw.page_info.start_cursor:null,messagesLeafToRoot:[...raw.messages].reverse(),moderationResults,numTurns,oldestMessageId:raw.messages[0]?.id??null};
             }
             export {initialPage as initialAlias,previousPage as previousAlias};
             """;
-        String initial=paginatedResponse(true,false),previous=paginatedResponse(false,omitFinalFlag);
+        AtomicInteger headResponses=new AtomicInteger(),previousResponses=new AtomicInteger();
         main(()-> {
             android.webkit.WebViewClient original=web.getWebViewClient();
             web.setWebViewClient(new android.webkit.WebViewClient() {
@@ -225,7 +233,17 @@ public final class ConversationExportTest extends FixtureActivity {
                             // Older reads must retain the same turn parameter.
                             if(url.getQueryParameterNames().contains("include_message_id") || !"50".equals(url.getQueryParameter("num_turns")))
                                 return new android.webkit.WebResourceResponse("application/json","UTF-8",400,"Bad Request",java.util.Collections.emptyMap(),new java.io.ByteArrayInputStream("{}".getBytes(StandardCharsets.UTF_8)));
-                            source="/backend-api/conversations/fixture".equals(path) ? initial : previous;type="application/json";
+                            if("/backend-api/conversations/fixture".equals(path)) {
+                                int sequence=headResponses.incrementAndGet();
+                                source=paginatedResponse(true,false,metadataDrift ? sequence : 0,false);
+                            } else {
+                                String expectedCursor=metadataDrift ? "older-page-"+headResponses.get() : "older-page";
+                                if(!expectedCursor.equals(url.getQueryParameter("before")))
+                                    return new android.webkit.WebResourceResponse("application/json","UTF-8",400,"Bad Request",java.util.Collections.emptyMap(),new java.io.ByteArrayInputStream("{}".getBytes(StandardCharsets.UTF_8)));
+                                int sequence=previousResponses.incrementAndGet();
+                                source=paginatedResponse(false,omitFinalFlag,0,mutateReplayAncestor && sequence>1);
+                            }
+                            type="application/json";
                         }
                         else if("/backend-api/conversation/fixture".equals(path))
                             return new android.webkit.WebResourceResponse("application/json","UTF-8",403,"Forbidden",java.util.Collections.emptyMap(),new java.io.ByteArrayInputStream("{}".getBytes(StandardCharsets.UTF_8)));
@@ -261,6 +279,34 @@ public final class ConversationExportTest extends FixtureActivity {
         assertTrue(dumpPrintWindow(instrument.getUiAutomation().getRootInActiveWindow()).contains("无法确认完整会话"));
         assertFalse(busy());assertNull(output());
         assertEquals("1",js("window.novaPaginationPreviousCalls"));
+        click("知道了");
+    }
+    @Test public void paginatedMetadataDriftVerifiesIndependentCompleteReplay() throws Exception {
+        paginatedReaderFixture(false,true,false);
+        export("HTML 阅读版（推荐）");
+        waitFor("replayed complete paginated export written",()->output()!=null && output().isFile());
+        String document=new String(java.nio.file.Files.readAllBytes(output().toPath()),StandardCharsets.UTF_8);
+        assertTrue(document.contains("Unrendered paginated ancestor 中文"));
+        assertTrue(document.contains("Paginated body 199"));assertTrue(document.contains("Paginated body 200"));
+        assertEquals(400,document.split("<article",-1).length-1);
+        // The interceptor accepts only the most recently issued cursor, so these
+        // counts require two independent exhausted reads and a third fresh head.
+        assertEquals("3",js("window.novaPaginationInitialCalls"));
+        assertEquals("2",js("window.novaPaginationPreviousCalls"));
+        assertEquals("1",js("window.novaPaginationFullCalls"));
+        instrument.sendKeyDownUpSync(android.view.KeyEvent.KEYCODE_BACK);
+    }
+    @Test public void paginatedReplayChangedUnrenderedAncestorRefusesFile() {
+        paginatedReaderFixture(false,true,true);
+        main(()->exporter().start());
+        waitFor("changed replay refusal",()->findControl(instrument.getUiAutomation().getRootInActiveWindow(),"未能导出会话")!=null);
+        String diagnostic=dumpPrintWindow(instrument.getUiAutomation().getRootInActiveWindow());
+        assertTrue(diagnostic.contains("无法确认完整会话"));
+        assertTrue(diagnostic.contains("replay-messages-changed"));
+        assertFalse(busy());assertNull(output());
+        assertEquals("3",js("window.novaPaginationInitialCalls"));
+        assertEquals("2",js("window.novaPaginationPreviousCalls"));
+        assertEquals("1",js("window.novaPaginationFullCalls"));
         click("知道了");
     }
     @Test public void htmlSavesUnrenderedMessagesAndRealLink() throws Exception {
