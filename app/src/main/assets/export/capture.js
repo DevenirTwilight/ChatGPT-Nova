@@ -5,7 +5,7 @@
   const diagnostics={modules:0,imports:0,candidates:0,reader:'not-found',http:'not-requested',pagination:'not-requested',pages:0,pageStage:'not-requested'};
   const moduleUrls=new Set(), assetUrls=new Set();
   const publicAsset=u=>(u.origin===location.origin || u.origin==='https://cdn.oaistatic.com') &&
-    /\/(?:cdn\/)?assets\/[a-zA-Z0-9_-]+\.js$/.test(u.pathname) && !u.search && !u.hash;
+    /\/(?:cdn\/)?assets\/[a-zA-Z0-9_-]+\.js$/.test(u.pathname);
   const remember=name=> {
     try {
       const u=new URL(name,location.href);
@@ -157,7 +157,12 @@
       diagnostics.pageStage='discovery-loaded-assets';
       performance.getEntriesByType('resource').forEach(e=>remember(e.name));
       document.querySelectorAll('script[src],link[rel="modulepreload"]').forEach(e=>remember(e.src || e.href));
-      const loaded=[...assetUrls].filter(url=>url!==reader.url).slice(-96);
+      const allLoaded=[...assetUrls].filter(url=>url!==reader.url);
+      const readerIndex=[...assetUrls].indexOf(reader.url);
+      const loaded=allLoaded.sort((left,right)=> {
+        if (readerIndex<0) return 0;
+        return Math.abs([...assetUrls].indexOf(left)-readerIndex)-Math.abs([...assetUrls].indexOf(right)-readerIndex);
+      }).slice(0,256);
       let found=null;
       for (const url of loaded) {
         try {
