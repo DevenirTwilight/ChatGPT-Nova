@@ -98,14 +98,18 @@
     // normal paginated path. All source/imports are already loaded public JS.
     const source=Function.prototype.toString.call(reader.fn);
     const callees=[...new Set([...source.matchAll(/await\s+([\w$]+)\(\{\s*additionalHeaders:[^,}]+,\s*clientThreadId:/g)].map(m=>m[1]))];
-    if (callees.length!==1) throw Error('Unsupported pagination binding');
+    // The current site reader names the initial and older-page helpers
+    // separately (for example `aoe` and `gae`); the initial helper may also
+    // be called from a cursor-restart path. Keep all discovered bindings and
+    // resolve their single already-loaded static dependency below.
+    if (!callees.length || callees.length>4) throw Error('Unsupported pagination binding');
     const response=await bounded(()=>original(reader.url,{credentials:'omit',signal}),signal);
     if (!response.ok) throw Error('Public module unavailable');
     const moduleSource=await bounded(()=>response.text(),signal);
     if (moduleSource.length>4*1024*1024) throw Error('Public module too large');
     const dependencies=new Set();
     for (const match of moduleSource.matchAll(/import\s*\{([^}]+)\}\s*from\s*([`"'])\s*([^`"']+)\2/g)) {
-      if (match[1].split(',').some(binding=>binding.trim().split(/\s+as\s+/).at(-1)===callees[0])) {
+      if (match[1].split(',').some(binding=>callees.includes(binding.trim().split(/\s+as\s+/).at(-1)))) {
         const dependency=new URL(match[3],reader.url);
         if (publicAsset(dependency)) dependencies.add(dependency.href);
       }

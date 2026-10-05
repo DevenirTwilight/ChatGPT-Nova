@@ -11,7 +11,7 @@ const projectId='g-p-1234567890abcdef1234567890abcdef',conversationPath='/g/'+pr
 // helper intentionally returns normalized data without page_info: completeness
 // must come from capture.js observing the original response bodies instead.
 const readerModule=`
-import {initial} from './page-helper-fixture.js';
+import {initial,older} from './page-helper-fixture.js';
 export async function reader(id,options={}) {
   if (!options.forceNetworkFetch) throw Error('A fresh read is required');
   const endpoint='/conversation/{conversation_id}';
@@ -25,6 +25,9 @@ export async function reader(id,options={}) {
   if (legacy.ok) {const tree=await legacy.json();options.onConversationLoadedFromNetwork(tree);return tree;}
   const context={};
   if (options.projectId) context['chatgpt-project-id']=options.projectId;
+  // Keep a second, older-page binding in the reader source as current public
+  // builds do; it must resolve to the same loaded dependency.
+  if (false) await older({additionalHeaders:context,clientThreadId:id,cursor:'unused',moderationResults:[],numTurns:20,signal:options.signal});
   const data=await initial({additionalHeaders:context,clientThreadId:id,numTurns:20,signal:options.signal});
   const tree={conversation_id:id,current_node:data.serverCurrentLeafId,mapping:{},__paginatedConversationPage:true};
   options.onConversationLoadedFromNetwork(tree);return tree;
