@@ -56,6 +56,29 @@
     }
     return null;
   };
+  // Some site builds retain the raw tree in current-message React props.
+  // Inspect only explicit conversation fields on that message's ancestors; do
+  // not crawl global stores, hooks, account providers or unrelated React branches.
+  const pageTree = id => {
+    const anchors=[...document.querySelectorAll('[data-message-id][data-message-author-role]')].slice(-2);
+    const seen=new Set();
+    const own=(object,key)=>object && typeof object==='object' ? Object.getOwnPropertyDescriptor(object,key)?.value : undefined;
+    for (const anchor of anchors) {
+      const key=Object.getOwnPropertyNames(anchor).find(k=>k.startsWith('__reactFiber$'));
+      let fiber=key ? own(anchor,key) : null;
+      for (let depth=0;fiber && depth<100 && !seen.has(fiber);depth++,fiber=own(fiber,'return')) {
+        seen.add(fiber);
+        const props=own(fiber,'memoizedProps');
+        for (const name of ['conversation','conversationData','initialConversation','serverConversation']) {
+          const tree=own(props,name);
+          if (own(tree,'conversation_id')===id && own(tree,'mapping') && own(tree,'current_node')) {
+            if (JSON.stringify(tree).length<=16*1024*1024) return tree;
+          }
+        }
+      }
+    }
+    return null;
+  };
   // Used only by an explicit export gesture; no session/token endpoints.
   window.__novaReadConversation = async id => {
     Object.assign(diagnostics,{modules:0,imports:0,candidates:0,reader:'not-found',http:'not-requested'});
@@ -91,6 +114,9 @@
       if (diagnostics.reader==='calling') diagnostics.reader='failed-'+(Number.isInteger(error?.status)?error.status:(['TypeError','SyntaxError','AbortError'].includes(error?.name)?error.name:'error'));
       else if (diagnostics.http==='not-requested' && diagnostics.reader!=='invalid-tree') diagnostics.http='network-error';
     } finally { clearTimeout(timeout); }
+    if (id!==currentId()) throw new Error('会话发生变化，请重试');
+    const retained=pageTree(id);
+    if (retained) return retained;
     if (state.id === id && state.tree) return state.tree;
     throw new Error('无法确认完整会话：未能通过网页的完整会话读取流程取得消息树。不会导出仅已加载的内容。\n诊断 E2：模块=' + diagnostics.modules + '，导入=' + diagnostics.imports + '，读取器=' + diagnostics.candidates + '，状态=' + diagnostics.reader + '，接口=' + diagnostics.http);
   };

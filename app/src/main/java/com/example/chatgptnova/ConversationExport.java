@@ -256,8 +256,17 @@ final class ConversationExport {
     private void fail(String message) {
         stopDeadline(); nonce=null; incoming.setLength(0); busy=false; finishPrint();
         if (!destroyed && !activity.isFinishing() && !activity.isDestroyed()) {
-            new AlertDialog.Builder(activity).setTitle("未能导出会话").setMessage(message)
-                .setPositiveButton("知道了",null).show();
+            AlertDialog.Builder dialog=new AlertDialog.Builder(activity).setTitle("未能导出会话").setMessage(message)
+                .setPositiveButton("知道了",null);
+            int diagnostic=message.indexOf("\n诊断 E2：");
+            if (diagnostic>=0) {
+                String detail=message.substring(diagnostic+1);
+                dialog.setNeutralButton("复制诊断",(ignored,which)-> {
+                    android.content.ClipboardManager clipboard=activity.getSystemService(android.content.ClipboardManager.class);
+                    if (clipboard!=null) clipboard.setPrimaryClip(android.content.ClipData.newPlainText("Nova 导出诊断",detail));
+                });
+            }
+            dialog.show();
         }
     }
     private static void copy(java.io.InputStream in, OutputStream out) throws java.io.IOException {

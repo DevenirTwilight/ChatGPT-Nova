@@ -51,6 +51,22 @@ const core=require('../../app/src/main/assets/export/core.js');
    performance.getEntriesByType=()=>[];
   });
   assert.equal((await page.evaluate(()=>window.__novaReadConversation('fixture'))).conversation_id,'fixture');
+  // Scoped raw React conversation props can supply the full graph without an API/module.
+  await fresh.evaluate(tree=> {
+   document.body.innerHTML='<div data-message-id="m399" data-message-author-role="assistant">last</div>';
+   const element=document.querySelector('[data-message-id]');
+   element.__reactFiber$fixture={memoizedProps:{conversation:tree},return:null};
+  },tree);
+  const retained=await fresh.evaluate(()=>window.__novaReadConversation('fixture'));
+  assert.equal(core.normalize(retained,'fixture',['m399']).messages.length,400);
+  await fresh.evaluate(()=> {
+   const props=document.querySelector('[data-message-id]').__reactFiber$fixture.memoizedProps;
+   delete props.conversation.mapping.m0;
+  });
+  const incomplete=await fresh.evaluate(()=>window.__novaReadConversation('fixture'));
+  assert.throws(()=>core.normalize(incomplete,'fixture',['m399']));
+  await fresh.evaluate(()=>{document.querySelector('[data-message-id]').__reactFiber$fixture.memoizedProps.conversation.conversation_id='other';});
+  await assert.rejects(()=>fresh.evaluate(()=>window.__novaReadConversation('fixture')),/无法确认完整会话/);
   console.log('PASS: page-owned full reader, project route, 400-message chain, alias deduplication, partial/wrong-ID rejection, unauthorized fail-closed');
  } finally {await browser.close();}
 })().catch(error=>{console.error(error);process.exitCode=1;});
