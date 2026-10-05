@@ -68,6 +68,7 @@ abstract class FixtureActivity {
         // Prepare only that pre-existing HOME failure; never dismiss a Nova
         // failure, an arbitrary dialog, or a failure encountered by a test.
         String before=currentWindowFocus();
+        android.util.Log.i("NovaFixture","Pre-launch live display focus: "+before);
         java.util.regex.Matcher dialog=java.util.regex.Pattern.compile(
                 "^mCurrentFocus=Window\\{[a-fA-F0-9]+ u[0-9]+ Application Not Responding: "
                 +"([A-Za-z][A-Za-z0-9_]*(?:\\.[A-Za-z][A-Za-z0-9_]*)+)\\}$")
@@ -106,9 +107,24 @@ abstract class FixtureActivity {
     }
 
     private String currentWindowFocus() {
-        for(String line:shell("dumpsys window").split("\n"))
-            if(line.trim().startsWith("mCurrentFocus=")) return line.trim();
-        return "mCurrentFocus=unavailable";
+        // The complete dump also contains LAST ANR's historical display snapshot
+        // on API 34. Its first mCurrentFocus can be an old launcher window even
+        // while the current display is blocked by the launcher's ANR dialog.
+        // This subcommand emits the live display state without that snapshot.
+        boolean defaultDisplay=false;
+        String focus=null;
+        for(String raw:shell("dumpsys window displays").split("\n")) {
+            String line=raw.trim();
+            if(line.startsWith("Display: mDisplayId=")) {
+                defaultDisplay=line.matches("Display: mDisplayId=0(?:\\s.*)?");
+            } else if(defaultDisplay && line.startsWith("mCurrentFocus=")) {
+                // Never choose an arbitrary entry if the default display is
+                // missing or its current focus is ambiguous.
+                if(focus!=null) return "mCurrentFocus=unavailable";
+                focus=line;
+            }
+        }
+        return focus==null ? "mCurrentFocus=unavailable" : focus;
     }
 
     private void prepareWindow(MainActivity value) {
@@ -316,7 +332,7 @@ abstract class FixtureActivity {
                     .append(" package=").append(root==null ? "null" : root.getPackageName());
         }
         // Only window ownership/state, not page text, is needed for this failure.
-        for(String line:shell("dumpsys window").split("\n")) {
+        for(String line:shell("dumpsys window displays").split("\n")) {
             if(line.contains("mCurrentFocus=") || line.contains("mFocusedApp=")
                     || line.contains("mObscuringWindow=") || line.contains("mInputMethodWindow="))
                 result.append("\n").append(line.trim());

@@ -61,3 +61,5 @@ Native 加载新验证器，并将读取预算调整为 120 秒；完整读取 1
 测试夹具在 Activity 启动前核对精确焦点窗口，只在 ANR 包名等于系统解析的 HOME 包、且不是目标应用或 instrumentation 包时，停止这个已失败的桌面进程一次，并等待该弹窗消失。包名严格校验，清理前后窗口归属记录在 `NovaFixture` 日志；清理失败、未知弹窗、Nova ANR 或之后仍未获得焦点继续失败。原有 `activity.hasWindowFocus() && web.isShown()` 断言保持不变，不重试或忽略导出测试。
 
 本次追加只修改测试夹具和验证文档，所有生产源保持 `3fced4a` 不变。原签名 APK 的脚本与生产源码已逐字节核对，Android 导出测试的新报告应与这个相同生产实现关联；原失败报告保留用于审查。本地追加后的 Debug / instrumentation 编译和 lintDebug 通过。
+
+第二轮 [37333762098](https://github.com/DevenirTwilight/ChatGPT-Nova/actions/runs/37333762098) 的 API 34 仍有 11 项准备阶段失败。其完整窗口报告开头包含 `WINDOW MANAGER LAST ANR` 的历史快照，首条焦点是历史的普通桌面窗口；实时 `DISPLAY CONTENTS` 的焦点才是桌面 ANR。先前读取第一条的测试准备因而漏检，清理日志确认为零。当前改为 `dumpsys window displays` 的实时子命令，同时用于清理判定与失败诊断，排除历史快照；原焦点断言和严格 HOME 包保护不变。第二轮失败报告继续保留，后续设备结果另行核验。
