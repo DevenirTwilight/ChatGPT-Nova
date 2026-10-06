@@ -101,7 +101,7 @@
    if(s.leg>=2) s.second.add(m.id);
   }
   for(let i=1;i<rows.length;i++) s.edges.get(rows[i-1].id).add(rows[i].id);
-  const upward=s.leg%2===0,atEdge=upward?pos<=1:pos>=max-1;
+  const upward=s.leg%2===0,atEdge=upward?pos<=2:pos>=max-2;
   s.edgeStable=atEdge && added===0 && quietGeometry ? s.edgeStable+1 : 0;
   if(atEdge && s.edgeStable<5 && !quietGeometry) s.window.reason='edge-layout-changing';
   if(atEdge && s.edgeStable<5 && performance.now()-s.stepStarted>5000) abort('H06_UNSETTLED');

@@ -2,7 +2,7 @@
 
 ## 同一1.4.0内集中修正：H06（未发布）
 
-用户实测已发布1.4.0在Android36/WebView153返回H06_UNSETTLED：61.23秒，向上第一轮leg0、49滚动步、缓存10条（5用户/5助手，12573字符），未观察到顶部/底部、未开始第二轮。不能从旧诊断确定根因。本地已复现正文/ID不变、仅滚动高度2px变化使旧版误报H06；修正采用三次相同正文快照即可缓存，边界另按2px容差连续核对，边界持续变化仍拒绝。新增settling分类/计数/窗口年龄/几何数据（不含正文ID），scheme为DOM-SCROLL-TRIAL-2，buildRevision记录构建提交。版本号保持1.4.0/code14，修正尚未发布，旧已安装包不包含本修正。Chromium17原采集+17滚动场景本地通过，Android35/36各12项待CI（新增真实布局抖动保存40条及真实正文变化拒绝/脱敏）。用户要求集中修复/功能后再交付，取消每次push自动发布，仅显式workflow_dispatch publish_trial=true才发布；本轮先验证提交，不新增Release。真实原会话仍待后续集中测试包复测，完整历史未证明。
+用户实测已发布1.4.0在Android36/WebView153返回H06_UNSETTLED：61.23秒，向上第一轮leg0、49滚动步、缓存10条（5用户/5助手，12573字符），未观察到顶部/底部、未开始第二轮。不能从旧诊断确定根因。本地已复现正文/ID不变、仅滚动高度2px变化使旧版误报H06；修正采用三次相同正文快照即可缓存，边界另按2px容差连续核对，边界持续变化仍拒绝。新增settling分类/计数/窗口年龄/几何数据（不含正文ID），scheme为DOM-SCROLL-TRIAL-2，buildRevision记录构建提交。版本号保持1.4.0/code14，修正尚未发布，旧已安装包不包含本修正。Chromium17原采集+18滚动场景本地通过，Android35/36各12项待CI（新增真实布局抖动保存40条及真实正文变化拒绝/脱敏）。用户要求集中修复/功能后再交付，取消每次push自动发布，仅显式workflow_dispatch publish_trial=true才发布；本轮先验证提交，不新增Release。真实原会话仍待后续集中测试包复测，完整历史未证明。
 
 H06分类字段：coverage.settling.reason区分message-list-changing、body-or-structure-changing、edge-layout-changing、awaiting-content/page-not-ready；listChanges/bodyChanges/positionChanges/extentChanges为本窗口次数，total*为全程计数；contentStable、windowAgeMs、polls、mountedCount、scrollTopPx/scrollMaxPx/viewportPx与delta均为数字。缓存跨窗口正文/顺序冲突保护不放宽，不以布局变化忽略正文变化，不增加超时或完整性声明。已验证的仅是合成可复现缺陷，不认定用户原页面具有相同布局抖动。
 
