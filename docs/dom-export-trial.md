@@ -214,3 +214,11 @@ e56c225快速采样N00_READY，总224ms；12普通作者均采集（6用户/6助
 本批将有限fallback扩至带conversation-turn testid且data-turn=assistant的容器，仍排除隐藏、自身/后代含作者、嵌套容器与未知角色，保留原article兼容。滚动容器选取及装饰spinner排除、文字定位来源同步同一范围。未知channel仍assistant-unknown，不猜commentary；缺ID单快照保留正文及警告，跨窗口滚动仍H02，不伪造ID/按文本去重。版号保持1.4.0/code14，未发布Release。
 
 新增浏览器检查覆盖无ID正文顺序/控件排除、验证签名覆盖新增正文、DIV/SECTION标记容器、未知角色/无testid/隐藏拒绝、正常作者不重复，以及滚动已知ID/缺ID、定位与实际转换对照。Android新增无ID助手SECTION经快速入口→SAF保存→诊断脱敏及顺序检查，CI待执行。用户原第12条实际正文位置仍须新批次复测，不仅核对count，完整历史仍not-proven。历史section-fallback脚本固定读取e56c225旧源码用于前后对照，不冒充当前APK测试。
+
+## 用户授权Gecko导出：三格式保留，批次待构建
+
+用户要求参考Firefox保存PDF并选择引入Gecko、接受大包及更多改动。现在PDF引擎改为官方GeckoView140.0.20250707120347（固定兼容compileSdk35），调用Firefox相同公开saveAsPdf接口，净化导出HTML→私密无JS会话→PDF流→后台写缓存/PdfRenderer验证页数→直接SAF保存，不再打开PrintManager打印机界面。HTML/Markdown保留，独立无作者助手turn补采一起交付。聊天WebView、登录与输入组件未迁移，不把PDF渲染器换成Gecko当历史完整性修复。
+
+Gecko仅加载本地data HTML，原导出CSP拒绝外部资源，关闭JS/调试输出，结束/失败/销毁关闭会话，异常分类G01–G07和engine/version/pages/bytes诊断无正文。增加依赖官方Maven及MPL许可/来源文档。版本仍1.4.0/code14，不公开Release。Android两项PDF检查替换成直接SAF取消/重试和多页实物、包含缺ID进度；脚本预期18项并检查PDF-PROGRESS。
+
+旧37505642553环境卡住已取消；37506735779构建/lint/签名成功，但Android35虽然18项通过，脚本仍要求旧17导致失败；Android36另有旧htmlSaved测试JS回调超时，新助手SECTION测试通过。以上不写成全CI通过，本批修正脚本并移除系统打印UI路径后重新验证；旧f943c83包未交付，下载核对的APK1896898bytes/SHA037754bdfc0748133fbafe5f89dfc098ea6db6c12e55d3a01f3d9c9da0730693不是Gecko批次。用户完整历史not-proven/附件原文件不含/旧403未复测。

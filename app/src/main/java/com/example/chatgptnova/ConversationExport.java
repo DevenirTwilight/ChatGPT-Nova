@@ -5,14 +5,7 @@ import android.app.AlertDialog;
 import android.content.ClipData;
 import android.content.Intent;
 import android.net.Uri;
-import android.print.PrintAttributes;
-import android.print.PrintDocumentAdapter;
-import android.print.PrintManager;
-import android.print.PrintJob;
 import android.webkit.WebView;
-import android.view.View;
-import android.view.ViewGroup;
-import android.webkit.WebViewClient;
 import android.widget.Toast;
 import androidx.core.content.FileProvider;
 import java.io.File;
@@ -40,8 +33,8 @@ final class ConversationExport {
     private long started;
     private File file, pendingSave;
     private String mime, address;
-    private WebView printWeb;
-    private PrintJob printJob;
+    private GeckoPdfExporter geckoPdf;
+    private AlertDialog pdfDialog;
     private Runnable deadline;
     private JSONObject diagnostic = new JSONObject();
     private AlertDialog scanDialog;
@@ -56,13 +49,7 @@ final class ConversationExport {
     // Existing Activity callbacks retained. Nothing is injected on page load.
     void pageFinished() { }
     void activityPaused() { }
-    void activityResumed() {
-        if (printJob!=null) {
-            if (printJob.isFailed()) fail("P03_JOB_FAILED", "系统打印任务失败，请重新尝试。",null);
-            else if (printJob.isCancelled()) stage("P04_CANCELLED", "print-cancelled");
-            else if (printJob.isCompleted()) stage("P05_JOB_COMPLETED", "print-job-completed-file-unchecked");
-        }
-    }
+    void activityResumed() { }
     private String asset() { return asset("dom-trial.js"); }
     private String asset(String name) {
         try (java.io.InputStream input=activity.getAssets().open("export/"+name)) {
@@ -297,49 +284,39 @@ final class ConversationExport {
         return "ChatGPT-"+cleaned+"-"+new SimpleDateFormat("yyyyMMdd-HHmmss-SSS",Locale.ROOT).format(new Date())+"-"+UUID.randomUUID().toString().substring(0,6)+"."+extension;
     }
     private void pdf(String html) {
-        printWeb=new WebView(activity); printWeb.setVisibility(View.VISIBLE); printWeb.setFocusable(false);
-        printWeb.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS);
-        ViewGroup parent=activity.findViewById(android.R.id.content);
-        parent.addView(printWeb,0,new ViewGroup.LayoutParams(-1,-1));
-        printWeb.getSettings().setJavaScriptEnabled(false); printWeb.getSettings().setAllowFileAccess(false);
-        printWeb.getSettings().setAllowContentAccess(false); printWeb.getSettings().setBlockNetworkLoads(true);
-        printWeb.setWebViewClient(new WebViewClient() {
-            private boolean requested;
-            @Override public void onPageFinished(WebView view,String url) {
-                if(requested || view!=printWeb) return; requested=true;
-                view.postVisualStateCallback(1,new WebView.VisualStateCallback() {
-                    @Override public void onComplete(long id) {if(!destroyed && view==printWeb) printPdf();}
-                });
-            }
-        });
-        deadline=()->fail("P01_LOAD_TIMEOUT","PDF 页面渲染超时。",null); web.postDelayed(deadline,30000);
-        printWeb.loadDataWithBaseURL("https://nova-export.invalid/",html,"text/html","UTF-8",null);
-    }
-    private void printPdf() {
+        put("pdfEngine","gecko");put("gecko",GeckoPdfExporter.VERSION);
+        put("pdfSource","sanitized-loaded-messages");
+        stage("G00_START","gecko-pdf-rendering");
+        final File target=file;
+        deadline=()->fail("G01_TIMEOUT","PDF 生成超时，请复制诊断。",null);
+        web.postDelayed(deadline,90000);
+        pdfDialog=new AlertDialog.Builder(activity).setTitle("正在生成 PDF")
+            .setMessage("首次启动 PDF 引擎可能稍慢，生成后直接选择保存位置。")
+            .setNegativeButton("取消",(d,w)->cancelPdf()).setOnCancelListener(d->cancelPdf()).show();
         try {
-            PrintManager manager=(PrintManager)activity.getSystemService(Activity.PRINT_SERVICE);
-            if(manager==null) throw new IllegalStateException();
-            final WebView printing=printWeb;
-            PrintDocumentAdapter delegate=printing.createPrintDocumentAdapter(file.getName());
-            PrintDocumentAdapter adapter=new PrintDocumentAdapter() {
-                @Override public void onStart() {delegate.onStart();}
-                @Override public void onLayout(PrintAttributes oldA,PrintAttributes newA,android.os.CancellationSignal signal,LayoutResultCallback callback,android.os.Bundle extras) {
-                    stage("N00_PRINT_LAYOUT","print-layout-requested");
-                    delegate.onLayout(oldA,newA,signal,callback,extras);
+            geckoPdf=new GeckoPdfExporter(activity,target,new GeckoPdfExporter.Callback() {
+                @Override public void ready(int pages) {
+                    if(destroyed) return;
+                    finishPrint(false);put("pdfPages",pages);put("bytes",target.length());
+                    stage("G00_READY","gecko-pdf-validated");
+                    saveToLocal(target,"application/pdf");
                 }
-                @Override public void onWrite(android.print.PageRange[] pages,android.os.ParcelFileDescriptor output,android.os.CancellationSignal signal,WriteResultCallback callback) {
-                    stage("N00_PRINT_WRITE","print-write-requested");put("requestedPageRanges",pages.length);put("renderAllPages",true);
-                    // Chromium subset writes can break the spooler's final PDF transform.
-                    // Render the whole document; the system applies the user's page selection.
-                    delegate.onWrite(new android.print.PageRange[]{android.print.PageRange.ALL_PAGES},output,signal,callback);
+                @Override public void failed(String code,Exception error) {
+                    if(!destroyed) fail(code,"Gecko 无法生成 PDF，请复制诊断。",error);
                 }
-                @Override public void onFinish() {
-                    try {delegate.onFinish();} finally {web.post(()-> {if(!destroyed && printing==printWeb) {put("printAdapterFinished",true);if(!diagnostic.optString("code").startsWith("P0")) stage("P06_FINISHED","print-finished-save-unverified");finishPrint(false);busy=false;}});}
-                }
-            };
-            stopDeadline(); printJob=manager.print(file.getName(),adapter,new PrintAttributes.Builder().setMediaSize(PrintAttributes.MediaSize.ISO_A4).build());
-            stage("N00_PRINT_DIALOG","print-dialog"); toast("请选择“保存为 PDF”。保存结果请实际打开文件检查。");
-        } catch(Exception e) {fail("P02_START","设备无法启动 PDF 保存界面。",e);}
+            });
+            geckoPdf.load(html);
+        } catch(Exception error) {fail("G07_START","无法启动 Gecko PDF 引擎。",error);}
+    }
+    private void cancelPdf() {
+        finishPrint(false);busy=false;stage("G08_CANCELLED","gecko-pdf-cancelled");
+    }
+    private void saveToLocal(File ready,String type) {
+        try {
+            pendingSave=ready;busy=true;stage("N00_SAVE_PICKER","save-picker");
+            activity.startActivityForResult(new Intent(Intent.ACTION_CREATE_DOCUMENT)
+                .addCategory(Intent.CATEGORY_OPENABLE).setType(type).putExtra(Intent.EXTRA_TITLE,ready.getName()),SAVE);
+        } catch(RuntimeException error) {pendingSave=null;fail("S02_APP","设备没有支持保存文件的应用。",error);}
     }
     private void actions() {
         stopDeadline(); busy=false; if(destroyed) return;
@@ -349,8 +326,7 @@ final class ConversationExport {
                 try {
                     if(index==3) {copyDiagnostic();return;}
                     if(index==0) {
-                        pendingSave=ready; busy=true;stage("N00_SAVE_PICKER","save-picker");
-                        activity.startActivityForResult(new Intent(Intent.ACTION_CREATE_DOCUMENT).addCategory(Intent.CATEGORY_OPENABLE).setType(type).putExtra(Intent.EXTRA_TITLE,ready.getName()),SAVE);
+                        saveToLocal(ready,type);
                     } else {
                         Uri uri=FileProvider.getUriForFile(activity,activity.getPackageName()+".fileprovider",ready);
                         Intent intent=index==1 ? new Intent(Intent.ACTION_VIEW).setDataAndType(uri,type) : new Intent(Intent.ACTION_SEND).setType(type).putExtra(Intent.EXTRA_STREAM,uri);
@@ -377,8 +353,9 @@ final class ConversationExport {
     void navigationStarted() {if(collecting) fail("D10_CHANGED","页面已切换，采集已取消。",null);generation++;}
     private void stopDeadline() {if(deadline!=null) web.removeCallbacks(deadline);deadline=null;}
     private void finishPrint(boolean cancel) {
-        stopDeadline();if(cancel && printJob!=null) printJob.cancel();printJob=null;
-        if(printWeb!=null) {if(printWeb.getParent() instanceof ViewGroup) ((ViewGroup)printWeb.getParent()).removeView(printWeb);printWeb.destroy();printWeb=null;}
+        stopDeadline();
+        if(pdfDialog!=null) {pdfDialog.dismiss();pdfDialog=null;}
+        if(geckoPdf!=null) {geckoPdf.close();geckoPdf=null;}
     }
     private void resetDiagnostic() {
         diagnostic=new JSONObject();started=android.os.SystemClock.elapsedRealtime();

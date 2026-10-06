@@ -312,95 +312,42 @@ public final class DomTrialExportTest extends FixtureActivity {
         assertTrue(detail.get().contains("D04_STREAMING"));assertTrue(detail.get().contains("not-proven"));
         assertFalse(detail.get().contains("USER-FIRST"));assertFalse(detail.get().contains("g-p-fixture"));
     }
-    @Test public void pdfUsesSystemPrintSaveAndCanCancel() throws Exception {
+    @Test public void geckoPdfDirectSaveCanCancelAndRetry() throws Exception {
+        conversation("");
+        AtomicReference<Intent> picker=new AtomicReference<>();
+        external(intent->{
+            if(!Intent.ACTION_CREATE_DOCUMENT.equals(intent.getAction())) return null;
+            picker.set(intent);return new Instrumentation.ActivityResult(Activity.RESULT_CANCELED,null);
+        });
+        export("PDF");waitFor("Gecko PDF save cancelled",()->picker.get()!=null && !busy());
+        assertEquals("application/pdf",picker.get().getType());
+        main(()->exporter().showDiagnostic());click("复制诊断");
+        AtomicReference<String> detail=new AtomicReference<>();main(()->{
+            android.content.ClipboardManager c=activity.getSystemService(android.content.ClipboardManager.class);
+            detail.set(c.getPrimaryClip().getItemAt(0).getText().toString());
+        });
+        org.json.JSONObject d=new org.json.JSONObject(detail.get());assertEquals("gecko",d.getString("pdfEngine"));
+        assertEquals("S03_CANCELLED",d.getString("code"));assertTrue(d.getInt("pdfPages")>0);
+        picker.set(null);export("PDF");waitFor("Gecko PDF retry cancelled",()->picker.get()!=null && !busy());
+    }
+    @Test public void geckoPdfSavedDirectlyOpensWithMultiplePages() throws Exception {
         StringBuilder text=new StringBuilder();for(int i=0;i<80;i++) text.append("段落 ").append(i).append(" 中文 English [link](https://example.org)\n\n");
         conversation(text.toString());
-        export("PDF");
-        waitFor("system PDF print job",()-> {
-            AtomicReference<Boolean> found=new AtomicReference<>(false);
-            main(()-> { try {Field f=ConversationExport.class.getDeclaredField("printJob");f.setAccessible(true);found.set(f.get(exporter())!=null);}catch(Exception e){throw new AssertionError(e);} });
-            return found.get();
+        js("document.querySelector('[data-message-id=a]').insertAdjacentHTML('beforebegin','<section data-turn=\"assistant\" data-testid=\"conversation-turn-3\"><div class=\"markdown\"><p>PDF-PROGRESS</p></div></section>');true");
+        AtomicReference<Intent> picker=new AtomicReference<>();
+        external(intent->{
+            if(!Intent.ACTION_CREATE_DOCUMENT.equals(intent.getAction())) return null;
+            picker.set(intent);return new Instrumentation.ActivityResult(Activity.RESULT_OK,new Intent().setData(OUTPUT));
         });
-        waitFor("print service window",()-> {
-            AccessibilityNodeInfo root=instrument.getUiAutomation().getRootInActiveWindow();
-            return root!=null && "com.android.printspooler".contentEquals(root.getPackageName());
-        });
-        long[] nextBack={0};
-        waitFor("PDF cancel releases exporter",()-> {
-            if(!busy()) return true;
-            AccessibilityNodeInfo root=instrument.getUiAutomation().getRootInActiveWindow();
-            long now=android.os.SystemClock.uptimeMillis();
-            if(root!=null && "com.android.printspooler".contentEquals(root.getPackageName()) && now>=nextBack[0]) {
-                instrument.sendKeyDownUpSync(android.view.KeyEvent.KEYCODE_BACK);
-                nextBack[0]=now+2000;
-            }
-            return false;
-        });
-    }
-    @Test public void pdfSavedBySystemOpensWithMultiplePages() throws Exception {
-        StringBuilder text=new StringBuilder();for(int i=0;i<80;i++) text.append("段落 ").append(i).append(" 中文 English [link](https://example.org)\n\n");
-        text.append("## Code / 表格 / 数学\n\n```java\nString name = \"中文\";\n")
-            .append("long-code-".repeat(200)).append("LONG_LINE_END\n```\n\n")
-            .append("| 名称 | Value | Link |\n| --- | --- | --- |\n| export-table-row | **中文** | [target](https://example.org/android-pdf-target) |\n\n")
-            .append("Inline `code` and $E = mc^2$。\n\n");
-        conversation(text.toString());export("PDF");
-        waitFor("print service window",()-> {
-            AccessibilityNodeInfo root=instrument.getUiAutomation().getRootInActiveWindow();
-            return root!=null && "com.android.printspooler".contentEquals(root.getPackageName());
-        });
-        // Android can initially show "Select a printer" rather than choosing PDF.
-        waitFor("printer destination selector",()-> {
-            AccessibilityNodeInfo root=instrument.getUiAutomation().getRootInActiveWindow();
-            if(root==null) return false;
-            for(AccessibilityNodeInfo selector:root.findAccessibilityNodeInfosByViewId("com.android.printspooler:id/destination_spinner"))
-                if(selector.isClickable()) return selector.performAction(AccessibilityNodeInfo.ACTION_CLICK);
-            return false;
-        });
-        waitFor("printer destination popup",()-> {
-            AccessibilityNodeInfo root=instrument.getUiAutomation().getRootInActiveWindow();
-            return findControl(root,"All printers…")!=null && findControl(root,"Save as PDF")!=null
-                && root.findAccessibilityNodeInfosByViewId("com.android.printspooler:id/print_button").isEmpty();
-        });
-        click("Save as PDF");
-        // The long document's preview is asynchronous; wait separately from extraction.
-        long previewDeadline=android.os.SystemClock.uptimeMillis()+60000;
-        boolean saved=false;
-        do {
-            AccessibilityNodeInfo root=instrument.getUiAutomation().getRootInActiveWindow();
-            if(root!=null) {
-                for(AccessibilityNodeInfo button:root.findAccessibilityNodeInfosByViewId("com.android.printspooler:id/print_button"))
-                    if(button.isEnabled() && button.isClickable() && "Save to PDF".contentEquals(button.getContentDescription()))
-                        saved=true;
-            }
-            if(!saved) android.os.SystemClock.sleep(200);
-        } while(!saved && android.os.SystemClock.uptimeMillis()<previewDeadline);
-        String diagnostic="";
-        if(!saved) {
-            diagnostic=dumpPrintWindow(instrument.getUiAutomation().getRootInActiveWindow());
-        }
-        assertTrue("System print preview must enable Save as PDF\n"+diagnostic,saved);
-        click("Save to PDF");
-        click("Save");
-        waitFor("system PDF save finished",()->!busy());
-        String path="/sdcard/Download/"+output().getName();
-        String command="cat '"+path.replace("'","'\\''")+"'";
-        byte[] pdf=new byte[0];
-        long fileDeadline=android.os.SystemClock.uptimeMillis()+20000;
-        do {
-            try(android.os.ParcelFileDescriptor result=instrument.getUiAutomation().executeShellCommand(shellScript(command));
-                java.io.InputStream input=new android.os.ParcelFileDescriptor.AutoCloseInputStream(result);
-                java.io.ByteArrayOutputStream data=new java.io.ByteArrayOutputStream()) {
-                byte[] buffer=new byte[8192];int count;while((count=input.read(buffer))!=-1)data.write(buffer,0,count);pdf=data.toByteArray();
-            }
-            if(pdf.length>1000 && new String(pdf,0,5,StandardCharsets.US_ASCII).equals("%PDF-")) break;
-            android.os.SystemClock.sleep(200);
-        } while(android.os.SystemClock.uptimeMillis()<fileDeadline);
-        assertTrue("System saved a PDF",pdf.length>1000);assertEquals("%PDF-",new String(pdf,0,5,StandardCharsets.US_ASCII));
+        export("PDF");waitFor("Gecko PDF saved",()->picker.get()!=null && !busy());
+        assertEquals("application/pdf",picker.get().getType());
+        byte[] pdf=read(OUTPUT);assertTrue(pdf.length>1000);
+        assertEquals("%PDF-",new String(pdf,0,5,StandardCharsets.US_ASCII));
         File local=new File(activity.getExternalFilesDir(null),"printed-export.pdf");
         try(java.io.FileOutputStream out=new java.io.FileOutputStream(local)){out.write(pdf);}
         try(android.os.ParcelFileDescriptor fd=android.os.ParcelFileDescriptor.open(local,android.os.ParcelFileDescriptor.MODE_READ_ONLY);
             android.graphics.pdf.PdfRenderer renderer=new android.graphics.pdf.PdfRenderer(fd)) {
-            assertTrue("Long HTML became multiple PDF pages",renderer.getPageCount()>1);
+            assertTrue("Gecko produced multiple PDF pages",renderer.getPageCount()>1);
             try(android.graphics.pdf.PdfRenderer.Page page=renderer.openPage(0)){assertTrue(page.getWidth()>0);assertTrue(page.getHeight()>0);}
         }
     }
