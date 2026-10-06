@@ -2,6 +2,20 @@
 
 首次生成：2026-10-05；入库更新：2026-10-06。当前交接优先于历史资料中的旧任务进度。
 
+## 2026-10-06 续接更新（本节优先于下方旧环境记录）
+
+- 按用户要求先读取 AGENTS、latest、REVIEW、REPORT、根 README，另读取 handoff/README 与探针 README。拉取远端 `feature/export-conversation`，HEAD 为 `fc269792ecef68fe2e5930105011deaeafba3591`，没有更晚提交。下方 `5e969c3` 是上一阶段验证基线，不能当作本轮 HEAD；本轮提交号以 GitHub 分支日志为准。
+- 当前只做 Markdown/HTML/PDF 可行性，不写完整功能、不改生产源码，允许重做。最高优先级仍是真实项目长会话历史覆盖。
+- 用户表示可连接运行 Nova 的 Android 设备并登录目标会话；追问连接方式/安装提交后回答“未知，最新版”。这不是已经建立 ADB 连接，也不能认定 APK 对应哪个提交。当前云环境未发现 adb、连接设备或 KVM；没有访问真实账号。未执行真机验证，未修复/重测旧403。
+- 静态发现：原 dom-probe 内部最多检查300条，但返回仅首尾四条 samples，不能逐条核对中间历史。feature 的 ConversationExport 使用 document-start 注入并在 pageFinished 再注入旧 capture；真实新路线测试必须区分隔离基线和带旧捕获器的 feature。
+- 新增独立验证目录 `tools/feasibility/history-coverage/`：只读项目路由探针输出全量已检查 ID/角色（最多2000，超限标记），离线 audit 按独立有序基准检查逐条覆盖。合格单快照 ID 匹配、仅并集匹配、缺失与无效采样分开；所有结果仍是 `historyCompleteness=not-proven`，正文保真未测试。基准来源自述不能由工具证明，禁止从采样并集生成所谓独立基准。
+- 本轮独立执行 `audit.test.cjs` 和 Chromium `probe.test.cjs` 均通过，`git diff --check` 通过。夹具覆盖中间缺失、稳定末尾、并集、乱序、错误路由、角色/ID异常、嵌套、未就绪、2001节点截断、只读及不返回正文。全部属于合成检查。本轮没有重跑旧 DOM9/9、Java编译、PDF或APK验证。
+- 下一步：用户在本地电脑建立 USB ADB（无需公网端口），记录 Android/WebView/APK版本与安装来源；在指定隔离 debug 工作树启用仅debug的 WebView调试并自行构建登录，通过 DevTools 保存项目会话底部→顶部→底部及重复采样。操作步骤与最小调试代码在新目录 README。旧 Java Logcat 可能截断长 JSON，不能当作逐条记录传输。
+- 取得独立完整目标分支基准后运行 audit；没有基准只能记录“观察到的覆盖”。ID匹配仍需逐条正文/富文本核验与Android真实保存；真实历史缺失且无法可靠加载全部时，更换数据来源。暂不扩大格式/PDF实现。
+- 真实路径、消息ID与正文记录仅本地保留，不提交到公开仓库。可以提交脱敏结果摘要，但勿把假数据记成实测。
+
+新工具及操作入口：[项目历史覆盖验证](../../tools/feasibility/history-coverage/README.md)。本轮阶段交接将提交并推送当前工作分支，不强推、不合并、不发布APK。
+
 ## 用户要求与沟通偏好
 
 用户使用中文。希望拿到验证好的结果，曾明确说“给我验证好了再发”；不要用合成测试或编译成功代替真实会话成功。之前反复 debug 失败，正在考虑重做导出功能。
