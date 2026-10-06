@@ -223,6 +223,29 @@ public final class DomTrialExportTest extends FixtureActivity {
         assertEquals(2,dom.getJSONObject("progressDiscovery").getJSONObject("authors").getInt("visibleSupported"));
         for(String secret:new String[]{"PROGRESS-BODY","PRIVATE-PROGRESS-ID","PRIVATE-CONTROL"}) assertFalse(detail.get().contains(secret));
     }
+    @Test public void authorlessAssistantSectionWithoutIdSavesInOrder() throws Exception {
+        conversation("");
+        js("document.querySelector('[data-message-id=a]').insertAdjacentHTML('beforebegin','<section data-testid=\"conversation-turn-3\" data-turn=\"assistant\"><div class=\"markdown\"><p><strong>PROGRESS-BODY</strong></p></div><button>PRIVATE-CONTROL</button></section>');true");
+        AtomicReference<Intent> captured=new AtomicReference<>();
+        external(intent->{
+            if(!Intent.ACTION_CREATE_DOCUMENT.equals(intent.getAction())) return null;
+            captured.set(intent);return new Instrumentation.ActivityResult(Activity.RESULT_OK,new Intent().setData(OUTPUT));
+        });
+        export("HTML 阅读版（推荐）");click("保存到本地…");
+        waitFor("progress saved",()->captured.get()!=null && !busy());
+        String html=new String(read(OUTPUT),StandardCharsets.UTF_8);
+        assertTrue(html.contains("公开 ID"));assertTrue(html.indexOf("USER-FIRST")<html.indexOf("PROGRESS-BODY"));
+        assertTrue(html.indexOf("PROGRESS-BODY")<html.indexOf("ASSISTANT-LAST"));assertFalse(html.contains("PRIVATE-CONTROL"));
+        main(()->exporter().showDiagnostic());click("复制诊断");
+        AtomicReference<String> detail=new AtomicReference<>();main(()->{
+            android.content.ClipboardManager c=activity.getSystemService(android.content.ClipboardManager.class);
+            detail.set(c.getPrimaryClip().getItemAt(0).getText().toString());
+        });
+        org.json.JSONObject dom=new org.json.JSONObject(detail.get()).getJSONObject("dom");
+        assertEquals(1,dom.getInt("missingIds"));assertEquals(3,dom.getInt("count"));assertEquals(1,dom.getInt("turnFallbacks"));
+        assertEquals(2,dom.getJSONObject("progressDiscovery").getJSONObject("authors").getInt("visibleSupported"));
+        for(String secret:new String[]{"PROGRESS-BODY","PRIVATE-PROGRESS-ID","PRIVATE-CONTROL"}) assertFalse(detail.get().contains(secret));
+    }
     @Test public void locatorCopiesOnlyStructureForVisibleAuthorSibling() throws Exception {
         conversation("");
         js("document.querySelector('[data-message-id=a]').insertAdjacentHTML('beforebegin','<section><p>LOCATOR-PRIVATE-TARGET</p></section>');true");

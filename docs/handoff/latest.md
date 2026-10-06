@@ -1,5 +1,14 @@
 # ChatGPT Nova 会话交接
 
+## 真机明确助手turn无作者：有限补采批次待CI
+
+e56c225快速采样N00_READY，总224ms；12普通作者均采集（6用户/6助手），13个可见turn，其中domIndex3 declaredRole=assistant/authorNodes0/visibleTextNodes4/visibleTextChars124；无截断。结合上一条定位可见作者外Markdown，明确旧采集器只补article导致这类独立助手会话容器漏采。其他12个turn外侧文字83字符大多署名/UI，不自动采集。12层定位未显示第3个turn标签，不能声称已拿到完整原始DOM或真实ID。
+
+本批将有限fallback扩至带conversation-turn testid且data-turn=assistant的容器，仍排除隐藏、自身/后代含作者、嵌套容器与未知角色，保留原article兼容。滚动容器选取及装饰spinner排除、文字定位来源同步同一范围。未知channel仍assistant-unknown，不猜commentary；缺ID单快照保留正文及警告，跨窗口滚动仍H02，不伪造ID/按文本去重。版号保持1.4.0/code14，未发布Release。
+
+新增浏览器检查覆盖无ID正文顺序/控件排除、验证签名覆盖新增正文、DIV/SECTION标记容器、未知角色/无testid/隐藏拒绝、正常作者不重复，以及滚动已知ID/缺ID、定位与实际转换对照。Android新增无ID助手SECTION经快速入口→SAF保存→诊断脱敏及顺序检查，CI待执行。用户原第12条实际正文位置仍须新批次复测，不仅核对count，完整历史仍not-proven。历史section-fallback脚本固定读取e56c225旧源码用于前后对照，不冒充当前APK测试。
+
+
 ## e56c225真机L00：可见作者外Markdown遗漏，外层turn待确认
 
 用户短片段定位返回L00_MATCH，总153ms，作者raw12、703文本节点/6736字符、未截断。3处匹配中第1处authorIndex0/role absent/selectedfalse，aria-hidden/hidden/CSS隐藏均false；STRONG→P→Markdown DIV后多层DIV，12层内无角色/turn/channel/ID/testid。其最近作者查询不受12层限制，因此确实位于作者容器之外。另两处属于已选助手作者4/12，其中第12处为表格引用；本地转换D00/count12/matchingMessageIndexes[4,12]。支持可见作者外正文漏采机制，不把后续引用当原进度或按文字去重。

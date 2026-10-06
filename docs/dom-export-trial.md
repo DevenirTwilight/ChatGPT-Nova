@@ -206,3 +206,11 @@ Android35新增5项仪器夹具已全部通过：HTML经SAF保存、Markdown取�
 不包含全量登录/输入/分享回归，也未验证所有Android/WebView版本。原旧测试文件保留用于追溯，旧export-validation工作流改为手动入口；不得把它的旧内部读取器结果算作新方案通过。
 
 首次Android35运行 `37450098092`：5项中4项通过，PDF最终保存失败（系统打印提示Sorry, that did not work，未进入Save界面），没有发布。后续将WebView写出改为完整页范围，由系统处理用户选择的页，并增加layout/write调用阶段诊断；必须重跑实际文件检查，不能把预览通过当成保存通过。
+
+## 真机明确助手turn无作者：有限补采批次待CI
+
+e56c225快速采样N00_READY，总224ms；12普通作者均采集（6用户/6助手），13个可见turn，其中domIndex3 declaredRole=assistant/authorNodes0/visibleTextNodes4/visibleTextChars124；无截断。结合上一条定位可见作者外Markdown，明确旧采集器只补article导致这类独立助手会话容器漏采。其他12个turn外侧文字83字符大多署名/UI，不自动采集。12层定位未显示第3个turn标签，不能声称已拿到完整原始DOM或真实ID。
+
+本批将有限fallback扩至带conversation-turn testid且data-turn=assistant的容器，仍排除隐藏、自身/后代含作者、嵌套容器与未知角色，保留原article兼容。滚动容器选取及装饰spinner排除、文字定位来源同步同一范围。未知channel仍assistant-unknown，不猜commentary；缺ID单快照保留正文及警告，跨窗口滚动仍H02，不伪造ID/按文本去重。版号保持1.4.0/code14，未发布Release。
+
+新增浏览器检查覆盖无ID正文顺序/控件排除、验证签名覆盖新增正文、DIV/SECTION标记容器、未知角色/无testid/隐藏拒绝、正常作者不重复，以及滚动已知ID/缺ID、定位与实际转换对照。Android新增无ID助手SECTION经快速入口→SAF保存→诊断脱敏及顺序检查，CI待执行。用户原第12条实际正文位置仍须新批次复测，不仅核对count，完整历史仍not-proven。历史section-fallback脚本固定读取e56c225旧源码用于前后对照，不冒充当前APK测试。

@@ -45,6 +45,18 @@ assert.equal(discovery,fs.readFileSync('tools/feasibility/progress-coverage/prob
   r=await read();assert.equal(r.diagnostic.missingIds,1);assert.equal(r.messages[0].id,'');checks++;
   await setup(progress.replace('<p>SECRET-BODY progress</p>','<article data-turn="assistant"><p>SECRET-BODY progress</p></article>'));
   r=await read();assert.equal(r.messages.length,1);checks++;
+  const section=progress.replaceAll('article','section').replace(' data-message-channel="commentary" data-message-id="PRIVATE-ID"',' data-testid="conversation-turn-3"').replace('<p>SECRET-BODY progress</p>','<div class="markdown"><p><strong>SECRET-BODY</strong> progress</p></div>');
+  await setup(ordinary('u','user','before')+section+ordinary('a','assistant','after'));
+  r=await read();assert.equal(r.messages.length,3);assert.equal(r.messages[1].role,'assistant');assert(r.messages[1].markdown.includes('progress'));assert.equal(r.messages[1].id,'');assert.equal(r.diagnostic.missingIds,1);assert.equal(r.diagnostic.turnFallbacks,1);assert(!r.messages[1].markdown.includes('SECRET-CONTROL'));checks++;
+  await setup(section.replaceAll('section','div'));r=await read();assert.equal(r.messages.length,1);assert(r.messages[0].markdown.includes('progress'));checks++;
+  await setup(ordinary('u','user','before')+section+ordinary('a','assistant','after'));r=await read();
+  const sectionSignature=r.diagnostic.signature;await page.evaluate(()=>document.querySelector('section strong').textContent='changed');
+  assert.notEqual(JSON.parse(await page.evaluate(source.replace('__NOVA_VERIFY_ONLY__','true'))).diagnostic.signature,sectionSignature);checks++;
+  for(const bad of [section.replace('data-turn="assistant"','data-turn="user"'),section.replace('data-testid="conversation-turn-3"',''),section.replace('data-turn="assistant"','data-turn="assistant" hidden')]) {
+   await setup(bad+ordinary('a','assistant','after'));assert.equal((await read()).messages.length,1);checks++;
+  }
+  await setup(section.replace('<div class="markdown">','<div data-message-author-role="assistant" data-message-id="PRIVATE-ID"><div class="markdown">').replace('</section>','</div></section>'));
+  r=await read();assert.equal(r.messages.length,1);assert.equal(r.diagnostic.turnFallbacks,0);checks++;
   console.log(`PASS ${checks} bounded progress-capture scenarios; synthetic markup, target message still unverified`);
  } finally {await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});

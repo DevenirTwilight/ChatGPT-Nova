@@ -31,6 +31,10 @@ const source=fs.readFileSync('app/src/main/assets/export/locate-text.js','utf8')
   await setup('<p>ordinary</p>');r=await read('x');assert.equal(r.code,'L02_QUERY');checks++;
   const injection='";window.PRIVATE_PWNED=true;//';await setup('<p></p>');await page.evaluate(t=>document.querySelector('p').textContent=t,injection);
   r=await read(injection);assert.equal(r.code,'L00_MATCH');assert.equal(await page.evaluate(()=>typeof window.PRIVATE_PWNED),'undefined');checks++;
+  await setup('<section data-turn="assistant" data-testid="conversation-turn-3" data-message-id="PRIVATE-ID"><div class="markdown"><p>SECRET-PHRASE</p></div></section>');
+  r=await read();assert.equal(r.matches[0].authorIndex,0);assert(r.matches[0].capturedHere);assert.deepEqual(r.capture.matchingMessageIndexes,[1]);checks++;
+  await setup('<section data-turn="assistant" data-testid="conversation-turn-3"><div class="markdown"><p>SECRET-PHRASE</p></div></section>');
+  r=await read();assert(!r.matches[0].exportSourceHasId);assert.deepEqual(r.capture.matchingMessageIndexes,[1]);checks++;
   await page.goto('https://example.org/c/private');r=await read();assert.equal(r.code,'L02_ORIGIN');checks++;
   console.log(`PASS ${checks} read-only locator scenarios; private query never returned, synthetic only`);
  } finally {await browser.close();}

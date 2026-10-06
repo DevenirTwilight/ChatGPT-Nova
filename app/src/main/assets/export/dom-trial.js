@@ -101,11 +101,11 @@
       .filter(e=>['user','assistant'].includes(e.getAttribute('data-message-author-role')) && visible(e));
     // Only an explicitly assistant-labelled turn can supply a missing author.
     // Never infer a role from prose, status labels, an ordinal, or nearby messages.
-    const turns=[...document.querySelectorAll('article[data-turn="assistant"]')];
+    const turns=[...document.querySelectorAll('article[data-turn="assistant"],[data-turn="assistant"][data-testid^="conversation-turn-"]')];
     for (const e of turns) {
       if (!visible(e) || e.hasAttribute('data-message-author-role')
           || e.querySelector('[data-message-author-role]')
-          || e.parentElement.closest('[data-message-author-role],article[data-turn="assistant"]')) continue;
+          || e.parentElement.closest('[data-message-author-role],article[data-turn="assistant"],[data-turn="assistant"][data-testid^="conversation-turn-"]')) continue;
       nodes.push(e);diagnostic.turnFallbacks++;
     }
     nodes.sort((a,b)=>a===b ? 0 : a.compareDocumentPosition(b)&Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1);

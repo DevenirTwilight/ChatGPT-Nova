@@ -1,7 +1,7 @@
 const fs=require('node:fs'),assert=require('node:assert/strict');
 const {chromium}=require(process.env.NOVA_PLAYWRIGHT_MODULE || 'playwright-core');
-const current=fs.readFileSync('app/src/main/assets/export/dom-trial.js','utf8').replace('__NOVA_VERIFY_ONLY__','false');
-// Tool-only proposal; the missing fragment's outer turn still needs device evidence.
+const current=require('node:child_process').execFileSync('git',['show','e56c225:app/src/main/assets/export/dom-trial.js'],{encoding:'utf8'}).replace('__NOVA_VERIFY_ONLY__','false');
+// Historical proposal against the shipped e56c225 baseline; kept for before/after evidence.
 const proposed=current
  .replace("querySelectorAll('article[data-turn=\"assistant\"]')","querySelectorAll('article[data-turn=\"assistant\"],section[data-turn=\"assistant\"][data-testid^=\"conversation-turn-\"]')")
  .replace("closest('[data-message-author-role],article[data-turn=\"assistant\"]')","closest('[data-message-author-role],article[data-turn=\"assistant\"],section[data-turn=\"assistant\"][data-testid^=\"conversation-turn-\"]')");

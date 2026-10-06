@@ -43,7 +43,7 @@
      hasTestId:p.hasAttribute('data-testid'),conversationTurnTestId:(p.getAttribute('data-testid') || '').startsWith('conversation-turn-'),markdown:p.classList.contains('markdown')});
     r.matches.push({authorIndex:owner?authors.indexOf(owner)+1:0,authorRole,authorSelected:supported && !excluded(ownerFlags),
      visibility,markdownRoots:roots.length,insideMarkdown,chain});
-    sources.push(e.closest('[data-message-author-role],article[data-turn="assistant"]'));
+    sources.push(e.closest('[data-message-author-role],article[data-turn="assistant"],[data-turn="assistant"][data-testid^="conversation-turn-"]'));
    }
    tail=joined.slice(-(needle.length-1));
   }

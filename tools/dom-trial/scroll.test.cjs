@@ -34,6 +34,14 @@ const fixture=fs.readFileSync('tools/dom-trial/virtual-fixture.js','utf8');
   });await step('start');const progressTurn=await finish();assert(progressTurn.done,JSON.stringify(progressTurn));
   assert.equal(progressTurn.messages.length,7);assert.deepEqual(progressTurn.messages.map(m=>m.id),Array.from({length:7},(_,i)=>'m'+i));
   assert.equal(progressTurn.messages[3].messageType,'assistant-progress');assert(progressTurn.messages[3].markdown.includes('ROW-3'));checks++;
+  await setup(7);await page.evaluate(()=>{
+    const e=document.querySelector('[data-message-id="m3"]'), section=document.createElement('section');
+    section.dataset.turn='assistant';section.dataset.testid='conversation-turn-3';section.dataset.messageId=e.dataset.messageId;
+    section.innerHTML='<div class="markdown"><p>SECTION-PROGRESS</p><span class="animate-spin" style="display:block;width:10px;height:10px"></span></div>';e.replaceWith(section);
+  });await step('start');const sectionProgress=await finish();assert(sectionProgress.done,JSON.stringify(sectionProgress));assert.equal(sectionProgress.messages.length,7);assert(sectionProgress.messages[3].markdown.includes('SECTION-PROGRESS'));checks++;
+  await setup(7);await page.evaluate(()=>{
+    const e=document.querySelector('[data-message-id="m3"]');e.outerHTML='<section data-turn="assistant" data-testid="conversation-turn-3"><div class="markdown"><p>NO-ID-PROGRESS</p></div></section>';
+  });const noSectionStart=await step('start');const noSectionId=noSectionStart.error ? noSectionStart : await finish();assert.equal(noSectionId.error,'H02_MISSING_ID');assert(!noSectionId.messages);checks++;
   // Use the same pixel tolerance at the endpoint and while comparing edge geometry.
   await setup(7);await step('start');let jitterEnd;for(let i=0;i<100;i++) {
    await page.evaluate(i=>document.getElementById('space').style.height=(448+(i%2)*2)+'px',i);
