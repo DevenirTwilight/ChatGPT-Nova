@@ -51,6 +51,10 @@ try:
     suite('com.example.chatgptnova.FrozenPageSnapshotTest','snapshot',10)
     for name in ['frozen-page.md','frozen-page.mhtml','frozen-page-saf.mhtml','frozen-page.pdf']:
         independent('pull-'+name,lambda name=name:adb('pull','/sdcard/Android/data/com.example.chatgptnova/files/'+name,str(out/name)))
+    # Retain synthetic UI evidence only when the controlled print test failed.
+    for name in ['snapshot-ui-failure.txt','snapshot-ui-failure.png']:
+        try:adb('pull','/sdcard/Android/data/com.example.chatgptnova/files/'+name,str(out/name))
+        except Exception:pass
     independent('archive-same-object',lambda:archive('frozen-page.mhtml'))
     independent('archive-saf',lambda:archive('frozen-page-saf.mhtml'))
     independent('markdown-content',markdown)
