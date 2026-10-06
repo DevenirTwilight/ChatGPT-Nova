@@ -2,11 +2,18 @@
 
 ## 同一1.4.0内集中修正：H06（未发布）
 
-用户实测已发布1.4.0在Android36/WebView153返回H06_UNSETTLED：61.23秒，向上第一轮leg0、49滚动步、缓存10条（5用户/5助手，12573字符），未观察到顶部/底部、未开始第二轮。不能从旧诊断确定根因。本地已复现正文/ID不变、仅滚动高度2px变化使旧版误报H06；修正采用三次相同正文快照即可缓存，边界另按2px容差连续核对，边界持续变化仍拒绝。新增settling分类/计数/窗口年龄/几何数据（不含正文ID），scheme为DOM-SCROLL-TRIAL-2，buildRevision记录构建提交。版本号保持1.4.0/code14，修正尚未发布，旧已安装包不包含本修正。Chromium17原采集+18滚动场景本地通过，Android35/36各12项待CI（新增真实布局抖动保存40条及真实正文变化拒绝/脱敏）。用户要求集中修复/功能后再交付，取消每次push自动发布，仅显式workflow_dispatch publish_trial=true才发布；本轮先验证提交，不新增Release。真实原会话仍待后续集中测试包复测，完整历史未证明。
+用户实测已发布1.4.0在Android36/WebView153返回H06_UNSETTLED：61.23秒，向上第一轮leg0、49滚动步、缓存10条（5用户/5助手，12573字符），未观察到顶部/底部、未开始第二轮。不能从旧诊断确定根因。本地已复现正文/ID不变、仅滚动高度2px变化使旧版误报H06；修正采用三次相同正文快照即可缓存，边界另按2px容差连续核对，边界持续变化仍拒绝。新增settling分类/计数/窗口年龄/几何数据（不含正文ID），scheme为DOM-SCROLL-TRIAL-2，buildRevision记录构建提交。版本号保持1.4.0/code14，修正尚未发布，旧已安装包不包含本修正。Chromium17原采集+18滚动场景本地通过，Android35/36各12项在工作流37461566300全部通过（新增受控布局抖动保存40条及持续正文变化拒绝/脱敏），已独立下载核对两份OK (12 tests)与实际PDF。源提交224dae2；publish按规则跳过，未发布修正包。用户要求集中修复/功能后再交付，取消每次push自动发布，仅显式workflow_dispatch publish_trial=true才发布；本轮先验证提交，不新增Release。真实原会话仍待后续集中测试包复测，完整历史未证明。
 
 H06分类字段：coverage.settling.reason区分message-list-changing、body-or-structure-changing、edge-layout-changing、awaiting-content/page-not-ready；listChanges/bodyChanges/positionChanges/extentChanges为本窗口次数，total*为全程计数；contentStable、windowAgeMs、polls、mountedCount、scrollTopPx/scrollMaxPx/viewportPx与delta均为数字。缓存跨窗口正文/顺序冲突保护不放宽，不以布局变化忽略正文变化，不增加超时或完整性声明。已验证的仅是合成可复现缺陷，不认定用户原页面具有相同布局抖动。
 
 发布节奏：push继续编译与检查，但publish job默认跳过；manual dispatch的publish_trial默认为false。后续统一交付时才显式开启。相同APK版本通过buildRevision区分，避免每条反馈都递增版本。下方1.4.0链接仍为上一批已发布源码5cdb631，不含本次修正。
+
+
+本批最终验证：[CI37461566300](https://github.com/DevenirTwilight/ChatGPT-Nova/actions/runs/37461566300)，源码 `224dae2e30daba3305cfe4d9a0c4f9f09df8a7b4`。构建/lint、Chromium17单快照/18滚动场景、Android35/36各12项通过；publish skipped，符合控制发布频率。独立核对CI APK仍为1.4.0/code14、原证书记录、两份脚本字节与源码一致、DEX中buildRevision等于224dae2完整提交。未发布APK 1888419 bytes/SHA256 `7495ec8792b29d2f47e74d6f92a50fe7baa4e7419737833ef78d6be578c7b88c`。
+
+独立核对两份 `OK (12 tests)`，包含持续2px滚动高度变化下HTML实际保存40条、恢复原位置、连续正文变化仍H06且分类正确/脱敏、原滚动/取消/SAF/打印。固定正文系统PDF均4页且有首尾/代码/表格标记：API35 140385 bytes/SHA256 `ac5254dd238c36c673df01c79c30587a2977bcffaff4f7767a84842e2a7d8181`，API36 141748 bytes/SHA256 `590cacc777aad09ac5915a5a9a65075b3028cc0e37889fc0bbb0d3c699462c40`。这是受控夹具，不是真实账号完整历史。
+
+额外复现：边界状态仅允许1px、几何稳定允许2px时，持续2px抖动能让扫描卡在第一轮底部；已统一两处2px容差，连续抖动回归通过，不放宽消息正文/顺序校验或完整性结论。先前CI37460549233为本修正被取消，不记为验证通过。当前用户安装的5cdb631/DOM-SCROLL-TRIAL-1仍可能出现原H06；本修正留在工作分支，后续按批统一交付，无新增版本和Release。
 
 
 ## 1.4.0 滚动缓存测试版（已签名交付）
