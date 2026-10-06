@@ -1,0 +1,164 @@
+name: Assemble large APK delivery parts
+on:
+  push:
+    branches: [feature/export-conversation]
+    paths: ['.github/workflows/large-apk-delivery.yml']
+  workflow_dispatch:
+    inputs:
+      source_run_id:
+        description: Tested DOM trial build run containing nova-dom-trial-build
+        required: true
+        default: '37509953925'
+permissions:
+  contents: read
+  actions: read
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: nova-dom-trial-build
+          path: dist
+          github-token: ${{ github.token }}
+          run-id: ${{ inputs.source_run_id || '37509953925' }}
+      - name: Validate and partition the existing signed APK without rebuilding
+        run: |
+          (cd dist && sha256sum --check ChatGPT-Nova.apk.sha256)
+          python3 - <<'PYCODE'
+          from pathlib import Path
+          import zipfile, hashlib, json
+          out=Path('package-chunks');out.mkdir()
+          package=Path('ChatGPT-Nova-package.zip')
+          with zipfile.ZipFile(package,'w',zipfile.ZIP_DEFLATED) as z:
+              for name in ['ChatGPT-Nova.apk','ChatGPT-Nova.apk.sha256','signature.txt','manifest.txt']:
+                  z.write(Path('dist')/name,name)
+          parts=[]
+          with package.open('rb') as f:
+              for index in range(16):
+                  data=f.read(30*1024*1024)
+                  if not data: break
+                  name=f'part-{index:02d}';(out/name).write_bytes(data)
+                  parts.append({'name':name,'bytes':len(data),'sha256':hashlib.sha256(data).hexdigest()})
+              assert not f.read(1),'Increase partition slots before publishing this package'
+          (out/'manifest.json').write_text(json.dumps({'sourceRun':37509953925,'packageSha256':hashlib.sha256(package.read_bytes()).hexdigest(),'parts':parts},indent=2))
+          print('Delivery partitions:',len(parts),'total compressed bytes:',package.stat().st_size)
+          PYCODE
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nova-gecko-delivery-manifest
+          path: package-chunks/manifest.json
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        if: hashFiles('package-chunks/part-00') != ''
+        with:
+          name: nova-gecko-delivery-part-00
+          path: package-chunks/part-00
+          compression-level: 0
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        if: hashFiles('package-chunks/part-01') != ''
+        with:
+          name: nova-gecko-delivery-part-01
+          path: package-chunks/part-01
+          compression-level: 0
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        if: hashFiles('package-chunks/part-02') != ''
+        with:
+          name: nova-gecko-delivery-part-02
+          path: package-chunks/part-02
+          compression-level: 0
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        if: hashFiles('package-chunks/part-03') != ''
+        with:
+          name: nova-gecko-delivery-part-03
+          path: package-chunks/part-03
+          compression-level: 0
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        if: hashFiles('package-chunks/part-04') != ''
+        with:
+          name: nova-gecko-delivery-part-04
+          path: package-chunks/part-04
+          compression-level: 0
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        if: hashFiles('package-chunks/part-05') != ''
+        with:
+          name: nova-gecko-delivery-part-05
+          path: package-chunks/part-05
+          compression-level: 0
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        if: hashFiles('package-chunks/part-06') != ''
+        with:
+          name: nova-gecko-delivery-part-06
+          path: package-chunks/part-06
+          compression-level: 0
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        if: hashFiles('package-chunks/part-07') != ''
+        with:
+          name: nova-gecko-delivery-part-07
+          path: package-chunks/part-07
+          compression-level: 0
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        if: hashFiles('package-chunks/part-08') != ''
+        with:
+          name: nova-gecko-delivery-part-08
+          path: package-chunks/part-08
+          compression-level: 0
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        if: hashFiles('package-chunks/part-09') != ''
+        with:
+          name: nova-gecko-delivery-part-09
+          path: package-chunks/part-09
+          compression-level: 0
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        if: hashFiles('package-chunks/part-10') != ''
+        with:
+          name: nova-gecko-delivery-part-10
+          path: package-chunks/part-10
+          compression-level: 0
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        if: hashFiles('package-chunks/part-11') != ''
+        with:
+          name: nova-gecko-delivery-part-11
+          path: package-chunks/part-11
+          compression-level: 0
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        if: hashFiles('package-chunks/part-12') != ''
+        with:
+          name: nova-gecko-delivery-part-12
+          path: package-chunks/part-12
+          compression-level: 0
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        if: hashFiles('package-chunks/part-13') != ''
+        with:
+          name: nova-gecko-delivery-part-13
+          path: package-chunks/part-13
+          compression-level: 0
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        if: hashFiles('package-chunks/part-14') != ''
+        with:
+          name: nova-gecko-delivery-part-14
+          path: package-chunks/part-14
+          compression-level: 0
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        if: hashFiles('package-chunks/part-15') != ''
+        with:
+          name: nova-gecko-delivery-part-15
+          path: package-chunks/part-15
+          compression-level: 0
+          if-no-files-found: error
