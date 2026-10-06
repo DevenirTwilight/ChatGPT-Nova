@@ -1,5 +1,18 @@
 # 新方案导出试用版
 
+## 定位诊断包已验证并交付：e56c225 / 1.4.0
+
+最终源码`e56c2250719b32d3212683bb96e5240e35a5ad5d`，[CI37495451307](https://github.com/DevenirTwilight/ChatGPT-Nova/actions/runs/37495451307)构建/lint/原签名、Chromium17单快照+30滚动+12进度+16定位场景、Android35/36各17项全部通过，publish skipped。本地v2结构探针14场景和canonical探针10场景通过。未改变消息采集规则、放开隐藏导出或增加滚动轮次。本批新增定点定位/本地转换对照与v2结构诊断，不宣布用户原进度已修复。
+
+独立下载35/36证据核对`OK (17 tests)`及新增`locatorCopiesOnlyStructureForVisibleAuthorSibling`：页面显示作者旁目标→定位→原生复制JSON，authorIndex0、CSS非隐藏、不含目标字串、不写文件；系统PDF各4页且包含首尾/代码/表格标记。API35 140385 bytes/SHA256 `5e87f0557740e5c06b9d3254922d3541ae61f34a1ed85dcc350f685fe04b8fb2`；API36 141613 bytes/SHA256 `b916ca6edda6224174354f83364c69f05bd82401093d289b19b6bf232089b3c8`。模拟器WebView124/133，不是用户153或真实长会话证据。
+
+主APK1896838 bytes/SHA256 `cc869e0f36aee65670eae721b2d2026bd072629e84dfc8eeea14c482f1e4de1b`。独立核对下载ZIP摘要、APK校验、manifest版本仍1.4.0-scroll-trial/code14、原证书记录、4份导出/定位脚本与源码逐字节一致、DEX完整buildRevision=e56c225、无测试夹具。会话直接提供主APK和仅主APK/校验值ZIP，不创建Release。[备用GitHub构建产物](https://github.com/DevenirTwilight/ChatGPT-Nova/actions/runs/37495451307/artifacts/11427666558)，需登录/解压，只安装ChatGPT-Nova.apk，不装ChatGPT-Nova-tests.apk；有保留期限。
+
+用户复测无需保存HTML：安装本批包，原会话先显示目标进度→右上菜单导出诊断→定位缺失文字→输入独特4–160字片段→定位→复制诊断。应为buildRevision=e56c225，locator.source=read-only-text-locator；重点看matches的authorIndex/authorSelected/visibility/insideMarkdown/chain、exportSourceHasId/capturedHere与capture.code/count/matchingMessageIndexes。明确消息ID对应的本地转换正文存在片段，才能支持“已包含在某条消息内”；没有ID的capturedHere=false或L01_NOT_FOUND不单独证明消息丢失，查找不含控件/iframe/闭合shadow等范围。多个匹配可能为后续正常回复引用了原句，不按查询文字去重或把引用当目标原消息。
+
+真实8ed24f7 JSON已核实31普通作者全部采集、turn探针0，采集/复核签名一致；目标进度页面直接可见，但未知为何未包含/是否共享消息容器。旧30条基准与新31采样非同一时点，不能据条数宣布完整或修好。下一步等待用户本批定点结构/转换对照结果，基于实际标记修正；完整历史仍not-proven，附件原文件未打包，旧403未复测。下方“待CI/未接入APK”为本批交付前的记录。
+
+
 ## 8ed24f7真实JSON已收到：31普通作者均采集，turn探针零命中；新增缺失文字定位批次（待CI）
 
 用户提供8ed24f7/Android36/WebView153.0.8010.36的真实诊断：N00_READY/snapshot-ready，总463ms；作者raw/supported/visibleSupported均31（16用户/15助手），processed31、缺ID0/重复ID0，turnFallbacks0/explicitProgressBlocks0，Markdown外文字0，article turn探针raw0；采集/复核signature均243269ab。正文过滤ariaHidden33/displayNone8/controls23不是33条消息，更不能直接定位目标进度。用户已确认目标进度在Nova页面直接可见，但未保存新HTML。31条属于新采样时点，不能直接与旧30条基准相减或宣称完整。已核实安装提交；遗漏仍未解决，原始外层DOM/过滤原因尚未知。

@@ -1,4 +1,4 @@
-# 助手进度遗漏结构诊断（只读，已随8ed24f7测试APK交付）
+# 助手进度遗漏结构诊断（v2已随e56c225测试APK交付）
 
 用户逐条对照30条，第12条进度缺失，正常主消息29条保留，整条文本重复为0。本工具帮助区分具体结构原因，不是进度采集修复或完整性证明。
 
@@ -29,3 +29,7 @@ NOVA_PLAYWRIGHT_MODULE=/tmp/nova-dom-deps/node_modules/playwright-core node tool
 ## 当前定位批次（待CI/交付）
 
 已收到8ed24f7真实诊断，普通作者31全部采集，但article turn探针0；该JSON无法定位仍可见的目标进度。工作分支probe.js/main asset已同步v2，支持非article turn及作者外文字；probe-v2.js保留独立可运行副本，旧8ed24f7包仍用v1。新增定位asset及原生“导出诊断→定位缺失文字”入口，见tools/dom-trial/locator.test.cjs；输入4–160字片段，JSON仅结构/可见性/数字位置和本地转换结果匹配位置，绝不返回查询/正文/ID。当前加载范围无匹配不等于历史不存在；隐藏匹配只是过滤诊断，不会自动导出隐藏文字。
+
+## e56c225交付状态
+
+CI37495451307构建/lint/原签名、浏览器及Android35/36各17项通过，版本仍1.4.0/code14，无Release。v2通用turn/作者兄弟结构计数现已包含在主asset，canonical probe.js与probe-v2.js一致；8ed24f7旧包仍是v1。定位入口为导出诊断→定位缺失文字；在页面显示目标后输入独特片段并复制JSON。16个定位场景通过，实际原会话定位结果尚待用户反馈。详见docs/handoff/latest.md。
