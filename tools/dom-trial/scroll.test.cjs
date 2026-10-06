@@ -64,6 +64,7 @@ const fixture=fs.readFileSync('tools/dom-trial/virtual-fixture.js','utf8');
   assert.equal((await step()).error,'H04_CHANGED');checks++;
   await setup();await page.evaluate(()=>document.body.insertAdjacentHTML('beforeend','<button data-testid="stop-button">stop</button>'));
   assert.equal((await step('start')).error,'D04_STREAMING');checks++;
+  await setup();await step('start');await page.evaluate(()=>window.__novaHistoryScrollTrial.steps=1200);assert.equal((await step()).error,'H05_LIMIT');checks++;
   await setup();await step('start');await page.evaluate(()=>window.__novaHistoryScrollTrial.started-=600001);
   assert.equal((await step()).error,'H05_LIMIT');checks++;
   await setup();await step('start');await page.evaluate(()=>{window.__novaHistoryScrollTrial.stepStarted-=6000;window.__novaHistoryScrollTrial.readyStarted-=6000;document.querySelector('.markdown p').textContent='not settled';});

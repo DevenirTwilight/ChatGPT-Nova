@@ -1,7 +1,7 @@
 (function(command, token) {
  'use strict';
  const KEY='__novaHistoryScrollTrial';
- const WINDOW_LIMIT_MS=30000, READY_GRACE_MS=5000, SCAN_LIMIT_MS=600000;
+ const WINDOW_LIMIT_MS=30000, READY_GRACE_MS=5000, SCAN_LIMIT_MS=600000, STEP_LIMIT=1200;
  const snapshot=()=>JSON.parse(__NOVA_SNAPSHOT__);
  function readable(e) {
   for(let n=e;n;n=n.parentElement) {const css=getComputedStyle(n);
@@ -34,7 +34,7 @@
   users:[...s.messages.values()].filter(m=>m.role==='user').length,assistants:[...s.messages.values()].filter(m=>m.role==='assistant').length,
   steps:s.steps,leg:s.leg,topObserved:s.top,bottomObserved:s.bottom,secondPass:s.leg>=2,
   chars:s.chars,cacheBytes:s.bytes,elapsedMs:Math.round(performance.now()-s.started),
-  settling:{...s.window,readyAgeMs:Math.round(performance.now()-s.readyStarted),windowLimitMs:WINDOW_LIMIT_MS,scanLimitMs:SCAN_LIMIT_MS,contentStable:s.stable,windowAgeMs:Math.round(performance.now()-s.stepStarted),
+  settling:{...s.window,readyAgeMs:Math.round(performance.now()-s.readyStarted),windowLimitMs:WINDOW_LIMIT_MS,scanLimitMs:SCAN_LIMIT_MS,stepLimit:STEP_LIMIT,contentStable:s.stable,windowAgeMs:Math.round(performance.now()-s.stepStarted),
    totalListChanges:s.changes.list,totalBodyChanges:s.changes.body,totalPositionChanges:s.changes.position,totalExtentChanges:s.changes.extent}};}
  try {
   if(command==='cancel') {if(s?.token===token) dispose(true);return JSON.stringify({cancelled:true});}
@@ -65,7 +65,7 @@
   }
   if(!s || s.token!==token) abort('H04_SESSION');
   if(s.invalid || location.href!==s.route || !s.container.isConnected) abort('H04_CHANGED');
-  if(performance.now()-s.started>SCAN_LIMIT_MS || s.steps>=300) abort('H05_LIMIT');
+  if(performance.now()-s.started>SCAN_LIMIT_MS || s.steps>=STEP_LIMIT) abort('H05_LIMIT');
   const data=snapshot();
   const signals=loadingSignals();s.window.loadingSignals=signals;
   const notReady=['D03_LOADING','D05_NO_MESSAGES'].includes(data.error);
