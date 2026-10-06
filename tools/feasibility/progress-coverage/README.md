@@ -33,3 +33,11 @@ NOVA_PLAYWRIGHT_MODULE=/tmp/nova-dom-deps/node_modules/playwright-core node tool
 ## e56c225交付状态
 
 CI37495451307构建/lint/原签名、浏览器及Android35/36各17项通过，版本仍1.4.0/code14，无Release。v2通用turn/作者兄弟结构计数现已包含在主asset，canonical probe.js与probe-v2.js一致；8ed24f7旧包仍是v1。定位入口为导出诊断→定位缺失文字；在页面显示目标后输入独特片段并复制JSON。16个定位场景通过，实际原会话定位结果尚待用户反馈。详见docs/handoff/latest.md。
+
+## 真机无匹配的范围对照
+
+用户e56c225定位只有6个原始作者/L01且未超限，输入114字符未超160；当前是否显示目标尚待确认。`locator-window.test.cjs`5个合成检查说明：换成6节点窗口可导致找不到，也可能是精确字串差异，或目标位于被排除的可见按钮。原会话根因未确认，不以此宣布换窗口就是修复。沿用现有安装包，先用短独特片段定位；此轮仅工具/文档，未改生产代码。
+
+```sh
+NOVA_PLAYWRIGHT_MODULE=/tmp/nova-dom-deps/node_modules/playwright-core node tools/feasibility/progress-coverage/locator-window.test.cjs
+```
