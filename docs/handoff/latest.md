@@ -1,5 +1,18 @@
 # ChatGPT Nova 会话交接
 
+## 当前任务已改为官方 Shared Conversation 可行性验证（2026-10-06）
+
+实际远端 HEAD 起点043642448b5eb56c3bd3135ef8e2a26c2c6b2485，应用源码c28947b。最新用户指令替代下方“当前网页PDF/MHTML/Markdown Commit B”计划：先验证SharedConversationSource，真实长会话覆盖、同share URL更新、虚拟化实验通过后才升级主要来源；失败停止workaround。保留旧代码与Gecko，不继续扩展旧主DOM滚动算法，不发布Release、不增版。最终目标为同一次shared DOM clone派生普通HTML/Markdown，PDF打印相同frozenHtml的独立静态WebView。
+
+用户已提供一条官方共享链接并同意读取；不把链接或正文提交仓库。独立Chromium已HTTP200并识别6个user/assistant节点，尚待真实总数及首中尾基准。初步document滚动不是有效实验（页面实际为内层滚动），正在针对真正scrollable ancestor核对。是否为长会话、完整覆盖、同URL新增后重新Share更新均未证明。不要把Log in按钮误判成登录页；已渲染公开消息的share页可以有该按钮。
+
+上一任务CI37534482218构建/lint/签名通过，但Android35/36总体失败，需检查产物checks.json和各独立测试；不能写成全通过或删除Gecko依据。本机无Android SDK/adb，真实用户WebView153及人工PDF/Firefox仍待验证。
+
+已新增tools/shared-source/probe.cjs及shared/probe.js可重复运行公开页结构/稳定/滚动实验，不存URL/正文/消息ID，无内部API、账号存储或旧扫描fallback。Android独立WebView计划使用androidx.webkit1.12.1公开MULTI_PROFILE API建立临时独立profile避免影响主页面Cookie；不支持时明确失败，不改global CookieManager。官方Share只能在用户明示告知公开链接风险且继续后辅助打开UI，不自动创建/更新链接。
+
+下一步：确认真实基准与同URL更新；完成独立SharedSnapshotWebView稳定检查/临时profile销毁、可见Share DOM URL读取或主动粘贴入口，受控fixture检查。只有真实验证适用才推进FrozenSharedSnapshot三格式及正式入口，保留历史证据。下方旧任务记录为历史，不是继续执行Commit B授权。
+
+
 ## 浏览器式冻结快照 Commit A：源码 c28947b，最新完整验证进行中
 
 用户新目标为 PDF + MHTML + Markdown，不再扩展完整历史/自动滚动算法。实际起点远端2b86b68；原型363cb69及后续集中修正至c28947be326755511deaca3155f6e5e27d07b9a8。保存当前网页（原型）→一次evaluateJavascript同步读取公开呈现状态、clone→同clone派生frozenHtml/markdown→不可变FrozenPageSnapshot。Markdown直接SAF，MHTML独立无JS SnapshotWebView.saveWebArchive，PDF相同renderer标准PrintManager。已移除clone脚本/事件/执行容器、SVG脚本/动画，CSP禁执行、导航与桥隔离；静态资源无Cookie/Auth加载，拒绝backend API。当前仍保留生产Gecko与旧入口，原型PDF本身不用Gecko。版本仍1.4.0/code14，无Release。
