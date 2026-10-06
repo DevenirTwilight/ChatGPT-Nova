@@ -22,7 +22,7 @@
   if(!/^\/(?:c\/[^/]+|g\/[^/]+\/c\/[^/]+)\/?$/.test(location.pathname))throw Error('Q02_ROUTE');
   if(document.readyState!=='complete')throw Error('Q04_LOADING');
   const authors=[...document.querySelectorAll('[data-message-author-role]')];
-  const turns=[...document.querySelectorAll('article[data-testid^="conversation-turn-"],article[data-turn]')];
+  const turns=[...document.querySelectorAll('[data-testid^="conversation-turn-"],[data-turn]')];
   if(authors.length>1000 || turns.length>1000)throw Error('Q03_LIMIT');
   result.authors={raw:authors.length,supported:0,visibleSupported:0,user:0,assistant:0,other:0,missingId:0,outsideMarkdownTextNodes:0,outsideMarkdownChars:0,hidden:{}};
   result.authorSamples=[];

@@ -49,6 +49,7 @@ jobs:
           node tools/dom-trial/browser.test.cjs
           node tools/dom-trial/scroll.test.cjs
           node tools/dom-trial/progress.test.cjs
+          node tools/dom-trial/locator.test.cjs
       - name: Restore signing key
         env:
           NOVA_KEYSTORE_B64: ${{ secrets.NOVA_KEYSTORE_B64 }}
@@ -98,6 +99,7 @@ jobs:
               assert 'assets/export/dom-trial.js' in apk.namelist()
               assert 'assets/export/scroll-trial.js' in apk.namelist()
               assert 'assets/export/progress-discovery.js' in apk.namelist()
+              assert 'assets/export/locate-text.js' in apk.namelist()
               assert 'assets/virtual-history.js' not in apk.namelist()
               for name in apk.namelist():
                   assert not name.endswith(('.jks', '.keystore', 'keystore.properties'))

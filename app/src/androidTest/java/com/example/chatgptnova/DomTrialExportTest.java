@@ -223,6 +223,20 @@ public final class DomTrialExportTest extends FixtureActivity {
         assertEquals(2,dom.getJSONObject("progressDiscovery").getJSONObject("authors").getInt("visibleSupported"));
         for(String secret:new String[]{"PROGRESS-BODY","PRIVATE-PROGRESS-ID","PRIVATE-CONTROL"}) assertFalse(detail.get().contains(secret));
     }
+    @Test public void locatorCopiesOnlyStructureForVisibleAuthorSibling() throws Exception {
+        conversation("");
+        js("document.querySelector('[data-message-id=a]').insertAdjacentHTML('beforebegin','<section><p>LOCATOR-PRIVATE-TARGET</p></section>');true");
+        main(()->exporter().locateText("LOCATOR-PRIVATE-TARGET"));click("复制诊断");
+        AtomicReference<String> detail=new AtomicReference<>();main(()->{
+            android.content.ClipboardManager c=activity.getSystemService(android.content.ClipboardManager.class);
+            detail.set(c.getPrimaryClip().getItemAt(0).getText().toString());
+        });
+        org.json.JSONObject result=new org.json.JSONObject(detail.get()).getJSONObject("locator");
+        assertEquals("L00_MATCH",result.getString("code"));assertFalse(result.getBoolean("bodyIncluded"));
+        org.json.JSONObject match=result.getJSONArray("matches").getJSONObject(0);
+        assertEquals(0,match.getInt("authorIndex"));assertFalse(match.getJSONObject("visibility").getBoolean("cssHidden"));
+        assertFalse(detail.get().contains("LOCATOR-PRIVATE-TARGET"));assertFalse(busy());assertNull(output());
+    }
     @Test public void boxlessBodyWrappersStillSaveTextAndCode() throws Exception {
         conversation("");
         js("document.querySelector('[data-message-author-role=assistant]').style.display='contents';document.querySelector('.markdown').style.display='contents';true");

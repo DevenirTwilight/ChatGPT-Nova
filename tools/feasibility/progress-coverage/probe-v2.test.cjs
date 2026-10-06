@@ -19,6 +19,8 @@ const capture=fs.readFileSync('app/src/main/assets/export/dom-trial.js','utf8').
   r=await read();assert.equal(r.turns.withOutsideAuthorText,0);checks++;
   await setup('<article data-testid="conversation-turn-1" data-turn="assistant" data-message-author-role="assistant" data-message-id="PRIVATE-ID"><p>SECRET-TEXT root author</p></article>');
   r=await read();assert.equal(r.turns.visibleWithoutSupportedAuthor,0);assert.equal(r.turns.withOutsideAuthorText,0);checks++;
+  await setup(final.replaceAll('article','section').replace('<div data-message-author-role="assistant">','<p>SECRET-TEXT sibling progress</p><div data-message-author-role="assistant">'));
+  r=await read();assert.equal(r.turns.raw,1);assert.equal(r.turns.withOutsideAuthorText,1);checks++;
   // Same author with ordinary final Markdown: sibling progress is omitted by capture.
   await setup(final.replace('<div class="markdown">','<p>SECRET-TEXT progress</p><div class="markdown">'));r=await read();assert.equal(r.authorSamples.length,1);assert(r.authors.outsideMarkdownChars>0);let exported=JSON.parse(await page.evaluate(capture));assert(!exported.messages[0].markdown.includes('progress'));checks++;
   // An explicitly assistant-labelled turn is now a bounded capture fallback.

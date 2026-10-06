@@ -1,5 +1,16 @@
 # 新方案导出试用版
 
+## 8ed24f7真实JSON已收到：31普通作者均采集，turn探针零命中；新增缺失文字定位批次（待CI）
+
+用户提供8ed24f7/Android36/WebView153.0.8010.36的真实诊断：N00_READY/snapshot-ready，总463ms；作者raw/supported/visibleSupported均31（16用户/15助手），processed31、缺ID0/重复ID0，turnFallbacks0/explicitProgressBlocks0，Markdown外文字0，article turn探针raw0；采集/复核signature均243269ab。正文过滤ariaHidden33/displayNone8/controls23不是33条消息，更不能直接定位目标进度。用户已确认目标进度在Nova页面直接可见，但未保存新HTML。31条属于新采样时点，不能直接与旧30条基准相减或宣称完整。已核实安装提交；遗漏仍未解决，原始外层DOM/过滤原因尚未知。
+
+本批保留采集器/滚动次数与版本1.4.0/code14，新增原生“导出诊断→定位缺失文字”：用户在当前页面显示目标后输入4–160字独特片段。只读查找当前加载正文，支持同块内跨inline节点、空白归一，报告数字作者序号、白名单祖先标签/角色/turn/channel/有ID布尔、aria-hidden与CSS/hidden属性分开；不返回输入文字、正文、真实ID、URL。定位同时在WebView本地运行当前转换器，输出capture.code/count/matchingMessageIndexes及每个匹配的capturedHere/exportSourceHasId；用于区分文字已经在某条导出正文内、同一作者Markdown外、作者旁边、可见性规则过滤，而不靠count推论文字缺失。无稳定ID的capturedHere=false不能单独当遗漏证明；须结合matchingMessageIndexes/结构/捕获错误。
+
+定位预算：50000文本节点、200万扫描字符、2秒查找、20匹配/每条12层白名单结构、15秒原生回调。查找包含隐藏文本以诊断过滤，但不会放开导出过滤/保存隐藏内容；按钮/脚本/输入/iframe等不查，L01_NOT_FOUND仅当前范围未匹配。局部转换沿用原1000消息/200万字符/8MiB界限；不调用网络/React/Cookie/storage，不滚动、不改网页。v2结构探针接入assets，turn诊断去除article限定，补作者外兄弟文字计数，候选仍不自动导出成助手。v1安装包缺上述功能。
+
+新增16个Chromium定位场景通过，包括已采集正文对照、兄弟/Markdown外文字、aria-hidden但CSS可见、隐藏CSS、跨inline、按钮/输入排除、无匹配/超限/错域/JS字符串注入防护、只读和输出脱敏；v2结构诊断14场景通过。Android新增定位→原生复制JSON不含目标正文/不写文件，目标35/36各17项；CI尚待执行。原会话实际定位结果仍须用户使用本批测试包反馈，不再凭未核实选择器宣布根因或自动拆出消息。
+
+
 ## 本批已验证并交付：8ed24f7 / 1.4.0（进度补采、诊断、快速入口）
 
 最终源码`8ed24f74d0f6fc8f4183e0b797a199926300b5e9`，[CI37487134618](https://github.com/DevenirTwilight/ChatGPT-Nova/actions/runs/37487134618)构建/lint/原签名、Chromium17单快照+30滚动+12进度场景、Android35/36各16项通过，publish skipped；本地10个只读探针场景也通过。早先37486497116/37486763034因本批修正被取消，不算完整验证结果。新增Android测试实际通过快速入口→HTML→SAF保存并核对USER-FIRST→PROGRESS-BODY→ASSISTANT-LAST顺序、助手进度标签、复制诊断count3/turnFallbacks1/原作者2及无正文/ID泄露。均为明确标记的合成结构，不是用户缺失条目的真实DOM复现。

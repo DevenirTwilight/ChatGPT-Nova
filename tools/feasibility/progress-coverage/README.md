@@ -25,3 +25,7 @@ NOVA_PLAYWRIGHT_MODULE=/tmp/nova-dom-deps/node_modules/playwright-core node tool
 ```sh
 NOVA_PLAYWRIGHT_MODULE=/tmp/nova-dom-deps/node_modules/playwright-core node tools/feasibility/progress-coverage/probe-v2.test.cjs
 ```
+
+## 当前定位批次（待CI/交付）
+
+已收到8ed24f7真实诊断，普通作者31全部采集，但article turn探针0；该JSON无法定位仍可见的目标进度。工作分支probe.js/main asset已同步v2，支持非article turn及作者外文字；probe-v2.js保留独立可运行副本，旧8ed24f7包仍用v1。新增定位asset及原生“导出诊断→定位缺失文字”入口，见tools/dom-trial/locator.test.cjs；输入4–160字片段，JSON仅结构/可见性/数字位置和本地转换结果匹配位置，绝不返回查询/正文/ID。当前加载范围无匹配不等于历史不存在；隐藏匹配只是过滤诊断，不会自动导出隐藏文字。

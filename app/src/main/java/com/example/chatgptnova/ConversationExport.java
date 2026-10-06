@@ -393,7 +393,41 @@ final class ConversationExport {
     void showDiagnostic() {
         if(destroyed) return;
         new AlertDialog.Builder(activity).setTitle("新方案导出诊断").setMessage(diagnostic.toString())
-            .setPositiveButton("复制诊断",(d,w)->copyDiagnostic()).setNegativeButton("关闭",null).show();
+            .setPositiveButton("复制诊断",(d,w)->copyDiagnostic()).setNeutralButton("定位缺失文字",(d,w)->showTextLocator()).setNegativeButton("关闭",null).show();
+    }
+    private void showTextLocator() {
+        if(busy) {toast("请等待当前采集结束。");return;}
+        android.widget.EditText input=new android.widget.EditText(activity);
+        input.setHint("粘贴缺失句子的独特片段（4至160字）");input.setSingleLine(true);input.setSaveEnabled(false);
+        input.setImportantForAutofill(View.IMPORTANT_FOR_AUTOFILL_NO);
+        input.setInputType(android.text.InputType.TYPE_CLASS_TEXT | android.text.InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS);
+        input.setFilters(new android.text.InputFilter[]{new android.text.InputFilter.LengthFilter(160)});
+        new AlertDialog.Builder(activity).setTitle("定位缺失文字")
+            .setMessage("请先在网页中显示那条消息，再粘贴一个独特片段。只读查找当前页面，不滚动；复制结果仅含结构计数，不包含输入文字、聊天正文或消息ID。")
+            .setView(input).setPositiveButton("定位",(d,w)->locateText(input.getText().toString()))
+            .setNegativeButton("取消",null).show();
+    }
+    void locateText(String query) {
+        if(destroyed || busy) return;
+        String normalized=query.trim().replaceAll("\\s+"," ");
+        if(normalized.length()<4 || normalized.length()>160) {toast("请输入4至160字的独特片段。");return;}
+        if(!active.getAsBoolean() || !trusted()) {toast("请打开原会话后重试。");return;}
+        resetDiagnostic();busy=true;collecting=true;address=web.getUrl();long ticket=++generation;
+        stage("L00_LOCATE","locate-text");stopDeadline();
+        deadline=()->{if(current(ticket))fail("L04_TIMEOUT","文字定位超时，请等待页面稳定后重试。",null);};web.postDelayed(deadline,15000);
+        try {
+            String expression=asset("locate-text.js").replace("__NOVA_SNAPSHOT__",asset().replace("__NOVA_VERIFY_ONLY__","false"))
+                .replace("__NOVA_QUERY__",JSONObject.quote(normalized));
+            web.evaluateJavascript(expression,value->{
+                if(!current(ticket))return;stopDeadline();
+                try {
+                    Object decoded=new JSONTokener(value==null ? "null" : value).nextValue();
+                    if(!(decoded instanceof String) || ((String)decoded).length()>65536)throw new IllegalStateException();
+                    JSONObject result=new JSONObject((String)decoded);put("locator",result);
+                    collecting=false;busy=false;stage(result.optString("code","L99_LOCATOR"),"text-located");showDiagnostic();
+                } catch(Exception e) {fail("L99_LOCATOR","定位结果无效，请重新打开原会话。",null);}
+            });
+        } catch(RuntimeException e) {fail("L99_LOCATOR","无法定位页面文字，请重试。",null);}
     }
     private void copyDiagnostic() {
         android.content.ClipboardManager clipboard=activity.getSystemService(android.content.ClipboardManager.class);
