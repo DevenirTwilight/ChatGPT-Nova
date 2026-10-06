@@ -1,5 +1,15 @@
 # 最新复核摘要
 
+## 0df561e 真机成功，但滚动没有新增：优先使用现有快速路径
+
+用户提供明确buildRevision0df561e的真机成功诊断：Android36/WebView153.0.8010.36，H00_READY/scroll-collected-unproven，缓存29条（15用户/14助手），单向向上65步、leg1/plannedLegs1/secondPassfalse，无缩步重试；采集84449ms、总85333ms、scrollMax38590/viewport747，终点挂载29条且contentStable7。随后明确反馈“第一秒就读取所有信息了，滚动完全没增加计数”。本次滚动没有带来用户观察到的新增消息；不能把完成扫描说成85秒获取了新的历史。
+
+独立核查当前APK对应源码：菜单“采集并选择格式”已有不滚动capture路径，执行一次DOM采集→后台转换→保存前同页面签名复核，支持既有HTML/Markdown/PDF流程。用户可以直接使用该按钮，无需另装APK即可省去本次扫描。其范围仍是当前DOM已加载消息，完整历史未确认，工具进度/原附件边界不变；首次29条不证明还有没有未挂载历史，不能在滚动无新增几次后自动声称全量。
+
+诊断totalListChanges/totalBodyChanges等仅累积窗口内变化；resetWindow会清空前一快照，因此0本身不能证明跨窗口的列表从未变化。用户直接观察首轮缓存29、终点挂载29与缓存29共同支持本次没有新增，但本环境没有真实DOM或HTML独立全量核对。
+
+本轮未改生产源码、不新增APK/版本/Release，也未重复运行已通过的测试。此前0df561e的CI/独立核对结果继续有效。下批集中改进：将现有快速导出作为显眼默认入口、明确按钮范围；按需要选择单向历史扫描，不用重复扫描当完整性；增加initialCachedCount/addedAfterInitial/snapshotCalls/解析与等待耗时及真正跨窗口变化的脱敏计数，再基于真实计时优化。不要把快速路径写成尚不存在而又重复制作安装包。
+
 ## 单向版本已验证并直接提供：0df561e / 1.4.0
 
 用户最新要求为“到顶端或底部来一遍，直接一边过”，取代强制上下与第二轮方案。[CI37478242887](https://github.com/DevenirTwilight/ChatGPT-Nova/actions/runs/37478242887)，最终源码 `0df561e822e4c3efe8c95f20140e71d60bae80ff`，构建/lint/原签名、Chromium17单快照+29滚动场景、Android35/36各15项全部通过，publish skipped。默认只单向一遍：在顶部向下、在底部向上、中间开始先定位到底部再向上，到另一端结束。完成恢复原始像素位置后不继续采集。不会出现自动第二轮或把secondPass标true。
