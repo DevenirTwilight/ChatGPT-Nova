@@ -1,0 +1,121 @@
+{
+  "source": "public-shared-page",
+  "browser": "151.0.7922.173",
+  "viewport": "desktop-1280x720",
+  "httpStatus": 200,
+  "initial": {
+    "dom": {
+      "ready": true,
+      "bodyPresent": true,
+      "loading": false,
+      "unavailable": false,
+      "loginPage": false,
+      "count": 8,
+      "turns": 8,
+      "chars": 5411,
+      "fingerprint": "e07511ef",
+      "roles": [
+        "user",
+        "assistant",
+        "user",
+        "assistant",
+        "user",
+        "assistant",
+        "user",
+        "assistant"
+      ],
+      "codeBlocks": 26,
+      "tables": 0,
+      "math": 0,
+      "images": 0
+    },
+    "markers": {
+      "first": true,
+      "last": true
+    },
+    "scroll": {
+      "top": 0,
+      "max": 29229,
+      "viewport": 607
+    },
+    "firstStillMounted": true
+  },
+  "top": {
+    "dom": {
+      "ready": true,
+      "bodyPresent": true,
+      "loading": false,
+      "unavailable": false,
+      "loginPage": false,
+      "count": 8,
+      "turns": 8,
+      "chars": 5411,
+      "fingerprint": "e07511ef",
+      "roles": [
+        "user",
+        "assistant",
+        "user",
+        "assistant",
+        "user",
+        "assistant",
+        "user",
+        "assistant"
+      ],
+      "codeBlocks": 26,
+      "tables": 0,
+      "math": 0,
+      "images": 0
+    },
+    "markers": {
+      "first": true,
+      "last": true
+    },
+    "scroll": {
+      "top": 0,
+      "max": 29229,
+      "viewport": 607
+    },
+    "firstStillMounted": true
+  },
+  "bottom": {
+    "dom": {
+      "ready": true,
+      "bodyPresent": true,
+      "loading": false,
+      "unavailable": false,
+      "loginPage": false,
+      "count": 6,
+      "turns": 6,
+      "chars": 1866,
+      "fingerprint": "e0ca9e54",
+      "roles": [
+        "user",
+        "assistant",
+        "user",
+        "assistant",
+        "user",
+        "assistant"
+      ],
+      "codeBlocks": 0,
+      "tables": 0,
+      "math": 0,
+      "images": 0
+    },
+    "markers": {
+      "first": false,
+      "last": true
+    },
+    "scroll": {
+      "top": 29213,
+      "max": 29213,
+      "viewport": 607
+    },
+    "firstStillMounted": false
+  },
+  "topFirstStillMounted": false,
+  "topFirstTextStillPresent": false,
+  "virtualizationObserved": true,
+  "coverage": "not-independently-verified",
+  "sameUrlUpdate": "not-tested",
+  "elapsedMs": 21234
+}

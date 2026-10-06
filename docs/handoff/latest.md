@@ -1,5 +1,14 @@
 # ChatGPT Nova 会话交接
 
+## 当前任务：普通静态 HTML 为唯一快照表示，取消 MHTML / Share（2026-10-06）
+
+最新用户重新指定当前网页一次同步冻结→同clone派生HTML/Markdown→PDF打印同份frozenHtml。停止Share和MHTML，不扩展旧滚动/私有来源，不声称完整服务器历史。Commit A保留Gecko，Android35/36及真实PDF验证通过后Commit B才移除生产Gecko/切正式UI。当前源码基线c28947b，远端文档HEAD13dedf9；勿执行下方被替代任务。
+
+Share实验已证实虚拟化，保留tools/shared-source脱敏证据作为结论而非新功能：移动/桌面顶部8节点5411字符26代码块、底部6节点1866字符0代码块；顶部第一个节点isConnected=false且其正文不在底部任何作者节点。桌面有用户提供首标记在顶部、底部消失，尾标记两端存在（不证明全量），另一次移动bounded稳定SHARE_NOT_STABLE。未读存储/私有API、不存链接正文、不创建分享。明确停止该主要来源路线，不做滚动workaround。
+
+前一A源码c28947b CI37534482218构建/lint/原签名通过、Android35/36旧18通过、新10各9通过/真实PDF保存按钮超时；有camera callback/media permission回归失败，尚未全通过。当前普通HTML A将替代MHTML代码和测试；保留旧失败证据，不把预览字节/回调当成实际保存PDF。新任务需修系统Print UI验收并重跑完整回归。
+
+
 ## 当前任务已改为官方 Shared Conversation 可行性验证（2026-10-06）
 
 实际远端 HEAD 起点043642448b5eb56c3bd3135ef8e2a26c2c6b2485，应用源码c28947b。最新用户指令替代下方“当前网页PDF/MHTML/Markdown Commit B”计划：先验证SharedConversationSource，真实长会话覆盖、同share URL更新、虚拟化实验通过后才升级主要来源；失败停止workaround。保留旧代码与Gecko，不继续扩展旧主DOM滚动算法，不发布Release、不增版。最终目标为同一次shared DOM clone派生普通HTML/Markdown，PDF打印相同frozenHtml的独立静态WebView。
