@@ -1,3 +1,11 @@
+## 实际最新检查点：462ba8c / CI37548381063
+
+当前远端应用源码462ba8ccce0f155844946ef9df18866e1c14a82a，CI37548381063进行中；必须等实际结果。最新A修正包含公开Rw shell采样、已观测android:id/title文件框、Firefox递归accessibility节点（A4截图已显示Before正文，快捷findByText失败）、首页测试卡片和官方157.0.1 More子菜单导航；PNG320×120、同snapshot实际打印源HTML/MD、强内容/图片PDF核对、包体/安装代码和依赖记录。旧source e775/A4 Android35/36均失败且无已取PDF文件；不能将spooler完成/291k数据日志或可见正文截图认证为保存文件。全部旧/容器回归及HTML/MD检查仍通过。
+
+本地新13快照场景及Chromium143/Firefox144/Edge154 file普通HTML解码/结构/打印CSS通过；真实API35/36 PDF及FirefoxPDF仍等新CI。Gecko仍生产保留，Commit B没有开始，无Release、版号保持1.4.0-scroll-trial/code14。若A全通过，按后文B清单删唯一旧Gecko PDF调用/依赖/仓库/特定lint/ABI交付，正式默认只当前网页HTML/MD/SystemPrint；保留旧扫描源码和16可继续Android例，2Gecko专用例明确退役保留源/历史。B再跑全检/测大小/原签名/v1及A覆盖升级；供测试APK/CI，不公开Release。
+
+当前所有实现、测试和继续必要材料已入库。无工作树源码补丁待找，只有可忽略scripts/__pycache__。需要压缩/迁移继续维护并push本交接，但普通回复不要另造迁移提示词。
+
 ## A校验修正批（待最新CI，Gecko仍保留）
 
 37546450115/e7759f6现Android35/36均失败。API36产物11451104498已取/tmp/nova-html-a4-36：系统保存窗口真实文件名已设置/保存并返回Nova，随后actual saved system PDF采样超时；UiAutomation公开Android15源码确认Runtime.exec不解释find的shell引号/2>/dev/null，故本批用公开Rw+sh stdin修正采样，不以spooler完成记录代PDF实物。Firefox已实际显示正文（截图Before可见），但findByText快捷查询没返回其virtual节点，本批改现有公开递归find；正式157.0.1公开源码确认Save as PDF在More子菜单，也补真实菜单导航。无私有浏览器API。原18/回归及HTML/MD仍通过，不删失败证据。

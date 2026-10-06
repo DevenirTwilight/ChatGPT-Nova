@@ -1,3 +1,4 @@
+<!-- Latest actual source 462ba8c / CI37548381063 pending. Local 13 snapshot scenarios and Chrome/Firefox/Edge ordinary HTML passed. A4 API35/36 failed test shell parsing and Firefox virtual-node text search; new public Rw/recursive helper/More submenu fixes await actual saved PDF. No Gecko removal or Release. -->
 <!-- Latest checkpoint: e7759f6 / CI37546450115 pending; A3 API35 failed observed android:id/title filename control, Firefox loaded tab remains on Home Continue card; A3 API36 cancelled after fix push. No actual Android PDF yet; no Gecko removal. -->
 <!-- checkpoint 2026-10-06: source d2e44a8 CI37542015192 Android35/36 failed. API35 real Print UI returned, PDF test read wrong assumed UUID filename; no actual PDF proof yet. Firefox fixture accessibility wait failed; preserve dedicated UI evidence and restore Nova before scenario teardown. Gecko removal remains blocked. -->
 # 最新复核摘要
