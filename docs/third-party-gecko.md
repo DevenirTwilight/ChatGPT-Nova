@@ -10,3 +10,5 @@ PDF调用公开 `GeckoSession.saveAsPdf()`，与Firefox Android `GeckoEngineSess
 - [MPL 2.0许可文本](licenses/MPL-2.0.txt)
 
 Mozilla引擎源代码及其内部第三方许可随官方源码提供；本仓库未修改该引擎。依赖的许可证也在官方POM/源码中提供。
+
+Gecko捆绑的ExoPlayer NotificationUtil没有用于本地PDF。app/lint.xml仅按该第三方类的具体诊断文字忽略NotificationPermission，应用自身和其他依赖的检查继续启用，没有加入通知权限。新会话仅在data HTML开始并完成加载后生成PDF，避免把初始化空白页当导出文档。

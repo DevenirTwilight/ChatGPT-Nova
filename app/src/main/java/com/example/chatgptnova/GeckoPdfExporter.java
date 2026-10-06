@@ -29,7 +29,7 @@ final class GeckoPdfExporter {
     private final GeckoSession session;
     private final GeckoView view;
     private volatile boolean closed;
-    private boolean requested;
+    private boolean requested, documentStarted;
 
     GeckoPdfExporter(Activity activity, File destination, Callback callback) {
         this.activity=activity;
@@ -51,8 +51,11 @@ final class GeckoPdfExporter {
             }
         });
         session.setProgressDelegate(new GeckoSession.ProgressDelegate() {
+            @Override public void onPageStart(GeckoSession s, String url) {
+                documentStarted=url.startsWith("data:text/html");
+            }
             @Override public void onPageStop(GeckoSession s, boolean success) {
-                if (closed || requested) return;
+                if (closed || requested || !documentStarted) return;
                 requested=true;
                 if (!success) {callback.failed("G02_LOAD",null);return;}
                 session.saveAsPdf().then(input -> {
