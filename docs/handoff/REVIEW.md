@@ -1,3 +1,4 @@
+<!-- checkpoint 2026-10-06: source d2e44a8 CI37542015192 Android35/36 failed. API35 real Print UI returned, PDF test read wrong assumed UUID filename; no actual PDF proof yet. Firefox fixture accessibility wait failed; preserve dedicated UI evidence and restore Nova before scenario teardown. Gecko removal remains blocked. -->
 # 最新复核摘要
 
 ## 当前检查点：A源码d2e44a8，等待37542015192 Android结果

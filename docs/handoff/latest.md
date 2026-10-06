@@ -1,14 +1,16 @@
 # ChatGPT Nova 会话交接
 
-## 当前检查点：A源码d2e44a8，等待37542015192 Android结果
+## 当前检查点：A源码d2e44a8，37542015192失败待修正
 
-实际最新应用源码d2e44a8ecc3cf76e7213038def5060debb0f66c0，CI[37542015192](https://github.com/DevenirTwilight/ChatGPT-Nova/actions/runs/37542015192)构建/lint/原签名已通过，Android35/36进行中；包含实际HTML/MD/SystemPrint PDF、旧18、全回归/v1升级和官方Firefox157.0.1同HTML保存PDF。不能在结果前移除Gecko。无Release，版本仍1.4.0-scroll-trial/code14。
+实际最新应用源码d2e44a8ecc3cf76e7213038def5060debb0f66c0，CI[37542015192](https://github.com/DevenirTwilight/ChatGPT-Nova/actions/runs/37542015192)构建/lint/原签名已通过，Android35/36均已失败，不能记为通过；包含实际HTML/MD/SystemPrint PDF、旧18、全回归/v1升级和官方Firefox157.0.1同HTML保存PDF。不能在结果前移除Gecko。无Release，版本仍1.4.0-scroll-trial/code14。
 
 前一37539616637现在两API均失败：新10各9通过，PDF preview enabled超时/无实际PDF；WebView/Share/全IME/native/v1升级等回归均通过。HTML/MD文件与UTF8内容标记成功；实际Chromium打开成功后的全页截图压缩超时使browser检查失败。本轮截图改viewport，仍核全部文本标记；当前PDF断言失败会在teardown前保留完整UI树/截图用于确诊（上一轮静态waitFor未保留这部分）。对应小证据在/tmp/nova-html-a35、/tmp/nova-html-a36，源产物11448536049/11449110695。
 
 本地新12快照浏览器场景、真实file://Chromium143/Firefox144/Edge154（同一HTML，PNG解码/no scripts or HTTP/print CSS）通过，扩展桌面PDF31页，不能冒充Android或Firefox Android。fixture已修PNG CRC并增加长代码/表格/单回复/URL；100+屏在browser额外fixture执行。Shared页虚拟化证据已入tools/shared-source并停止升级；MHTML生产路径已取消，不再继续。
 
-下一步优先检查37542015192全部结果及实际PDF；失败则下载artifact和UI树查原因，不编造通过，不以打印预览代实际文件。若A所有关键检查真通过，Commit B可移除Gecko：它仅ConversationExport旧PDF使用；旧实验可留HTML/MD和源码/浏览器测试，新正式入口不调用扫描。两项Gecko专用Android测试应明确退役并保留历史，其他16旧实验及全部正常容器/新保存检查继续；删除GeckoPdfExporter、仅Gecko依赖/Maven/资产入口与gecko-arm64-delivery workflow，重新构建/测APK/依赖/原签名。不要改Composer/上传/下载/分享模块。是否有其他用途先核源码，禁止强删。
+最新已取API35小产物11448984111到/tmp/nova-html-a2-35：新10九通过一失败，系统打印界面已成功操作并返回Nova，但测试错误假设PDF文件名为Print job UUID，实际adapter document title不同；断言bytes>1000失败，尚未取得PDF实物。HTML/MD及旧18、全回归/升级通过。Firefox A/B在fixture可见标记等待超时，随后Scenario.close外部Activity前台造成NPE；目前产物UI证据是Nova失败现场（脚本在Firefox之前拉取），需增加Firefox专属现场并恢复Nova前台。API36证据仍需取回核对，不能假设一致。
+
+下一步查实际PDF命名/路径，通过真实SAF明确文件名或发现新文件，不用预览字节代替；修Firefox UI证据/生命周期并重测。下一步优先检查37542015192全部结果及实际PDF；失败则下载artifact和UI树查原因，不编造通过，不以打印预览代实际文件。若A所有关键检查真通过，Commit B可移除Gecko：它仅ConversationExport旧PDF使用；旧实验可留HTML/MD和源码/浏览器测试，新正式入口不调用扫描。两项Gecko专用Android测试应明确退役并保留历史，其他16旧实验及全部正常容器/新保存检查继续；删除GeckoPdfExporter、仅Gecko依赖/Maven/资产入口与gecko-arm64-delivery workflow，重新构建/测APK/依赖/原签名。不要改Composer/上传/下载/分享模块。是否有其他用途先核源码，禁止强删。
 
 FirefoxSnapshotTest只有测试APK：同一FrozenPageSnapshot的frozenHtml经临时loopback fixture服务→真实官方Firefox UI保存PDF→拉回实物，不用私有打印API；尚待实际执行结果，缺浏览器的其他环境assumption跳过不会凭此认证（host仍要求文件和内容）。真机人工/实际账号当前加载内容及WebView153仍需明确边界。提供稳定测试包/CI，不新增版号/公开Release。压缩/迁移继续更新并push交接，不为普通回复生成迁移提示词。
 
