@@ -35,6 +35,8 @@ assert.equal(discovery,fs.readFileSync('tools/feasibility/progress-coverage/prob
   r=await read();assert.equal(r.messages.length,1);assert.equal(r.diagnostic.turnFallbacks,0);assert.equal(r.messages[0].messageType,'assistant-progress');checks++;
   await setup(ordinary('a','assistant','SECRET-BODY final').replace('<div class="markdown">','<p data-message-channel="commentary">SECRET-BODY progress</p><div class="markdown">'));
   r=await read();assert.equal(r.messages.length,1);assert(r.messages[0].markdown.includes('progress'));assert(r.messages[0].markdown.indexOf('progress')<r.messages[0].markdown.indexOf('final'));assert.equal(r.diagnostic.explicitProgressBlocks,1);checks++;
+  await setup(ordinary('a','assistant','SECRET-BODY markdown').replace('data-message-author-role="assistant"','data-message-author-role="assistant" data-message-channel="commentary"').replace('<div class="markdown">','<p>SECRET-BODY progress</p><div class="markdown">'));
+  r=await read();assert.equal(r.messages.length,1);assert.equal(r.messages[0].messageType,'assistant-progress');assert(r.messages[0].markdown.includes('progress'));assert(r.messages[0].markdown.includes('markdown'));checks++;
   await setup(ordinary('a','assistant','SECRET-BODY repeated')+ordinary('b','assistant','SECRET-BODY repeated'));
   r=await read();assert.equal(r.messages.length,2);assert.equal(r.messages[0].markdown,r.messages[1].markdown);checks++;
   await setup(progress+ordinary('PRIVATE-ID','assistant','SECRET-BODY final'));

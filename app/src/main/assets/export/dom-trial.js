@@ -135,7 +135,8 @@
         && !roots.some(root=>root.contains(body) || body.contains(root))
         && !body.parentElement.closest('[data-message-channel="commentary"]'));
       diagnostic.explicitProgressBlocks+=progress.length;
-      const bodies=roots.length ? [...roots,...progress].sort((a,b)=>a.compareDocumentPosition(b)&Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1) : [e];
+      const bodies=channel==='commentary' || !roots.length ? [e]
+        : [...roots,...progress].sort((a,b)=>a.compareDocumentPosition(b)&Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1);
       // Bound and verify the complete author subtree, including a safe fallback's source.
       const authorChars=e.textContent.length;
       diagnostic.chars+=authorChars;
