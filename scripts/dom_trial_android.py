@@ -23,6 +23,6 @@ try:
     logical = re.sub(r'\s+', '', text)
     for marker in ('USER-FIRST', 'ASSISTANT-LAST', 'CODE-LAST', 'TABLE-LAST'):
         assert marker in logical, marker
-    print('PASS: 12 Android DOM trial fixture tests and system-saved PDF first/last/code/table text; no live-account proof')
+    print('PASS: 13 Android DOM trial fixture tests and system-saved PDF first/last/code/table text; no live-account proof')
 finally:
     (out/'logcat.txt').write_text(adb('logcat', '-d', '-v', 'threadtime'))
