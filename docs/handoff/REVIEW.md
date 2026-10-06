@@ -1,5 +1,20 @@
 # 最新复核摘要
 
+## Gecko三格式批次已通过并交付：190113f / 1.4.0
+
+APK源码`190113f9387cd55e9dc3eb816a57d666840a9b03`，[CI37509953925](https://github.com/DevenirTwilight/ChatGPT-Nova/actions/runs/37509953925)构建/lint/原签名、浏览器17单快照/32滚动/19进度/18定位，以及Android35/36各18项全部通过；publish skipped。此前751da199首次因误删View导入编译失败，20bc9ae随后因Gecko捆绑未使用的NotificationUtil lint失败，均已修正，未把失败轮次记作通过。lint例外仅按该第三方类具体消息匹配，应用自己的权限检查继续；无新增通知权限。
+
+PDF现在使用Mozilla官方GeckoView140.0.20250707120347的saveAsPdf（固定兼容compileSdk35），渲染本地净化导出HTML，生成/验证后直接进入SAF保存位置选择；可取消生成和保存、重试，有G01–G08错误诊断以及pdfEngine/gecko/pdfPages/bytes。HTML/Markdown保留，当前无作者独立显式助手turn补采一起交付，不按文本去重。Gecko只用于导出，聊天与登录仍原WebView。独立只允许已标助手conversation-turn或旧article，无标角色/隐藏/UI候选不补；未知channel不假称进度；缺ID单次保留、跨窗口仍H02。用户原会话12普通作者+1明确助手turn的漏采机制已有真机证据，原目标内容/位置恢复仍需本批原会话复测。
+
+独立下载两套Android证据确认OK(18 tests)，包括Gecko直接SAF取消/重试、多页保存，以及缺ID助手SECTION经HTML保存的顺序/诊断脱敏。实际PDF各99166 bytes、5页Letter，Producer cairo1.18.0；首条→PDF-PROGRESS→末条顺序与代码/表格标记均检出。API35 SHA256 `eb06dba591849763dd46015d7b7191c40badabcc303db9d31a61197bc8c2effb`；API36 `90fb9e637a66d3345b34ad1728534a17793f13149fe73adaa1af8468f8507c20`。这是模拟器受控文档，不是用户153网页或完整真实长历史实物证明。
+
+主APK681095398 bytes（约650MiB，包含ARM64/ARM32/x86/x86_64），SHA256 `4637b9ae1b4862388d5c12a9833730a98584df9cbc0c9e7e8da63427f5f54fd6`，原证书签名，仍1.4.0-scroll-trial/code14。独立核对分块wrapper和内容摘要、重组ZIP摘要、APK与原CI校验相同、manifest包名/版号/无debug、证书记录、4份JS与源码相同、MPL资产、DEX完整190113f及saveAsPdf、4架构libxul、无测试夹具。[GitHub原构建产物](https://github.com/DevenirTwilight/ChatGPT-Nova/actions/runs/37509953925/artifacts/11434676119)需登录/解压，仅安装ChatGPT-Nova.apk。
+
+会话直接提供已组装主APK及ZIP（300645094 bytes/约287MiB，主APK/校验/manifest/签名，无测试APK）；ZIP SHA256 `956b4ba080c463b05467c1eeb70e507d74649344110c9f13db30868eaed62371`。没有公开Release。文件通道32MiB限制与直接shell下载403通过[交付工作流37510858526](https://github.com/DevenirTwilight/ChatGPT-Nova/actions/runs/37510858526)解决：从原已签APK包生成10个30MiB以内部分，经授权文件工具取回并逐段核对后组装，不重新构建或改APK。交付提交不等同APK源码；当次APK仍190113f。工具只传交接在GitHub，不提交APK/私密会话/登录资料。
+
+复测：覆盖安装→原会话显示缺失进度→导出聊天历史（试用）→快速导出已加载消息，分别检查HTML/Markdown/PDF正文与前后顺序；PDF生成后直接选择保存位置。PDF诊断应pdfEngine=gecko/gecko=140.0.20250707120347/buildRevision=190113f，可发脱敏JSON。不要仅凭条数判完整；当前count受挂载范围影响。真实完整历史not-proven、原附件未打包、旧403未复测，试用实现与格式集成检查完成，原会话进度和覆盖尚待用户复测。下方为早期阶段记录。
+
+
 ## 用户授权Gecko导出：三格式保留，批次待构建
 
 用户要求参考Firefox保存PDF并选择引入Gecko、接受大包及更多改动。现在PDF引擎改为官方GeckoView140.0.20250707120347（固定兼容compileSdk35），调用Firefox相同公开saveAsPdf接口，净化导出HTML→私密无JS会话→PDF流→后台写缓存/PdfRenderer验证页数→直接SAF保存，不再打开PrintManager打印机界面。HTML/Markdown保留，独立无作者助手turn补采一起交付。聊天WebView、登录与输入组件未迁移，不把PDF渲染器换成Gecko当历史完整性修复。

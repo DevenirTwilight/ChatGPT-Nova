@@ -16,6 +16,8 @@ jobs:
   package:
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    env:
+      SOURCE_RUN_ID: ${{ inputs.source_run_id || '37509953925' }}
     steps:
       - uses: actions/download-artifact@v4
         with:
@@ -28,7 +30,7 @@ jobs:
           (cd dist && sha256sum --check ChatGPT-Nova.apk.sha256)
           python3 - <<'PYCODE'
           from pathlib import Path
-          import zipfile, hashlib, json
+          import zipfile, hashlib, json, os
           out=Path('package-chunks');out.mkdir()
           package=Path('ChatGPT-Nova-package.zip')
           with zipfile.ZipFile(package,'w',zipfile.ZIP_DEFLATED) as z:
@@ -42,7 +44,7 @@ jobs:
                   name=f'part-{index:02d}';(out/name).write_bytes(data)
                   parts.append({'name':name,'bytes':len(data),'sha256':hashlib.sha256(data).hexdigest()})
               assert not f.read(1),'Increase partition slots before publishing this package'
-          (out/'manifest.json').write_text(json.dumps({'sourceRun':37509953925,'packageSha256':hashlib.sha256(package.read_bytes()).hexdigest(),'parts':parts},indent=2))
+          (out/'manifest.json').write_text(json.dumps({'sourceRun':int(os.environ['SOURCE_RUN_ID']),'packageSha256':hashlib.sha256(package.read_bytes()).hexdigest(),'parts':parts},indent=2))
           print('Delivery partitions:',len(parts),'total compressed bytes:',package.stat().st_size)
           PYCODE
       - uses: actions/upload-artifact@v4
