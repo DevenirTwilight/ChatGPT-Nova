@@ -124,6 +124,20 @@ public final class DomTrialExportTest extends FixtureActivity {
         assertEquals("640",js("document.getElementById('history').scrollTop"));
         assertEquals("undefined",js("typeof window.__novaHistoryScrollTrial"));js("clearInterval(window.fixtureJitter);true");
     }
+    @Test public void delayedHistorySpinnerWaitsThenSavesAllCachedMessages() throws Exception {
+        virtualHistory();String original=js("document.getElementById('history').scrollTop");
+        js("const loader=document.createElement('div');loader.id='fixture-loader';loader.setAttribute('role','progressbar');loader.style='position:sticky;bottom:0;height:10px;width:20px';document.getElementById('history').append(loader);setTimeout(()=>loader.remove(),8000);true");
+        AtomicReference<Intent> saved=new AtomicReference<>();
+        external(intent->{if(!Intent.ACTION_CREATE_DOCUMENT.equals(intent.getAction())) return null;saved.set(intent);return new Instrumentation.ActivityResult(Activity.RESULT_OK,new Intent().setData(OUTPUT));});
+        main(()->exporter().start());click("滚动收集历史");
+        android.os.SystemClock.sleep(5500);assertTrue("must keep waiting for history",busy());assertNull(output());
+        assertEquals("0",js("window.__novaHistoryScrollTrial.messages.size"));
+        assertEquals("0",js("window.__novaHistoryScrollTrial.steps"));
+        click("选择导出格式");click("HTML 阅读版（推荐）");click("保存到本地…");waitFor("delayed history saved",()->saved.get()!=null && !busy());
+        String html=new String(read(OUTPUT),StandardCharsets.UTF_8);assertEquals(40,html.split("<article>",-1).length-1);
+        assertTrue(html.contains("ROW-0</p>"));assertTrue(html.contains("ROW-39</p>"));assertTrue(html.contains("完整历史未确认"));
+        assertEquals(original,js("document.getElementById('history').scrollTop"));assertEquals("undefined",js("typeof window.__novaHistoryScrollTrial"));
+    }
     @Test public void changingBodyStillFailsWithTypedRedactedSettlingDiagnostic() throws Exception {
         virtualHistory();js("let bodyTick=0;window.fixtureBodyChange=setInterval(()=>{document.querySelector('.markdown p').textContent='SECRET-JITTER-'+(++bodyTick);},60);true");
         main(()->exporter().start());click("滚动收集历史");click("复制诊断");assertFalse(busy());assertNull(output());

@@ -33,6 +33,25 @@ const fixture=fs.readFileSync('tools/dom-trial/virtual-fixture.js','utf8');
    jitterEnd=await step();if(jitterEnd.error || jitterEnd.done) break;await page.waitForTimeout(20);
   }
   assert(jitterEnd.done,JSON.stringify(jitterEnd));assert.equal(jitterEnd.messages.length,7);checks++;
+  // A history spinner must block caching/scrolling even when mounted text looks stable.
+  // Real delayed completion beyond the old 5s window, then all 40 cached and checked.
+  await setup();const slowOriginal=await page.locator('#history').evaluate(e=>e.scrollTop);
+  await page.evaluate(()=>{const spinner=document.createElement('div');spinner.id='loader';spinner.setAttribute('role','progressbar');spinner.style='position:sticky;bottom:0;height:10px;width:20px';document.getElementById('history').append(spinner);setTimeout(()=>spinner.remove(),6500);});
+  await step('start');await page.waitForTimeout(5500);const slowWait=await step();
+  assert(slowWait.waiting,JSON.stringify(slowWait));assert.equal(slowWait.coverage.settling.reason,'history-loading');assert.equal(slowWait.coverage.count,0);assert.equal(slowWait.coverage.steps,0);assert(slowWait.coverage.settling.loadingObserved);
+  await page.waitForTimeout(1100);const slowDone=await finish();assert(slowDone.done,JSON.stringify(slowDone));assert.equal(slowDone.messages.length,40);assert.equal(slowDone.coverage.history,'not-proven');assert.equal(await page.locator('#history').evaluate(e=>e.scrollTop),slowOriginal);checks++;
+  // A fresh list grants a new readiness grace even without a recognizable spinner.
+  await setup(7);await step('start');await page.evaluate(()=>{window.__novaHistoryScrollTrial.stepStarted-=6000;window.__novaHistoryScrollTrial.readyStarted-=6000;document.querySelector('[data-message-id]').dataset.messageId='new-window-id';});
+  const listGrace=await step();assert(listGrace.waiting,JSON.stringify(listGrace));assert(listGrace.coverage.settling.readyAgeMs<1000);await step('cancel');checks++;
+  // Repeated remounting cannot reset the absolute window deadline indefinitely.
+  await setup(7);await step('start');await page.evaluate(()=>{window.__novaHistoryScrollTrial.stepStarted-=30001;document.querySelector('[data-message-id]').dataset.messageId='SECRET-REMOUNT';});
+  const endlessList=await step();assert.equal(endlessList.error,'H06_UNSETTLED');assert(!JSON.stringify(endlessList).includes('SECRET-REMOUNT'));assert.equal(await page.evaluate(()=>typeof window.__novaHistoryScrollTrial),'undefined');checks++;
+  await setup();await page.evaluate(()=>{document.getElementById('history').setAttribute('aria-busy','true');});await step('start');await page.evaluate(()=>window.__novaHistoryScrollTrial.stepStarted-=30001);
+  const endlessLoader=await step();assert.equal(endlessLoader.error,'H06_UNSETTLED');assert.equal(endlessLoader.coverage.settling.reason,'history-loading');assert.equal(endlessLoader.coverage.count,0);checks++;
+  // Loader cancellation immediately releases memory and restores the original position.
+  await setup();await page.evaluate(()=>document.getElementById('history').setAttribute('aria-busy','true'));await step('start');await step('cancel');assert.equal(await page.evaluate(()=>typeof window.__novaHistoryScrollTrial),'undefined');checks++;
+  // Hidden/outside-scroller indicators and decorative message spinners are ignored.
+  await setup(7);await page.evaluate(()=>{document.body.insertAdjacentHTML('beforeend','<div role="progressbar">elsewhere</div>');document.getElementById('history').insertAdjacentHTML('beforeend','<div role="progressbar" hidden>hidden</div>');document.querySelector('.markdown').insertAdjacentHTML('beforeend','<span class="animate-spin">decoration</span>');});await step('start');assert((await finish()).done);checks++;
   // Cancellation releases cached bodies, observers and the session and restores position.
   await setup();await collectFirst();await step('cancel');assert.equal(await page.evaluate(()=>typeof window.__novaHistoryScrollTrial),'undefined');checks++;
   await setup();await page.evaluate(()=>document.querySelector('[data-message-id]').removeAttribute('data-message-id'));
@@ -45,14 +64,14 @@ const fixture=fs.readFileSync('tools/dom-trial/virtual-fixture.js','utf8');
   assert.equal((await step()).error,'H04_CHANGED');checks++;
   await setup();await page.evaluate(()=>document.body.insertAdjacentHTML('beforeend','<button data-testid="stop-button">stop</button>'));
   assert.equal((await step('start')).error,'D04_STREAMING');checks++;
-  await setup();await step('start');await page.evaluate(()=>window.__novaHistoryScrollTrial.started-=120001);
+  await setup();await step('start');await page.evaluate(()=>window.__novaHistoryScrollTrial.started-=600001);
   assert.equal((await step()).error,'H05_LIMIT');checks++;
-  await setup();await step('start');await page.evaluate(()=>{window.__novaHistoryScrollTrial.stepStarted-=6000;document.querySelector('.markdown p').textContent='not settled';});
+  await setup();await step('start');await page.evaluate(()=>{window.__novaHistoryScrollTrial.stepStarted-=6000;window.__novaHistoryScrollTrial.readyStarted-=6000;document.querySelector('.markdown p').textContent='not settled';});
   const unsettledBody=await step();assert.equal(unsettledBody.error,'H06_UNSETTLED');assert.equal(unsettledBody.coverage.settling.reason,'body-or-structure-changing');assert.equal(unsettledBody.coverage.settling.bodyChanges,1);assert(!JSON.stringify(unsettledBody).includes('not settled'));checks++;
   await setup(7);await step('start');await page.evaluate(()=>{window.__novaHistoryScrollTrial.stepStarted-=6000;document.querySelector('[data-message-id]').dataset.messageId='changed-private-id';});
-  const unsettledList=await step();assert.equal(unsettledList.error,'H06_UNSETTLED');assert.equal(unsettledList.coverage.settling.reason,'message-list-changing');assert(!JSON.stringify(unsettledList).includes('changed-private-id'));checks++;
+  const changingList=await step();assert(changingList.waiting,JSON.stringify(changingList));assert.equal(changingList.coverage.settling.reason,'message-list-changing');assert(!JSON.stringify(changingList).includes('changed-private-id'));await step('cancel');checks++;
   // Layout jitter at an observed edge still cannot approve traversal completion.
-  await setup(7);await collectFirst();await step();await step();await step();await page.evaluate(()=>{document.getElementById('history').scrollTo({top:0,behavior:'instant'});window.__novaHistoryScrollTrial.stepStarted-=6000;document.getElementById('space').style.height='2000px';});
+  await setup(7);await collectFirst();await step();await step();await step();await page.evaluate(()=>{document.getElementById('history').scrollTo({top:0,behavior:'instant'});window.__novaHistoryScrollTrial.stepStarted-=30001;document.getElementById('space').style.height='2000px';});
   const unsettledEdge=await step();assert.equal(unsettledEdge.error,'H06_UNSETTLED');assert.equal(unsettledEdge.coverage.settling.reason,'edge-layout-changing');checks++;
   await setup(7);await step('start');for(let i=0;i<200;i++){await step();if(await page.evaluate(()=>window.__novaHistoryScrollTrial?.leg===2))break;}
   await page.evaluate(()=>document.querySelector('[data-message-id]').dataset.messageId='second-pass-new');

@@ -154,7 +154,11 @@ final class ConversationExport {
                             }
                             if(coverage!=null && scanDialog!=null) {
                                 String[] legs={"向上收集","向下收集","第二次向上核对","第二次向下核对"};
-                                scanDialog.setMessage(legs[Math.min(3,coverage.optInt("leg"))]+"\n已缓存 "+coverage.optInt("count")+" 条（用户 "+coverage.optInt("users")+" / 助手 "+coverage.optInt("assistants")+"）\n滚动 "+coverage.optInt("steps")+" 次；完整历史未确认。\n采集时请不要操作页面，可随时取消。");
+                                JSONObject settling=coverage.optJSONObject("settling");
+                                String reason=settling==null ? "" : settling.optString("reason");
+                                String waiting=("history-loading".equals(reason) || "page-not-ready".equals(reason))
+                                    ? "\n网页正在加载历史，正在等待…" : "message-list-changing".equals(reason) ? "\n历史消息正在换入，正在核对…" : "";
+                                scanDialog.setMessage(legs[Math.min(3,coverage.optInt("leg"))]+"\n已缓存 "+coverage.optInt("count")+" 条（用户 "+coverage.optInt("users")+" / 助手 "+coverage.optInt("assistants")+"）\n滚动 "+coverage.optInt("steps")+" 次；完整历史未确认。"+waiting+"\n采集时请不要操作页面，可随时取消。");
                             }
                             stage("H00_SCAN","scroll-sampling");scanPoll=()->pollScroll("poll",ticket,token);web.postDelayed(scanPoll,250);
                         });

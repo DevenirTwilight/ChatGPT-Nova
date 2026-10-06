@@ -1,6 +1,7 @@
 (function(command, token) {
  'use strict';
  const KEY='__novaHistoryScrollTrial';
+ const WINDOW_LIMIT_MS=30000, READY_GRACE_MS=5000, SCAN_LIMIT_MS=600000;
  const snapshot=()=>JSON.parse(__NOVA_SNAPSHOT__);
  function readable(e) {
   for(let n=e;n;n=n.parentElement) {const css=getComputedStyle(n);
@@ -15,15 +16,25 @@
   if(restore && s.container?.isConnected) s.container.scrollTo({top:s.original,behavior:"instant"});
   s.messages.clear();s.edges.clear();delete window[KEY];
  }
+ // Only public, visible indicators in the selected history scroller. Decorative
+ // spinning icons inside message bodies are not evidence of history loading.
+ function loadingSignals() {
+  const frame=s.container.getBoundingClientRect();
+  return [...s.container.querySelectorAll('[aria-busy="true"],[role="progressbar"],[data-testid="loading-spinner"],[class~="animate-spin"]')].filter(e=>{
+   if(!readable(e)) return false;
+   if(e.matches('[class~="animate-spin"]') && e.closest('[data-message-author-role]')) return false;
+   const r=e.getBoundingClientRect();return r.width>0 && r.height>0 && r.bottom>Math.max(0,frame.top) && r.top<Math.min(innerHeight,frame.bottom);
+  }).length + (s.container.getAttribute('aria-busy')==='true' ? 1 : 0);
+ }
  function resetWindow() {
-  s.stable=0;s.last='';s.lastIds='';s.prevPos=null;s.prevMax=null;s.edgeStable=0;s.stepStarted=performance.now();
-  s.window={polls:0,listChanges:0,bodyChanges:0,positionChanges:0,extentChanges:0,mountedCount:0,reason:'awaiting-content',scrollTopPx:0,scrollMaxPx:0,viewportPx:0};
+  s.stable=0;s.last='';s.lastIds='';s.prevPos=null;s.prevMax=null;s.edgeStable=0;s.stepStarted=performance.now();s.readyStarted=s.stepStarted;s.wasLoading=false;
+  s.window={polls:0,loadingSignals:0,loadingPolls:0,loadingObserved:false,listChanges:0,bodyChanges:0,positionChanges:0,extentChanges:0,mountedCount:0,reason:'awaiting-content',scrollTopPx:0,scrollMaxPx:0,viewportPx:0};
  }
  function stats() {return {source:'scroll-dom-trial',history:'not-proven',count:s.messages.size,
   users:[...s.messages.values()].filter(m=>m.role==='user').length,assistants:[...s.messages.values()].filter(m=>m.role==='assistant').length,
   steps:s.steps,leg:s.leg,topObserved:s.top,bottomObserved:s.bottom,secondPass:s.leg>=2,
   chars:s.chars,cacheBytes:s.bytes,elapsedMs:Math.round(performance.now()-s.started),
-  settling:{...s.window,contentStable:s.stable,windowAgeMs:Math.round(performance.now()-s.stepStarted),
+  settling:{...s.window,readyAgeMs:Math.round(performance.now()-s.readyStarted),windowLimitMs:WINDOW_LIMIT_MS,scanLimitMs:SCAN_LIMIT_MS,contentStable:s.stable,windowAgeMs:Math.round(performance.now()-s.stepStarted),
    totalListChanges:s.changes.list,totalBodyChanges:s.changes.body,totalPositionChanges:s.changes.position,totalExtentChanges:s.changes.extent}};}
  try {
   if(command==='cancel') {if(s?.token===token) dispose(true);return JSON.stringify({cancelled:true});}
@@ -54,11 +65,19 @@
   }
   if(!s || s.token!==token) abort('H04_SESSION');
   if(s.invalid || location.href!==s.route || !s.container.isConnected) abort('H04_CHANGED');
-  if(performance.now()-s.started>120000 || s.steps>=300) abort('H05_LIMIT');
+  if(performance.now()-s.started>SCAN_LIMIT_MS || s.steps>=300) abort('H05_LIMIT');
   const data=snapshot();
-  if(data.error) {if(['D03_LOADING','D05_NO_MESSAGES'].includes(data.error) && performance.now()-s.stepStarted<5000)
-    {s.window.reason='page-not-ready';return JSON.stringify({waiting:true,coverage:stats()});}
-   return JSON.stringify(failure(data.error,data.diagnostic));}
+  const signals=loadingSignals();s.window.loadingSignals=signals;
+  const notReady=['D03_LOADING','D05_NO_MESSAGES'].includes(data.error);
+  if(data.error && !notReady) return JSON.stringify(failure(data.error,data.diagnostic));
+  if(signals || notReady) {
+   s.window.polls++;s.window.loadingPolls++;s.window.loadingObserved=true;
+   s.window.reason=signals ? 'history-loading' : 'page-not-ready';
+   s.wasLoading=true;s.readyStarted=performance.now();s.stable=0;s.last='';s.lastIds='';s.edgeStable=0;
+   if(performance.now()-s.stepStarted>=WINDOW_LIMIT_MS) abort('H06_UNSETTLED');
+   return JSON.stringify({waiting:true,coverage:stats()});
+  }
+  if(s.wasLoading) {s.wasLoading=false;s.readyStarted=performance.now();}
   for(const warning of data.warnings || []) if(!warning.startsWith("试用版仅导出当前页面")) s.warnings.add(warning);
   const rows=data.messages;
   if(rows.some(m=>!m.id)) abort('H02_MISSING_ID');
@@ -73,7 +92,7 @@
   const extentDelta=hadGeometry ? Math.abs(max-s.prevMax) : 0;
   const quietGeometry=hadGeometry && positionDelta<=2 && extentDelta<=2;
   s.window.polls++;s.window.mountedCount=rows.length;
-  if(hadPrevious && !sameList) {s.window.listChanges++;s.changes.list++;}
+  if(hadPrevious && !sameList) {s.window.listChanges++;s.changes.list++;s.readyStarted=performance.now();s.edgeStable=0;}
   if(hadPrevious && sameList && !sameContent) {s.window.bodyChanges++;s.changes.body++;}
   if(positionDelta>0.1) {s.window.positionChanges++;s.changes.position++;}
   if(extentDelta>0.1) {s.window.extentChanges++;s.changes.extent++;}
@@ -84,9 +103,12 @@
   // Require repeated content, not pixel-perfect layout; edge observations remain separately gated.
   s.stable=sameContent ? s.stable+1 : 1;s.last=value;s.lastIds=identity;s.prevPos=pos;s.prevMax=max;
   if(s.stable<3) {
-   if(performance.now()-s.stepStarted>5000) abort('H06_UNSETTLED');
+   if(performance.now()-s.stepStarted>=WINDOW_LIMIT_MS || performance.now()-s.readyStarted>READY_GRACE_MS) abort('H06_UNSETTLED');
    return JSON.stringify({waiting:true,coverage:stats()});
   }
+  const upward=s.leg%2===0,atEdge=upward?pos<=2:pos>=max-2;
+  if(atEdge && !quietGeometry) s.window.reason='edge-layout-changing';
+  if(performance.now()-s.stepStarted>=WINDOW_LIMIT_MS) abort('H06_UNSETTLED');
   // Store strings immediately, never references to message DOM nodes that can be unmounted.
   let added=0;
   for(const m of rows) {
@@ -101,10 +123,8 @@
    if(s.leg>=2) s.second.add(m.id);
   }
   for(let i=1;i<rows.length;i++) s.edges.get(rows[i-1].id).add(rows[i].id);
-  const upward=s.leg%2===0,atEdge=upward?pos<=2:pos>=max-2;
   s.edgeStable=atEdge && added===0 && quietGeometry ? s.edgeStable+1 : 0;
   if(atEdge && s.edgeStable<5 && !quietGeometry) s.window.reason='edge-layout-changing';
-  if(atEdge && s.edgeStable<5 && performance.now()-s.stepStarted>5000) abort('H06_UNSETTLED');
   // Staying at an observed edge is only a traversal stopping condition, never completeness proof.
   if(atEdge && s.edgeStable>=5) {
    if(upward) s.top=true;else s.bottom=true;
