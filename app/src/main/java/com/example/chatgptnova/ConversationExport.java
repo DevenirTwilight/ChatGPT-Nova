@@ -132,7 +132,7 @@ final class ConversationExport {
                         activity.runOnUiThread(()-> {if(!current(ticket)) {
                             if(!destroyed && ticket==generation) fail("D10_CHANGED","页面已切换，采集已取消。",null);
                         } else {
-                            JSONObject stats=data.optJSONObject("diagnostic"); if(stats!=null) put("dom",stats);
+                            JSONObject stats=data.optJSONObject("diagnostic"); if(stats!=null) put(verify ? "verification" : "dom",stats);
                             callback.accept(data);
                         }});
                     } catch (Exception e) { activity.runOnUiThread(()-> {if(current(ticket)) fail("N03_DECODE","页面未返回有效的导出数据。",e);}); }
