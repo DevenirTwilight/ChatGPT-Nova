@@ -138,7 +138,7 @@ final class PageSnapshotExport {
         try {
             PrintManager manager=activity.getSystemService(PrintManager.class);
             if(manager==null)throw new IllegalStateException();
-            manager.print("Nova 冻结网页",renderer.printAdapter(()->{
+            manager.print("Nova-snapshot-"+snapshot.snapshotId,renderer.printAdapter(()->{
                 if(current(ticket)){renderer=null;stage("F00_PRINT_UI_FINISHED");finish();}
             }),new PrintAttributes.Builder().build());
             // No success toast: onFinish also occurs when the user cancels.

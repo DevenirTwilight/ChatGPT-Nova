@@ -74,27 +74,21 @@ public final class FrozenPageSnapshotTest extends FixtureActivity {
         assertTrue(snapshot.frozenHtml.contains("TABLE-LAST"));assertFalse(snapshot.frozenHtml.contains("AFTER-TABLE"));
         assertNull(field(exporter(),"renderer"));
     }
-    @Test public void realSystemWebViewPrintAdapterWritesFrozenMultipagePdf() throws Exception {
-        FrozenPageSnapshot snapshot=freeze();main(()->exporter().cancel());mutate();SnapshotWebView v=render(snapshot);
-        AtomicReference<PrintDocumentAdapter> adapter=new AtomicReference<>();AtomicBoolean finished=new AtomicBoolean();
-        main(()->{adapter.set(v.printAdapter(()->finished.set(true)));adapter.get().onStart();});
-        AtomicBoolean laidOut=new AtomicBoolean();AtomicReference<String> error=new AtomicReference<>();
-        PrintAttributes attrs=new PrintAttributes.Builder().setMediaSize(PrintAttributes.MediaSize.ISO_A4)
-            .setResolution(new PrintAttributes.Resolution("fixture","fixture",300,300)).setMinMargins(PrintAttributes.Margins.NO_MARGINS).setColorMode(PrintAttributes.COLOR_MODE_COLOR).build();
-        main(()->adapter.get().onLayout(null,attrs,new CancellationSignal(),new PrintDocumentAdapter.LayoutResultCallback(){
-            @Override public void onLayoutFinished(PrintDocumentInfo info,boolean changed){laidOut.set(true);}
-            @Override public void onLayoutFailed(CharSequence reason){error.set("layout failed");}},new android.os.Bundle()));
-        waitFor("snapshot print layout",()->laidOut.get()||error.get()!=null);assertNull(error.get());
-        File pdf=new File(activity.getExternalFilesDir(null),"frozen-page.pdf");
-        try(ParcelFileDescriptor fd=ParcelFileDescriptor.open(pdf,ParcelFileDescriptor.MODE_CREATE|ParcelFileDescriptor.MODE_TRUNCATE|ParcelFileDescriptor.MODE_READ_WRITE)) {
-            AtomicBoolean written=new AtomicBoolean();main(()->adapter.get().onWrite(new PageRange[]{PageRange.ALL_PAGES},fd,new CancellationSignal(),new PrintDocumentAdapter.WriteResultCallback(){
-                @Override public void onWriteFinished(PageRange[] pages){written.set(true);}
-                @Override public void onWriteFailed(CharSequence reason){error.set("write failed");}}));
-            waitFor("actual snapshot PDF",()->written.get()||error.get()!=null);assertNull(error.get());
-        }
-        try(ParcelFileDescriptor fd=ParcelFileDescriptor.open(pdf,ParcelFileDescriptor.MODE_READ_ONLY);android.graphics.pdf.PdfRenderer pdfRenderer=new android.graphics.pdf.PdfRenderer(fd)){assertTrue(pdfRenderer.getPageCount()>1);}
-        main(()->adapter.get().onFinish());assertTrue(finished.get());assertNull(v.web.getParent());
-        assertEquals("After snapshot marker",js("document.querySelector('h1').textContent"));
+    @Test public void realSystemPrintUiSavesFrozenMultipagePdf() throws Exception {
+        FrozenPageSnapshot snapshot=freeze();mutate();click("打印 / 保存为 PDF");
+        waitFor("system print window",()->{AccessibilityNodeInfo root=instrument.getUiAutomation().getRootInActiveWindow();return root!=null&&"com.android.printspooler".contentEquals(root.getPackageName());});
+        waitFor("destination spinner",()->{AccessibilityNodeInfo root=instrument.getUiAutomation().getRootInActiveWindow();if(root==null)return false;for(AccessibilityNodeInfo n:root.findAccessibilityNodeInfosByViewId("com.android.printspooler:id/destination_spinner"))if(n.isClickable())return n.performAction(AccessibilityNodeInfo.ACTION_CLICK);return false;});
+        click("Save as PDF");
+        waitFor("PDF preview enabled",()->{AccessibilityNodeInfo root=instrument.getUiAutomation().getRootInActiveWindow();if(root==null)return false;for(AccessibilityNodeInfo n:root.findAccessibilityNodeInfosByViewId("com.android.printspooler:id/print_button"))if(n.isEnabled()&&"Save to PDF".contentEquals(n.getContentDescription()))return true;return false;});
+        waitFor("save PDF button",()->{AccessibilityNodeInfo root=instrument.getUiAutomation().getRootInActiveWindow();if(root==null)return false;for(AccessibilityNodeInfo n:root.findAccessibilityNodeInfosByViewId("com.android.printspooler:id/print_button"))if(n.isEnabled())return n.performAction(AccessibilityNodeInfo.ACTION_CLICK);return false;});
+        click("Save");waitFor("print job finished",()->!busy());
+        String path="/sdcard/Download/Nova-snapshot-"+snapshot.snapshotId+".pdf";
+        byte[] bytes;
+        try(ParcelFileDescriptor fd=instrument.getUiAutomation().executeShellCommand("cat "+path);java.io.InputStream in=new ParcelFileDescriptor.AutoCloseInputStream(fd)){bytes=in.readAllBytes();}
+        assertTrue(bytes.length>1000);assertEquals("%PDF-",new String(bytes,0,5,StandardCharsets.US_ASCII));
+        File pdf=evidence("frozen-page.pdf",bytes);
+        try(ParcelFileDescriptor fd=ParcelFileDescriptor.open(pdf,ParcelFileDescriptor.MODE_READ_ONLY);android.graphics.pdf.PdfRenderer r=new android.graphics.pdf.PdfRenderer(fd)){assertTrue(r.getPageCount()>1);}
+        assertNull(field(exporter(),"renderer"));assertEquals("After snapshot marker",js("document.querySelector('h1').textContent"));
     }
     @Test public void cancelledSaveCanRepeatWithoutRendererLeak() {
         freeze();interceptSave(true);click("网页归档（MHTML）");waitFor("cancelled picker",()->!busy());assertNull(field(exporter(),"renderer"));
@@ -131,11 +125,11 @@ public final class FrozenPageSnapshotTest extends FixtureActivity {
             @Override public int rendererPriorityAtExit(){return android.webkit.WebView.RENDERER_PRIORITY_IMPORTANT;}
         }));
         assertNull(standalone.web.getParent());
-        web=FixtureActivity.web(activity);fixture(PAGE);focus();
+        web=FixtureActivity.web(activity);fixture(PAGE);main(()->web.requestFocus());
         assertNotNull(exporter());
         main(()->exporter().start());click("冻结此刻网页");waitFor("post-recovery snapshot",()->field(exporter(),"snapshot")!=null);
         main(()->exporter().cancel());
-        scenario.recreate();scenario.onActivity(a->{activity=a;web=FixtureActivity.web(a);});fixture(PAGE);focus();assertNotNull(exporter());
+        scenario.recreate();scenario.onActivity(a->{activity=a;web=FixtureActivity.web(a);});fixture(PAGE);main(()->web.requestFocus());assertNotNull(exporter());
     }
 
 }

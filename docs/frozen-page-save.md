@@ -31,7 +31,7 @@ MHTML 是单文件网页归档格式，兼容性取决于浏览器；不是普�
 ## 验证入口
 
 - tools/snapshot/browser.test.cjs：同一次冻结的 HTML/Markdown、多语言与结构、后续 mutation、标题/URL 变化、可信源/体积限制、live DOM 未改动。
-- FrozenPageSnapshotTest：同一个对象的实际 SAF Markdown 与实际 MHTML；另一原生 MHTML 保存路径；实际系统 WebView print adapter 多页 PDF；取消/重复、生命周期/renderer recovery、Cookie 与诊断。
+- FrozenPageSnapshotTest：同一个对象的实际 SAF Markdown 与实际 MHTML；另一原生 MHTML 保存路径；实际系统打印界面保存多页 PDF；取消/重复、生命周期/renderer recovery、Cookie 与诊断。
 - scripts/snapshot_android.py：拉取真实文件，用 Python email 解析 MIME HTML part、对比首尾/前后 mutation markers；pdftotext 检查 PDF；Chromium 实际打开 Android .mhtml 并截图；继续跑已有上传/权限/下载/清理/导航/分享/输入/native 测试。
 - 旧 DomTrialExportTest 与浏览器历史扫描测试保留并继续运行；ConversationExportTest 的旧私有 reader/pagination 路线历史已失效，不将其失败混作新快照失败，也不删除证据。
 

@@ -47,6 +47,6 @@ try:
     suite('com.example.chatgptnova.NativeUiTest#nativeControlsAndLifecycleRemainUsable','native-lifecycle',1)
     adb('shell','am','force-stop','com.example.chatgptnova')
     suite('com.example.chatgptnova.NativeUiTest#processRestartPreservesSyntheticSessionAndControls','native-restart',1)
-    print('PASS: snapshot consistency, real MHTML/MD/PDF adapter files, Chromium archive open, existing browser/share/input/native regressions; no live-account or manual Firefox proof')
+    print('PASS: snapshot consistency, real MHTML/MD/system-print-UI PDF files, Chromium archive open, existing browser/share/input/native regressions; no live-account or manual Firefox proof')
 finally:
     (out/'logcat.txt').write_text(adb('logcat','-d','-v','threadtime'))
