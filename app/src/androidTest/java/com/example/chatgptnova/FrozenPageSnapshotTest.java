@@ -21,7 +21,7 @@ import org.junit.Test;
 import static org.junit.Assert.*;
 
 /** Actual HTML/SAF/print-adapter output from immutable public-DOM fixtures. */
-public final class FrozenPageSnapshotTest extends FixtureActivity {
+public class FrozenPageSnapshotTest extends FixtureActivity {
     private Instrumentation.ActivityMonitor monitor;
     private SnapshotWebView standalone;
     @Before public void before() throws Exception {
@@ -36,25 +36,26 @@ public final class FrozenPageSnapshotTest extends FixtureActivity {
     }
     @After public void after(){if(monitor!=null)instrument.removeMonitor(monitor);if(standalone!=null)main(()->standalone.close());if(scenario!=null)scenario.close();}
     static void waitFor(String name,Condition condition){long until=android.os.SystemClock.uptimeMillis()+60000;do{if(condition.ready())return;android.os.SystemClock.sleep(100);}while(android.os.SystemClock.uptimeMillis()<until);fail("Timed out: "+name);}
-    private PageSnapshotExport exporter(){return (PageSnapshotExport)field(activity,"pageSnapshotExport");}
+    protected PageSnapshotExport exporter(){return (PageSnapshotExport)field(activity,"pageSnapshotExport");}
     private Object field(Object object,String name){try{Field f=object.getClass().getDeclaredField(name);f.setAccessible(true);return f.get(object);}catch(Exception e){throw new AssertionError(e);}}
-    private void click(String label){try{waitFor("control "+label,()->{AccessibilityNodeInfo node=find(instrument.getUiAutomation().getRootInActiveWindow(),label);while(node!=null&&!node.isClickable())node=node.getParent();return node!=null&&node.isVisibleToUser()&&node.isEnabled()&&node.performAction(AccessibilityNodeInfo.ACTION_CLICK);});}catch(AssertionError error){
+    protected void click(String label){try{waitFor("control "+label,()->{AccessibilityNodeInfo node=find(instrument.getUiAutomation().getRootInActiveWindow(),label);while(node!=null&&!node.isClickable())node=node.getParent();return node!=null&&node.isVisibleToUser()&&node.isEnabled()&&node.performAction(AccessibilityNodeInfo.ACTION_CLICK);});}catch(AssertionError error){
         try{evidence("snapshot-ui-failure.txt",dump(instrument.getUiAutomation().getRootInActiveWindow()).getBytes(StandardCharsets.UTF_8));java.io.ByteArrayOutputStream image=new java.io.ByteArrayOutputStream();android.graphics.Bitmap bitmap=instrument.getUiAutomation().takeScreenshot();if(bitmap!=null){bitmap.compress(android.graphics.Bitmap.CompressFormat.PNG,100,image);evidence("snapshot-ui-failure.png",image.toByteArray());}}catch(Exception ignored){}throw error;}
         instrument.waitForIdleSync();}
+    protected void retainUi(){try{evidence("snapshot-ui-failure.txt",dump(instrument.getUiAutomation().getRootInActiveWindow()).getBytes(StandardCharsets.UTF_8));android.graphics.Bitmap bitmap=instrument.getUiAutomation().takeScreenshot();if(bitmap!=null){java.io.ByteArrayOutputStream out=new java.io.ByteArrayOutputStream();bitmap.compress(android.graphics.Bitmap.CompressFormat.PNG,100,out);evidence("snapshot-ui-failure.png",out.toByteArray());}}catch(Exception ignored){}}
     private String dump(AccessibilityNodeInfo n){if(n==null)return "no window";StringBuilder s=new StringBuilder(n.toString()).append('\n');for(int i=0;i<n.getChildCount();i++)s.append(dump(n.getChild(i)));return s.toString();}
-    private AccessibilityNodeInfo find(AccessibilityNodeInfo n,String label){if(n==null)return null;if(n.isVisibleToUser()&&((n.getText()!=null&&label.equalsIgnoreCase(n.getText().toString()))||(n.getContentDescription()!=null&&label.equalsIgnoreCase(n.getContentDescription().toString()))))return n;for(int i=0;i<n.getChildCount();i++){AccessibilityNodeInfo found=find(n.getChild(i),label);if(found!=null)return found;}return null;}
-    private FrozenPageSnapshot freeze() {
+    protected AccessibilityNodeInfo find(AccessibilityNodeInfo n,String label){if(n==null)return null;if(n.isVisibleToUser()&&((n.getText()!=null&&label.equalsIgnoreCase(n.getText().toString()))||(n.getContentDescription()!=null&&label.equalsIgnoreCase(n.getContentDescription().toString()))))return n;for(int i=0;i<n.getChildCount();i++){AccessibilityNodeInfo found=find(n.getChild(i),label);if(found!=null)return found;}return null;}
+    protected FrozenPageSnapshot freeze() {
         main(()->exporter().start());click("冻结此刻网页");
         waitFor("immutable payload",()->field(exporter(),"snapshot")!=null);
         return (FrozenPageSnapshot)field(exporter(),"snapshot");
     }
-    private void mutate(){js("document.title='AFTER-TITLE';document.querySelector('h1').textContent='After snapshot marker';document.querySelector('table').innerHTML='<tr><td>AFTER-TABLE</td></tr>';document.getElementById('long').innerHTML='AFTER-BODY';true");}
+    protected void mutate(){js("document.title='AFTER-TITLE';document.querySelector('main').innerHTML='<h1>After snapshot marker</h1><table><tr><td>AFTER-TABLE</td></tr></table><div id=long>AFTER-BODY</div>';true");}
     private void interceptSave(boolean cancel) {
         monitor=new Instrumentation.ActivityMonitor(){@Override public Instrumentation.ActivityResult onStartActivity(Intent intent){if(!Intent.ACTION_CREATE_DOCUMENT.equals(intent.getAction()))return null;return new Instrumentation.ActivityResult(cancel?Activity.RESULT_CANCELED:Activity.RESULT_OK,new Intent().setData(OUTPUT));}};
         instrument.addMonitor(monitor);
     }
     private boolean busy(){AtomicBoolean b=new AtomicBoolean();main(()->b.set((Boolean)field(exporter(),"busy")));return b.get();}
-    private File evidence(String name,byte[] bytes)throws Exception{File f=new File(activity.getExternalFilesDir(null),name);java.nio.file.Files.write(f.toPath(),bytes);return f;}
+    protected File evidence(String name,byte[] bytes)throws Exception{File f=new File(activity.getExternalFilesDir(null),name);java.nio.file.Files.write(f.toPath(),bytes);return f;}
     private SnapshotWebView render(FrozenPageSnapshot snapshot) {
         AtomicBoolean ready=new AtomicBoolean();AtomicReference<String> error=new AtomicReference<>();
         main(()->standalone=new SnapshotWebView(activity,web,snapshot,new SnapshotWebView.Callback(){public void ready(){ready.set(true);}public void failed(String code){error.set(code);}}));
@@ -77,13 +78,17 @@ public final class FrozenPageSnapshotTest extends FixtureActivity {
         assertNull(field(exporter(),"renderer"));
     }
     @Test public void realSystemPrintUiSavesFrozenMultipagePdf() throws Exception {
+        try {
         FrozenPageSnapshot snapshot=freeze();mutate();click("打印 / 保存为 PDF");
         waitFor("system print window",()->{AccessibilityNodeInfo root=instrument.getUiAutomation().getRootInActiveWindow();return root!=null&&"com.android.printspooler".contentEquals(root.getPackageName());});
-        // Save as PDF is already the standard selected destination on this clean emulator.
-        // Avoid changing the destination during an in-flight WebView preview write.
-        waitFor("PDF preview enabled",()->{AccessibilityNodeInfo root=instrument.getUiAutomation().getRootInActiveWindow();if(root==null)return false;for(AccessibilityNodeInfo n:root.findAccessibilityNodeInfosByViewId("com.android.printspooler:id/print_button"))if(n.isEnabled()&&"Save to PDF".contentEquals(n.getContentDescription()))return true;return false;});
+        AccessibilityNodeInfo selected=instrument.getUiAutomation().getRootInActiveWindow();
+        if(find(selected,"Save as PDF")==null) {
+            waitFor("destination picker",()->{AccessibilityNodeInfo root=instrument.getUiAutomation().getRootInActiveWindow();if(root==null)return false;for(AccessibilityNodeInfo n:root.findAccessibilityNodeInfosByViewId("com.android.printspooler:id/destination_spinner"))if(n.isClickable())return n.performAction(AccessibilityNodeInfo.ACTION_CLICK);return false;});
+            waitFor("destination menu",()->find(instrument.getUiAutomation().getRootInActiveWindow(),"All printers…")!=null);click("Save as PDF");
+        }
+        waitFor("PDF preview enabled",()->{AccessibilityNodeInfo root=instrument.getUiAutomation().getRootInActiveWindow();if(root==null||find(root,"Save as PDF")==null)return false;for(AccessibilityNodeInfo n:root.findAccessibilityNodeInfosByViewId("com.android.printspooler:id/print_button"))if(n.isEnabled())return true;return false;});
         instrument.waitForIdleSync();android.os.SystemClock.sleep(1000);
-        click("Save to PDF");
+        waitFor("save PDF button",()->{AccessibilityNodeInfo root=instrument.getUiAutomation().getRootInActiveWindow();if(root==null)return false;for(AccessibilityNodeInfo n:root.findAccessibilityNodeInfosByViewId("com.android.printspooler:id/print_button"))if(n.isEnabled())return n.performAction(AccessibilityNodeInfo.ACTION_CLICK);return false;});
         click("Save");waitFor("print job finished",()->!busy());
         String path="/sdcard/Download/Nova-snapshot-"+snapshot.snapshotId+".pdf";
         byte[] bytes=new byte[0];long until=android.os.SystemClock.uptimeMillis()+20000;
@@ -94,6 +99,7 @@ public final class FrozenPageSnapshotTest extends FixtureActivity {
         File pdf=evidence("frozen-page.pdf",bytes);
         try(ParcelFileDescriptor fd=ParcelFileDescriptor.open(pdf,ParcelFileDescriptor.MODE_READ_ONLY);android.graphics.pdf.PdfRenderer r=new android.graphics.pdf.PdfRenderer(fd)){assertTrue(r.getPageCount()>1);}
         assertNull(field(exporter(),"renderer"));assertEquals("After snapshot marker",js("document.querySelector('h1').textContent"));
+        }catch(Exception|AssertionError e){retainUi();throw e;}
     }
     @Test public void cancelledSaveCanRepeatWithoutRendererLeak() {
         freeze();interceptSave(true);click("HTML");waitFor("cancelled picker",()->!busy());assertNull(field(exporter(),"renderer"));

@@ -39,3 +39,11 @@ S01_INVALID_PAGE；S02_SNAPSHOT_FAILED（包括15秒捕获超时）；S03_SNAPSH
 当前验证进度以handoff/latest及CI实际结果为准，未运行项明确待验证。此前MHTML实验和失败记录留在Git历史，不继续开发。
 
 三种格式严格对应同一次当前网页冻结快照，但无法证明ChatGPT服务器端完整会话历史；如果网页虚拟化未挂载较早内容，保存结果也不会包含那些内容。
+
+## 本轮已执行桌面验证（2026-10-06）
+
+同一实际保存HTML fixture以file://在独立测试Chromium143.0.7499.4、Firefox144.0.2、Edge154.0.4258.62打开，UTF8中文/法语/emoji/代码/表格/数学/首尾和data图片解码、无脚本/HTTP请求、白底打印CSS通过。截图人工查看中文及emoji显示正常。初始基础fixture的Chromium桌面PDF18页；扩展长代码/表格后31页，pdftotext检出中文/café/首尾/code/table；不是Android PDF/Firefox Android A/B。浏览器版本及结果见tools/snapshot/evidence/desktop-compatibility.json。
+
+最初沿用的1px图片存在IDAT CRC错误，已替换为有正确校验的实际PNG并保留图片解码断言（没有放宽测试）。系统托管Chromium的file策略限制不代表HTML错误；最终结果用独立测试版Chromium及真实Firefox/Edge，三者均file直接打开，无更改既有浏览器策略。`compatibility.cjs`明确区分file与可能的localhost降级，不冒充结果。
+
+已新增FirefoxSnapshotTest受控Android A/B：官方Firefox157.0.1 x86_64仅在CI安装，不加入生产依赖；同一个frozenHtml通过临时loopback fixture服务交给Firefox，以正常菜单Save as PDF保存并拉回实物。此测试不使用私有浏览器打印API、不包含真实会话、不发送正文给第三方，结果待CI，不宣称通过。真机人工对照仍应执行。

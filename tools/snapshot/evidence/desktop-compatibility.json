@@ -1,0 +1,35 @@
+[
+  {
+    "browser": "Chromium",
+    "version": "143.0.7499.4",
+    "opening": "file",
+    "ordinaryHtml": true,
+    "markers": true,
+    "imageDecoded": true,
+    "noNetworkOrScript": true,
+    "printCss": true,
+    "pdf": "desktop-only"
+  },
+  {
+    "browser": "Firefox",
+    "version": "144.0.2",
+    "opening": "file",
+    "ordinaryHtml": true,
+    "markers": true,
+    "imageDecoded": true,
+    "noNetworkOrScript": true,
+    "printCss": true,
+    "pdf": "not-produced"
+  },
+  {
+    "browser": "Edge",
+    "version": "154.0.4258.62",
+    "opening": "file",
+    "ordinaryHtml": true,
+    "markers": true,
+    "imageDecoded": true,
+    "noNetworkOrScript": true,
+    "printCss": true,
+    "pdf": "desktop-only"
+  }
+]

@@ -73,8 +73,10 @@ final class PageSnapshotExport {
                 stopDeadline();capturing=false;
                 if(!active.getAsBoolean()||!address.equals(live.getUrl())){fail("S08_PAGE_CHANGED_BEFORE_SNAPSHOT");return;}
                 try {
+                    if(result==null||result.length()>24*1024*1024){fail("S03_SNAPSHOT_TOO_LARGE");return;}
                     Object decoded=new JSONTokener(result).nextValue();
-                    if(!(decoded instanceof String)||((String)decoded).length()>12*1024*1024)throw new IllegalArgumentException();
+                    if(!(decoded instanceof String))throw new IllegalArgumentException();
+                    if(((String)decoded).length()>12*1024*1024){fail("S03_SNAPSHOT_TOO_LARGE");return;}
                     JSONObject payload=new JSONObject((String)decoded);
                     if(payload.has("error")){fail(payload.getString("error"));return;}
                     if(!id.equals(payload.getString("snapshotId"))||!address.equals(payload.getString("sourceUrl")))throw new IllegalArgumentException();

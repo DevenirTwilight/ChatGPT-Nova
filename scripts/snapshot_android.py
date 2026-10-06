@@ -34,13 +34,13 @@ def markdown():
         assert marker in md,marker
     for marker in ['After snapshot marker','AFTER-TABLE','AFTER-BODY','BUTTON-GARBAGE','SCRIPT-GARBAGE']:
         assert marker not in md,marker
-def pdf():
-    subprocess.run(['pdftotext','-layout',str(out/'frozen-page.pdf'),str(out/'frozen-page.txt')],check=True)
-    text=(out/'frozen-page.txt').read_text();logical=re.sub(r'\s+','',text)
+def pdf(name='frozen-page.pdf'):
+    subprocess.run(['pdftotext','-layout',str(out/name),str(out/(name+'.txt'))],check=True)
+    text=(out/(name+'.txt')).read_text();logical=re.sub(r'\s+','',text)
     for marker in ['Beforesnapshotmarker','TAIL-SNAPSHOT-MARKER','CODE-LAST','TABLE-LAST','中文','café','Reference','Longparagraph']:
         assert marker in logical,('PDF',marker)
     assert 'Aftersnapshotmarker' not in logical and 'AFTER-TABLE' not in logical
-    (out/'pdfinfo.txt').write_text(subprocess.check_output(['pdfinfo',str(out/'frozen-page.pdf')]).decode())
+    (out/(name+'.info.txt')).write_text(subprocess.check_output(['pdfinfo',str(out/name)]).decode())
 try:
     suite('com.example.chatgptnova.FrozenPageSnapshotTest','snapshot',10)
     for name in ['frozen-page.md','frozen-page.html','frozen-page-saf.html','frozen-page.pdf']:
@@ -72,6 +72,11 @@ try:
     suite('com.example.chatgptnova.UpgradeTest#testSeedDataPersistedBeforeUpgrade','upgrade-persistence',1)
     assert 'Success' in adb('install','-r','dist/ChatGPT-Nova.apk')
     suite('com.example.chatgptnova.UpgradeTest#testUpgradeDataPreserved','upgrade-current',1)
+    suite('com.example.chatgptnova.FirefoxSnapshotTest#sameFrozenHtmlCanBeSavedAsPdfInFirefoxAndroid','firefox-android',1)
+    for name in ['firefox-source.html','firefox-frozen.pdf']:
+        independent('pull-'+name,lambda name=name:adb('pull','/sdcard/Android/data/com.example.chatgptnova/files/'+name,str(out/name)))
+    independent('firefox-pdf-content',lambda:pdf('firefox-frozen.pdf'))
+    (out/'firefox-version.txt').write_text(adb('shell','dumpsys','package','org.mozilla.firefox'))
 finally:
     (out/'checks.json').write_text(json.dumps({'failures':failures,'scope':'synthetic-fixtures'},ensure_ascii=False,indent=2))
     (out/'logcat.txt').write_text(adb('logcat','-d','-v','threadtime'))

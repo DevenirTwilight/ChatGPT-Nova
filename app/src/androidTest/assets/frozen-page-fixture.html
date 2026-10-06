@@ -9,9 +9,9 @@ CODE-LAST</code></pre>
 <table><tr><th>Name</th><th>Value</th></tr><tr><td>中文</td><td>A|B TABLE-LAST</td></tr></table>
 <blockquote><p>Quoted 中文</p></blockquote><ol start="3"><li>Ordered one</li><li>Ordered two</li></ol><ul><li>Unordered one</li><li>Unordered two</li></ul><hr>
 <span class="katex"><span>Rendered math</span><annotation encoding="application/x-tex" style="display:none">E=mc^2</annotation></span>
-<img alt="fixture image" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aK1sAAAAASUVORK5CYII=">
+<img alt="fixture image" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4nGNgqDgBAAG8AUGYBKi+AAAAAElFTkSuQmCC">
 <p class="hide">HIDDEN-CONTROL-GARBAGE</p><button onclick="window.leaked=true">BUTTON-GARBAGE</button><input value="CREDENTIAL-DO-NOT-SAVE"><textarea>INPUT-GARBAGE</textarea>
 <details open><summary>Details</summary>Visible details</details><canvas width="10" height="10"></canvas>
 <div id="long"></div><p>TAIL-SNAPSHOT-MARKER</p>
-</main><script>document.getElementById('long').innerHTML=Array.from({length:90},(_,i)=>'<p>Long paragraph '+i+' '+('中文 English café long text '.repeat(24))+'</p>').join('');window.scriptMarker='SCRIPT-GARBAGE';</script>
+</main><script>document.getElementById('long').innerHTML=Array.from({length:90},(_,i)=>'<p>Long paragraph '+i+' '+('中文 English café long text '.repeat(24))+'</p>').join('');document.getElementById('long').insertAdjacentHTML('beforebegin','<section data-message-author-role="assistant"><h2>Long code and table</h2><pre><code class="language-python">LONG-CODE-HEAD\n'+Array.from({length:160},(_,i)=>'line_'+i+' = "中文 café '+('very_long_token_'.repeat(10))+'"').join('\n')+'\nLONG-CODE-TAIL</code></pre><table><thead><tr><th>Index</th><th>Text</th></tr></thead><tbody>'+Array.from({length:70},(_,i)=>'<tr><td>'+i+'</td><td>Long table 中文 café '+(i===69?'LONG-TABLE-TAIL':'row')+'</td></tr>').join('')+'</tbody></table><p>'+('Very long single answer 中文 français English '.repeat(100))+'</p><p><a href="https://example.org/'+('long-url-segment/'.repeat(30))+'">Long URL</a></p></section>');window.scriptMarker='SCRIPT-GARBAGE';</script>
 </body></html>

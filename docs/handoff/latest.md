@@ -1,5 +1,16 @@
 # ChatGPT Nova 会话交接
 
+## Commit A 后续验证修正（普通 HTML路线继续，Gecko仍保留）
+
+已推送应用A源码2f959e6edc9a9a3a2ed8c46415dbf9122c7b6416，CI37539616637构建/lint/原签名通过。Android35旧18通过，新10各9通过/1失败：PDF preview enabled超时，未取得实际PDF；其余WebView9（含此前Camera/麦克风前置权限修正）、分享、全IME/native/原签名v1升级通过。实际HTML/MD保存及UTF8标记通过，Chromium实际打开后的全文标记检查通过但全页截图30秒超时造成该检查失败。Android36仍运行，不提前记通过。API35小产物11448536049已独立下载到/tmp/nova-html-a35。
+
+修正批次：纠正fixture PNG的IDAT CRC错误；增加160行长代码、长表格、超长回答、长URL和完整live主体/title/table mutation。浏览器12场景通过；同普通HTML实际file://在测试Chromium143.0.7499.4/Firefox144.0.2/Edge154.0.4258.62打开，字体截图中文/emoji正常、PNG解码、代码/表格/数学、无脚本/HTTP请求、打印CSS均通过，证据JSON在tools/snapshot/evidence。基础桌面PDF18页、扩展fixture31页，未冒充AndroidPDF。
+
+Android打印检查仅在未选择PDF时切换目的，接受真实按钮enabled状态而非僵硬description，并在任何PDF断言前保留UI树/截图。HTML浏览器截图改viewport，避免超长全页压缩超时，全文标记验证保留。S03进一步在Android外层24Mi callback/内层12Mi JSON边界明确拒绝。
+
+增加FirefoxSnapshotTest受控A/B：官方Firefox157.0.1 x86_64仅CI安装，同一frozenHtml经临时loopback静态fixture服务→官方正常菜单Save as PDF→下载实际文件→pdftotext对照；没有私有打印API/真实聊天/生产第三方上传。未执行前不声称成功，缺Firefox的其他测试环境明确assumption跳过而非错误认证。物理设备人工对照仍须说明未完成。当前Commit B严格未启动；需新A最终CI Android35/36、实际PDF及文件/回归都通过后才能移除Gecko。
+
+
 ## 普通 HTML Commit A 已实现，验证待CI
 
 基于实际远端最新源码c28947b，已将PageSnapshotExport的MHTML保存路径彻底替换为普通UTF-8.html直接SAF；唯一FrozenPageSnapshot含final HTML/MD/字符数与复制型diagnostic metadata。freeze.js单次同步公开状态+clone，阅读主体使用Nova内联样式，不复制ChatGPT CSS/脚本/控制/原属性；同clone派生Markdown，PDF打印同份frozenHtml。100000元素/12Mi UTF16 payload硬上限，明确S01–S10错误，新路径无旧H系列。相对资源同步绝对化，data图片保留，blob明确占位，外链图片并非离线备份。用户/助手标签只取公开角色，保留此前无普通作者的明确conversation-turn助手正文修复。
