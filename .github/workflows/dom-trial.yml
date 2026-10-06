@@ -5,6 +5,8 @@ on:
     paths:
       - 'app/**'
       - 'tools/dom-trial/**'
+      - 'tools/snapshot/**'
+      - 'scripts/snapshot_android.py'
       - 'scripts/dom_trial_android.py'
       - '.github/workflows/dom-trial.yml'
   workflow_dispatch:
@@ -51,6 +53,7 @@ jobs:
           NOVA_PLAYWRIGHT_MODULE: /tmp/nova-dom-deps/node_modules/playwright-core
         run: |
           npm install --prefix /tmp/nova-dom-deps playwright-core@1.57.0 --no-audit --no-fund
+          node tools/snapshot/browser.test.cjs
           node tools/dom-trial/browser.test.cjs
           node tools/dom-trial/scroll.test.cjs
           node tools/dom-trial/progress.test.cjs
@@ -82,7 +85,7 @@ jobs:
           PY
 
       - name: Build and lint trial
-        run: ./gradlew :app:assembleRelease :app:assembleReleaseAndroidTest :app:lintRelease --stacktrace --no-daemon
+        run: ./gradlew :app:assembleRelease :app:assembleReleaseAndroidTest :app:lintRelease :app:testReleaseUnitTest --stacktrace --no-daemon
       - name: Verify original signature and trial identity
         run: |
           mkdir -p dist
@@ -136,6 +139,10 @@ jobs:
         with:
           name: nova-dom-trial-build
           path: dist
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --prefix /tmp/nova-dom-deps playwright-core@1.57.0 --no-audit --no-fund
       - run: sudo apt-get update && sudo apt-get install -y poppler-utils
       - name: Enable KVM
         run: |
@@ -154,12 +161,16 @@ jobs:
           heap-size: 512M
           disable-animations: true
           emulator-options: -no-window -gpu swiftshader -feature -Vulkan -no-snapshot -noaudio -no-boot-anim -camera-back emulated -dns-server 8.8.8.8,1.1.1.1
-          script: python3 scripts/dom_trial_android.py
+          script: |
+            python3 scripts/dom_trial_android.py
+            python3 scripts/snapshot_android.py
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: nova-dom-trial-android-${{ matrix.api }}
-          path: dom-trial-results/
+          path: |
+            dom-trial-results/
+            snapshot-results/
           if-no-files-found: warn
   publish:
     needs: [build, android]

@@ -316,6 +316,7 @@ public class MainActivity extends Activity {
     private int accountQuerySerial;
     private WebShareAdapter webShare;
     private ConversationExport conversationExport;
+    private PageSnapshotExport pageSnapshotExport;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -465,6 +466,8 @@ public class MainActivity extends Activity {
         cm.setAcceptThirdPartyCookies(webView, true);
 
         WebView shareView = webView;
+        pageSnapshotExport = new PageSnapshotExport(this, shareView,
+                () -> !clearing && webView == shareView);
         conversationExport = new ConversationExport(this, shareView,
                 () -> !clearing && webView == shareView);
         webShare = new WebShareAdapter(this, shareView,
@@ -487,6 +490,7 @@ public class MainActivity extends Activity {
                 if (view != webView || clearing) return;
                 ((ComposerWebView) view).navigationStarted();
                 if (webShare != null) webShare.navigationStarted();
+                if (pageSnapshotExport != null) pageSnapshotExport.navigationStarted();
                 if (conversationExport != null) conversationExport.navigationStarted();
                 accountUiState = AccountUiState.UNKNOWN;
                 accountQuerySerial++;
@@ -541,8 +545,9 @@ public class MainActivity extends Activity {
                 if (view != webView) { view.destroy(); return true; }
                 if (blobDownload != null) { blobDownload.cancel(); blobDownload = null; }
                 cancelPageRequests();
-                if (conversationExport != null) { conversationExport.destroy(); conversationExport = null; }
-                if (webShare != null) { webShare.destroy(); webShare = null; }
+                if (pageSnapshotExport != null) { pageSnapshotExport.destroy(); pageSnapshotExport = null; }
+            if (conversationExport != null) { conversationExport.destroy(); conversationExport = null; }
+            if (webShare != null) { webShare.destroy(); webShare = null; }
                 if (view.getParent() instanceof ViewGroup) ((ViewGroup) view.getParent()).removeView(view);
                 view.destroy();
                 webView = null;
@@ -830,9 +835,13 @@ public class MainActivity extends Activity {
             items.add(0, 2, 1, "ChatGPT 首页");
             if (accountUiState == AccountUiState.SIGNED_OUT) items.add(0, 3, 2, "登录");
             items.add(0, 4, 3, "用浏览器打开");
-            if (canExportConversation()) items.add(0, 7, 4, "导出聊天历史（试用）");
-            items.add(0, 8, 5, "导出诊断");
-            items.add(0, 5, 6, "设置");
+            if (canExportConversation()) {
+                items.add(0, 9, 4, "保存当前网页（原型）");
+                items.add(0, 7, 5, "导出聊天历史（试用）");
+            }
+            items.add(0, 10, 7, "网页保存诊断");
+            items.add(0, 8, 6, "导出诊断");
+            items.add(0, 5, 8, "设置");
             overflowMenu.setOnMenuItemClickListener(item -> {
                 if (clearing || webView == null) return true;
                 switch (item.getItemId()) {
@@ -847,6 +856,12 @@ public class MainActivity extends Activity {
                         break;
                     case 4:
                         openCurrentPageInBrowser();
+                        break;
+                    case 9:
+                        if (pageSnapshotExport != null) pageSnapshotExport.start();
+                        break;
+                    case 10:
+                        if (pageSnapshotExport != null) pageSnapshotExport.showDiagnostic();
                         break;
                     case 7:
                         if (conversationExport != null) conversationExport.start();
@@ -1014,8 +1029,9 @@ public class MainActivity extends Activity {
                     accountUiState = AccountUiState.UNKNOWN;
                     accountQuerySerial++;
                     cancelPageRequests();
+                    if (pageSnapshotExport != null) { pageSnapshotExport.destroy(); pageSnapshotExport = null; }
                     if (conversationExport != null) { conversationExport.destroy(); conversationExport = null; }
-                if (webShare != null) { webShare.destroy(); webShare = null; }
+                    if (webShare != null) { webShare.destroy(); webShare = null; }
                     cancelDownloads();
                     webView.stopLoading();
                     webView.clearCache(true);
@@ -1094,6 +1110,7 @@ public class MainActivity extends Activity {
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
+        if (pageSnapshotExport != null && pageSnapshotExport.activityResult(requestCode, resultCode, data)) return;
         if (conversationExport != null && conversationExport.activityResult(requestCode, resultCode, data)) return;
         if (webShare != null && webShare.activityResult(requestCode, resultCode)) return;
         if (requestCode == UploadController.PICK_FILE) uploads.result(resultCode, data);
@@ -1134,8 +1151,9 @@ public class MainActivity extends Activity {
         cancelPageRequests();
         cancelDownloads();
         if (webView != null) {
+            if (pageSnapshotExport != null) { pageSnapshotExport.destroy(); pageSnapshotExport = null; }
             if (conversationExport != null) { conversationExport.destroy(); conversationExport = null; }
-                if (webShare != null) { webShare.destroy(); webShare = null; }
+            if (webShare != null) { webShare.destroy(); webShare = null; }
             webView.stopLoading();
             webView.setWebChromeClient(null);
             webView.setWebViewClient(null);

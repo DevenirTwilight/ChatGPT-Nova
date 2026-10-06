@@ -1,5 +1,12 @@
 # ChatGPT Nova 会话交接
 
+## 新任务：当前网页冻结快照原型 Commit A，验证待执行
+
+最新用户明确改为 PDF + MHTML + Markdown 浏览器式保存；一次同步 clone 派生唯一 frozenHtml/markdown，共用不可变 FrozenPageSnapshot，静态独立WebView归档/系统打印，不滚动、不继续扩展H02/H03/H06。基线为实际远端2b86b68。原型新增PageSnapshotExport/SnapshotWebView/FrozenPageSnapshot及snapshot/freeze.js，旧代码/Gecko保留。仅新增原型入口，版号不变，无Release。
+
+[方案与人工验收](../frozen-page-save.md)。浏览器快照9场景已通过，旧17单次检查继续执行；本机Gradle因缺代理Java网络配置下载失败，非编译失败，待GitHub CI构建/lint/unit task与Android35/36。新增同对象MD/MHTML实物、系统print adapter实际PDF、mutation与生命周期测试；未验证通过前不切正式入口/删除Gecko。外部静态资源字节不冻结、canvas/shadow/runtime不序列化，完整历史仍not-proven。人工PDF/Firefox对照待证据，不伪称已完成。
+
+
 ## 功能与实现审查文档已整理；Gecko 轻量化尚未实施
 
 用户现要求整理软件全部功能及实现方式，交给其他 ChatGPT 评估改善。[独立审查资料](../APP-FUNCTIONS-IMPLEMENTATION-REVIEW.md)已按代码 eaeadce、实际 APK 源码190113f整理：原生容器与官网功能边界、登录/输入/文件/媒体/分享/导航、三格式与诊断、构建包体、源码链接及审查指令。本轮只改文档，无新 APK、应用源码或版号变更。文档源码路径存在性及关键版本/包体/验证状态已核对，纯文档未重跑应用测试。

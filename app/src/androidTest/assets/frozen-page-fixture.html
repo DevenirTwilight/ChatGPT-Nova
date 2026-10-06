@@ -1,0 +1,17 @@
+<!doctype html><html lang="zh"><head><meta charset="utf-8"><title>Frozen 中文 café 😀</title><style>.hide{display:none}main{max-width:900px}pre{white-space:pre-wrap}table,td,th{border:1px solid #888}</style></head><body>
+<nav>MENU-GARBAGE</nav><main>
+<h1>Before snapshot marker</h1><p>中文 English français café Noël naïve 😀</p>
+<p><strong>Bold</strong> <em>Italic</em> inline <code>a &lt; b</code> <a href="https://example.org/reference">Reference</a></p>
+<pre><button>CODE-CONTROL-GARBAGE</button><code class="language-java">first line
+String value = "中文 café 😀";
+``` inside code
+CODE-LAST</code></pre>
+<table><tr><th>Name</th><th>Value</th></tr><tr><td>中文</td><td>A|B TABLE-LAST</td></tr></table>
+<blockquote><p>Quoted 中文</p></blockquote><ol start="3"><li>Ordered one</li><li>Ordered two</li></ol><ul><li>Unordered one</li><li>Unordered two</li></ul><hr>
+<span class="katex"><span>Rendered math</span><annotation encoding="application/x-tex" style="display:none">E=mc^2</annotation></span>
+<img alt="fixture image" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aK1sAAAAASUVORK5CYII=">
+<p class="hide">HIDDEN-CONTROL-GARBAGE</p><button onclick="window.leaked=true">BUTTON-GARBAGE</button><input value="CREDENTIAL-DO-NOT-SAVE"><textarea>INPUT-GARBAGE</textarea>
+<details open><summary>Details</summary>Visible details</details><canvas width="10" height="10"></canvas>
+<div id="long"></div><p>TAIL-SNAPSHOT-MARKER</p>
+</main><script>document.getElementById('long').innerHTML=Array.from({length:90},(_,i)=>'<p>Long paragraph '+i+' '+('中文 English café long text '.repeat(24))+'</p>').join('');window.scriptMarker='SCRIPT-GARBAGE';</script>
+</body></html>
