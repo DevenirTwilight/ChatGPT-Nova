@@ -2,6 +2,11 @@
  'use strict';
  const KEY='__novaHistoryScrollTrial';
  const snapshot=()=>JSON.parse(__NOVA_SNAPSHOT__);
+ function readable(e) {
+  for(let n=e;n;n=n.parentElement) {const css=getComputedStyle(n);
+   if(n.hidden || n.getAttribute('aria-hidden')==='true' || css.display==='none' || ['hidden','collapse'].includes(css.visibility) || css.contentVisibility==='hidden') return false;}
+  return true;
+ }
  const abort=code=>{throw Object.assign(new Error(code),{code});};
  let s=window[KEY];
  function dispose(restore) {
@@ -20,7 +25,7 @@
    if(s) abort('H04_BUSY');
    const first=snapshot();if(first.error) return JSON.stringify(first);
    const authors=[...document.querySelectorAll('[data-message-author-role]')].filter(e=>['user','assistant'].includes(e.dataset.messageAuthorRole)
-    && !e.closest('[hidden],[aria-hidden="true"]'));
+    && readable(e));
    const firstAuthor=authors[0];let container=null;
    for(let e=firstAuthor?.parentElement;e;e=e.parentElement) {
     const css=getComputedStyle(e);

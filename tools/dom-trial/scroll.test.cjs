@@ -10,7 +10,7 @@ const fixture=fs.readFileSync('tools/dom-trial/virtual-fixture.js','utf8');
   const setup=async(n=40)=>{await page.goto('https://chatgpt.com/g/g-p-fixture/c/fixture');await page.evaluate(fixture.replace('__NOVA_FIXTURE_COUNT__',String(n)));};
   const step=async(command='poll',token='fixture-token')=>JSON.parse(await page.evaluate(source.replace('__NOVA_SCROLL_COMMAND__',JSON.stringify(command)).replace('__NOVA_SCROLL_TOKEN__',JSON.stringify(token))));
   const finish=async()=>{let result;for(let i=0;i<500;i++){result=await step();if(result.error || result.done) return result;await page.waitForTimeout(20);}throw Error('fixture poll limit');};
-  const collectFirst=async()=>{await step('start');await step();await step();};
+  const collectFirst=async()=>{let r=await step('start');for(let i=0;i<50 && !(r.coverage?.count>0);i++){await page.waitForTimeout(20);r=await step();}assert(r.coverage?.count>0,JSON.stringify(r));await page.waitForTimeout(60);};
   await setup();const original=await page.locator('#history').evaluate(e=>e.scrollTop);await step('start');
   const all=await finish();assert(all.done,JSON.stringify(all));assert.equal(all.messages.length,40);assert.deepEqual(all.messages.map(m=>m.id),Array.from({length:40},(_,i)=>'m'+i));
   assert.equal(all.messages.filter(m=>m.markdown.includes('REPEATED-TEXT')).length,2);
