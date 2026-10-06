@@ -41,3 +41,15 @@ CI37495451307构建/lint/原签名、浏览器及Android35/36各17项通过，�
 ```sh
 NOVA_PLAYWRIGHT_MODULE=/tmp/nova-dom-deps/node_modules/playwright-core node tools/feasibility/progress-coverage/locator-window.test.cjs
 ```
+
+## e56c225真机L00：可见作者外Markdown遗漏，外层turn待确认
+
+用户短片段定位返回L00_MATCH，总153ms，作者raw12、703文本节点/6736字符、未截断。3处匹配中第1处authorIndex0/role absent/selectedfalse，aria-hidden/hidden/CSS隐藏均false；STRONG→P→Markdown DIV后多层DIV，12层内无角色/turn/channel/ID/testid。其最近作者查询不受12层限制，因此确实位于作者容器之外。另两处属于已选助手作者4/12，其中第12处为表格引用；本地转换D00/count12/matchingMessageIndexes[4,12]。支持可见作者外正文漏采机制，不把后续引用当原进度或按文字去重。
+
+第2处普通助手的外层为SECTION，data-turn=assistant且有conversation-turn testid；第1处链条截于12层，尚不能断定其外层同样SECTION、独立turn还是含普通作者的兄弟。exportSourceHasIdfalse只查询当前作者/article候选，不证明更远SECTION无ID。不能将所有无作者Markdown直接视作助手，亦不能据count12证明完整历史。
+
+已请用户保持目标位置，在现有e56c225包快速导出已加载消息后取消格式选择，再复制导出诊断；v2的turnSamples/outsideAuthorSamples可补外层角色和作者兄弟归属，不需重新安装/保存HTML。等待该结果后集中精确补采。独立新增section-fallback.test.cjs，5项工具内方案检查通过：当前漏独立显式助手SECTION；扩展候选后采集；未知角色/隐藏SECTION不采；含普通作者的SECTION兄弟正文仍漏。仅合成假设验证，未改生产源码或新增APK。缺ID的quick snapshot保留警告，滚动仍H02，不能伪造跨窗口身份。修复与真实完整性验证尚未完成，旧403及附件原文件仍未验证/未包含。
+
+```sh
+NOVA_PLAYWRIGHT_MODULE=/tmp/nova-dom-deps/node_modules/playwright-core node tools/feasibility/progress-coverage/section-fallback.test.cjs
+```
