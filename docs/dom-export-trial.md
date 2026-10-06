@@ -31,7 +31,7 @@ Markdown由渲染DOM转换，不能唯一恢复原始Markdown。保留可读代�
 | N01_PAGE / N02_TIMEOUT / N03_* / N04_RENDER | 页面状态、15秒回调超时、读取解码或客户端转换失败 |
 | S01_CACHE / S02_APP / S04_URI / S05_WRITE | 缓存、打开应用、保存位置或写入失败 |
 | S03_CANCELLED / S00_SAVED | 用户取消或写入流成功关闭；S00仍应打开文件核验 |
-| P01_LOAD_TIMEOUT / P02_START / P03_JOB_FAILED | PDF渲染超时、无法打开系统打印、任务失败 |
+| P01_LOAD_TIMEOUT / P02_START / P03_JOB_FAILED / P07_WRITE_FAILED / P08_LAYOUT_FAILED | PDF渲染超时、无法打开系统打印、任务失败、写出或布局失败 |
 | P04_CANCELLED / P05_JOB_COMPLETED / P06_FINISHED | 打印取消、系统任务完成、适配器结束；不据此认定保存文件内容正确 |
 
 菜单“导出诊断”支持成功后复制。PDF不在onPause/onResume时提前释放打印WebView，而在适配器结束或Activity销毁时清理。用户离开后回来，系统任务失败可被记录；诊断不是系统打印服务所有错误的完整日志。
@@ -43,3 +43,5 @@ Markdown由渲染DOM转换，不能唯一恢复原始Markdown。保留可读代�
 Android35新增5项仪器夹具：HTML经SAF保存、Markdown取消重试及FileProvider分享、错误诊断复制与脱敏、系统PDF取消、实际系统PDF保存多页并检查首尾/代码/表格文字。执行状态以本次工作流结果为准，尚未运行前不写成通过。
 
 不包含全量登录/输入/分享回归，也未验证所有Android/WebView版本。原旧测试文件保留用于追溯，旧export-validation工作流改为手动入口；不得把它的旧内部读取器结果算作新方案通过。
+
+首次Android35运行 `37450098092`：5项中4项通过，PDF最终保存失败（系统打印提示Sorry, that did not work，未进入Save界面），没有发布。后续将WebView写出改为完整页范围，由系统处理用户选择的页，并增加layout/write回调诊断；必须重跑实际文件检查，不能把预览通过当成保存通过。

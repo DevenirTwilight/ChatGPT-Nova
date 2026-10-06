@@ -214,13 +214,29 @@ final class ConversationExport {
         try {
             PrintManager manager=(PrintManager)activity.getSystemService(Activity.PRINT_SERVICE);
             if(manager==null) throw new IllegalStateException();
-            PrintDocumentAdapter delegate=printWeb.createPrintDocumentAdapter(file.getName());
+            final WebView printing=printWeb;
+            PrintDocumentAdapter delegate=printing.createPrintDocumentAdapter(file.getName());
             PrintDocumentAdapter adapter=new PrintDocumentAdapter() {
                 @Override public void onStart() {delegate.onStart();}
-                @Override public void onLayout(PrintAttributes oldA,PrintAttributes newA,android.os.CancellationSignal signal,LayoutResultCallback callback,android.os.Bundle extras) {stage("N00_PRINT_LAYOUT","print-layout");delegate.onLayout(oldA,newA,signal,callback,extras);}
-                @Override public void onWrite(android.print.PageRange[] pages,android.os.ParcelFileDescriptor output,android.os.CancellationSignal signal,WriteResultCallback callback) {stage("N00_PRINT_WRITE","print-write-requested");delegate.onWrite(pages,output,signal,callback);}
+                @Override public void onLayout(PrintAttributes oldA,PrintAttributes newA,android.os.CancellationSignal signal,LayoutResultCallback callback,android.os.Bundle extras) {stage("N00_PRINT_LAYOUT","print-layout");
+                    delegate.onLayout(oldA,newA,signal,new LayoutResultCallback() {
+                        @Override public void onLayoutFinished(android.print.PrintDocumentInfo info,boolean changed) {
+                            if(printing==printWeb) {put("pdfPages",info.getPageCount());stage("N00_PRINT_LAYOUT_READY","print-layout-ready");}
+                            callback.onLayoutFinished(info,changed);
+                        }
+                        @Override public void onLayoutFailed(CharSequence error) {if(printing==printWeb) stage("P08_LAYOUT_FAILED","print-layout-failed");callback.onLayoutFailed(error);}
+                        @Override public void onLayoutCancelled() {if(printing==printWeb) stage("P04_CANCELLED","print-layout-cancelled");callback.onLayoutCancelled();}
+                    },extras);}
+                @Override public void onWrite(android.print.PageRange[] pages,android.os.ParcelFileDescriptor output,android.os.CancellationSignal signal,WriteResultCallback callback) {stage("N00_PRINT_WRITE","print-write-requested");put("requestedPageRanges",pages.length);
+                    // Chromium subset writes can break the spooler's final PDF transform.
+                    // Render the whole document; the system applies the user's page selection.
+                    delegate.onWrite(new android.print.PageRange[]{android.print.PageRange.ALL_PAGES},output,signal,new WriteResultCallback() {
+                        @Override public void onWriteFinished(android.print.PageRange[] written) {if(printing==printWeb) stage("N00_PRINT_WRITTEN","print-write-finished-file-unchecked");callback.onWriteFinished(written);}
+                        @Override public void onWriteFailed(CharSequence error) {if(printing==printWeb) stage("P07_WRITE_FAILED","print-write-failed");callback.onWriteFailed(error);}
+                        @Override public void onWriteCancelled() {if(printing==printWeb) stage("P04_CANCELLED","print-write-cancelled");callback.onWriteCancelled();}
+                    });}
                 @Override public void onFinish() {
-                    try {delegate.onFinish();} finally {web.post(()-> {if(!destroyed) {put("printAdapterFinished",true);if(!diagnostic.optString("code").startsWith("P04") && !diagnostic.optString("code").startsWith("P05")) stage("P06_FINISHED","print-finished-save-unverified");finishPrint(false);busy=false;}});}
+                    try {delegate.onFinish();} finally {web.post(()-> {if(!destroyed && printing==printWeb) {put("printAdapterFinished",true);if(!diagnostic.optString("code").startsWith("P0")) stage("P06_FINISHED","print-finished-save-unverified");finishPrint(false);busy=false;}});}
                 }
             };
             stopDeadline(); printJob=manager.print(file.getName(),adapter,new PrintAttributes.Builder().setMediaSize(PrintAttributes.MediaSize.ISO_A4).build());
@@ -275,7 +291,7 @@ final class ConversationExport {
         stage("N00_IDLE","idle");
     }
     private void put(String key,Object value) {try {diagnostic.put(key,value);} catch(Exception ignored) {}}
-    private void stage(String code,String phase) {put("code",code);put("phase",phase);put("elapsedMs",android.os.SystemClock.elapsedRealtime()-started);}
+    private void stage(String code,String phase) {put("code",code);put("phase",phase);put("elapsedMs",android.os.SystemClock.elapsedRealtime()-started);android.util.Log.i("NovaDomTrial",diagnostic.toString());}
     void showDiagnostic() {
         if(destroyed) return;
         new AlertDialog.Builder(activity).setTitle("新方案导出诊断").setMessage(diagnostic.toString())
