@@ -41,9 +41,13 @@ public class FrozenPageSnapshotTest extends FixtureActivity {
     protected void click(String label){try{waitFor("control "+label,()->{AccessibilityNodeInfo node=find(instrument.getUiAutomation().getRootInActiveWindow(),label);while(node!=null&&!node.isClickable())node=node.getParent();return node!=null&&node.isVisibleToUser()&&node.isEnabled()&&node.performAction(AccessibilityNodeInfo.ACTION_CLICK);});}catch(AssertionError error){
         try{evidence("snapshot-ui-failure.txt",dump(instrument.getUiAutomation().getRootInActiveWindow()).getBytes(StandardCharsets.UTF_8));java.io.ByteArrayOutputStream image=new java.io.ByteArrayOutputStream();android.graphics.Bitmap bitmap=instrument.getUiAutomation().takeScreenshot();if(bitmap!=null){bitmap.compress(android.graphics.Bitmap.CompressFormat.PNG,100,image);evidence("snapshot-ui-failure.png",image.toByteArray());}}catch(Exception ignored){}throw error;}
         instrument.waitForIdleSync();}
-    protected void retainUi(){try{evidence("snapshot-ui-failure.txt",dump(instrument.getUiAutomation().getRootInActiveWindow()).getBytes(StandardCharsets.UTF_8));android.graphics.Bitmap bitmap=instrument.getUiAutomation().takeScreenshot();if(bitmap!=null){java.io.ByteArrayOutputStream out=new java.io.ByteArrayOutputStream();bitmap.compress(android.graphics.Bitmap.CompressFormat.PNG,100,out);evidence("snapshot-ui-failure.png",out.toByteArray());}}catch(Exception ignored){}}
+    protected void retainUi(){retainUi("snapshot");}
+    protected void retainUi(String prefix){try{evidence(prefix+"-ui-failure.txt",dump(instrument.getUiAutomation().getRootInActiveWindow()).getBytes(StandardCharsets.UTF_8));android.graphics.Bitmap bitmap=instrument.getUiAutomation().takeScreenshot();if(bitmap!=null){java.io.ByteArrayOutputStream out=new java.io.ByteArrayOutputStream();bitmap.compress(android.graphics.Bitmap.CompressFormat.PNG,100,out);evidence(prefix+"-ui-failure.png",out.toByteArray());}}catch(Exception ignored){}}
     private String dump(AccessibilityNodeInfo n){if(n==null)return "no window";StringBuilder s=new StringBuilder(n.toString()).append('\n');for(int i=0;i<n.getChildCount();i++)s.append(dump(n.getChild(i)));return s.toString();}
     protected AccessibilityNodeInfo find(AccessibilityNodeInfo n,String label){if(n==null)return null;if(n.isVisibleToUser()&&((n.getText()!=null&&label.equalsIgnoreCase(n.getText().toString()))||(n.getContentDescription()!=null&&label.equalsIgnoreCase(n.getContentDescription().toString()))))return n;for(int i=0;i<n.getChildCount();i++){AccessibilityNodeInfo found=find(n.getChild(i),label);if(found!=null)return found;}return null;}
+    protected static String shellQuote(String s){return "'"+s.replace("'","'\\''")+"'";}
+    protected byte[] fixtureShellBytes(String command){try(ParcelFileDescriptor fd=instrument.getUiAutomation().executeShellCommand(command);java.io.InputStream in=new ParcelFileDescriptor.AutoCloseInputStream(fd)){return in.readAllBytes();}catch(Exception e){throw new AssertionError(e);}}
+    protected String fixtureShell(String command){return new String(fixtureShellBytes(command),StandardCharsets.UTF_8);}
     protected FrozenPageSnapshot freeze() {
         main(()->exporter().start());click("冻结此刻网页");
         waitFor("immutable payload",()->field(exporter(),"snapshot")!=null);
@@ -89,12 +93,28 @@ public class FrozenPageSnapshotTest extends FixtureActivity {
         waitFor("PDF preview enabled",()->{AccessibilityNodeInfo root=instrument.getUiAutomation().getRootInActiveWindow();if(root==null||find(root,"Save as PDF")==null)return false;for(AccessibilityNodeInfo n:root.findAccessibilityNodeInfosByViewId("com.android.printspooler:id/print_button"))if(n.isEnabled())return true;return false;});
         instrument.waitForIdleSync();android.os.SystemClock.sleep(1000);
         waitFor("save PDF button",()->{AccessibilityNodeInfo root=instrument.getUiAutomation().getRootInActiveWindow();if(root==null)return false;for(AccessibilityNodeInfo n:root.findAccessibilityNodeInfosByViewId("com.android.printspooler:id/print_button"))if(n.isEnabled())return n.performAction(AccessibilityNodeInfo.ACTION_CLICK);return false;});
+        final String filename="Nova-fixture-"+snapshot.snapshotId+".pdf";
+        waitFor("native PDF filename",()->{
+            AccessibilityNodeInfo root=instrument.getUiAutomation().getRootInActiveWindow();if(root==null)return false;
+            for(String id:new String[]{"com.google.android.documentsui:id/filename","com.android.documentsui:id/filename"})
+                for(AccessibilityNodeInfo node:root.findAccessibilityNodeInfosByViewId(id)) {
+                    android.os.Bundle args=new android.os.Bundle();args.putCharSequence(AccessibilityNodeInfo.ACTION_ARGUMENT_SET_TEXT_CHARSEQUENCE,filename);
+                    return node.performAction(AccessibilityNodeInfo.ACTION_SET_TEXT,args);
+                }
+            return false;
+        });
         click("Save");waitFor("print job finished",()->!busy());
-        String path="/sdcard/Download/Nova-snapshot-"+snapshot.snapshotId+".pdf";
-        byte[] bytes=new byte[0];long until=android.os.SystemClock.uptimeMillis()+20000;
-        do{try(ParcelFileDescriptor fd=instrument.getUiAutomation().executeShellCommand("cat "+path);java.io.InputStream in=new ParcelFileDescriptor.AutoCloseInputStream(fd)){bytes=in.readAllBytes();}
-            if(bytes.length>1000&&new String(bytes,0,5,StandardCharsets.US_ASCII).equals("%PDF-"))break;android.os.SystemClock.sleep(100);
-        }while(android.os.SystemClock.uptimeMillis()<until);
+        // The adapter document title, not PrintManager's job label, is the default filename.
+        // Find the explicitly named file actually saved through DocumentsUI. Production never reads this path.
+        final byte[][] actual={null};
+        waitFor("actual saved system PDF",()->{
+            String paths=fixtureShell("find /sdcard/Download /sdcard/Documents -type f -name "+shellQuote(filename)+" 2>/dev/null");
+            for(String path:paths.split("\\r?\\n"))if(path.startsWith("/sdcard/")) {
+                byte[] bytes=fixtureShellBytes("cat "+shellQuote(path));
+                if(bytes.length>1000&&new String(bytes,0,5,StandardCharsets.US_ASCII).equals("%PDF-")){actual[0]=bytes;return true;}
+            }return false;
+        });
+        byte[] bytes=actual[0];
         assertTrue(bytes.length>1000);assertEquals("%PDF-",new String(bytes,0,5,StandardCharsets.US_ASCII));
         File pdf=evidence("frozen-page.pdf",bytes);
         try(ParcelFileDescriptor fd=ParcelFileDescriptor.open(pdf,ParcelFileDescriptor.MODE_READ_ONLY);android.graphics.pdf.PdfRenderer r=new android.graphics.pdf.PdfRenderer(fd)){assertTrue(r.getPageCount()>1);}

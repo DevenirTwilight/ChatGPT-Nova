@@ -32,7 +32,9 @@ public final class FirefoxSnapshotTest extends FrozenPageSnapshotTest {
                 java.io.OutputStream out=socket.getOutputStream();out.write(("HTTP/1.1 200 OK\r\nContent-Type: text/html; charset=utf-8\r\nContent-Length: "+html.length+"\r\nConnection: close\r\n\r\n").getBytes(StandardCharsets.US_ASCII));out.write(html);out.flush();
             }catch(Exception ignored){}} ,"firefox-fixture-server");serving.setDaemon(true);serving.start();
             instrument.getTargetContext().startActivity(new Intent(Intent.ACTION_VIEW,Uri.parse("http://127.0.0.1:"+server.getLocalPort()+"/frozen-page.html")).setPackage("org.mozilla.firefox").addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
-            waitFor("Firefox frozen fixture",()->{AccessibilityNodeInfo root=instrument.getUiAutomation().getRootInActiveWindow();if(find(root,"Before snapshot marker")!=null)return true;for(String label:new String[]{"Start browsing","Not now","Skip","Continue"})if(press(label))break;return false;});
+            waitFor("Firefox frozen fixture",()->{AccessibilityNodeInfo root=instrument.getUiAutomation().getRootInActiveWindow();if(root!=null&&!root.findAccessibilityNodeInfosByText("Before snapshot marker").isEmpty())return true;
+                // Official first-run browser-role prompt is a separate Android window.
+                if(root!=null&&root.getPackageName()!=null&&root.getPackageName().toString().contains("permissioncontroller")){if(!press("Cancel")&&!press("Not now"))instrument.sendKeyDownUpSync(android.view.KeyEvent.KEYCODE_BACK);return false;}for(String label:new String[]{"Start browsing","Not now","Skip","Continue"})if(press(label))break;return false;});
             waitFor("Firefox menu",()->press("More options")||press("Menu"));
             waitFor("Firefox Save as PDF",()->press("Save as PDF"));
             final byte[][] result={null};
@@ -45,6 +47,12 @@ public final class FirefoxSnapshotTest extends FrozenPageSnapshotTest {
                     }
                 }catch(Exception ignored){}return false;
             });assertNotNull(result[0]);
-        }catch(Exception|AssertionError e){retainUi();throw e;}finally{shell("am force-stop org.mozilla.firefox");}
+        }catch(Exception|AssertionError e){retainUi("firefox");throw e;}finally{
+            // Resume the monitored Nova Activity before stopping the external browser;
+            // ActivityScenario cannot close a transient external-window lifecycle state.
+            instrument.getTargetContext().startActivity(new Intent(instrument.getTargetContext(),MainActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK|Intent.FLAG_ACTIVITY_REORDER_TO_FRONT));
+            waitFor("Nova resumed after Firefox",()->{AccessibilityNodeInfo root=instrument.getUiAutomation().getRootInActiveWindow();return root!=null&&"com.example.chatgptnova".contentEquals(root.getPackageName());});
+            instrument.waitForIdleSync();shell("am force-stop org.mozilla.firefox");
+        }
     }
 }

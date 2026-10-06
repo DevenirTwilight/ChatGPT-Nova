@@ -75,6 +75,9 @@ try:
     suite('com.example.chatgptnova.FirefoxSnapshotTest#sameFrozenHtmlCanBeSavedAsPdfInFirefoxAndroid','firefox-android',1)
     for name in ['firefox-source.html','firefox-frozen.pdf']:
         independent('pull-'+name,lambda name=name:adb('pull','/sdcard/Android/data/com.example.chatgptnova/files/'+name,str(out/name)))
+    for name in ['firefox-ui-failure.txt','firefox-ui-failure.png']:
+        try:adb('pull','/sdcard/Android/data/com.example.chatgptnova/files/'+name,str(out/name))
+        except Exception:pass
     independent('firefox-pdf-content',lambda:pdf('firefox-frozen.pdf'))
     (out/'firefox-version.txt').write_text(adb('shell','dumpsys','package','org.mozilla.firefox'))
 finally:
