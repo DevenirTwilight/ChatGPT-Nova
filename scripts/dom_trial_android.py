@@ -19,8 +19,10 @@ try:
     adb('pull', '/sdcard/Android/data/com.example.chatgptnova/files/printed-export.pdf', str(out/'printed-export.pdf'))
     subprocess.run(['pdftotext', str(out/'printed-export.pdf'), str(out/'printed-export.txt')], check=True)
     text = (out/'printed-export.txt').read_text()
+    # PDF text extraction may insert line breaks inside wrapped code tokens.
+    logical = re.sub(r'\s+', '', text)
     for marker in ('USER-FIRST', 'ASSISTANT-LAST', 'CODE-LAST', 'TABLE-LAST'):
-        assert marker in text, marker
+        assert marker in logical, marker
     print('PASS: 5 Android DOM trial fixture tests and system-saved PDF first/last/code/table text; no live-account proof')
 finally:
     (out/'logcat.txt').write_text(adb('logcat', '-d', '-v', 'threadtime'))
