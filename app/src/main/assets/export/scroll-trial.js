@@ -32,7 +32,7 @@
  }
  function stats() {return {source:'scroll-dom-trial',history:'not-proven',count:s.messages.size,
   users:[...s.messages.values()].filter(m=>m.role==='user').length,assistants:[...s.messages.values()].filter(m=>m.role==='assistant').length,
-  steps:s.steps,leg:s.leg,topObserved:s.top,bottomObserved:s.bottom,secondPass:s.leg>=2,
+  steps:s.steps,leg:s.leg,traversal:'single-direction',direction:s.direction,plannedLegs:1,startObserved:s.startObserved,overlapRetries:s.overlapRetries,topObserved:s.top,bottomObserved:s.bottom,secondPass:false,
   chars:s.chars,cacheBytes:s.bytes,elapsedMs:Math.round(performance.now()-s.started),
   settling:{...s.window,readyAgeMs:Math.round(performance.now()-s.readyStarted),windowLimitMs:WINDOW_LIMIT_MS,scanLimitMs:SCAN_LIMIT_MS,stepLimit:STEP_LIMIT,contentStable:s.stable,windowAgeMs:Math.round(performance.now()-s.stepStarted),
    totalListChanges:s.changes.list,totalBodyChanges:s.changes.body,totalPositionChanges:s.changes.position,totalExtentChanges:s.changes.extent}};}
@@ -55,7 +55,9 @@
    }
    if(!container) abort('H01_SCROLL_CONTAINER');
    s={token,container,original:container.scrollTop,route:location.href,title:document.title,started:performance.now(),stepStarted:performance.now(),
-    messages:new Map(),edges:new Map(),second:new Set(),warnings:new Set(),chars:0,bytes:0,steps:0,leg:0,top:false,bottom:false,stable:0,edgeStable:0,last:'',lastPosition:'',invalid:false,changes:{list:0,body:0,position:0,extent:0}};
+    direction:container.scrollTop<=2?'down':'up',startObserved:false,previousWindow:null,move:null,overlapRetries:0,messages:new Map(),edges:new Map(),warnings:new Set(),chars:0,bytes:0,steps:0,leg:0,top:false,bottom:false,stable:0,edgeStable:0,last:'',lastPosition:'',invalid:false,changes:{list:0,body:0,position:0,extent:0}};
+   // One traversal only. Starting in the middle first positions at the bottom.
+   if(s.direction==='up') container.scrollTo({top:container.scrollHeight,behavior:"instant"});
    resetWindow();window[KEY]=s;
    s.interact=e=>{if(e.isTrusted) s.invalid=true;};
    document.addEventListener('click',s.interact,true);document.addEventListener('keydown',s.interact,true);
@@ -106,21 +108,38 @@
    if(performance.now()-s.stepStarted>=WINDOW_LIMIT_MS || performance.now()-s.readyStarted>READY_GRACE_MS) abort('H06_UNSETTLED');
    return JSON.stringify({waiting:true,coverage:stats()});
   }
-  const upward=s.leg%2===0,atEdge=upward?pos<=2:pos>=max-2;
+  const upward=s.direction==='up',atEdge=upward?pos<=2:pos>=max-2;
   if(atEdge && !quietGeometry) s.window.reason='edge-layout-changing';
+  if(!s.startObserved && !quietGeometry) s.window.reason='start-layout-changing';
   if(performance.now()-s.stepStarted>=WINDOW_LIMIT_MS) abort('H06_UNSETTLED');
+  if(!s.startObserved) {
+   const atStart=upward?pos>=max-2:pos<=2;
+   if(!atStart) {
+    s.container.scrollTo({top:upward?max:0,behavior:"instant"});s.steps++;resetWindow();
+    s.window.reason='positioning-start';return JSON.stringify({waiting:true,coverage:stats()});
+   }
+   if(!quietGeometry) return JSON.stringify({waiting:true,coverage:stats()});
+   s.startObserved=true;if(upward)s.bottom=true;else s.top=true;
+  }
+  // Larger steps are allowed only when adjacent stable windows share an ID.
+  // Retry a smaller commanded step; never cache a disconnected window as progress.
+  if(s.previousWindow && !rows.some(m=>s.previousWindow.has(m.id))) {
+   if(!s.move || s.move.retries>=5 || Math.abs(s.move.target-s.move.from)<=1) abort('H03_ORDER');
+   s.move.target=s.move.from+(s.move.target-s.move.from)/2;s.move.retries++;s.overlapRetries++;
+   s.container.scrollTo({top:s.move.target,behavior:"instant"});s.steps++;resetWindow();
+   s.window.reason='retrying-overlap';return JSON.stringify({waiting:true,coverage:stats()});
+  }
+  s.move=null;
   // Store strings immediately, never references to message DOM nodes that can be unmounted.
   let added=0;
   for(const m of rows) {
    const old=s.messages.get(m.id);
    if(old && (old.role!==m.role || old.html!==m.html || old.markdown!==m.markdown)) abort('H04_CHANGED');
    if(!old) {
-    if(s.leg>=2) abort('H04_SECOND_PASS');
     const bytes=new TextEncoder().encode(JSON.stringify(m)).length;
     if(s.messages.size>=1000 || s.chars+m.markdown.length>2000000 || s.bytes+bytes>64*1024*1024) abort('H05_LIMIT');
     s.messages.set(m.id,m);s.edges.set(m.id,new Set());s.chars+=m.markdown.length;s.bytes+=bytes;added++;
    }
-   if(s.leg>=2) s.second.add(m.id);
   }
   for(let i=1;i<rows.length;i++) s.edges.get(rows[i-1].id).add(rows[i].id);
   s.edgeStable=atEdge && added===0 && quietGeometry ? s.edgeStable+1 : 0;
@@ -129,8 +148,7 @@
   if(atEdge && s.edgeStable>=5) {
    if(upward) s.top=true;else s.bottom=true;
    s.leg++;
-   if(s.leg===4) {
-    if(s.second.size!==s.messages.size) abort('H04_SECOND_PASS');
+   if(s.leg===1) {
     const degree=new Map([...s.messages.keys()].map(id=>[id,0]));
     for(const next of s.edges.values()) for(const id of next) degree.set(id,degree.get(id)+1);
     const ready=[...degree].filter(([,d])=>d===0).map(([id])=>id),ordered=[];
@@ -140,9 +158,9 @@
      for(const next of s.edges.get(id)) {degree.set(next,degree.get(next)-1);if(degree.get(next)===0) ready.push(next);}
     }
     if(ordered.length!==s.messages.size) abort('H03_ORDER');
-    const coverage={...stats(),secondPass:true,order:'consistent',text:'not-proven',attachmentMetadata:'not-audited',attachmentFiles:0,imageFiles:0};
+    const coverage={...stats(),secondPass:false,order:'consistent',text:'not-proven',attachmentMetadata:'not-audited',attachmentFiles:0,imageFiles:0};
     const result={done:true,title:s.title,messages:ordered,warnings:[
-      '试用版：已上下滚动并缓存可见历史，完整历史仍未确认。到达顶部或两轮一致不证明无遗漏。',
+      '试用版：已单向滚动并缓存可见历史，完整历史仍未确认。到达边界或顺序一致不证明无遗漏。',
       '附件元数据覆盖未核实；附件原文件、图片原文件均未包含。',
       'Markdown根据渲染DOM转换，不保证原始写法。',...s.warnings],coverage};
     // Keep transport bounded too; no truncated JSON or successful partial file.
@@ -151,8 +169,10 @@
    }
    resetWindow();
   } else if(!atEdge) {
-   const target=pos+(upward?-1:1)*Math.max(1,s.container.clientHeight*0.45);
-   s.container.scrollTo({top:Math.max(0,Math.min(max,target)),behavior:"instant"});s.steps++;
+   const target=pos+(upward?-1:1)*Math.max(1,s.container.clientHeight*0.8);
+   s.previousWindow=new Set(rows.map(m=>m.id));
+   s.move={from:pos,target:Math.max(0,Math.min(max,target)),retries:0};
+   s.container.scrollTo({top:s.move.target,behavior:"instant"});s.steps++;
    if(Math.abs(s.container.scrollTop-pos)<0.5) abort('H01_SCROLL_CONTAINER');
    resetWindow();
   }

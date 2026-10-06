@@ -79,7 +79,7 @@ final class ConversationExport {
         if (!trusted() || !active.getAsBoolean()) { fail("N01_PAGE", "请打开 ChatGPT 会话后重试。",null); return; }
         busy=true;
         new AlertDialog.Builder(activity).setTitle("导出聊天历史（试用）")
-            .setMessage("推荐滚动收集：自动上下滚动并缓存消息，再检查顺序与正文一致性。请等待回复结束，采集时不要操作页面。到达顶部仍不证明历史完整。图片与附件原文件不会打包。也可只采集当前页面。")
+            .setMessage("只单向收集一遍，不折返。在顶部向下、在底部向上；从中间开始先定位到底部再向上。请等待回复结束，采集时不要操作页面。到达顶部仍不证明历史完整。图片与附件原文件不会打包。也可只采集当前页面。")
             .setPositiveButton("滚动收集历史",(d,w)->startScroll())
             .setNeutralButton("采集并选择格式",(d,w)->capture())
             .setNegativeButton("取消",(d,w)->busy=false).setOnCancelListener(d->busy=false).show();
@@ -152,15 +152,16 @@ final class ConversationExport {
                                 stopScan(false);collecting=false;stage("H00_READY","scroll-collected-unproven");
                                 showCoverage(result,rendered);return;
                             }
+                            JSONObject settling=coverage==null ? null : coverage.optJSONObject("settling");
+                            String reason=settling==null ? "" : settling.optString("reason");
+                            boolean waitingForPage="history-loading".equals(reason) || "page-not-ready".equals(reason);
                             if(coverage!=null && scanDialog!=null) {
-                                String[] legs={"向上收集","向下收集","第二次向上核对","第二次向下核对"};
-                                JSONObject settling=coverage.optJSONObject("settling");
-                                String reason=settling==null ? "" : settling.optString("reason");
-                                String waiting=("history-loading".equals(reason) || "page-not-ready".equals(reason))
-                                    ? "\n网页正在加载历史，正在等待…" : "message-list-changing".equals(reason) ? "\n历史消息正在换入，正在核对…" : "";
-                                scanDialog.setMessage(legs[Math.min(3,coverage.optInt("leg"))]+"\n已缓存 "+coverage.optInt("count")+" 条（用户 "+coverage.optInt("users")+" / 助手 "+coverage.optInt("assistants")+"）\n滚动 "+coverage.optInt("steps")+" 次；完整历史未确认。"+waiting+"\n采集时请不要操作页面，可随时取消。");
+                                String direction="down".equals(coverage.optString("direction")) ? "单向向下收集" : "单向向上收集";
+                                String waiting=waitingForPage
+                                    ? "\n网页正在加载历史，正在等待…" : "message-list-changing".equals(reason) ? "\n历史消息正在换入，正在核对…" : "retrying-overlap".equals(reason) ? "\n消息窗口重叠不足，正在缩小步幅重试…" : "positioning-start".equals(reason) ? "\n正在定位收集起点…" : "";
+                                scanDialog.setMessage(direction+"（一遍，不折返）"+"\n已缓存 "+coverage.optInt("count")+" 条（用户 "+coverage.optInt("users")+" / 助手 "+coverage.optInt("assistants")+"）\n滚动 "+coverage.optInt("steps")+" 次；完整历史未确认。"+waiting+"\n采集时请不要操作页面，可随时取消。");
                             }
-                            stage("H00_SCAN","scroll-sampling");scanPoll=()->pollScroll("poll",ticket,token);web.postDelayed(scanPoll,250);
+                            stage("H00_SCAN","scroll-sampling");scanPoll=()->pollScroll("poll",ticket,token);web.postDelayed(scanPoll,waitingForPage ? 400 : 120);
                         });
                     } catch(Exception e) {activity.runOnUiThread(()->{if(current(ticket)) fail("N03_DECODE","无法处理历史采集结果。",e);});}
                 },"scroll-trial-decode").start();
@@ -187,7 +188,7 @@ final class ConversationExport {
         return "已缓存 "+c.optInt("count")+" 条（用户 "+c.optInt("users")+" / 助手 "+c.optInt("assistants")+"）"
             +"\n顶部："+(c.optBoolean("topObserved") ? "已观察到滚动顶部" : "未确认")
             +"\n底部："+(c.optBoolean("bottomObserved") ? "已观察到滚动底部" : "未确认")
-            +"\n扫描：两轮上下遍历，顺序与正文核对一致"
+            +"\n扫描：单向一遍，已检查缓存顺序与重复正文；未做折返核对"
             +"\n文本历史：完整性未确认（无独立基准）"
             +"\n附件元数据：未核实覆盖；附件原文件：未包含；图片原文件：未包含。";
     }

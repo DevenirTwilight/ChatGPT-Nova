@@ -21,7 +21,7 @@ const fixture=fs.readFileSync('tools/dom-trial/virtual-fixture.js','utf8');
   await setup();const original=await page.locator('#history').evaluate(e=>e.scrollTop);await step('start');
   const all=await finish();assert(all.done,JSON.stringify(all));assert.equal(all.messages.length,40);assert.deepEqual(all.messages.map(m=>m.id),Array.from({length:40},(_,i)=>'m'+i));
   assert.equal(all.messages.filter(m=>m.markdown.includes('REPEATED-TEXT')).length,2);
-  assert(all.coverage.topObserved && all.coverage.bottomObserved && all.coverage.secondPass);assert.equal(all.coverage.history,'not-proven');
+  assert(all.coverage.topObserved && all.coverage.bottomObserved && !all.coverage.secondPass);assert.equal(all.coverage.history,'not-proven');
   assert.equal(await page.locator('[data-message-author-role]').count(),7);assert.equal(await page.locator('#history').evaluate(e=>e.scrollTop),original);
   assert.equal(await page.evaluate(()=>typeof window.__novaHistoryScrollTrial),'undefined');checks++;
   await setup();await page.evaluate(()=>document.getElementById('history').style.scrollBehavior='smooth');await step('start');const smooth=await finish();assert(smooth.done,JSON.stringify(smooth));assert.equal(smooth.messages.length,40);checks++;
@@ -52,6 +52,16 @@ const fixture=fs.readFileSync('tools/dom-trial/virtual-fixture.js','utf8');
   await setup();await page.evaluate(()=>document.getElementById('history').setAttribute('aria-busy','true'));await step('start');await step('cancel');assert.equal(await page.evaluate(()=>typeof window.__novaHistoryScrollTrial),'undefined');checks++;
   // Hidden/outside-scroller indicators and decorative message spinners are ignored.
   await setup(7);await page.evaluate(()=>{document.body.insertAdjacentHTML('beforeend','<div role="progressbar">elsewhere</div>');document.getElementById('history').insertAdjacentHTML('beforeend','<div role="progressbar" hidden>hidden</div>');document.querySelector('.markdown').insertAdjacentHTML('beforeend','<span class="animate-spin">decoration</span>');});await step('start');assert((await finish()).done);checks++;
+  // A single downwards traversal from the top retains all 40 ordered bodies.
+  await setup();await page.locator('#history').evaluate(e=>e.scrollTo({top:0,behavior:'instant'}));await page.waitForTimeout(50);await step('start');const down=await finish();assert(down.done,JSON.stringify(down));assert.deepEqual(down.messages.map(m=>m.id),Array.from({length:40},(_,i)=>'m'+i));assert.equal(down.coverage.leg,1);assert.equal(down.coverage.plannedLegs,1);assert.equal(down.coverage.direction,'down');assert.equal(down.coverage.secondPass,false);assert.equal(down.coverage.history,'not-proven');assert.equal(await page.locator('#history').evaluate(e=>e.scrollTop),0);checks++;
+  await setup();await page.locator('#history').evaluate(e=>e.scrollTo({top:640,behavior:'instant'}));await page.waitForTimeout(50);await step('start');const middle=await finish();assert(middle.done,JSON.stringify(middle));assert.equal(middle.messages.length,40);assert.equal(middle.coverage.direction,'up');assert.equal(middle.coverage.leg,1);assert.equal(await page.locator('#history').evaluate(e=>e.scrollTop),640);checks++;
+  // Narrow virtual windows force backtracking instead of skipping unconnected rows.
+  await page.goto('https://chatgpt.com/g/g-p-fixture/c/fixture');await page.evaluate(fixture.replace('__NOVA_FIXTURE_COUNT__','40,3'));await step('start');const narrow=await finish();assert(narrow.done,JSON.stringify(narrow));assert.equal(narrow.messages.length,40);assert(narrow.coverage.overlapRetries>0);assert.equal(narrow.coverage.history,'not-proven');checks++;
+  // A never-mounted message is still unknowable without an independent baseline.
+  await setup();await page.evaluate(()=>{const omit=()=>document.querySelector('[data-message-id="m17"]')?.remove();omit();document.getElementById('history').addEventListener('scroll',omit);});await step('start');const omitted=await finish();assert(omitted.done,JSON.stringify(omitted));assert.equal(omitted.messages.length,39);assert(!omitted.messages.some(m=>m.id==='m17'));assert.equal(omitted.coverage.history,'not-proven');assert.equal(omitted.coverage.text,'not-proven');checks++;
+  // Initial endpoint layout cannot delay the window deadline indefinitely.
+  await setup(7);await step('start');await step();await page.evaluate(()=>{document.getElementById('space').style.height='2000px';window.__novaHistoryScrollTrial.stepStarted-=30001;});
+  const initialLayout=await step();assert.equal(initialLayout.error,'H06_UNSETTLED');assert.equal(initialLayout.coverage.settling.reason,'start-layout-changing');checks++;
   // Cancellation releases cached bodies, observers and the session and restores position.
   await setup();await collectFirst();await step('cancel');assert.equal(await page.evaluate(()=>typeof window.__novaHistoryScrollTrial),'undefined');checks++;
   await setup();await page.evaluate(()=>document.querySelector('[data-message-id]').removeAttribute('data-message-id'));
@@ -74,9 +84,6 @@ const fixture=fs.readFileSync('tools/dom-trial/virtual-fixture.js','utf8');
   // Layout jitter at an observed edge still cannot approve traversal completion.
   await setup(7);await collectFirst();await step();await step();await step();await page.evaluate(()=>{document.getElementById('history').scrollTo({top:0,behavior:'instant'});window.__novaHistoryScrollTrial.stepStarted-=30001;document.getElementById('space').style.height='2000px';});
   const unsettledEdge=await step();assert.equal(unsettledEdge.error,'H06_UNSETTLED');assert.equal(unsettledEdge.coverage.settling.reason,'edge-layout-changing');checks++;
-  await setup(7);await step('start');for(let i=0;i<200;i++){await step();if(await page.evaluate(()=>window.__novaHistoryScrollTrial?.leg===2))break;}
-  await page.evaluate(()=>document.querySelector('[data-message-id]').dataset.messageId='second-pass-new');
-  assert.equal((await finish()).error,'H04_SECOND_PASS');checks++;
   // No overlap between observed windows: never sort by IDs or first-seen order.
   await setup(40);await page.evaluate(()=>{const p=document.getElementById('history');p.addEventListener('scroll',()=>{const ids=[...document.querySelectorAll('[data-message-id]')];if(p.scrollTop<1200) ids.forEach((e,i)=>{e.dataset.messageId='extra-'+i;e.querySelector('.markdown').innerHTML='<p>DISCONNECTED-'+i+'</p>';});});});
   await step('start');const disconnected=await finish();assert(['H03_ORDER','H04_SECOND_PASS','H04_CHANGED'].includes(disconnected.error),JSON.stringify(disconnected));checks++;
