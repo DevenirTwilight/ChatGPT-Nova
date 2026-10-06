@@ -11,7 +11,11 @@
 
 `tools/feasibility/integration-baseline.patch` 仅用于指定 `200b7898…` 基线；它不是针对当前 feature 分支的直接应用补丁。不要因文档中有构建步骤就自动应用或发布。
 
-## 下一会话提示词
+## 交接触发条件
+
+仅在需要压缩上下文、迁移会话或用户明确要求时提供下一会话提示词。普通回复、提交文档或阶段进度汇报不自动触发迁移，不要每次回复都生成提示词。实际需要交接时，仍须将必要材料提交并推送至工作分支。
+
+## 下一会话提示词模板（仅在交接触发时使用）
 
 ```text
 继续处理 https://github.com/DevenirTwilight/ChatGPT-Nova ，工作分支 feature/export-conversation。
