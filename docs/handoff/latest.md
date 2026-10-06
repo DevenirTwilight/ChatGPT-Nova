@@ -1,5 +1,11 @@
 # ChatGPT Nova 会话交接
 
+## 功能与实现审查文档已整理；Gecko 轻量化尚未实施
+
+用户现要求整理软件全部功能及实现方式，交给其他 ChatGPT 评估改善。[独立审查资料](../APP-FUNCTIONS-IMPLEMENTATION-REVIEW.md)已按代码 eaeadce、实际 APK 源码190113f整理：原生容器与官网功能边界、登录/输入/文件/媒体/分享/导航、三格式与诊断、构建包体、源码链接及审查指令。本轮只改文档，无新 APK、应用源码或版号变更。文档源码路径存在性及关键版本/包体/验证状态已核对，纯文档未重跑应用测试。
+
+用户质疑170MiB仍比Firefox大。当前聊天仍WebView、Gecko仅PDF；ARM64 Gecko原生文件约153.9MiB，ABI分包无法消除引擎成本。已提出撤掉专用于PDF的Gecko、评估复用系统WebView打印的方向，但尚未改代码，也不能默认系统打印可等价静默生成并直接SAF保存。请先审查轻量方案，保留HTML/Markdown/PDF及原容器能力，集中修复不频繁增版。原进度最终复测、真实历史not-proven、附件原件未含、旧403未复测等边界不变。
+
 ## 手机首选改为ARM64包：170MiB APK / 81MiB ZIP，版本不变
 
 用户质疑650MiB是否等同Firefox大小。独立检查旧通用包未压缩文件：公共22.8MiB，ARM64 153.9、ARM32 120.7、x86 185.8、x86_64 172.5MiB，其他架构贡献约479MiB。Mozilla官方版本metadata为157.0.1，[官方ARM64 APK](https://archive.mozilla.org/pub/fenix/releases/157.0.1/android/fenix-157.0.1-android-arm64-v8a/fenix-157.0.1.multi.android-arm64-v8a.apk)HEAD Content-Length134275592（约128MiB）；不能把Nova四架构通用包称为Firefox手机版实际大小，也不把Firefox安装后含缓存的占用与下载APK比较。
