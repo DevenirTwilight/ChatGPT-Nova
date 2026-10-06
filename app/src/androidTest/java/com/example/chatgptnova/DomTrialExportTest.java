@@ -42,7 +42,7 @@ public final class DomTrialExportTest extends FixtureActivity {
         return result.get();
     }
     private void click(String label) {
-        long until=android.os.SystemClock.uptimeMillis()+20000;
+        long until=android.os.SystemClock.uptimeMillis()+("选择导出格式".equals(label) ? 150000 : 20000);
         do {
             AccessibilityNodeInfo node=findControl(instrument.getUiAutomation().getRootInActiveWindow(),label);
             if(node!=null && node.isVisibleToUser() && node.isEnabled()) {
@@ -92,6 +92,40 @@ public final class DomTrialExportTest extends FixtureActivity {
         monitor=new Instrumentation.ActivityMonitor() {
             @Override public Instrumentation.ActivityResult onStartActivity(Intent intent) {return action.apply(intent);}
         };instrument.addMonitor(monitor);
+    }
+    private void virtualHistory() throws Exception {
+        try(java.io.InputStream input=instrument.getContext().getAssets().open("virtual-history.js")) {
+            js(new String(input.readAllBytes(),StandardCharsets.UTF_8).replace("__NOVA_FIXTURE_COUNT__","40"));
+        }
+    }
+    @Test public void historyScrollCachesUnmountedMessagesThroughSaf() throws Exception {
+        virtualHistory();String original=js("document.getElementById('history').scrollTop");
+        AtomicReference<Intent> saved=new AtomicReference<>();
+        external(intent->{if(!Intent.ACTION_CREATE_DOCUMENT.equals(intent.getAction())) return null;saved.set(intent);return new Instrumentation.ActivityResult(Activity.RESULT_OK,new Intent().setData(OUTPUT));});
+        main(()->exporter().start());click("滚动收集历史");click("选择导出格式");click("HTML 阅读版（推荐）");click("保存到本地…");
+        waitFor("cached virtual history saved",()->saved.get()!=null && !busy());
+        String html=new String(read(OUTPUT),StandardCharsets.UTF_8);
+        for(int i=0;i<40;i++) if(i!=12 && i!=14) assertTrue("missing ROW-"+i,html.contains("ROW-"+i+"</p>"));
+        assertEquals(40,html.split("<article>",-1).length-1);
+        assertEquals(2,html.split("REPEATED-TEXT",-1).length-1);
+        assertTrue(html.contains("滚动收集并缓存可见历史"));assertTrue(html.contains("完整历史未确认"));assertTrue(html.contains("无独立基准"));
+        assertEquals("7",js("document.querySelectorAll('[data-message-author-role]').length"));
+        assertEquals(original,js("document.getElementById('history').scrollTop"));assertEquals("undefined",js("typeof window.__novaHistoryScrollTrial"));
+    }
+    @Test public void historyScrollCancellationReleasesCacheAndAllowsRetry() throws Exception {
+        virtualHistory();String original=js("document.getElementById('history').scrollTop");
+        main(()->exporter().start());click("滚动收集历史");click("取消采集");waitFor("scan cancelled",()->!busy());
+        assertNull(output());assertEquals("undefined",js("typeof window.__novaHistoryScrollTrial"));assertEquals(original,js("document.getElementById('history').scrollTop"));
+        main(()->exporter().start());click("滚动收集历史");click("取消采集");waitFor("retry cancelled",()->!busy());
+    }
+    @Test public void historyMissingIdStopsWithRedactedDiagnostic() throws Exception {
+        virtualHistory();js("document.querySelector('[data-message-id]').removeAttribute('data-message-id');true");
+        main(()->exporter().start());click("滚动收集历史");click("复制诊断");assertFalse(busy());assertNull(output());
+        AtomicReference<String> detail=new AtomicReference<>();
+        main(()->{android.content.ClipboardManager c=activity.getSystemService(android.content.ClipboardManager.class);detail.set(c.getPrimaryClip().getItemAt(0).getText().toString());});
+        assertTrue(detail.get().contains("H02_MISSING_ID"));
+        for(String secret:new String[]{"ROW-","REPEATED-TEXT","m33","g-p-fixture"}) assertFalse(detail.get().contains(secret));
+        assertEquals("undefined",js("typeof window.__novaHistoryScrollTrial"));
     }
     @Test public void htmlSavedThroughSafHasDomBodyAndScopeNotice() throws Exception {
         conversation("");

@@ -44,6 +44,10 @@ final class ConversationExport {
     private PrintJob printJob;
     private Runnable deadline;
     private JSONObject diagnostic = new JSONObject();
+    private AlertDialog scanDialog;
+    private String scrollToken;
+    private Runnable scanPoll;
+    private String scanAsset;
 
     ConversationExport(Activity activity, WebView web, BooleanSupplier active) {
         this.activity=activity; this.web=web; this.active=active;
@@ -59,8 +63,9 @@ final class ConversationExport {
             else if (printJob.isCompleted()) stage("P05_JOB_COMPLETED", "print-job-completed-file-unchecked");
         }
     }
-    private String asset() {
-        try (java.io.InputStream input=activity.getAssets().open("export/dom-trial.js")) {
+    private String asset() { return asset("dom-trial.js"); }
+    private String asset(String name) {
+        try (java.io.InputStream input=activity.getAssets().open("export/"+name)) {
             java.io.ByteArrayOutputStream out=new java.io.ByteArrayOutputStream(); copy(input,out);
             return out.toString(StandardCharsets.UTF_8.name());
         } catch (Exception e) { throw new IllegalStateException("Missing DOM trial asset",e); }
@@ -73,9 +78,10 @@ final class ConversationExport {
         if (busy) { toast("导出正在进行，请稍候。"); return; }
         if (!trusted() || !active.getAsBoolean()) { fail("N01_PAGE", "请打开 ChatGPT 会话后重试。",null); return; }
         busy=true;
-        new AlertDialog.Builder(activity).setTitle("导出已加载消息（试用）")
-            .setMessage("新方案只读取页面当前已加载的消息，不调用旧内部接口。完整历史尚未确认，长会话可能缺少开头或中间内容。建议先滚到顶部等待加载，再回到底部。图片与附件不会打包。")
-            .setPositiveButton("采集并选择格式",(d,w)->capture())
+        new AlertDialog.Builder(activity).setTitle("导出聊天历史（试用）")
+            .setMessage("推荐滚动收集：自动上下滚动并缓存消息，再检查顺序与正文一致性。请等待回复结束，采集时不要操作页面。到达顶部仍不证明历史完整。图片与附件原文件不会打包。也可只采集当前页面。")
+            .setPositiveButton("滚动收集历史",(d,w)->startScroll())
+            .setNeutralButton("采集并选择格式",(d,w)->capture())
             .setNegativeButton("取消",(d,w)->busy=false).setOnCancelListener(d->busy=false).show();
     }
     private void capture() {
@@ -107,6 +113,91 @@ final class ConversationExport {
                 } catch (Exception e) { activity.runOnUiThread(()-> {if(current(ticket)) fail("N04_RENDER","无法转换页面内容。",e);}); }
             },"dom-trial-render").start();
         });
+    }
+    private String scrollExpression(String command,String token) {
+        if(scanAsset==null) scanAsset=asset("scroll-trial.js").replace("__NOVA_SNAPSHOT__",asset().replace("__NOVA_VERIFY_ONLY__","false"));
+        return scanAsset.replace("__NOVA_SCROLL_COMMAND__",JSONObject.quote(command)).replace("__NOVA_SCROLL_TOKEN__",JSONObject.quote(token));
+    }
+    private void startScroll() {
+        resetDiagnostic();file=null;
+        if(!active.getAsBoolean() || !trusted()) {fail("N01_PAGE","请重新打开会话。",null);return;}
+        collecting=true;address=web.getUrl();long ticket=++generation;
+        scrollToken=UUID.randomUUID().toString();put("mode","scroll-cache");
+        put("routeType",Uri.parse(address).getPath()!=null && Uri.parse(address).getPath().startsWith("/g/") ? "project" : "conversation");
+        scanDialog=new AlertDialog.Builder(activity).setTitle("正在滚动收集历史")
+            .setMessage("正在识别聊天滚动区域…\n可随时取消；不会自动保存部分内容。")
+            .setNegativeButton("取消采集",(d,w)->cancelScroll()).setOnCancelListener(d->cancelScroll()).create();
+        scanDialog.setCanceledOnTouchOutside(false);scanDialog.show();
+        pollScroll("start",ticket,scrollToken);
+    }
+    private void pollScroll(String command,long ticket,String token) {
+        if(!current(ticket)) {if(!destroyed && ticket==generation) fail("H04_CHANGED","页面已切换，采集已取消。",null);return;}
+        stopDeadline();deadline=()->{if(!destroyed && ticket==generation) fail("N02_TIMEOUT","历史采集回调超时。",null);};web.postDelayed(deadline,15000);
+        try {
+            web.evaluateJavascript(scrollExpression(command,token),value->{
+                if(!current(ticket)) {if(!destroyed && ticket==generation) fail("H04_CHANGED","页面已切换，采集已取消。",null);return;}
+                stopDeadline();
+                new Thread(()->{
+                    try {
+                        Object decoded=new JSONTokener(value==null ? "null" : value).nextValue();
+                        if(!(decoded instanceof String) || ((String)decoded).length()>8*1024*1024) throw new IllegalStateException();
+                        JSONObject result=new JSONObject((String)decoded);
+                        JSONObject rendered=result.optBoolean("done") ? render(result) : null;
+                        activity.runOnUiThread(()->{
+                            if(!current(ticket)) {if(!destroyed && ticket==generation) fail("H04_CHANGED","页面已切换，采集已取消。",null);return;}
+                            JSONObject coverage=result.optJSONObject("coverage");if(coverage!=null) put("coverage",coverage);
+                            JSONObject dom=result.optJSONObject("diagnostic");if(dom!=null) put("dom",dom);
+                            if(result.has("error")) {String code=result.optString("error");fail(code,messageFor(code),null);return;}
+                            if(rendered!=null) {
+                                stopScan(false);collecting=false;stage("H00_READY","scroll-collected-unproven");
+                                showCoverage(result,rendered);return;
+                            }
+                            if(coverage!=null && scanDialog!=null) {
+                                String[] legs={"向上收集","向下收集","第二次向上核对","第二次向下核对"};
+                                scanDialog.setMessage(legs[Math.min(3,coverage.optInt("leg"))]+"\n已缓存 "+coverage.optInt("count")+" 条（用户 "+coverage.optInt("users")+" / 助手 "+coverage.optInt("assistants")+"）\n滚动 "+coverage.optInt("steps")+" 次；完整历史未确认。\n采集时请不要操作页面，可随时取消。");
+                            }
+                            stage("H00_SCAN","scroll-sampling");scanPoll=()->pollScroll("poll",ticket,token);web.postDelayed(scanPoll,250);
+                        });
+                    } catch(Exception e) {activity.runOnUiThread(()->{if(current(ticket)) fail("N03_DECODE","无法处理历史采集结果。",e);});}
+                },"scroll-trial-decode").start();
+            });
+        } catch(RuntimeException e) {fail("N03_EVALUATE","无法执行历史采集。",e);}
+    }
+    private void showCoverage(JSONObject result,JSONObject rendered) {
+        JSONArray messages=result.optJSONArray("messages");
+        JSONObject coverage=result.optJSONObject("coverage");
+        String first=messages==null || messages.length()==0 ? "" : preview(messages.optJSONObject(0));
+        String last=messages==null || messages.length()==0 ? "" : preview(messages.optJSONObject(messages.length()-1));
+        new AlertDialog.Builder(activity).setTitle("历史覆盖结果（未确认完整）")
+            .setMessage(coverageText(coverage)+"\n\n最早："+first+"\n最新："+last)
+            .setPositiveButton("选择导出格式",(d,w)->chooseFormat(rendered))
+            .setNeutralButton("复制诊断",(d,w)->{copyDiagnostic();busy=false;})
+            .setNegativeButton("关闭",(d,w)->busy=false).setOnCancelListener(d->busy=false).show();
+    }
+    private static String preview(JSONObject message) {
+        String text=message==null ? "" : message.optString("markdown").replaceAll("\\s+"," ");
+        return text.length()>90 ? text.substring(0,90)+"…" : text;
+    }
+    private static String coverageText(JSONObject c) {
+        if(c==null) return "完整历史未确认。";
+        return "已缓存 "+c.optInt("count")+" 条（用户 "+c.optInt("users")+" / 助手 "+c.optInt("assistants")+"）"
+            +"\n顶部："+(c.optBoolean("topObserved") ? "已观察到滚动顶部" : "未确认")
+            +"\n底部："+(c.optBoolean("bottomObserved") ? "已观察到滚动底部" : "未确认")
+            +"\n扫描：两轮上下遍历，顺序与正文核对一致"
+            +"\n文本历史：完整性未确认（无独立基准）"
+            +"\n附件元数据：未核实覆盖；附件原文件：未包含；图片原文件：未包含。";
+    }
+    private void stopScan(boolean cancel) {
+        if(scanPoll!=null) web.removeCallbacks(scanPoll);scanPoll=null;
+        String token=scrollToken;scrollToken=null;
+        if(scanDialog!=null) {scanDialog.dismiss();scanDialog=null;}
+        if(cancel && token!=null) {
+            try {web.evaluateJavascript(scrollExpression("cancel",token),null);}catch(RuntimeException ignored) { }
+        }
+    }
+    private void cancelScroll() {
+        stopDeadline();stopScan(true);generation++;collecting=false;busy=false;
+        stage("H07_CANCELLED","scroll-cancelled");toast("已取消采集，未生成部分文件。");
     }
     private boolean current(long ticket) {
         return !destroyed && ticket==generation && active.getAsBoolean()
@@ -143,7 +234,10 @@ final class ConversationExport {
     static JSONObject render(JSONObject data) throws Exception {
         String title=data.optString("title","未命名会话");
         JSONArray messages=data.getJSONArray("messages"), warnings=data.getJSONArray("warnings");
-        StringBuilder body=new StringBuilder(), md=new StringBuilder("# "+title.replaceAll("[\\r\\n]"," ")+"\n\n> 试用版：仅当前已加载消息，完整历史未确认。\n\n");
+        JSONObject coverage=data.optJSONObject("coverage");
+        String notice=coverage==null ? "试用版：仅当前已加载消息，完整历史未确认。" : "试用版：滚动收集并缓存可见历史，完整历史未确认。";
+        String summary=coverage==null ? "" : coverageText(coverage);
+        StringBuilder body=new StringBuilder(), md=new StringBuilder("# "+title.replaceAll("[\\r\\n]"," ")+"\n\n> "+notice+"\n\n"+summary+"\n\n");
         for(int i=0;i<messages.length();i++) {
             JSONObject m=messages.getJSONObject(i); String role="user".equals(m.getString("role")) ? "用户" : "助手";
             body.append("<article><h2>").append(role).append("</h2>").append(m.getString("html")).append("</article>");
@@ -154,7 +248,7 @@ final class ConversationExport {
         String html="<!doctype html><html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'>"
             +"<meta http-equiv='Content-Security-Policy' content=\"default-src 'none'; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'\">"
             +"<title>"+escape(title)+"</title><style>body{font:16px/1.7 sans-serif;margin:24px;overflow-wrap:anywhere;color:#20242a;background:white}main{max-width:860px;margin:auto}article{border-bottom:1px solid #ddd;padding:12px 0}pre{background:#f4f5f6;padding:12px;white-space:pre-wrap;overflow-wrap:anywhere}table{border-collapse:collapse;max-width:100%}td,th{border:1px solid #aaa;padding:6px}a{color:#1467a3}@media print{body{margin:0}pre,table{font-size:11px}h2{break-after:avoid}tr{break-inside:avoid}}</style></head><body><main><h1>"
-            +escape(title)+"</h1><p>试用版：仅当前已加载消息，完整历史未确认。</p>"+body+"</ul></footer></main></body></html>";
+            +escape(title)+"</h1><p>"+escape(notice)+"</p><p>"+escape(summary).replace("\n","<br>")+"</p>"+body+"</ul></footer></main></body></html>";
         return new JSONObject().put("title",title).put("html",html).put("markdown",md.toString()).put("warnings",warnings).put("count",messages.length());
     }
     private static String escape(String s) {return s.replace("&","&amp;").replace("<","&lt;").replace(">","&gt;").replace("\"","&quot;").replace("'","&#39;");}
@@ -277,7 +371,7 @@ final class ConversationExport {
     }
     private void resetDiagnostic() {
         diagnostic=new JSONObject();started=android.os.SystemClock.elapsedRealtime();
-        put("scheme","DOM-TRIAL-2");put("historyCompleteness","not-proven");put("oldCaptureInstalled",false);
+        put("scheme","DOM-SCROLL-TRIAL-1");put("historyCompleteness","not-proven");put("oldCaptureInstalled",false);
         put("android",android.os.Build.VERSION.SDK_INT);
         android.content.pm.PackageInfo w=WebView.getCurrentWebViewPackage();put("webView",w==null ? "unknown" : w.versionName);
         try {android.content.pm.PackageInfo p=activity.getPackageManager().getPackageInfo(activity.getPackageName(),0);put("app",p.versionName);} catch(Exception ignored) {put("app","unknown");}
@@ -295,7 +389,7 @@ final class ConversationExport {
         if(clipboard!=null) {clipboard.setPrimaryClip(ClipData.newPlainText("Nova DOM 试用诊断",diagnostic.toString()));toast("已复制诊断（不含聊天正文和登录凭据）。");}
     }
     private void fail(String code,String message,Exception error) {
-        stopDeadline();generation++;collecting=false;busy=false;finishPrint(true);
+        stopDeadline();stopScan(true);generation++;collecting=false;busy=false;finishPrint(true);
         stage(code,"failed");if(error!=null) put("exceptionType",error.getClass().getSimpleName());
         if(!destroyed && !activity.isFinishing() && !activity.isDestroyed())
             new AlertDialog.Builder(activity).setTitle("试用导出失败").setMessage(message+"\n\n错误码："+code+"\n可复制诊断发回排查。")
@@ -312,6 +406,12 @@ final class ConversationExport {
     }
     private static String message(String code) {
         switch(code) {
+            case "H01_SCROLL_CONTAINER":return "未能可靠识别或移动聊天滚动区域，已停止。可尝试当前页面采集，并复制诊断反馈。";
+            case "H02_MISSING_ID":return "消息缺少稳定ID，无法安全合并历史，未生成文件。";
+            case "H03_ORDER":return "跨窗口消息顺序冲突或无法确定，未生成文件。";
+            case "H04_CHANGED":case "H04_SECOND_PASS":case "H04_SESSION":return "采集期间页面、分支或正文发生变化，或第二轮无法核对全部缓存消息。请等待稳定后重试。";
+            case "H05_LIMIT":return "历史采集达到时间、滚动次数、消息或大小限制，已停止，未生成截断文件。";
+            case "H06_UNSETTLED":return "消息窗口持续变化，无法稳定采集。请停止生成后重试。";
             case "D04_STREAMING":return "回复仍在生成，请结束后重试。";
             case "D05_NO_MESSAGES":return "没有找到已加载消息，可能未登录、页面尚未就绪或官网结构改变。";
             case "D06_LIMIT":return "已加载内容超过试用版限制（1000条、200万字符或8MiB结果），已停止，未生成截断文件。";
@@ -324,5 +424,5 @@ final class ConversationExport {
     }
     private static void copy(java.io.InputStream in,OutputStream out) throws java.io.IOException {byte[] buffer=new byte[16384];int n;while((n=in.read(buffer))!=-1) out.write(buffer,0,n);}
     private void toast(String message) {if(!destroyed) Toast.makeText(activity,message,Toast.LENGTH_LONG).show();}
-    void destroy() {destroyed=true;generation++;collecting=false;busy=false;pendingSave=null;finishPrint(true);}
+    void destroy() {stopScan(true);destroyed=true;generation++;collecting=false;busy=false;pendingSave=null;finishPrint(true);}
 }

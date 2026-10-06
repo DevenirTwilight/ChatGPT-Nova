@@ -141,7 +141,7 @@
             reason:authorChars===0 ? 'no-dom-text' : 'no-readable-content-after-filtering'};
           error('D09_EMPTY_BODY');
         }
-        messages.push({role,html:parts.map(p=>p.html).join(''),markdown});
+        messages.push({id,role,html:parts.map(p=>p.html).join(''),markdown});
       }
       diagnostic.processed++;
     }

@@ -830,7 +830,7 @@ public class MainActivity extends Activity {
             items.add(0, 2, 1, "ChatGPT 首页");
             if (accountUiState == AccountUiState.SIGNED_OUT) items.add(0, 3, 2, "登录");
             items.add(0, 4, 3, "用浏览器打开");
-            if (canExportConversation()) items.add(0, 7, 4, "导出已加载消息（试用）");
+            if (canExportConversation()) items.add(0, 7, 4, "导出聊天历史（试用）");
             items.add(0, 8, 5, "导出诊断");
             items.add(0, 5, 6, "设置");
             overflowMenu.setOnMenuItemClickListener(item -> {
@@ -938,7 +938,7 @@ public class MainActivity extends Activity {
     }
 
     private void showAbout() {
-        new AlertDialog.Builder(this).setTitle("ChatGPT Nova 1.3.9 DOM 试用版")
+        new AlertDialog.Builder(this).setTitle("ChatGPT Nova 1.4.0 滚动导出试用版")
                 .setIcon(R.mipmap.ic_launcher)
                 .setMessage("ChatGPT Nova 是用于访问 chatgpt.com 的个人客户端，与官方 ChatGPT App 独立存储登录状态。\n\n这是非官方第三方客户端，不由 OpenAI 发布、维护或背书。应用内登录使用 chatgpt.com 官方登录页，但登录/会话仍运行在 Nova 的 WebView 中。第三方客户端可能与官方客户端存在不同的安全验证、访问限制或账号风险；这不表示使用非官方客户端一定会封号。若不愿承担这项不确定性，请使用官方 ChatGPT App 或浏览器。应用本身不读取或保存账号密码。")
                 .setPositiveButton("知道了", null).show();

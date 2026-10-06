@@ -41,6 +41,7 @@ jobs:
         run: |
           npm install --prefix /tmp/nova-dom-deps playwright-core@1.57.0 --no-audit --no-fund
           node tools/dom-trial/browser.test.cjs
+          node tools/dom-trial/scroll.test.cjs
       - name: Restore signing key
         env:
           NOVA_KEYSTORE_B64: ${{ secrets.NOVA_KEYSTORE_B64 }}
@@ -84,10 +85,12 @@ jobs:
           from pathlib import Path
           manifest = Path('dist/manifest.txt').read_text()
           assert "name='com.example.chatgptnova'" in manifest
-          assert "versionCode='13'" in manifest and "versionName='1.3.9-dom-trial'" in manifest
+          assert "versionCode='14'" in manifest and "versionName='1.4.0-scroll-trial'" in manifest
           assert 'application-debuggable' not in manifest
           with zipfile.ZipFile('dist/ChatGPT-Nova.apk') as apk:
               assert 'assets/export/dom-trial.js' in apk.namelist()
+              assert 'assets/export/scroll-trial.js' in apk.namelist()
+              assert 'assets/virtual-history.js' not in apk.namelist()
               for name in apk.namelist():
                   assert not name.endswith(('.jks', '.keystore', 'keystore.properties'))
                   if name.startswith('classes') and name.endswith('.dex'):
@@ -160,13 +163,13 @@ jobs:
           (cd dist && sha256sum --check ChatGPT-Nova.apk.sha256)
           NOTES=$(mktemp)
           cat > "$NOTES" <<EOFNOTES
-          新方案 DOM 导出试用版 1.3.9-dom-trial / code13，原发布证书签名，可覆盖安装。实现提交：${GITHUB_SHA}。
+          滚动历史导出试用版 1.4.0-scroll-trial / code14，原发布证书签名，可覆盖安装。实现提交：${GITHUB_SHA}。
 
-          菜单“导出已加载消息（试用）”提供 HTML、Markdown、系统保存为 PDF；“导出诊断”和报错弹窗可复制诊断。旧捕获器不再安装。
+          菜单“导出聊天历史（试用）”提供 HTML、Markdown、系统保存为 PDF；“导出诊断”和报错弹窗可复制诊断。旧捕获器不再安装。
 
-          只导出当前页面已加载的消息，完整项目长会话历史未确认。图片和附件不打包。没有证明旧403修复，改为不调用旧接口。真实账号与用户设备仍待验证。
+          滚动过程中缓存已挂载消息并做两轮遍历，仍未确认完整项目长会话历史；另可单次采集当前页面。图片和附件不打包。没有证明旧403修复，改为不调用旧接口。真实账号与用户设备仍待验证。
 
-          构建、lint、Chromium夹具与Android35/36各七项导出集成夹具通过，包含系统实际保存PDF并检查首尾/代码/表格文字；不是全量输入、登录、分享回归或所有Android版本认证。
+          构建、lint、Chromium夹具与Android35/36各十项导出集成夹具通过，包含系统实际保存PDF并检查首尾/代码/表格文字；不是全量输入、登录、分享回归或所有Android版本认证。
 
           使用与错误码：https://github.com/${GITHUB_REPOSITORY}/blob/${GITHUB_SHA}/docs/dom-export-trial.md
           EOFNOTES
