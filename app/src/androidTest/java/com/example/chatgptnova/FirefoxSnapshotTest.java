@@ -32,9 +32,26 @@ public final class FirefoxSnapshotTest extends FrozenPageSnapshotTest {
                 java.io.OutputStream out=socket.getOutputStream();out.write(("HTTP/1.1 200 OK\r\nContent-Type: text/html; charset=utf-8\r\nContent-Length: "+html.length+"\r\nConnection: close\r\n\r\n").getBytes(StandardCharsets.US_ASCII));out.write(html);out.flush();
             }catch(Exception ignored){}} ,"firefox-fixture-server");serving.setDaemon(true);serving.start();
             instrument.getTargetContext().startActivity(new Intent(Intent.ACTION_VIEW,Uri.parse("http://127.0.0.1:"+server.getLocalPort()+"/frozen-page.html")).setPackage("org.mozilla.firefox").addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
-            waitFor("Firefox frozen fixture",()->{AccessibilityNodeInfo root=instrument.getUiAutomation().getRootInActiveWindow();if(root!=null&&!root.findAccessibilityNodeInfosByText("Before snapshot marker").isEmpty())return true;
-                // Official first-run browser-role prompt is a separate Android window.
-                if(root!=null&&root.getPackageName()!=null&&root.getPackageName().toString().contains("permissioncontroller")){if(!press("Cancel")&&!press("Not now"))instrument.sendKeyDownUpSync(android.view.KeyEvent.KEYCODE_BACK);return false;}for(String label:new String[]{"Start browsing","Not now","Skip","Continue"})if(press(label))break;return false;});
+            final long[] nextStartupAction={0};
+            waitFor("Firefox frozen fixture",()->{
+                AccessibilityNodeInfo root=instrument.getUiAutomation().getRootInActiveWindow();
+                if(root!=null&&!root.findAccessibilityNodeInfosByText("Before snapshot marker").isEmpty())return true;
+                long now=android.os.SystemClock.uptimeMillis();if(now<nextStartupAction[0])return false;
+                // A closing system role window can remain in accessibility briefly.
+                // Do not send repeated Back events through it into the browser.
+                if(root!=null&&root.getPackageName()!=null&&root.getPackageName().toString().contains("permissioncontroller")) {
+                    if(!press("Cancel")&&!press("Not now")&&!press("Don't allow"))instrument.sendKeyDownUpSync(android.view.KeyEvent.KEYCODE_BACK);
+                    nextStartupAction[0]=now+2000;return false;
+                }
+                // First-run UI may return to Home after loading the supplied tab.
+                // Reopen only this fixture's visible Continue card, never other tabs.
+                AccessibilityNodeInfo tab=find(root,snapshot.title);
+                if(tab!=null&&"recent.tab.title".equals(tab.getViewIdResourceName())) {
+                    press(snapshot.title);nextStartupAction[0]=now+2000;return false;
+                }
+                for(String label:new String[]{"Start browsing","Not now","Skip","Continue"})if(press(label)){nextStartupAction[0]=now+2000;break;}
+                return false;
+            });
             waitFor("Firefox menu",()->press("More options")||press("Menu"));
             waitFor("Firefox Save as PDF",()->press("Save as PDF"));
             final byte[][] result={null};

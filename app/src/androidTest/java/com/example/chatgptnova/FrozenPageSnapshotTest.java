@@ -96,7 +96,7 @@ public class FrozenPageSnapshotTest extends FixtureActivity {
         final String filename="Nova-fixture-"+snapshot.snapshotId+".pdf";
         waitFor("native PDF filename",()->{
             AccessibilityNodeInfo root=instrument.getUiAutomation().getRootInActiveWindow();if(root==null)return false;
-            for(String id:new String[]{"com.google.android.documentsui:id/filename","com.android.documentsui:id/filename"})
+            for(String id:new String[]{"android:id/title","com.google.android.documentsui:id/filename","com.android.documentsui:id/filename"})
                 for(AccessibilityNodeInfo node:root.findAccessibilityNodeInfosByViewId(id)) {
                     android.os.Bundle args=new android.os.Bundle();args.putCharSequence(AccessibilityNodeInfo.ACTION_ARGUMENT_SET_TEXT_CHARSEQUENCE,filename);
                     return node.performAction(AccessibilityNodeInfo.ACTION_SET_TEXT,args);
