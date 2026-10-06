@@ -1,5 +1,7 @@
 # 项目长会话覆盖核对（验证工具，不是导出功能）
 
+当前状态更新：1.3.9 DOM试用版已停用旧capture；下方基线/ADB步骤为前一阶段验证方法。最新任务为源码审查及 [滚动缓存完整性设计](../../../docs/export/history-integrity.md)，尚未接入自动滚动。新增 `export-snapshot.test.cjs` 使用当前生产脚本复现稳定7条缺33条、虚拟窗口并集和ID/正文区别；只合成验证，不解析用户HTML。运行：`node tools/feasibility/history-coverage/export-snapshot.test.cjs`。
+
 旧 `dom-probe.js` 只输出首尾四条 samples，不能逐条核对中间历史。本目录独立探针返回全部已检查消息的 ID/角色，最多 2000 条；超限明确失败。不读取正文、Cookie、storage、fetch 或 React，不自动滚动。记录包含私有会话路径和消息 ID，仅本地保存，勿提交原始记录到公开仓库。
 
 ## 先建立真实测试条件
