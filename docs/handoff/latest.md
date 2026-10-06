@@ -1,5 +1,16 @@
 # ChatGPT Nova 会话交接
 
+## 手机首选改为ARM64包：170MiB APK / 81MiB ZIP，版本不变
+
+用户质疑650MiB是否等同Firefox大小。独立检查旧通用包未压缩文件：公共22.8MiB，ARM64 153.9、ARM32 120.7、x86 185.8、x86_64 172.5MiB，其他架构贡献约479MiB。Mozilla官方版本metadata为157.0.1，[官方ARM64 APK](https://archive.mozilla.org/pub/fenix/releases/157.0.1/android/fenix-157.0.1-android-arm64-v8a/fenix-157.0.1.multi.android-arm64-v8a.apk)HEAD Content-Length134275592（约128MiB）；不能把Nova四架构通用包称为Firefox手机版实际大小，也不把Firefox安装后含缓存的占用与下载APK比较。
+
+[ARM64交付CI37512229753](https://github.com/DevenirTwilight/ChatGPT-Nova/actions/runs/37512229753)通过：使用此前已验证37509953925原主APK，仅保留ARM64库与公共内容，去旧签名、zipalign16KiB、原证书重新签名；apksigner/zipalign验证通过。没有重新编译/改源代码/增版，诊断buildRevision仍190113f、1.4.0/code14。此前Android35/36各18项是在通用包的x86_64引擎上执行，不冒充ARM64真机测试；ARM64本机运行仍待用户安装。这一交付提交是打包流程，不是新应用源码提交。
+
+本地独立取回3个小部分，核对wrapper和分块摘要、完整ZIP摘要、APK校验及原证书记录，逐字节核对172个保留文件（含所有DEX/资源/ARM64库/脚本/许可），只剩arm64-v8a且DEX完整190113f。主APK178491277 bytes（约170MiB），SHA256 `7259f4704ca30e70dafa735ff5a832e92140b8a8533d41ae2ac356b99d8495c6`；ZIP84711177 bytes（约81MiB），SHA256 `7cd8e3031e9674af224bbb66fca5d86d4fbe347fb3eb12e166c391882ab51ea0`。会话直接提供ARM64 APK/ZIP，均无测试APK；[GitHub备用ARM64产物](https://github.com/DevenirTwilight/ChatGPT-Nova/actions/runs/37512229753/artifacts/11435138812)需登录解压。原650MiB通用包仅为其他架构备用，不再作为手机首选。不创建Release。
+
+PDF/HTML/Markdown以及独立助手turn补采完全保留，历史完整性/附件原件/旧403边界不变。后续手机交付优先按ABI分包，不重复把模拟器架构发给手机；打包后需沿用相同来源/字节/签名核对。单向跨窗口缺ID仍H02，原会话缺失进度的内容及位置仍须本批快速导出复测。
+
+
 ## Gecko三格式批次已通过并交付：190113f / 1.4.0
 
 APK源码`190113f9387cd55e9dc3eb816a57d666840a9b03`，[CI37509953925](https://github.com/DevenirTwilight/ChatGPT-Nova/actions/runs/37509953925)构建/lint/原签名、浏览器17单快照/32滚动/19进度/18定位，以及Android35/36各18项全部通过；publish skipped。此前751da199首次因误删View导入编译失败，20bc9ae随后因Gecko捆绑未使用的NotificationUtil lint失败，均已修正，未把失败轮次记作通过。lint例外仅按该第三方类具体消息匹配，应用自己的权限检查继续；无新增通知权限。
