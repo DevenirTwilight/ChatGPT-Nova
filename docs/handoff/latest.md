@@ -1,3 +1,13 @@
+## 最新续接点：e7759f6 / CI37546450115（Commit B仍禁止启动）
+
+当前应用/测试源码e7759f6cc83a31d696879cc570cb4ccda6d18715，新CI37546450115进行中。前一6473c32/37544389737的API35产物11450901856已取回/tmp/nova-html-a3-35：新10九通过一失败，真实系统PDF停在native PDF filename等待；UI实物明确DocumentsUI EditText id为android:id/title，而非猜测的包:id/filename。已把观测id加入测试。没有PDF实物，不得记通过。API36因后续修正提交并发取消，未完成认证。
+
+Firefox专属UI实物现已保留：测试HTML已加载（Continue卡片title为Frozen中文caféemoji），但界面停在Firefox首页，正文标记等待超时；ActivityScenario关闭NPE已消失。新修正限制first-run/role窗口动作每2秒一次，防止过渡窗口重复Back进入首页；只点击本fixture的recent.tab.title继续卡片，正常浏览器UI重开已加载页。不要猜测已成功，等待新产物。每轮都继续原18、Web9、Share5、ClipboardUi5、3项IME/native/v1升级；A3这些均通过，HTML/MD/Chromium实际保存文件检查通过。Gecko仍保留，没有Release、版号变更。
+
+下一步优先检查37546450115的Android35/36结果，下载小证据，查看snapshot/Firefox专属UI树和截图并核对实际PDF。若文件产出，通过pdftotext/pdfinfo/PdfRenderer及可视渲染检查正文/分页/首尾/中法英/长代码表格，与Firefox同frozenHtml实际PDF对照。失败继续按证据修，不做旧历史扫描fallback，不拿桌面PDF/预览回调当Android已保存文件。只有A全部关键检查通过才允许B。
+
+B待实施清单：唯一Gecko生产用户为ConversationExport旧PDF，删除其PDF菜单/方法/字段及GeckoPdfExporter/dependency/仅Gecko的Mozilla Maven和lint例外/Gecko资产；保留Composer输入等源码，FirefoxInputConnection引用注释不代表引擎依赖。移除Gecko ABI/large APK专属交付workflow，默认UI只保存当前网页HTML/MD/SystemPrint，legacy扫描源码与16非GeckoAndroid测试继续，两Gecko专用用例明确Ignore退役且保留源与历史，不伪称旧18全通过。记录依赖树、真实APK universal/ARM64/安装代码大小，原包名/证书/版号不变。可用已验证A的CI artifact作移除前大小/覆盖升级基线，B CI装A→合成Cookie/storage seed→安装B→确认保存，再继续原v1升级，不能编造大小。新PDF自身已走SystemPrint但真实文件仍是阻塞。
+
 ## 继续检查点（最新源码6473c32）
 
 CI37544389737构建/lint/签名/浏览器通过，Android35/36正在执行。PDF自动验收现通过真实DocumentsUI明确设置Nova-fixture-UUID.pdf并读取实际保存文件，不再把PrintManager任务标签当文件名；生产仍不要求PDF路径。Firefox失败已从logcat确认默认浏览器系统role窗口阻塞：测试仅处理该明确窗口，新增专属firefox-ui-failure证据，并恢复Nova前台再关闭外部浏览器以验证Scenario生命周期。不要提前记PDF/Firefox通过，不移除Gecko。
