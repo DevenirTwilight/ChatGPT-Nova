@@ -35,6 +35,7 @@ public final class FrozenPageSnapshotTest extends FixtureActivity {
         info.flags|=android.accessibilityservice.AccessibilityServiceInfo.FLAG_REPORT_VIEW_IDS;instrument.getUiAutomation().setServiceInfo(info);
     }
     @After public void after(){if(monitor!=null)instrument.removeMonitor(monitor);if(standalone!=null)main(()->standalone.close());if(scenario!=null)scenario.close();}
+    static void waitFor(String name,Condition condition){long until=android.os.SystemClock.uptimeMillis()+60000;do{if(condition.ready())return;android.os.SystemClock.sleep(100);}while(android.os.SystemClock.uptimeMillis()<until);fail("Timed out: "+name);}
     private PageSnapshotExport exporter(){return (PageSnapshotExport)field(activity,"pageSnapshotExport");}
     private Object field(Object object,String name){try{Field f=object.getClass().getDeclaredField(name);f.setAccessible(true);return f.get(object);}catch(Exception e){throw new AssertionError(e);}}
     private void click(String label){waitFor("control "+label,()->{AccessibilityNodeInfo node=find(instrument.getUiAutomation().getRootInActiveWindow(),label);while(node!=null&&!node.isClickable())node=node.getParent();return node!=null&&node.performAction(AccessibilityNodeInfo.ACTION_CLICK);});instrument.waitForIdleSync();}
@@ -64,7 +65,7 @@ public final class FrozenPageSnapshotTest extends FixtureActivity {
         evidence("frozen-page.md",saved);
         SnapshotWebView v=render(snapshot);AtomicReference<String> result=new AtomicReference<>();File archive=new File(activity.getExternalFilesDir(null),"frozen-page.mhtml");
         main(()->v.web.saveWebArchive(archive.getAbsolutePath(),false,result::set));waitFor("actual same-snapshot archive",()->result.get()!=null);assertTrue(archive.length()>0);
-        assertSame(snapshot,v.snapshot);assertFalse(v.web.getSettings().getJavaScriptEnabled());
+        assertSame(snapshot,v.snapshot);main(()->assertFalse(v.web.getSettings().getJavaScriptEnabled()));
         assertEquals("After snapshot marker",js("document.querySelector('h1').textContent"));
         // The CI host parses MIME parts and opens THIS actual Android archive in Chromium.
     }
@@ -130,6 +131,16 @@ public final class FrozenPageSnapshotTest extends FixtureActivity {
         main(()->exporter().start());click("冻结此刻网页");waitFor("post-recovery snapshot",()->field(exporter(),"snapshot")!=null);
         main(()->exporter().cancel());
         scenario.recreate();scenario.onActivity(a->{activity=a;web=FixtureActivity.web(a);});fixture(PAGE);main(()->web.requestFocus());assertNotNull(exporter());
+    }
+
+    @Test public void actualSystemPrintCancellationReturnsToLiveChatAndCanRepeat() {
+        for(int i=0;i<2;i++) {
+            freeze();click("打印 / 保存为 PDF");
+            waitFor("print window for cancel",()->{AccessibilityNodeInfo root=instrument.getUiAutomation().getRootInActiveWindow();return root!=null&&"com.android.printspooler".contentEquals(root.getPackageName());});
+            long[] nextBack={0};waitFor("print cancel releases snapshot",()->{if(!busy())return true;AccessibilityNodeInfo root=instrument.getUiAutomation().getRootInActiveWindow();long now=android.os.SystemClock.uptimeMillis();
+                if(root!=null&&"com.android.printspooler".contentEquals(root.getPackageName())&&now>=nextBack[0]){instrument.sendKeyDownUpSync(android.view.KeyEvent.KEYCODE_BACK);nextBack[0]=now+2000;}return false;});
+            assertNull(field(exporter(),"renderer"));assertEquals("Before snapshot marker",js("document.querySelector('h1').textContent"));
+        }
     }
 
 }

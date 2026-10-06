@@ -14,7 +14,7 @@ def suite(selection,label,count):
     assert re.search(r'OK \('+str(count)+r' tests?\)',result), result
     assert 'FAILURES!!!' not in result and 'INSTRUMENTATION_FAILED' not in result,result
 try:
-    suite('com.example.chatgptnova.FrozenPageSnapshotTest','snapshot',9)
+    suite('com.example.chatgptnova.FrozenPageSnapshotTest','snapshot',10)
     for name in ['frozen-page.md','frozen-page.mhtml','frozen-page-saf.mhtml','frozen-page.pdf']:
         adb('pull','/sdcard/Android/data/com.example.chatgptnova/files/'+name,str(out/name))
     def archive(name):
@@ -44,6 +44,8 @@ try:
     suite('com.example.chatgptnova.NovaWebViewTest','web-regressions',9)
     suite('com.example.chatgptnova.WebShareTest','share-regressions',5)
     suite('com.example.chatgptnova.ClipboardUiTest','input-regressions',5)
+    for method in ['imeCommitText','imePasteCommand','longPressSystemPaste']:
+        suite('com.example.chatgptnova.ClipboardProbeTest#'+method,'input-'+method,1)
     suite('com.example.chatgptnova.NativeUiTest#nativeControlsAndLifecycleRemainUsable','native-lifecycle',1)
     adb('shell','am','force-stop','com.example.chatgptnova')
     suite('com.example.chatgptnova.NativeUiTest#processRestartPreservesSyntheticSessionAndControls','native-restart',1)
