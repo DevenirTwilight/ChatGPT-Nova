@@ -8,11 +8,15 @@ if (signingPropsFile.exists()) {
     signingPropsFile.withInputStream { signingProps.load(it) }
 }
 
+final String trialRevision = System.getenv('GITHUB_SHA') ?: 'local'
+final String safeTrialRevision = trialRevision.matches('[0-9a-f]{40}') ? trialRevision : 'local'
+
 android {
     namespace 'com.example.chatgptnova'
     compileSdk 35
     buildToolsVersion '35.0.0'
     testBuildType project.hasProperty('novaExportTests') ? 'debug' : 'release'
+    buildFeatures { buildConfig true }
 
     defaultConfig {
         applicationId 'com.example.chatgptnova'
@@ -21,6 +25,7 @@ android {
         testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner'
         versionCode 14
         versionName '1.4.0-scroll-trial'
+        buildConfigField 'String', 'EXPORT_REVISION', '"'+safeTrialRevision+'"'
     }
 
     signingConfigs {

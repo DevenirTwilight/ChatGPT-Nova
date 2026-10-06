@@ -15,10 +15,16 @@
   if(restore && s.container?.isConnected) s.container.scrollTo({top:s.original,behavior:"instant"});
   s.messages.clear();s.edges.clear();delete window[KEY];
  }
+ function resetWindow() {
+  s.stable=0;s.last='';s.lastIds='';s.prevPos=null;s.prevMax=null;s.edgeStable=0;s.stepStarted=performance.now();
+  s.window={polls:0,listChanges:0,bodyChanges:0,positionChanges:0,extentChanges:0,mountedCount:0,reason:'awaiting-content',scrollTopPx:0,scrollMaxPx:0,viewportPx:0};
+ }
  function stats() {return {source:'scroll-dom-trial',history:'not-proven',count:s.messages.size,
   users:[...s.messages.values()].filter(m=>m.role==='user').length,assistants:[...s.messages.values()].filter(m=>m.role==='assistant').length,
   steps:s.steps,leg:s.leg,topObserved:s.top,bottomObserved:s.bottom,secondPass:s.leg>=2,
-  chars:s.chars,cacheBytes:s.bytes,elapsedMs:Math.round(performance.now()-s.started)};}
+  chars:s.chars,cacheBytes:s.bytes,elapsedMs:Math.round(performance.now()-s.started),
+  settling:{...s.window,contentStable:s.stable,windowAgeMs:Math.round(performance.now()-s.stepStarted),
+   totalListChanges:s.changes.list,totalBodyChanges:s.changes.body,totalPositionChanges:s.changes.position,totalExtentChanges:s.changes.extent}};}
  try {
   if(command==='cancel') {if(s?.token===token) dispose(true);return JSON.stringify({cancelled:true});}
   if(command==='start') {
@@ -38,8 +44,8 @@
    }
    if(!container) abort('H01_SCROLL_CONTAINER');
    s={token,container,original:container.scrollTop,route:location.href,title:document.title,started:performance.now(),stepStarted:performance.now(),
-    messages:new Map(),edges:new Map(),second:new Set(),warnings:new Set(),chars:0,bytes:0,steps:0,leg:0,top:false,bottom:false,stable:0,edgeStable:0,last:'',lastPosition:'',invalid:false};
-   window[KEY]=s;
+    messages:new Map(),edges:new Map(),second:new Set(),warnings:new Set(),chars:0,bytes:0,steps:0,leg:0,top:false,bottom:false,stable:0,edgeStable:0,last:'',lastPosition:'',invalid:false,changes:{list:0,body:0,position:0,extent:0}};
+   resetWindow();window[KEY]=s;
    s.interact=e=>{if(e.isTrusted) s.invalid=true;};
    document.addEventListener('click',s.interact,true);document.addEventListener('keydown',s.interact,true);
    // Public DOM observation catches SPA changes without wrapping history/fetch or reading React.
@@ -51,15 +57,32 @@
   if(performance.now()-s.started>120000 || s.steps>=300) abort('H05_LIMIT');
   const data=snapshot();
   if(data.error) {if(['D03_LOADING','D05_NO_MESSAGES'].includes(data.error) && performance.now()-s.stepStarted<5000)
-    return JSON.stringify({waiting:true,coverage:stats()});
+    {s.window.reason='page-not-ready';return JSON.stringify({waiting:true,coverage:stats()});}
    return JSON.stringify(failure(data.error,data.diagnostic));}
   for(const warning of data.warnings || []) if(!warning.startsWith("试用版仅导出当前页面")) s.warnings.add(warning);
   const rows=data.messages;
   if(rows.some(m=>!m.id)) abort('H02_MISSING_ID');
   const value=JSON.stringify(rows);
   const pos=s.container.scrollTop,max=Math.max(0,s.container.scrollHeight-s.container.clientHeight);
-  const position=pos.toFixed(1)+':'+max.toFixed(1);
-  s.stable=(value===s.last && position===s.lastPosition) ? s.stable+1 : 1;s.last=value;s.lastPosition=position;
+  const identity=JSON.stringify(rows.map(m=>[m.id,m.role]));
+  const hadPrevious=s.last!=='';
+  const sameContent=hadPrevious && value===s.last;
+  const sameList=hadPrevious && identity===s.lastIds;
+  const hadGeometry=s.prevPos!==null;
+  const positionDelta=hadGeometry ? Math.abs(pos-s.prevPos) : 0;
+  const extentDelta=hadGeometry ? Math.abs(max-s.prevMax) : 0;
+  const quietGeometry=hadGeometry && positionDelta<=2 && extentDelta<=2;
+  s.window.polls++;s.window.mountedCount=rows.length;
+  if(hadPrevious && !sameList) {s.window.listChanges++;s.changes.list++;}
+  if(hadPrevious && sameList && !sameContent) {s.window.bodyChanges++;s.changes.body++;}
+  if(positionDelta>0.1) {s.window.positionChanges++;s.changes.position++;}
+  if(extentDelta>0.1) {s.window.extentChanges++;s.changes.extent++;}
+  Object.assign(s.window,{scrollTopPx:Math.round(pos),scrollMaxPx:Math.round(max),viewportPx:s.container.clientHeight,
+   positionDeltaPx:Math.round(positionDelta*10)/10,extentDeltaPx:Math.round(extentDelta*10)/10,
+   reason:!hadPrevious ? 'awaiting-content' : !sameList ? 'message-list-changing' : !sameContent ? 'body-or-structure-changing' : 'content-stable'});
+  // Layout/scroll extent may change while exactly the same ID/role/body snapshot is readable.
+  // Require repeated content, not pixel-perfect layout; edge observations remain separately gated.
+  s.stable=sameContent ? s.stable+1 : 1;s.last=value;s.lastIds=identity;s.prevPos=pos;s.prevMax=max;
   if(s.stable<3) {
    if(performance.now()-s.stepStarted>5000) abort('H06_UNSETTLED');
    return JSON.stringify({waiting:true,coverage:stats()});
@@ -79,7 +102,9 @@
   }
   for(let i=1;i<rows.length;i++) s.edges.get(rows[i-1].id).add(rows[i].id);
   const upward=s.leg%2===0,atEdge=upward?pos<=1:pos>=max-1;
-  s.edgeStable=atEdge && added===0 ? s.edgeStable+1 : 0;
+  s.edgeStable=atEdge && added===0 && quietGeometry ? s.edgeStable+1 : 0;
+  if(atEdge && s.edgeStable<5 && !quietGeometry) s.window.reason='edge-layout-changing';
+  if(atEdge && s.edgeStable<5 && performance.now()-s.stepStarted>5000) abort('H06_UNSETTLED');
   // Staying at an observed edge is only a traversal stopping condition, never completeness proof.
   if(atEdge && s.edgeStable>=5) {
    if(upward) s.top=true;else s.bottom=true;
@@ -104,12 +129,12 @@
     const raw=JSON.stringify(result);if(raw.length>8*1024*1024) abort('H05_LIMIT');
     dispose(true);return raw;
    }
-   s.edgeStable=0;s.stable=0;s.last='';s.stepStarted=performance.now();
+   resetWindow();
   } else if(!atEdge) {
    const target=pos+(upward?-1:1)*Math.max(1,s.container.clientHeight*0.45);
    s.container.scrollTo({top:Math.max(0,Math.min(max,target)),behavior:"instant"});s.steps++;
    if(Math.abs(s.container.scrollTop-pos)<0.5) abort('H01_SCROLL_CONTAINER');
-   s.stable=0;s.last='';s.stepStarted=performance.now();
+   resetWindow();
   }
   return JSON.stringify({waiting:true,coverage:stats()});
  } catch(e) {return JSON.stringify(failure(e.code || 'H99_SCAN'));}

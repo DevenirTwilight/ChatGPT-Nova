@@ -1,7 +1,7 @@
 const assert=require('node:assert/strict'),fs=require('node:fs');
 const {chromium}=require(process.env.NOVA_PLAYWRIGHT_MODULE || 'playwright-core');
 const snapshot=fs.readFileSync('app/src/main/assets/export/dom-trial.js','utf8').replace('__NOVA_VERIFY_ONLY__','false');
-const source=fs.readFileSync('app/src/main/assets/export/scroll-trial.js','utf8').replace('__NOVA_SNAPSHOT__',()=>snapshot);
+const source=fs.readFileSync(process.env.NOVA_SCROLL_SOURCE_PATH || 'app/src/main/assets/export/scroll-trial.js','utf8').replace('__NOVA_SNAPSHOT__',()=>snapshot);
 const fixture=fs.readFileSync('tools/dom-trial/virtual-fixture.js','utf8');
 (async()=>{
  const browser=await chromium.launch({executablePath:process.env.NOVA_CHROMIUM_EXECUTABLE || '/usr/bin/chromium',args:['--no-sandbox']});let checks=0;
@@ -11,6 +11,13 @@ const fixture=fs.readFileSync('tools/dom-trial/virtual-fixture.js','utf8');
   const step=async(command='poll',token='fixture-token')=>JSON.parse(await page.evaluate(source.replace('__NOVA_SCROLL_COMMAND__',JSON.stringify(command)).replace('__NOVA_SCROLL_TOKEN__',JSON.stringify(token))));
   const finish=async()=>{let result;for(let i=0;i<500;i++){result=await step();if(result.error || result.done) return result;await page.waitForTimeout(20);}throw Error('fixture poll limit');};
   const collectFirst=async()=>{let r=await step('start');for(let i=0;i<50 && !(r.coverage?.count>0);i++){await page.waitForTimeout(20);r=await step();}assert(r.coverage?.count>0,JSON.stringify(r));await page.waitForTimeout(60);};
+  // Same messages, only the scroll extent jitters: content can be cached safely.
+  await setup(7);await step('start');
+  await page.evaluate(()=>document.getElementById('space').style.height='450px');await step();
+  await page.evaluate(()=>{document.getElementById('space').style.height='448px';window.__novaHistoryScrollTrial.stepStarted-=6000;});
+  const geometryOnly=await step();assert(!geometryOnly.error,JSON.stringify(geometryOnly));assert.equal(geometryOnly.coverage.count,7);
+  assert.equal(geometryOnly.coverage.settling.totalExtentChanges,2);await step('cancel');checks++;
+  if(process.env.NOVA_SETTLE_REGRESSION_ONLY) {console.log('PASS: layout-only settling regression; synthetic only');return;}
   await setup();const original=await page.locator('#history').evaluate(e=>e.scrollTop);await step('start');
   const all=await finish();assert(all.done,JSON.stringify(all));assert.equal(all.messages.length,40);assert.deepEqual(all.messages.map(m=>m.id),Array.from({length:40},(_,i)=>'m'+i));
   assert.equal(all.messages.filter(m=>m.markdown.includes('REPEATED-TEXT')).length,2);
@@ -35,7 +42,12 @@ const fixture=fs.readFileSync('tools/dom-trial/virtual-fixture.js','utf8');
   await setup();await step('start');await page.evaluate(()=>window.__novaHistoryScrollTrial.started-=120001);
   assert.equal((await step()).error,'H05_LIMIT');checks++;
   await setup();await step('start');await page.evaluate(()=>{window.__novaHistoryScrollTrial.stepStarted-=6000;document.querySelector('.markdown p').textContent='not settled';});
-  assert.equal((await step()).error,'H06_UNSETTLED');checks++;
+  const unsettledBody=await step();assert.equal(unsettledBody.error,'H06_UNSETTLED');assert.equal(unsettledBody.coverage.settling.reason,'body-or-structure-changing');assert.equal(unsettledBody.coverage.settling.bodyChanges,1);assert(!JSON.stringify(unsettledBody).includes('not settled'));checks++;
+  await setup(7);await step('start');await page.evaluate(()=>{window.__novaHistoryScrollTrial.stepStarted-=6000;document.querySelector('[data-message-id]').dataset.messageId='changed-private-id';});
+  const unsettledList=await step();assert.equal(unsettledList.error,'H06_UNSETTLED');assert.equal(unsettledList.coverage.settling.reason,'message-list-changing');assert(!JSON.stringify(unsettledList).includes('changed-private-id'));checks++;
+  // Layout jitter at an observed edge still cannot approve traversal completion.
+  await setup(7);await collectFirst();await step();await step();await step();await page.evaluate(()=>{document.getElementById('history').scrollTo({top:0,behavior:'instant'});window.__novaHistoryScrollTrial.stepStarted-=6000;document.getElementById('space').style.height='2000px';});
+  const unsettledEdge=await step();assert.equal(unsettledEdge.error,'H06_UNSETTLED');assert.equal(unsettledEdge.coverage.settling.reason,'edge-layout-changing');checks++;
   await setup(7);await step('start');for(let i=0;i<200;i++){await step();if(await page.evaluate(()=>window.__novaHistoryScrollTrial?.leg===2))break;}
   await page.evaluate(()=>document.querySelector('[data-message-id]').dataset.messageId='second-pass-new');
   assert.equal((await finish()).error,'H04_SECOND_PASS');checks++;

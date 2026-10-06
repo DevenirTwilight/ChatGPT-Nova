@@ -371,7 +371,7 @@ final class ConversationExport {
     }
     private void resetDiagnostic() {
         diagnostic=new JSONObject();started=android.os.SystemClock.elapsedRealtime();
-        put("scheme","DOM-SCROLL-TRIAL-1");put("historyCompleteness","not-proven");put("oldCaptureInstalled",false);
+        put("scheme","DOM-SCROLL-TRIAL-2");put("buildRevision",BuildConfig.EXPORT_REVISION);put("historyCompleteness","not-proven");put("oldCaptureInstalled",false);
         put("android",android.os.Build.VERSION.SDK_INT);
         android.content.pm.PackageInfo w=WebView.getCurrentWebViewPackage();put("webView",w==null ? "unknown" : w.versionName);
         try {android.content.pm.PackageInfo p=activity.getPackageManager().getPackageInfo(activity.getPackageName(),0);put("app",p.versionName);} catch(Exception ignored) {put("app","unknown");}
@@ -411,7 +411,7 @@ final class ConversationExport {
             case "H03_ORDER":return "跨窗口消息顺序冲突或无法确定，未生成文件。";
             case "H04_CHANGED":case "H04_SECOND_PASS":case "H04_SESSION":return "采集期间页面、分支或正文发生变化，或第二轮无法核对全部缓存消息。请等待稳定后重试。";
             case "H05_LIMIT":return "历史采集达到时间、滚动次数、消息或大小限制，已停止，未生成截断文件。";
-            case "H06_UNSETTLED":return "消息窗口持续变化，无法稳定采集。请停止生成后重试。";
+            case "H06_UNSETTLED":return "消息正文、消息列表或边界布局未稳定，采集已停止。请复制诊断（含变化分类）反馈。";
             case "D04_STREAMING":return "回复仍在生成，请结束后重试。";
             case "D05_NO_MESSAGES":return "没有找到已加载消息，可能未登录、页面尚未就绪或官网结构改变。";
             case "D06_LIMIT":return "已加载内容超过试用版限制（1000条、200万字符或8MiB结果），已停止，未生成截断文件。";

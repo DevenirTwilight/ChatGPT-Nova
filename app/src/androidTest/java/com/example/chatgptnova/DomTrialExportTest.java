@@ -113,6 +113,28 @@ public final class DomTrialExportTest extends FixtureActivity {
         assertEquals("7",js("document.querySelectorAll('[data-message-author-role]').length"));
         assertEquals(original,js("document.getElementById('history').scrollTop"));assertEquals("undefined",js("typeof window.__novaHistoryScrollTrial"));
     }
+    @Test public void layoutOnlyJitterStillSavesAllCachedMessages() throws Exception {
+        virtualHistory();js("document.getElementById('history').scrollTo({top:640,behavior:'instant'});let jitterTick=0;window.fixtureJitter=setInterval(()=>{document.getElementById('space').style.height=(2560+(++jitterTick%2)*2)+'px';},70);true");
+        AtomicReference<Intent> saved=new AtomicReference<>();
+        external(intent->{if(!Intent.ACTION_CREATE_DOCUMENT.equals(intent.getAction())) return null;saved.set(intent);return new Instrumentation.ActivityResult(Activity.RESULT_OK,new Intent().setData(OUTPUT));});
+        main(()->exporter().start());click("滚动收集历史");click("选择导出格式");click("HTML 阅读版（推荐）");click("保存到本地…");
+        waitFor("layout jitter cached history saved",()->saved.get()!=null && !busy());
+        String html=new String(read(OUTPUT),StandardCharsets.UTF_8);assertEquals(40,html.split("<article>",-1).length-1);
+        assertTrue(html.contains("ROW-0</p>"));assertTrue(html.contains("ROW-39</p>"));assertTrue(html.contains("完整历史未确认"));
+        assertEquals("640",js("document.getElementById('history').scrollTop"));
+        assertEquals("undefined",js("typeof window.__novaHistoryScrollTrial"));js("clearInterval(window.fixtureJitter);true");
+    }
+    @Test public void changingBodyStillFailsWithTypedRedactedSettlingDiagnostic() throws Exception {
+        virtualHistory();js("let bodyTick=0;window.fixtureBodyChange=setInterval(()=>{document.querySelector('.markdown p').textContent='SECRET-JITTER-'+(++bodyTick);},60);true");
+        main(()->exporter().start());click("滚动收集历史");click("复制诊断");assertFalse(busy());assertNull(output());
+        AtomicReference<String> detail=new AtomicReference<>();
+        main(()->{android.content.ClipboardManager c=activity.getSystemService(android.content.ClipboardManager.class);detail.set(c.getPrimaryClip().getItemAt(0).getText().toString());});
+        org.json.JSONObject diag=new org.json.JSONObject(detail.get());assertEquals("H06_UNSETTLED",diag.getString("code"));
+        org.json.JSONObject settling=diag.getJSONObject("coverage").getJSONObject("settling");
+        assertEquals("body-or-structure-changing",settling.getString("reason"));assertTrue(settling.getInt("bodyChanges")>0);
+        assertTrue(diag.has("buildRevision"));assertFalse(detail.get().contains("SECRET-JITTER"));assertFalse(detail.get().contains("g-p-fixture"));
+        js("clearInterval(window.fixtureBodyChange);true");assertEquals("undefined",js("typeof window.__novaHistoryScrollTrial"));
+    }
     @Test public void historyScrollCancellationReleasesCacheAndAllowsRetry() throws Exception {
         virtualHistory();String original=js("document.getElementById('history').scrollTop");
         main(()->exporter().start());click("滚动收集历史");click("取消采集");waitFor("scan cancelled",()->!busy());

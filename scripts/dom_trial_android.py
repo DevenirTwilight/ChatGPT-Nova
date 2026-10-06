@@ -14,7 +14,7 @@ try:
                  'com.example.chatgptnova.DomTrialExportTest',
                  'com.example.chatgptnova.test/androidx.test.runner.AndroidJUnitRunner', timeout=600)
     (out/'instrumentation.txt').write_text(result)
-    assert re.search(r'OK \(10 tests\)', result), result
+    assert re.search(r'OK \(12 tests\)', result), result
     assert 'FAILURES!!!' not in result and 'INSTRUMENTATION_FAILED' not in result, result
     adb('pull', '/sdcard/Android/data/com.example.chatgptnova/files/printed-export.pdf', str(out/'printed-export.pdf'))
     subprocess.run(['pdftotext', str(out/'printed-export.pdf'), str(out/'printed-export.txt')], check=True)
@@ -23,6 +23,6 @@ try:
     logical = re.sub(r'\s+', '', text)
     for marker in ('USER-FIRST', 'ASSISTANT-LAST', 'CODE-LAST', 'TABLE-LAST'):
         assert marker in logical, marker
-    print('PASS: 10 Android DOM trial fixture tests and system-saved PDF first/last/code/table text; no live-account proof')
+    print('PASS: 12 Android DOM trial fixture tests and system-saved PDF first/last/code/table text; no live-account proof')
 finally:
     (out/'logcat.txt').write_text(adb('logcat', '-d', '-v', 'threadtime'))

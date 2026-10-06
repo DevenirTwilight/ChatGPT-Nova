@@ -8,6 +8,12 @@ on:
       - 'scripts/dom_trial_android.py'
       - '.github/workflows/dom-trial.yml'
   workflow_dispatch:
+    inputs:
+      publish_trial:
+        description: "Publish the tested batch as an APK release (normally leave false)"
+        type: boolean
+        default: false
+        required: false
 concurrency:
   group: nova-dom-trial-${{ github.ref }}
   cancel-in-progress: true
@@ -148,7 +154,7 @@ jobs:
           if-no-files-found: warn
   publish:
     needs: [build, android]
-    if: github.ref == 'refs/heads/feature/export-conversation'
+    if: github.ref == 'refs/heads/feature/export-conversation' && github.event_name == 'workflow_dispatch' && inputs.publish_trial
     runs-on: ubuntu-latest
     steps:
       - uses: actions/download-artifact@v4
@@ -169,7 +175,7 @@ jobs:
 
           滚动过程中缓存已挂载消息并做两轮遍历，仍未确认完整项目长会话历史；另可单次采集当前页面。图片和附件不打包。没有证明旧403修复，改为不调用旧接口。真实账号与用户设备仍待验证。
 
-          构建、lint、Chromium夹具与Android35/36各十项导出集成夹具通过，包含系统实际保存PDF并检查首尾/代码/表格文字；不是全量输入、登录、分享回归或所有Android版本认证。
+          构建、lint、Chromium夹具与Android35/36各十二项导出集成夹具通过，包含系统实际保存PDF并检查首尾/代码/表格文字；不是全量输入、登录、分享回归或所有Android版本认证。
 
           使用与错误码：https://github.com/${GITHUB_REPOSITORY}/blob/${GITHUB_SHA}/docs/dom-export-trial.md
           EOFNOTES
