@@ -85,7 +85,7 @@ final class ConversationExport {
         put("routeType",Uri.parse(address).getPath()!=null && Uri.parse(address).getPath().startsWith("/g/") ? "project" : "conversation");
         stage("N00_CAPTURE","capture");
         evaluate(false,ticket,result->{
-            if (result.has("error")) { fail(result.optString("error"),message(result.optString("error")),null); return; }
+            if (result.has("error")) { fail(result.optString("error"),messageFor(result.optString("error")),null); return; }
             JSONObject stats=result.optJSONObject("diagnostic"); if (stats!=null) put("dom",stats);
             stage("N00_RENDER","render");
             new Thread(()-> {
@@ -277,7 +277,7 @@ final class ConversationExport {
     }
     private void resetDiagnostic() {
         diagnostic=new JSONObject();started=android.os.SystemClock.elapsedRealtime();
-        put("scheme","DOM-TRIAL-1");put("historyCompleteness","not-proven");put("oldCaptureInstalled",false);
+        put("scheme","DOM-TRIAL-2");put("historyCompleteness","not-proven");put("oldCaptureInstalled",false);
         put("android",android.os.Build.VERSION.SDK_INT);
         android.content.pm.PackageInfo w=WebView.getCurrentWebViewPackage();put("webView",w==null ? "unknown" : w.versionName);
         try {android.content.pm.PackageInfo p=activity.getPackageManager().getPackageInfo(activity.getPackageName(),0);put("app",p.versionName);} catch(Exception ignored) {put("app","unknown");}
@@ -300,6 +300,15 @@ final class ConversationExport {
         if(!destroyed && !activity.isFinishing() && !activity.isDestroyed())
             new AlertDialog.Builder(activity).setTitle("试用导出失败").setMessage(message+"\n\n错误码："+code+"\n可复制诊断发回排查。")
                 .setPositiveButton("知道了",null).setNeutralButton("复制诊断",(d,w)->copyDiagnostic()).show();
+    }
+    private String messageFor(String code) {
+        if ("D09_EMPTY_BODY".equals(code)) {
+            JSONObject dom=diagnostic.optJSONObject("dom");
+            JSONObject failed=dom==null ? null : dom.optJSONObject("failedMessage");
+            if (failed!=null) return "第 "+failed.optInt("index")+" 条"+("user".equals(failed.optString("role")) ? "用户" : "助手")
+                +"消息未提取到可读正文，已停止，未跳过该消息。请复制诊断反馈。";
+        }
+        return message(code);
     }
     private static String message(String code) {
         switch(code) {

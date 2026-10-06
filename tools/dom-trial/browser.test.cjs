@@ -36,6 +36,36 @@ const source=fs.readFileSync('app/src/main/assets/export/dom-trial.js','utf8');
     assert.equal((await read()).error,'D06_LIMIT');checks++;
     await page.evaluate(()=>{document.querySelector('main').innerHTML=Array.from({length:400},(_,i)=>`<p data-message-author-role="${i%2?'assistant':'user'}" data-message-id="m${i}">BODY-${i} 中文</p>`).join('');});
     const long=await read();assert.equal(long.messages.length,400);assert(long.messages[399].markdown.includes('BODY-399'));assert.equal(long.diagnostic.history,'not-proven');checks++;
+    // Rendering wrappers without their own box still contain real visible text.
+    await page.evaluate(()=>{
+      document.querySelector('main').innerHTML='<article data-message-id="boxless"><div data-message-author-role="assistant"><div class="markdown" style="display:contents"><div style="display:contents"><p>BOXLESS-BODY</p><pre><code>BOXLESS-CODE</code></pre></div></div></div></article>';
+    });
+    const boxless=await read();assert(!boxless.error,JSON.stringify(boxless.diagnostic));
+    assert(boxless.messages[0].markdown.includes('BOXLESS-BODY'));assert(boxless.messages[0].markdown.includes('BOXLESS-CODE'));checks++;
+    await page.evaluate(()=>document.querySelector('[data-message-author-role]').style.display='contents');
+    assert.equal((await read()).messages.length,1);checks++;
+    await page.evaluate(()=>{
+      document.querySelector('main').innerHTML='<article data-message-id="offscreen"><div data-message-author-role="assistant" style="content-visibility:auto;contain-intrinsic-size:100px;margin-top:20000px"><div class="markdown"><p>OFFSCREEN-LOADED</p></div></div></article>';
+    });
+    assert((await read()).messages[0].markdown.includes('OFFSCREEN-LOADED'));checks++;
+    await page.evaluate(()=>{
+      document.querySelector('main').innerHTML='<section hidden><div data-message-id="hidden" data-message-author-role="assistant"><p>HIDDEN-BODY</p></div></section><article data-message-id="visible" data-message-author-role="user"><span>VISIBLE-BODY</span><div style="display:none"><p>PRIVATE-HIDDEN</p></div><div style="content-visibility:hidden"><p>HIDDEN-CV</p></div></article>';
+    });
+    const filtered=await read();assert.equal(filtered.messages.length,1);
+    assert(!JSON.stringify(filtered.messages).includes('HIDDEN'));checks++;
+    await page.evaluate(()=>{
+      document.querySelector('main').innerHTML='<article data-message-id="fallback"><div data-message-author-role="assistant"><div class="markdown"></div><section><p>OUTSIDE-MARKDOWN</p></section><button>CONTROL-PRIVATE</button></div></article>';
+    });
+    const fallback=await read();assert(fallback.messages[0].markdown.includes('OUTSIDE-MARKDOWN'));assert(!JSON.stringify(fallback.messages).includes('CONTROL-PRIVATE'));
+    assert.equal(fallback.diagnostic.authorFallbacks,1);checks++;
+    await page.evaluate(()=>document.querySelector('section p').textContent+=' changed');
+    assert.notEqual((await read(true)).diagnostic.signature,fallback.diagnostic.signature);checks++;
+    await page.evaluate(()=>{
+      document.querySelector('main').innerHTML='<article data-message-id="private-id"><div data-message-author-role="user">FIRST-BODY</div></article><article data-message-id="private-id-2"><div data-message-author-role="assistant"><div class="markdown"><button>PRIVATE-CONTROL-LABEL</button><p hidden>PRIVATE-HIDDEN-TEXT</p></div></div></article>';
+    });
+    const empty=await read();assert.equal(empty.error,'D09_EMPTY_BODY');assert(!empty.messages);
+    assert.equal(empty.diagnostic.processed,1);assert.equal(empty.diagnostic.failedMessage.index,2);assert.equal(empty.diagnostic.failedMessage.role,'assistant');
+    for(const privateValue of ['private-id','FIRST-BODY','PRIVATE-CONTROL-LABEL','PRIVATE-HIDDEN-TEXT']) assert(!JSON.stringify(empty).includes(privateValue));checks++;
     await page.goto('https://chatgpt.com/');assert.equal((await read()).error,'D02_ROUTE');checks++;
     await page.goto('https://example.org/c/fixture');assert.equal((await read()).error,'D01_ORIGIN');checks++;
     console.log(`PASS: ${checks} DOM trial browser scenarios; synthetic only, no Android/account proof`);

@@ -1,7 +1,7 @@
 (function(verifyOnly) {
   'use strict';
   const MAX_MESSAGES = 1000, MAX_CHARS = 2000000;
-  const diagnostic = {source:'read-only-dom', history:'not-proven', count:0, chars:0,
+  const diagnostic = {source:'read-only-dom-v2', history:'not-proven', count:0, chars:0, processed:0, authorFallbacks:0,
     missingIds:0, duplicateIds:0, codeBlocks:0, tables:0, math:0, images:0, elapsedMs:0};
   const started = performance.now();
   const error = code => { throw Object.assign(new Error(code), {code}); };
@@ -9,8 +9,26 @@
   const md = s => String(s).replace(/([\\`*_\[\]<>])/g,'\\$1');
   const warnings = new Set(['试用版仅导出当前页面已加载的消息；完整历史未确认。',
     'Markdown 根据渲染页面转换，不保证原始写法。附件文件不包含在导出中。']);
-  const visible = e => !e.hidden && e.getAttribute('aria-hidden') !== 'true'
-    && e.getClientRects().length > 0 && getComputedStyle(e).display !== 'none' && getComputedStyle(e).visibility !== 'hidden';
+  const styles = new WeakMap();
+  const style = e => {
+    if (!styles.has(e)) styles.set(e,getComputedStyle(e));
+    return styles.get(e);
+  };
+  // No layout-box test: display:contents and offscreen content-visibility:auto
+  // can have readable loaded descendants without an element's own painted box.
+  const hiddenReason = e => {
+    for (let n=e;n && n.nodeType===Node.ELEMENT_NODE;n=n.parentElement) {
+      if (n.hidden) return 'hidden';
+      if (n.getAttribute('aria-hidden')==='true') return 'ariaHidden';
+      const css=style(n);
+      if (css.display==='none') return 'displayNone';
+      if (css.visibility==='hidden' || css.visibility==='collapse') return 'visibilityHidden';
+      if (css.contentVisibility==='hidden') return 'contentVisibilityHidden';
+    }
+    return '';
+  };
+  const visible = e => !hiddenReason(e);
+  diagnostic.filtered = {hidden:0,ariaHidden:0,displayNone:0,visibilityHidden:0,contentVisibilityHidden:0,controls:0};
   function link(raw) {
     if (typeof raw !== 'string' || !raw.trim()) return null;
     try { const u = new URL(raw,location.href);
@@ -21,8 +39,9 @@
     if (node.nodeType === Node.TEXT_NODE) return {html:esc(node.textContent),markdown:md(node.textContent)};
     if (node.nodeType !== Node.ELEMENT_NODE) return {html:'',markdown:''};
     const tag = node.tagName;
-    if (['BUTTON','SCRIPT','STYLE','SVG','INPUT','TEXTAREA','SELECT','IFRAME','NOSCRIPT'].includes(tag)
-      || !visible(node)) return {html:'',markdown:''};
+    if (['BUTTON','SCRIPT','STYLE','SVG','INPUT','TEXTAREA','SELECT','IFRAME','NOSCRIPT'].includes(tag)) {diagnostic.filtered.controls++;return {html:'',markdown:''};}
+    const reason=hiddenReason(node);
+    if (reason) {diagnostic.filtered[reason]++;return {html:'',markdown:''};}
     if (tag === 'IMG') { diagnostic.images++; warnings.add('图片仅保留占位说明，未下载原始图片。');
       const text='[图片：'+(node.getAttribute('alt') || '未离线保存')+']'; return {html:esc(text),markdown:md(text)}; }
     if (node.classList.contains('katex')) {
@@ -86,30 +105,45 @@
     const hashText=s=>{for(let i=0;i<s.length;i++) hash=Math.imul(hash ^ s.charCodeAt(i),16777619); hash=Math.imul(hash ^ 0,16777619);};
     hashText(route); hashText(document.title);
     const ids=new Set(), messages=[];
-    for (const e of nodes) {
+    for (const [index,e] of nodes.entries()) {
       if (e.querySelector('[data-message-author-role]')) error('D07_NESTED');
       const id=e.getAttribute('data-message-id') || e.closest('[data-message-id]')?.getAttribute('data-message-id') || '';
       if (!id) diagnostic.missingIds++;
       else if (ids.has(id)) { diagnostic.duplicateIds++; error('D08_DUPLICATE_ID'); }
       ids.add(id);
       const role=e.getAttribute('data-message-author-role');
-      const roots=role==='assistant' ? [...e.querySelectorAll('.markdown')]
-        .filter(body=>visible(body) && !body.parentElement.closest('.markdown')) : [];
+      const candidates=role==='assistant' ? [...e.querySelectorAll('.markdown')] : [];
+      const roots=candidates.filter(body=>visible(body) && !body.parentElement.closest('.markdown'));
       const bodies=roots.length ? roots : [e];
-      hashText(id); hashText(role);
-      const parts=[];
-      for (const body of bodies) {
-        diagnostic.chars+=body.textContent.length;
-        if (diagnostic.chars>MAX_CHARS) error('D06_LIMIT');
-        // Include all rendered body blocks, never silently select the first only.
-        hashText(body.outerHTML);
-        if (!verifyOnly) parts.push(content(body));
-      }
+      // Bound and verify the complete author subtree, including a safe fallback's source.
+      const authorChars=e.textContent.length;
+      diagnostic.chars+=authorChars;
+      if (diagnostic.chars>MAX_CHARS) error('D06_LIMIT');
+      hashText(id);hashText(role);hashText(e.outerHTML);
       if (!verifyOnly) {
-        const markdown=parts.map(p=>p.markdown.trim()).filter(Boolean).join('\n\n');
-        if (!markdown) error('D09_EMPTY_BODY');
+        let parts=bodies.map(content);
+        let markdown=parts.map(p=>p.markdown.trim()).filter(Boolean).join('\n\n');
+        let fallbackTried=false;
+        if (!markdown && roots.length) {
+          // Same structural filtering, never raw textContent or hidden-content recovery.
+          fallbackTried=true;parts=[content(e)];markdown=parts[0].markdown.trim();
+          if (markdown) diagnostic.authorFallbacks++;
+        }
+        if (!markdown) {
+          const css=style(e);
+          diagnostic.failedMessage={index:index+1,role,authorChars,
+            selectedChars:bodies.reduce((n,b)=>n+b.textContent.length,0),
+            markdownCandidates:candidates.length,selectedBlocks:roots.length,
+            display:css.display,visibility:css.visibility,contentVisibility:css.contentVisibility || 'unknown',
+            hasOwnBox:e.getClientRects().length>0,fallbackTried,
+            images:e.querySelectorAll('img').length,canvas:e.querySelectorAll('canvas').length,
+            media:e.querySelectorAll('audio,video').length,details:e.querySelectorAll('details').length,
+            reason:authorChars===0 ? 'no-dom-text' : 'no-readable-content-after-filtering'};
+          error('D09_EMPTY_BODY');
+        }
         messages.push({role,html:parts.map(p=>p.html).join(''),markdown});
       }
+      diagnostic.processed++;
     }
     if (location.href !== route) error('D10_CHANGED');
     if (diagnostic.missingIds) warnings.add('部分消息没有公开 ID，无法按 ID 核对历史。');

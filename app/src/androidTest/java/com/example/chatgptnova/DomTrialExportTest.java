@@ -109,6 +109,33 @@ public final class DomTrialExportTest extends FixtureActivity {
         assertTrue(saved.contains("完整历史未确认"));assertFalse(saved.contains("prompt-textarea"));
         assertEquals("text/html",captured.get().getType());
     }
+    @Test public void boxlessBodyWrappersStillSaveTextAndCode() throws Exception {
+        conversation("");
+        js("document.querySelector('[data-message-author-role=assistant]').style.display='contents';document.querySelector('.markdown').style.display='contents';true");
+        AtomicReference<Intent> captured=new AtomicReference<>();
+        external(intent->{
+            if(!Intent.ACTION_CREATE_DOCUMENT.equals(intent.getAction())) return null;
+            captured.set(intent);return new Instrumentation.ActivityResult(Activity.RESULT_OK,new Intent().setData(OUTPUT));
+        });
+        export("HTML 阅读版（推荐）");click("保存到本地…");
+        waitFor("boxless body saved",()->captured.get()!=null && !busy());
+        String saved=new String(read(OUTPUT),StandardCharsets.UTF_8);
+        assertTrue(saved.contains("USER-FIRST"));assertTrue(saved.contains("ASSISTANT-LAST"));assertTrue(saved.contains("CODE-LAST"));
+    }
+    @Test public void genuineEmptyBodyFailsWithRedactedMessagePosition() throws Exception {
+        conversation("");
+        js("document.body.insertAdjacentHTML('beforeend','<article data-message-id=\"private-node-id\"><div data-message-author-role=\"assistant\"><div class=\"markdown\"><button>PRIVATE-BUTTON</button><p hidden>PRIVATE-HIDDEN</p></div></div></article>');true");
+        main(()->exporter().start());click("采集并选择格式");
+        waitFor("empty-body failure",()->findControl(instrument.getUiAutomation().getRootInActiveWindow(),"试用导出失败")!=null);
+        assertFalse(busy());assertNull(output());click("复制诊断");
+        AtomicReference<String> detail=new AtomicReference<>();
+        main(()->{android.content.ClipboardManager c=activity.getSystemService(android.content.ClipboardManager.class);detail.set(c.getPrimaryClip().getItemAt(0).getText().toString());});
+        org.json.JSONObject copied=new org.json.JSONObject(detail.get());
+        assertEquals("D09_EMPTY_BODY",copied.getString("code"));
+        org.json.JSONObject position=copied.getJSONObject("dom").getJSONObject("failedMessage");
+        assertEquals(3,position.getInt("index"));assertEquals("assistant",position.getString("role"));
+        for(String secret:new String[]{"private-node-id","PRIVATE-BUTTON","PRIVATE-HIDDEN","USER-FIRST","g-p-fixture"}) assertFalse(detail.get().contains(secret));
+    }
     @Test public void markdownCanCancelThenShareReadableFile() throws Exception {
         conversation("");AtomicReference<Intent> captured=new AtomicReference<>();
         external(intent->{

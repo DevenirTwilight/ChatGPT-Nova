@@ -2,6 +2,8 @@
 
 首次生成：2026-10-05；入库更新：2026-10-06。当前交接优先于历史资料中的旧任务进度。
 
+最新修正：用户实测1.3.8在Android36/WebView153.0.8010.36普通会话返回D09_EMPTY_BODY，count5、无缺失/重复ID、codeBlocks2；确认全是文字（可能含代码）。旧诊断无失败节点位置，因此未证明具体根因。已复现旧布局框过滤对display:contents误报D09，1.3.9/code13改为自身/祖先隐藏检查，保留隐藏与控件过滤；空markdown可在同一author结构化过滤后取备用正文，真空正文仍失败不跳过。新诊断DOM-TRIAL-2记录失败消息序号/角色及过滤布局计数，不读正文进诊断。本地17合成场景通过，Android35/36各7项与签名发布待工作流验证；用户原会话仍需复测。read-only-dom是采集方式，不是失败状态，完整历史仍未证明。详见试用说明顶部。
+
 最新范围变更：用户明确要求“做一个用新方案的版本让我用用，记得加报错诊断”。已授权本轮实现并交付工作分支试用APK；旧“只评估、不改生产源码”的约束只对应上一阶段。试用版仍不承诺完整历史。当前实现与验证状态以 [试用说明](../dom-export-trial.md) 和本次DOM试用工作流为准；不是会话迁移，不附下一会话提示词。
 
 试用版已交付：实现提交 `895d32b12a90db872e2faa175fe6751b7437fc4a`，版本1.3.8-dom-trial/code12，原包名和原证书签名。永久APK：[nova-dom-trial-895d32b](https://github.com/DevenirTwilight/ChatGPT-Nova/releases/download/nova-dom-trial-895d32b/ChatGPT-Nova.apk)。已停用旧捕获器，菜单导出已加载消息与复制诊断；客户端后台转换、SAF与独立PrintManager WebView。
