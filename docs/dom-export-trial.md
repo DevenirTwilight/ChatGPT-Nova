@@ -4,6 +4,10 @@
 
 版本：1.3.8-dom-trial / code12，包名保持 `com.example.chatgptnova`。由GitHub Actions使用原发布证书签名，试用发布不设为最新正式版。只有签名、构建、lint和本轮Android35导出夹具通过后，独立DOM试用工作流才发布永久APK下载。旧私有读取器的历史测试不是本试用版验证。
 
+已交付：[直接下载APK](https://github.com/DevenirTwilight/ChatGPT-Nova/releases/download/nova-dom-trial-895d32b/ChatGPT-Nova.apk)；[试用Release](https://github.com/DevenirTwilight/ChatGPT-Nova/releases/tag/nova-dom-trial-895d32b)。实现提交 `895d32b12a90db872e2faa175fe6751b7437fc4a`；[构建与验证工作流](https://github.com/DevenirTwilight/ChatGPT-Nova/actions/runs/37451344432)。
+
+APK 1877400 bytes，SHA256 `8f7a6736621e5e8c629797fce4b7c1858410d449ceb127f10d58ba9fc679a5e6`；发布证书SHA256 `f93221ee0d2be2b806233a0b3427ec9c14766100c1bab3208841e6203e2b4289`。已独立下载构建产物核对版本、证书记录、APK SHA256和包内DOM脚本与源码一致；Release API资产digest与之相符。
+
 ## 手机上怎么试
 
 1. 下载试用Release中的 `ChatGPT-Nova.apk` 并安装。原证书与包名相同，可以覆盖安装；不要卸载原版或清除数据。升级后的登录是否保持仍以实际设备为准。
@@ -40,7 +44,7 @@ Markdown由渲染DOM转换，不能唯一恢复原始Markdown。保留可读代�
 
 本地Chromium合成检查10场景通过：已加载400条、首尾/代码/表格/TeX、控件及隐藏内容过滤、危险链接/属性剔除、只读行为、复核变化、生成中拒绝、ID重复、数量/字符超限与origin/route拒绝。真实账号与用户真机未执行，完整历史和富文本保真仍待用户检查。
 
-Android35新增5项仪器夹具：HTML经SAF保存、Markdown取消重试及FileProvider分享、错误诊断复制与脱敏、系统PDF取消、实际系统PDF保存多页并检查首尾/代码/表格文字。执行状态以本次工作流结果为准，尚未运行前不写成通过。
+Android35新增5项仪器夹具已全部通过：HTML经SAF保存、Markdown取消重试及FileProvider分享、错误诊断复制与脱敏、系统PDF取消、实际系统PDF保存多页并检查首尾/代码/表格文字。构建、lint、签名检查和Chromium10场景均通过。下载Android证据独立核对 `OK (5 tests)` 和PDF文本标记：USER-FIRST、ASSISTANT-LAST、CODE-LAST、TABLE-LAST；实际PDF为4页A4、140385 bytes、Skia/PDF m124，SHA256 `0d2493bdf3aa1d637e941f0d78d25642548d1c6247c730c798e7c230a37109bb`。
 
 不包含全量登录/输入/分享回归，也未验证所有Android/WebView版本。原旧测试文件保留用于追溯，旧export-validation工作流改为手动入口；不得把它的旧内部读取器结果算作新方案通过。
 
