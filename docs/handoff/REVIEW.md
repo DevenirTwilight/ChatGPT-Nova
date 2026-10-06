@@ -1,5 +1,14 @@
 # 最新复核摘要
 
+## 用户仍报告缺第12条；页面直接可见，尚未提供本次采集诊断
+
+8ed24f7交付后用户回复“还是缺那条”，追问后回答“没导出呢，能”：尚未保存新HTML，Nova原网页能直接看到目标进度。不能再把网页已不保留当默认解释，也不能将这一反馈记成本环境独立解析新HTML或已核实安装buildRevision的结果。原问题仍未解决；已请用户在现有包快速采集后取消格式选择，再从右上菜单导出诊断复制完整JSON，不要求保存文件/搭建ADB/重装。
+
+独立源码复核找到现有诊断盲区：v1遇到turn含普通user/assistant作者节点就跳过整个turn，因此作者外、turn内的进度兄弟节点不会进入outsideMarkdown或无作者turn统计。该盲区已由合成结构复现，不能宣称就是实际第12条的DOM。新增工具目录内的probe-v2.js及13场景检查，统计withOutsideAuthorText/outsideAuthorTextNodes/outsideAuthorChars/outsideAuthorSamples，并修正turn自身是作者时的统计；隐藏文字/按钮仍不算可见候选，诊断无正文/真实ID/URL。候选也可能为UI标签，不能自动当助手进度。
+
+v2尚未接入APK，app内仍是8ed24f7/v1，probe.js保留与已交付asset逐字节一致，既有产品检查不因此变更。13个只读合成场景独立通过，无生产源码修改、无新APK/版本/Release。先核对当前JSON中的buildRevision、作者/turn数与Markdown外文字，再决定下一批结构采样/精确提取；用户JSON未回复前，不盲目拓宽正文或制造分片ID。
+
+
 ## 本批已验证并交付：8ed24f7 / 1.4.0（进度补采、诊断、快速入口）
 
 最终源码`8ed24f74d0f6fc8f4183e0b797a199926300b5e9`，[CI37487134618](https://github.com/DevenirTwilight/ChatGPT-Nova/actions/runs/37487134618)构建/lint/原签名、Chromium17单快照+30滚动+12进度场景、Android35/36各16项通过，publish skipped；本地10个只读探针场景也通过。早先37486497116/37486763034因本批修正被取消，不算完整验证结果。新增Android测试实际通过快速入口→HTML→SAF保存并核对USER-FIRST→PROGRESS-BODY→ASSISTANT-LAST顺序、助手进度标签、复制诊断count3/turnFallbacks1/原作者2及无正文/ID泄露。均为明确标记的合成结构，不是用户缺失条目的真实DOM复现。

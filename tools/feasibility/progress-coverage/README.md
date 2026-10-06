@@ -17,3 +17,11 @@ NOVA_PLAYWRIGHT_MODULE=/tmp/nova-dom-deps/node_modules/playwright-core node tool
 本批已把同字节探针放入app assets，快速采集及滚动终止时执行，诊断位于dom.progressDiscovery；不在每个轮询执行。采集器现新增明确assistant turn缺作者的有限补采和Markdown之外显式commentary正文，不把无角色候选自动纳入。当前用户尚需确认Nova历史页能否直接看到/展开看到第12条，还是它只存在于原始对照。旧0df561e APK没有本探针，8ed24f7批次已通过Android35/36各16项并直接提供安装包（版本仍1.4.0，无Release），也没有要求用户搭建ADB或执行脚本。若页面可见，下一批可将该只读诊断接到原生复制诊断后取得结构证据，再实现精确的消息类型/身份映射；若页面已经不保留，改选择器和反复滚动都不能补出，应检查用户提供的独立官方导出等材料是否包含该条。
 
 进度/最终回复若共用父消息ID，须识别稳定子节点/分片身份，否则按父ID合并会丢条。role+顺序+DOM对象仅能用于当次快照/对象生命周期，不能跨虚拟化卸载/重建视作稳定ID。本工具不读取真实身份，不实现滚动去重回退。产品实现继续禁止按文本相似度或hash合并不同历史消息。
+
+## 未接入安装包的v2诊断
+
+用户确认遗漏的进度在Nova原页直接可见，但未提供新采集JSON。v1会跳过已含作者的turn，漏统计作者外/turn内文字。`probe-v2.js`补只读outsideAuthor候选统计，`probe-v2.test.cjs`13个合成场景通过，包含作者兄弟进度、隐藏兄弟/按钮排除、turn本身是作者。v2返回source read-only-progress-discovery-v2，仍无正文/ID/URL，保留原预算。候选文字可能为普通UI，不能直接补采成消息。v2仅工具原型；APK仍用v1，probe.js与主asset一致，未另做安装包/版本。
+
+```sh
+NOVA_PLAYWRIGHT_MODULE=/tmp/nova-dom-deps/node_modules/playwright-core node tools/feasibility/progress-coverage/probe-v2.test.cjs
+```
