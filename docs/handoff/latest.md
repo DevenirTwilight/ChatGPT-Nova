@@ -2,11 +2,11 @@
 
 首次生成：2026-10-05；入库更新：2026-10-06。当前交接优先于历史资料中的旧任务进度。
 
-最新修正：用户实测1.3.8在Android36/WebView153.0.8010.36普通会话返回D09_EMPTY_BODY，count5、无缺失/重复ID、codeBlocks2；确认全是文字（可能含代码）。旧诊断无失败节点位置，因此未证明具体根因。已复现旧布局框过滤对display:contents误报D09，1.3.9/code13改为自身/祖先隐藏检查，保留隐藏与控件过滤；空markdown可在同一author结构化过滤后取备用正文，真空正文仍失败不跳过。新诊断DOM-TRIAL-2记录失败消息序号/角色及过滤布局计数，不读正文进诊断。本地17合成场景通过，Android35/36各7项与签名发布待工作流验证；用户原会话仍需复测。read-only-dom是采集方式，不是失败状态，完整历史仍未证明。详见试用说明顶部。
+最新修正：用户实测1.3.8在Android36/WebView153.0.8010.36普通会话返回D09_EMPTY_BODY，count5、无缺失/重复ID、codeBlocks2；确认全是文字（可能含代码）。旧诊断无失败节点位置，因此未证明具体根因。已复现旧布局框过滤对display:contents误报D09，1.3.9/code13改为自身/祖先隐藏检查，保留隐藏与控件过滤；空markdown可在同一author结构化过滤后取备用正文，真空正文仍失败不跳过。新诊断DOM-TRIAL-2记录失败消息序号/角色及过滤布局计数，不读正文进诊断。本地及CI Chromium17合成场景通过，工作流37454082614构建/lint/原签名、Android35/36各7项及发布均成功，独立核对两份4页系统PDF与新版APK。源提交f2d0cce；新版永久下载与SHA见试用说明；用户原会话仍需复测。read-only-dom是采集方式，不是失败状态，完整历史仍未证明。详见试用说明顶部。
 
 最新范围变更：用户明确要求“做一个用新方案的版本让我用用，记得加报错诊断”。已授权本轮实现并交付工作分支试用APK；旧“只评估、不改生产源码”的约束只对应上一阶段。试用版仍不承诺完整历史。当前实现与验证状态以 [试用说明](../dom-export-trial.md) 和本次DOM试用工作流为准；不是会话迁移，不附下一会话提示词。
 
-试用版已交付：实现提交 `895d32b12a90db872e2faa175fe6751b7437fc4a`，版本1.3.8-dom-trial/code12，原包名和原证书签名。永久APK：[nova-dom-trial-895d32b](https://github.com/DevenirTwilight/ChatGPT-Nova/releases/download/nova-dom-trial-895d32b/ChatGPT-Nova.apk)。已停用旧捕获器，菜单导出已加载消息与复制诊断；客户端后台转换、SAF与独立PrintManager WebView。
+前一试用版交付记录：实现提交 `895d32b12a90db872e2faa175fe6751b7437fc4a`，版本1.3.8-dom-trial/code12，原包名和原证书签名。永久APK：[nova-dom-trial-895d32b](https://github.com/DevenirTwilight/ChatGPT-Nova/releases/download/nova-dom-trial-895d32b/ChatGPT-Nova.apk)。已停用旧捕获器，菜单导出已加载消息与复制诊断；客户端后台转换、SAF与独立PrintManager WebView。
 
 本轮实际验证：Chromium10合成场景；GitHub构建/lint/原证书核对；Android35五项导出夹具全部通过，包含SAF写入、Markdown取消重试/分享、诊断复制脱敏、PDF取消与实际系统保存。独立下载证据核实PDF4页A4及首尾/代码/表格标记，APK字节及SHA256见试用说明。首次PDF保存失败保留在run37450098092，改为完整页写出后run37451344432通过；中途不可构造打印结果回调的编译错误已纠正，未使用隐藏API。真实账号/用户设备和完整历史仍未验证，不把本次夹具结果当成旧403修复或全量输入/登录回归。下一步由用户安装并反馈诊断及历史覆盖现象，不重复要求其先搭建ADB。
 

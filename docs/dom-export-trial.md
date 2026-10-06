@@ -10,7 +10,13 @@
 
 新诊断scheme为DOM-TRIAL-2、source为read-only-dom-v2。D09记录失败消息序号/角色、author与选中正文字符数、选择器命中数、过滤类别、布局状态、图片/媒体/折叠计数和已处理条数；不含正文、HTML、ID、类名、标题、URL或登录凭据。弹窗会指出第几条用户/助手消息失败。字段read-only-dom只描述采集方式，不是失败码。
 
-本地Chromium17场景通过，包含旧版失败的无布局框正文、无布局框author、已加载但页面外的延迟布局、祖先隐藏过滤、正文选择器为空时的安全备用、备用来源变化复核、真正空正文的拒绝与诊断脱敏。Android35/36各新增两项对应夹具（共7项/版本），运行结果以修正版本工作流为准；真实用户原会话仍需复测，完整历史仍未证明。发布检查不把合成复现当成用户问题已解决。
+本地Chromium17场景通过，包含旧版失败的无布局框正文、无布局框author、已加载但页面外的延迟布局、祖先隐藏过滤、正文选择器为空时的安全备用、备用来源变化复核、真正空正文的拒绝与诊断脱敏。Android35/36各新增两项对应夹具（共7项/版本），工作流均已通过（见下方证据）；真实用户原会话仍需复测，完整历史仍未证明。发布检查不把合成复现当成用户问题已解决。
+
+修正版已交付：[下载1.3.9 APK](https://github.com/DevenirTwilight/ChatGPT-Nova/releases/download/nova-dom-trial-f2d0cce/ChatGPT-Nova.apk)；[试用Release](https://github.com/DevenirTwilight/ChatGPT-Nova/releases/tag/nova-dom-trial-f2d0cce)。源提交 `f2d0cced4020a075fb30940f65daeef3d201ee22`；[工作流37454082614](https://github.com/DevenirTwilight/ChatGPT-Nova/actions/runs/37454082614) 的build、android(35)、android(36)、publish均成功。Chromium17场景、构建/lint/原证书检查、Android35和36各7项仪器夹具通过，包含无布局框正文保存和真空正文定位/脱敏。模拟器WebView分别为m124、m133，不等同于用户WebView153。
+
+已独立下载Android35/36证据，核对各自 `OK (7 tests)` 及系统保存PDF的首尾/代码/表格文本标记。两份均4页A4：API35为140541 bytes、SHA256 `ca08e6dff3bec222769687add5c2eab548bf1d4946ba7532a6a652b340ca86c0`；API36为141613 bytes、SHA256 `0e9f10ae9419053732d58b321fabe5e60520be594600c8276753048d8a65ae0f`。这些是受控夹具，不是真实账号历史。
+
+新版APK为1878464 bytes，SHA256 `fd6edd4379801577cc1bfe0b6c10ce5899e483a18da050871375bef4fa2a0dc5`。独立核对版本code13/1.3.9、原证书指纹、APK SHA256及包内DOM脚本等于源码，Release资产digest一致。原包名/证书可覆盖安装。请在原D09会话等待生成结束后重新导出；若仍失败，复制DOM-TRIAL-2诊断，定位失败消息。用户原会话是否修复仍未确认，完整项目长会话验证尚未完成，不能开始以完整历史为承诺的生产功能实现。
 
 下文1.3.8下载和证据为前一版本记录。
 
