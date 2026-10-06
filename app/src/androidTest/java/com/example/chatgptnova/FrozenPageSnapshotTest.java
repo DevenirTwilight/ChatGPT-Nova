@@ -20,7 +20,7 @@ import org.junit.After;
 import org.junit.Test;
 import static org.junit.Assert.*;
 
-/** Actual archive/SAF/print-adapter output from immutable public-DOM fixtures. */
+/** Actual HTML/SAF/print-adapter output from immutable public-DOM fixtures. */
 public final class FrozenPageSnapshotTest extends FixtureActivity {
     private Instrumentation.ActivityMonitor monitor;
     private SnapshotWebView standalone;
@@ -60,33 +60,29 @@ public final class FrozenPageSnapshotTest extends FixtureActivity {
         main(()->standalone=new SnapshotWebView(activity,web,snapshot,new SnapshotWebView.Callback(){public void ready(){ready.set(true);}public void failed(String code){error.set(code);}}));
         waitFor("static renderer ready",()->ready.get()||error.get()!=null);assertNull(error.get());return standalone;
     }
-    @Test public void sameSnapshotMarkdownAndActualMhtmlIgnoreLiveMutation() throws Exception {
+    @Test public void sameSnapshotMarkdownAndStaticHtmlIgnoreLiveMutation() throws Exception {
         FrozenPageSnapshot snapshot=freeze();mutate();interceptSave(false);click("Markdown");waitFor("Markdown SAF",()->!busy());
         byte[] saved=read(OUTPUT);String md=new String(saved,StandardCharsets.UTF_8);assertEquals(snapshot.markdown,md);
         for(String marker:new String[]{"Before snapshot marker","TAIL-SNAPSHOT-MARKER","中文","café","😀","CODE-LAST","TABLE-LAST","E=mc^2"})assertTrue(marker,md.contains(marker));
         for(String marker:new String[]{"After snapshot marker","AFTER-TABLE","AFTER-BODY","BUTTON-GARBAGE","CODE-CONTROL-GARBAGE","SCRIPT-GARBAGE"})assertFalse(marker,md.contains(marker));
         evidence("frozen-page.md",saved);
-        SnapshotWebView v=render(snapshot);AtomicReference<String> result=new AtomicReference<>();File archive=new File(activity.getExternalFilesDir(null),"frozen-page.mhtml");
-        main(()->v.web.saveWebArchive(archive.getAbsolutePath(),false,result::set));waitFor("actual same-snapshot archive",()->result.get()!=null);assertTrue(archive.length()>0);
-        assertSame(snapshot,v.snapshot);main(()->assertFalse(v.web.getSettings().getJavaScriptEnabled()));
+        evidence("frozen-page.html",snapshot.frozenHtml.getBytes(StandardCharsets.UTF_8));
+        SnapshotWebView v=render(snapshot);assertSame(snapshot,v.snapshot);main(()->assertFalse(v.web.getSettings().getJavaScriptEnabled()));
         assertEquals("After snapshot marker",js("document.querySelector('h1').textContent"));
-        // The CI host parses MIME parts and opens THIS actual Android archive in Chromium.
     }
-    @Test public void archiveProductionPathUsesSafAndFrozenTitleBodyTable() throws Exception {
-        FrozenPageSnapshot snapshot=freeze();mutate();interceptSave(false);click("网页归档（MHTML）");waitFor("MHTML SAF",()->!busy());
-        byte[] saved=read(OUTPUT);assertTrue(saved.length>0);evidence("frozen-page-saf.mhtml",saved);
+    @Test public void htmlProductionPathUsesSafAndFrozenTitleBodyTable() throws Exception {
+        FrozenPageSnapshot snapshot=freeze();mutate();interceptSave(false);click("HTML");waitFor("HTML SAF",()->!busy());
+        byte[] saved=read(OUTPUT);assertEquals(snapshot.frozenHtml,new String(saved,StandardCharsets.UTF_8));evidence("frozen-page-saf.html",saved);
         assertTrue(snapshot.frozenHtml.contains("TABLE-LAST"));assertFalse(snapshot.frozenHtml.contains("AFTER-TABLE"));
         assertNull(field(exporter(),"renderer"));
     }
     @Test public void realSystemPrintUiSavesFrozenMultipagePdf() throws Exception {
         FrozenPageSnapshot snapshot=freeze();mutate();click("打印 / 保存为 PDF");
         waitFor("system print window",()->{AccessibilityNodeInfo root=instrument.getUiAutomation().getRootInActiveWindow();return root!=null&&"com.android.printspooler".contentEquals(root.getPackageName());});
-        waitFor("destination spinner",()->{AccessibilityNodeInfo root=instrument.getUiAutomation().getRootInActiveWindow();if(root==null)return false;for(AccessibilityNodeInfo n:root.findAccessibilityNodeInfosByViewId("com.android.printspooler:id/destination_spinner"))if(n.isClickable())return n.performAction(AccessibilityNodeInfo.ACTION_CLICK);return false;});
-        // Wait for the actual popup, not the currently selected spinner label.
-        // Otherwise accessibility may click the spinner again during transition.
-        waitFor("printer destination popup",()->{AccessibilityNodeInfo root=instrument.getUiAutomation().getRootInActiveWindow();return root!=null&&find(root,"All printers…")!=null&&find(root,"Save as PDF")!=null&&root.findAccessibilityNodeInfosByViewId("com.android.printspooler:id/print_button").isEmpty();});
-        click("Save as PDF");
+        // Save as PDF is already the standard selected destination on this clean emulator.
+        // Avoid changing the destination during an in-flight WebView preview write.
         waitFor("PDF preview enabled",()->{AccessibilityNodeInfo root=instrument.getUiAutomation().getRootInActiveWindow();if(root==null)return false;for(AccessibilityNodeInfo n:root.findAccessibilityNodeInfosByViewId("com.android.printspooler:id/print_button"))if(n.isEnabled()&&"Save to PDF".contentEquals(n.getContentDescription()))return true;return false;});
+        instrument.waitForIdleSync();android.os.SystemClock.sleep(1000);
         click("Save to PDF");
         click("Save");waitFor("print job finished",()->!busy());
         String path="/sdcard/Download/Nova-snapshot-"+snapshot.snapshotId+".pdf";
@@ -100,7 +96,7 @@ public final class FrozenPageSnapshotTest extends FixtureActivity {
         assertNull(field(exporter(),"renderer"));assertEquals("After snapshot marker",js("document.querySelector('h1').textContent"));
     }
     @Test public void cancelledSaveCanRepeatWithoutRendererLeak() {
-        freeze();interceptSave(true);click("网页归档（MHTML）");waitFor("cancelled picker",()->!busy());assertNull(field(exporter(),"renderer"));
+        freeze();interceptSave(true);click("HTML");waitFor("cancelled picker",()->!busy());assertNull(field(exporter(),"renderer"));
         freeze();click("Markdown");waitFor("repeat cancel",()->!busy());assertNull(field(exporter(),"snapshot"));
     }
     @Test public void captureDoesNotAlterLiveDomOrInstallHooks() {

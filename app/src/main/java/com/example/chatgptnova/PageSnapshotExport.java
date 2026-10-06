@@ -42,13 +42,13 @@ final class PageSnapshotExport {
     }
     void start() {
         if(busy){toast("保存正在进行，请稍候。");return;}
-        if(!active.getAsBoolean()||!trustedUrl(live.getUrl())){fail("F01_ORIGIN");return;}
+        if(!active.getAsBoolean()||!trustedUrl(live.getUrl())){fail("S01_INVALID_PAGE");return;}
         busy=true;started=android.os.SystemClock.elapsedRealtime();diagnostic=new JSONObject();
-        put("scheme","FROZEN-PAGE-1");put("buildRevision",BuildConfig.EXPORT_REVISION);
-        put("android",android.os.Build.VERSION.SDK_INT);put("sourceOrigin","https://chatgpt.com");
+        put("scheme","FROZEN-READING-PAGE-2");put("buildRevision",BuildConfig.EXPORT_REVISION);
+        put("app",BuildConfig.VERSION_NAME);put("android",android.os.Build.VERSION.SDK_INT);put("sourceOrigin","https://chatgpt.com");
         android.content.pm.PackageInfo info=WebView.getCurrentWebViewPackage();if(info!=null)put("webView",info.versionName);
         dialog=new AlertDialog.Builder(activity).setTitle("保存当前网页")
-            .setMessage("冻结当前网页一次，再从该快照保存。只包含保存时已经加载的内容；正在生成的回复只保存此刻状态，不等待或滚动加载历史。")
+            .setMessage("三种格式来自同一次冻结，只包含保存时已加载内容。HTML：普通静态网页，可用常见浏览器阅读；Markdown：适合编辑、迁移和AI工具；PDF：使用Android系统打印。正在生成的回复只保存此刻状态，不等待或滚动加载历史。")
             .setPositiveButton("冻结此刻网页",(d,w)->capture())
             .setNegativeButton("取消",(d,w)->cancel()).setOnCancelListener(d->cancel()).show();
     }
@@ -61,17 +61,17 @@ final class PageSnapshotExport {
         }
     }
     private void capture() {
-        if(!active.getAsBoolean()||!trustedUrl(live.getUrl())){fail("F01_ORIGIN");return;}
+        if(!active.getAsBoolean()||!trustedUrl(live.getUrl())){fail("S01_INVALID_PAGE");return;}
         final String address=live.getUrl(),id=UUID.randomUUID().toString();final long ticket=++generation;
-        capturing=true;put("snapshotId",id);stage("F00_CAPTURE");
-        deadline=()->{if(current(ticket))fail("F05_CAPTURE_TIMEOUT");};live.postDelayed(deadline,15000);
+        capturing=true;put("snapshotId",id);stage("S00_CAPTURE");
+        deadline=()->{if(current(ticket))fail("S02_SNAPSHOT_FAILED");};live.postDelayed(deadline,15000);
         try {
             // Exactly one evaluateJavascript. Navigation guards read URL only,
             // never a second DOM/title/body to fill or verify snapshot content.
             live.evaluateJavascript(script(id,address),result->{
                 if(!current(ticket))return;
                 stopDeadline();capturing=false;
-                if(!active.getAsBoolean()||!address.equals(live.getUrl())){fail("F02_CHANGED");return;}
+                if(!active.getAsBoolean()||!address.equals(live.getUrl())){fail("S08_PAGE_CHANGED_BEFORE_SNAPSHOT");return;}
                 try {
                     Object decoded=new JSONTokener(result).nextValue();
                     if(!(decoded instanceof String)||((String)decoded).length()>12*1024*1024)throw new IllegalArgumentException();
@@ -80,84 +80,82 @@ final class PageSnapshotExport {
                     if(!id.equals(payload.getString("snapshotId"))||!address.equals(payload.getString("sourceUrl")))throw new IllegalArgumentException();
                     snapshot=new FrozenPageSnapshot(payload);
                     put("snapshotHtmlChars",snapshot.frozenHtml.length());put("markdownChars",snapshot.markdown.length());
-                    put("scope","currently-loaded-page");put("historyCompleteness","not-proven");stage("F00_FROZEN");
+                    put("scope","currently-loaded-page");put("historyCompleteness","not-proven");stage("S00_FROZEN");
                     chooseFormat();
-                }catch(Exception e){fail("F04_CAPTURE");}
+                }catch(Exception e){fail("S02_SNAPSHOT_FAILED");}
             });
-        }catch(Exception e){fail("F04_CAPTURE");}
+        }catch(Exception e){fail("S02_SNAPSHOT_FAILED");}
     }
     private boolean current(long ticket){return !destroyed&&busy&&generation==ticket;}
     private void chooseFormat() {
         dialog=new AlertDialog.Builder(activity).setTitle("保存已冻结网页")
-            .setItems(new String[]{"打印 / 保存为 PDF","网页归档（MHTML）","Markdown"},(d,index)->saveFormat(index))
+            .setItems(new String[]{"HTML", "Markdown", "打印 / 保存为 PDF"},(d,index)->saveFormat(index))
             .setNegativeButton("取消",(d,w)->cancel()).setOnCancelListener(d->cancel()).show();
     }
     private void saveFormat(int index) {
-        format=index==0?"pdf":index==1?"mhtml":"markdown";put("format",format);
+        format=index==0?"html":index==1?"markdown":"pdf";put("format",format);
         final long ticket=generation;
-        if(index==2){mime="text/markdown";writeMarkdown(ticket);return;}
-        stage("F00_RENDER");
+        if(index<2){mime=index==0?"text/html":"text/markdown";writeText(ticket,index==0);return;}
+        stage("S00_RENDER");
         dialog=new AlertDialog.Builder(activity).setTitle("正在载入冻结网页")
-            .setMessage("只载入这份静态快照；外部图片与样式可能不可用。")
+            .setMessage("只载入这份静态 HTML；外部图片可能不可用。")
             .setNegativeButton("取消",(d,w)->cancel()).setOnCancelListener(d->cancel()).show();
         try {
             renderer=new SnapshotWebView(activity,live,snapshot,new SnapshotWebView.Callback(){
-                public void ready(){if(!current(ticket))return;if(dialog!=null)dialog.dismiss();if(index==0)print(ticket);else archive(ticket);}
+                public void ready(){if(!current(ticket))return;if(dialog!=null)dialog.dismiss();print(ticket);}
                 public void failed(String code){if(current(ticket))fail(code);}
             });
-        }catch(Exception e){fail("F07_RENDER");}
+        }catch(Exception e){fail("S06_STATIC_WEBVIEW_FAILED");}
     }
     private File target(String extension)throws Exception {
         File dir=new File(activity.getCacheDir(),"exports");if(!dir.isDirectory()&&!dir.mkdirs())throw new java.io.IOException();
         return new File(dir,"Nova-snapshot-"+snapshot.snapshotId+"."+extension);
     }
-    private void writeMarkdown(long ticket) {
-        stage("F00_MARKDOWN");final String content=snapshot.markdown;
-        try{file=target("md");}catch(Exception e){fail("F08_WRITE");return;}
+    private void writeText(long ticket,boolean html) {
+        stage(html?"S00_HTML":"S00_MARKDOWN");final String content=html?snapshot.frozenHtml:snapshot.markdown;
+        final String error=html?"S04_HTML_WRITE_FAILED":"S05_MARKDOWN_WRITE_FAILED";
+        try{file=target(html?"html":"md");}catch(Exception e){fail(error);return;}
         final File destination=file;
         new Thread(()->{
-            try(OutputStream out=new java.io.FileOutputStream(destination)){out.write(content.getBytes(StandardCharsets.UTF_8));}
-            catch(Exception e){activity.runOnUiThread(()->{destination.delete();if(current(ticket))fail("F08_WRITE");});return;}
+            try(OutputStream out=new java.io.FileOutputStream(destination)){
+                if(destroyed||ticket!=generation)throw new java.io.IOException();
+                out.write(content.getBytes(StandardCharsets.UTF_8));
+                if(destroyed||ticket!=generation)throw new java.io.IOException();
+            }catch(Exception e){activity.runOnUiThread(()->{destination.delete();if(current(ticket))fail(error);});return;}
             activity.runOnUiThread(()->{if(current(ticket))selectDestination(ticket);else destination.delete();});
-        },"snapshot-markdown").start();
+        },"snapshot-text").start();
     }
-    private void archive(long ticket) {
-        mime="multipart/related";stage("F00_ARCHIVE");
-        try {
-            file=target("mhtml");final File destination=file;
-            deadline=()->{if(current(ticket))fail("F09_ARCHIVE");};live.postDelayed(deadline,30000);
-            renderer.web.saveWebArchive(file.getAbsolutePath(),false,path->{
-                if(!current(ticket)){destination.delete();return;}stopDeadline();
-                if(path==null||!destination.isFile()||destination.length()==0){fail("F09_ARCHIVE");return;}
-                put("mhtmlBytes",destination.length());closeRenderer();selectDestination(ticket);
-            });
-        }catch(Exception e){fail("F09_ARCHIVE");}
+    private String saveName() {
+        String name=snapshot.title.replaceAll("[\\\\/:*?\"<>|\\p{Cntrl}]","_").trim();
+        if(name.isEmpty())name="Nova-snapshot";
+        int points=name.codePointCount(0,name.length());if(points>80)name=name.substring(0,name.offsetByCodePoints(0,80));
+        return name+("html".equals(format)?".html":".md");
     }
     private void print(long ticket) {
-        stage("F00_PRINT_UI");
+        stage("S00_PRINT_UI");
         try {
             PrintManager manager=activity.getSystemService(PrintManager.class);
             if(manager==null)throw new IllegalStateException();
             manager.print("Nova-snapshot-"+snapshot.snapshotId,renderer.printAdapter(()->{
-                if(current(ticket)){renderer=null;stage("F00_PRINT_UI_FINISHED");finish();}
+                if(current(ticket)){renderer=null;stage("S00_PRINT_UI_FINISHED");finish();}
             }),new PrintAttributes.Builder().build());
             // No success toast: onFinish also occurs when the user cancels.
-        }catch(Exception e){fail("F10_PRINT");}
+        }catch(Exception e){fail("S07_PRINT_FAILED");}
     }
     private void selectDestination(long ticket) {
         if(!current(ticket))return;
-        if(file==null||!file.isFile()||file.length()==0){fail("F08_WRITE");return;}
-        stage("F00_SAVE_PICKER");
+        if(file==null||!file.isFile()||file.length()==0){fail("S04_HTML_WRITE_FAILED");return;}
+        stage("S00_SAVE_PICKER");
         try{activity.startActivityForResult(new Intent(Intent.ACTION_CREATE_DOCUMENT).addCategory(Intent.CATEGORY_OPENABLE)
-            .setType(mime).putExtra(Intent.EXTRA_TITLE,file.getName()),SAVE);}
-        catch(Exception e){fail("F11_PICKER");}
+            .setType(mime).putExtra(Intent.EXTRA_TITLE,saveName()),SAVE);}
+        catch(Exception e){fail("S09_SAVE_PICKER_FAILED");}
     }
     boolean activityResult(int request,int result,Intent data) {
         if(request!=SAVE)return false;
         if(!busy||destroyed)return true;
-        if(result!=Activity.RESULT_OK||data==null||data.getData()==null){stage("F00_CANCELLED");finish();return true;}
-        Uri uri=data.getData();if(!"content".equals(uri.getScheme())){fail("F12_SAVE");return true;}
-        final long ticket=generation;final File source=file;stage("F00_COPY");
+        if(result!=Activity.RESULT_OK||data==null||data.getData()==null){stage("S00_CANCELLED");finish();return true;}
+        Uri uri=data.getData();if(!"content".equals(uri.getScheme())){fail("S10_SAVE_FAILED");return true;}
+        final long ticket=generation;final File source=file;stage("S00_COPY");
         new Thread(()->{
             boolean ok=false;
             try(InputStream in=new java.io.FileInputStream(source);OutputStream out=activity.getContentResolver().openOutputStream(uri,"w")) {
@@ -166,10 +164,10 @@ final class PageSnapshotExport {
                 out.flush();ok=count>0&&count==source.length();
             }catch(Exception ignored){ok=false;}
             final boolean saved=ok;activity.runOnUiThread(()->{if(!current(ticket))return;
-                if(saved){stage("F00_SAVED");toast("已保存当前网页快照，请打开核对内容。");finish();}else fail("F12_SAVE");});
+                if(saved){stage("S00_SAVED");toast("已保存当前网页快照，请打开核对内容。");finish();}else fail("S10_SAVE_FAILED");});
         },"snapshot-save").start();return true;
     }
-    void navigationStarted(){if(capturing)fail("F02_CHANGED");}
+    void navigationStarted(){if(capturing)fail("S08_PAGE_CHANGED_BEFORE_SNAPSHOT");}
     void showDiagnostic() {
         dialog=new AlertDialog.Builder(activity).setTitle("网页保存诊断").setMessage(diagnostic.toString())
             .setPositiveButton("复制诊断",(d,w)->{android.content.ClipboardManager c=activity.getSystemService(android.content.ClipboardManager.class);
@@ -185,7 +183,7 @@ final class PageSnapshotExport {
     private void stopDeadline(){if(deadline!=null){live.removeCallbacks(deadline);deadline=null;}}
     private void closeRenderer(){if(renderer!=null){renderer.close();renderer=null;}}
     private void finish(){++generation;capturing=false;busy=false;stopDeadline();closeRenderer();if(dialog!=null){dialog.dismiss();dialog=null;}if(file!=null){file.delete();file=null;}snapshot=null;}
-    void cancel(){stage("F00_CANCELLED");finish();}
+    void cancel(){stage("S00_CANCELLED");finish();}
     void destroy(){destroyed=true;finish();}
     private void toast(String text){if(!activity.isDestroyed())Toast.makeText(activity,text,Toast.LENGTH_LONG).show();}
 }

@@ -1,5 +1,16 @@
 # ChatGPT Nova 会话交接
 
+## 普通 HTML Commit A 已实现，验证待CI
+
+基于实际远端最新源码c28947b，已将PageSnapshotExport的MHTML保存路径彻底替换为普通UTF-8.html直接SAF；唯一FrozenPageSnapshot含final HTML/MD/字符数与复制型diagnostic metadata。freeze.js单次同步公开状态+clone，阅读主体使用Nova内联样式，不复制ChatGPT CSS/脚本/控制/原属性；同clone派生Markdown，PDF打印同份frozenHtml。100000元素/12Mi UTF16 payload硬上限，明确S01–S10错误，新路径无旧H系列。相对资源同步绝对化，data图片保留，blob明确占位，外链图片并非离线备份。用户/助手标签只取公开角色，保留此前无普通作者的明确conversation-turn助手正文修复。
+
+本机浏览器12场景通过（新增角色/pre-wrap、100+屏fixture），旧17单DOM通过。当前工具compatibility.cjs实际运行Chromium/Firefox/Edge阅读和print CSS检查，结果需核对；云Chromiumfile://若被运行时策略阻止，会明确记录localhost原文件服务作为渲染验证，不能冒充无条件file打开成功。实际Android保存HTML和PDF待最终CI，Firefox Android A/B仍待真实验收。
+
+新Android10测试取消MHTML，改实际HTML/MD字节与同对象打印；静态renderer等待visual state再启动打印。上轮PDF打印界面实物显示Sorry, that didn't work（不是只找不到Save），因此去掉测试中在预览写入期间不必要的打印目的切换，保留失败实物与适配器layout/write生命周期记录，继续核对真正PDF。新回归脚本补明确CAMERA/RECORD_AUDIO权限前置（之前未授予造成两个超时），不改生产上传/媒体实现。保留全部旧18/回归；单元任务无JVM用例时NO-SOURCE。
+
+CI构建/lint/Android35/36及实际PDF通过前不移除Gecko，不把桌面PDF冒充Android，也不把未完成FireFox人工对照称通过。旧复杂历史扫描/Gecko仍保留源码供对照，无Release/版号变更。最新任务与下一步均在本段，下方Shared/MHTML段为已终止历史。
+
+
 ## 当前任务：普通静态 HTML 为唯一快照表示，取消 MHTML / Share（2026-10-06）
 
 最新用户重新指定当前网页一次同步冻结→同clone派生HTML/Markdown→PDF打印同份frozenHtml。停止Share和MHTML，不扩展旧滚动/私有来源，不声称完整服务器历史。Commit A保留Gecko，Android35/36及真实PDF验证通过后Commit B才移除生产Gecko/切正式UI。当前源码基线c28947b，远端文档HEAD13dedf9；勿执行下方被替代任务。

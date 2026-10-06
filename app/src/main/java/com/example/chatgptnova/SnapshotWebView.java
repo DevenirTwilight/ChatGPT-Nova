@@ -37,7 +37,7 @@ final class SnapshotWebView {
         web.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS);
         web.setFocusable(false);
         android.webkit.CookieManager.getInstance().setAcceptThirdPartyCookies(web,false);
-        timeout=()->{if(!closed&&!ready)callback.failed("F06_RENDER_TIMEOUT");};
+        timeout=()->{if(!closed&&!ready)callback.failed("S06_STATIC_WEBVIEW_FAILED");};
         web.setWebViewClient(new WebViewClient() {
             @Override public boolean shouldOverrideUrlLoading(WebView v,WebResourceRequest r){return true;}
             @Override public boolean shouldOverrideUrlLoading(WebView v,String url){return true;}
@@ -48,13 +48,14 @@ final class SnapshotWebView {
                 return resource(r.getUrl().toString());
             }
             @Override public void onPageFinished(WebView v,String url) {
-                if(closed||ready)return;ready=true;web.removeCallbacks(timeout);callback.ready();
+                if(closed||ready)return;
+                web.postVisualStateCallback(0,new WebView.VisualStateCallback(){@Override public void onComplete(long id){if(closed||ready)return;ready=true;web.removeCallbacks(timeout);callback.ready();}});
             }
             @Override public void onReceivedError(WebView v,WebResourceRequest r,android.webkit.WebResourceError e) {
-                if(r.isForMainFrame()&&!closed)callback.failed("F07_RENDER");
+                if(r.isForMainFrame()&&!closed)callback.failed("S06_STATIC_WEBVIEW_FAILED");
             }
             @Override public boolean onRenderProcessGone(WebView v,android.webkit.RenderProcessGoneDetail d) {
-                if(!closed)callback.failed("F07_RENDER");return true;
+                if(!closed)callback.failed("S06_STATIC_WEBVIEW_FAILED");return true;
             }
         });
         ViewGroup parent=(ViewGroup)live.getParent();
@@ -99,9 +100,9 @@ final class SnapshotWebView {
         return new PrintDocumentAdapter() {
             @Override public void onStart(){if(!closed)delegate.onStart();}
             @Override public void onLayout(android.print.PrintAttributes old,android.print.PrintAttributes next,
-                    android.os.CancellationSignal signal,LayoutResultCallback callback,android.os.Bundle extras){if(closed){callback.onLayoutCancelled();return;}delegate.onLayout(old,next,signal,callback,extras);}
+                    android.os.CancellationSignal signal,LayoutResultCallback callback,android.os.Bundle extras){if(closed){callback.onLayoutCancelled();return;}android.util.Log.i("NovaSnapshotPrint","layout");delegate.onLayout(old,next,signal,callback,extras);}
             @Override public void onWrite(android.print.PageRange[] pages,android.os.ParcelFileDescriptor fd,
-                    android.os.CancellationSignal signal,WriteResultCallback callback){if(closed){callback.onWriteCancelled();return;}delegate.onWrite(pages,fd,signal,callback);}
+                    android.os.CancellationSignal signal,WriteResultCallback callback){if(closed){callback.onWriteCancelled();return;}android.util.Log.i("NovaSnapshotPrint","write page ranges="+pages.length);delegate.onWrite(pages,fd,signal,callback);}
             @Override public void onFinish(){try{if(!closed)delegate.onFinish();}finally{close();finished.run();}}
         };
     }

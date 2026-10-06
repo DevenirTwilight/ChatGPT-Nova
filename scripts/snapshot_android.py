@@ -3,8 +3,6 @@
 import json
 import re
 import subprocess
-from email import policy
-from email.parser import BytesParser
 from pathlib import Path
 out=Path('snapshot-results');out.mkdir(exist_ok=True)
 failures=[]
@@ -23,17 +21,13 @@ def suite(selection,label,count):
         assert re.search(r'OK \('+str(count)+r' tests?\)',result),result
         assert 'FAILURES!!!' not in result and 'INSTRUMENTATION_FAILED' not in result,result
     independent(label,run)
-def archive(name):
-    data=(out/name).read_bytes();assert len(data)>0
-    msg=BytesParser(policy=policy.default).parsebytes(data);assert msg.is_multipart(),name
-    htmls=[p.get_payload(decode=True).decode(p.get_content_charset() or 'utf-8') for p in msg.walk() if p.get_content_type()=='text/html']
-    assert htmls,name
-    text=htmls[0]
-    for marker in ['Before snapshot marker','TAIL-SNAPSHOT-MARKER','CODE-LAST','TABLE-LAST','中文','café']:
+def html(name):
+    text=(out/name).read_text(encoding='utf-8');assert text.startswith('<!doctype html>')
+    for marker in ['Before snapshot marker','TAIL-SNAPSHOT-MARKER','CODE-LAST','TABLE-LAST','中文','café','E=mc^2']:
         assert marker in text,(name,marker)
-    for marker in ['After snapshot marker','AFTER-TITLE','AFTER-TABLE','AFTER-BODY','CREDENTIAL-DO-NOT-SAVE']:
+    for marker in ['After snapshot marker','AFTER-TITLE','AFTER-TABLE','AFTER-BODY','CREDENTIAL-DO-NOT-SAVE','BUTTON-GARBAGE','MENU-GARBAGE','<script','onclick=']:
         assert marker not in text,(name,marker)
-    (out/(name+'.html')).write_text(text)
+    assert '@media print' in text
 def markdown():
     md=(out/'frozen-page.md').read_text(encoding='utf-8')
     for marker in ['Before snapshot marker','TAIL-SNAPSHOT-MARKER','````java','TABLE-LAST','> Quoted','3. Ordered','- Unordered','Reference','中文','café','😀','E=mc^2']:
@@ -49,17 +43,18 @@ def pdf():
     (out/'pdfinfo.txt').write_text(subprocess.check_output(['pdfinfo',str(out/'frozen-page.pdf')]).decode())
 try:
     suite('com.example.chatgptnova.FrozenPageSnapshotTest','snapshot',10)
-    for name in ['frozen-page.md','frozen-page.mhtml','frozen-page-saf.mhtml','frozen-page.pdf']:
+    for name in ['frozen-page.md','frozen-page.html','frozen-page-saf.html','frozen-page.pdf']:
         independent('pull-'+name,lambda name=name:adb('pull','/sdcard/Android/data/com.example.chatgptnova/files/'+name,str(out/name)))
     # Retain synthetic UI evidence only when the controlled print test failed.
     for name in ['snapshot-ui-failure.txt','snapshot-ui-failure.png']:
         try:adb('pull','/sdcard/Android/data/com.example.chatgptnova/files/'+name,str(out/name))
         except Exception:pass
-    independent('archive-same-object',lambda:archive('frozen-page.mhtml'))
-    independent('archive-saf',lambda:archive('frozen-page-saf.mhtml'))
+    independent('html-same-object',lambda:html('frozen-page.html'))
+    independent('html-saf',lambda:html('frozen-page-saf.html'))
     independent('markdown-content',markdown)
     independent('pdf-content',pdf)
-    independent('chromium-open',lambda:subprocess.run(['node','tools/snapshot/open-archive.cjs'],check=True))
+    independent('chromium-open',lambda:subprocess.run(['node','tools/snapshot/open-html.cjs'],check=True))
+    for permission in ['CAMERA','RECORD_AUDIO']:adb('shell','pm','grant','com.example.chatgptnova','android.permission.'+permission)
     suite('com.example.chatgptnova.NovaWebViewTest','web-regressions',9)
     suite('com.example.chatgptnova.WebShareTest','share-regressions',5)
     suite('com.example.chatgptnova.ClipboardUiTest','input-regressions',5)
@@ -81,4 +76,4 @@ finally:
     (out/'checks.json').write_text(json.dumps({'failures':failures,'scope':'synthetic-fixtures'},ensure_ascii=False,indent=2))
     (out/'logcat.txt').write_text(adb('logcat','-d','-v','threadtime'))
 assert not failures,json.dumps(failures,ensure_ascii=False)
-print('PASS: actual same-snapshot MHTML/MD/system-print-UI PDF files, Chromium archive open, existing web/share/full input/native/original-v1 upgrade regressions; no live-account or manual Firefox proof')
+print('PASS: actual same-snapshot HTML/MD/system-print-UI PDF files, Chromium HTML open, existing web/share/full input/native/original-v1 upgrade regressions; no live-account or manual Firefox proof')

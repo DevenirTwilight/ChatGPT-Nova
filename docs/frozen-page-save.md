@@ -1,48 +1,41 @@
-# 当前网页冻结快照三格式原型
+# 当前网页：普通 HTML 冻结快照
 
-本轮基线为远端 feature/export-conversation 的 2b86b68，不回退历史修复。
+本轮 Commit A 的唯一快照表示是普通 UTF-8 HTML，取消 MHTML 和 Share 后续开发。Gecko 暂留旧试用路径供 A/B，新保存 PDF 使用 Android System WebView Print。版号保持1.4.0/code14，不发布Release。Commit B必须在A的Android35/36和实际PDF验证通过后进行。
 
-## 数据流与范围
+## 数据流
 
-原型入口“保存当前网页（原型）”→确认冻结此刻→只调用一次 evaluateJavascript →同步读取公开显示状态并 clone document.documentElement →仅在 clone 上净化/转换→不可变 FrozenPageSnapshot →格式选择。
+保存当前网页（原型）→确认冻结此刻→一次evaluateJavascript同步记录公开呈现状态与URL/title/time→深clone一次→同clone派生静态阅读HTML及Markdown→不可变FrozenPageSnapshot。
 
-- Markdown：直接写 FrozenPageSnapshot.markdown，通过 SAF 保存。
-- MHTML：独立无 JS SnapshotWebView 加载唯一 frozenHtml → saveWebArchive →非空缓存 .mhtml →SAF 流式复制。
-- PDF：同一独立 WebView → createPrintDocumentAdapter → PrintManager.print →用户在 Android 打印界面选择保存为 PDF。
+- HTML：frozenHtml原字符串→后台UTF-8缓存.html→SAF流式复制/非空校验。不是WebArchive，不含MIME封装。
+- Markdown：同clone转换的markdown原字符串→后台UTF-8缓存.md→SAF。不是从HTML文件/PDF再解析。
+- PDF：相同frozenHtml→独立SnapshotWebView（无JS、无storage、无桥）→静态加载完成及visual state→createPrintDocumentAdapter→PrintManager→系统Save as PDF。Nova不要求取得最终文件路径；onFinish包括取消，不报告已保存成功。
 
-Markdown 与 MHTML 不相互解析，不再次读取 live DOM。一次冻结之后，live 页面可以继续生成/变化；格式生成使用原对象。导航在捕获回调完成之前会取消；之后静态快照不跟随官网。没有滚动、backend 调用、fetch/XHR 包装、长期 observer、存储/凭据读取、稳定 ID 或历史合并逻辑。
+选格式后不再读取live正文补内容。冻结期间URL/title变化明确拒绝；完成后不跟随live mutation。没有滚动、账号存储/认证读取、fetch/XHR hook、observer、backend/private reader/React Fiber、消息ID要求、正文去重或跨窗口合并。
 
-只保存此时已加载的页面，不声明服务器端完整 ChatGPT 会话历史。虚拟化未挂载的旧内容不会恢复。
+## HTML阅读和打印
 
-## 静态化与安全
+只保留clone的main（或公开role=main/body兜底）阅读正文。移除脚本、事件、按钮/菜单/导航/输入/反馈、隐藏控制、应用样式和属性。公开data-message-author-role及无普通作者的显式assistant/user conversation-turn可提供角色标签；不猜角色。内联Nova stylesheet，无ChatGPT CSS依赖；860px正文宽度、代码/表格屏幕横向滚动、图片max-width。打印白底黑字、16mm页边距、标题避免孤行、代码换行、表格单行尽量避免切割；长消息/pre/table允许跨页，不强制整条不可分页。
 
-保留已有正文、样式、图片、表格和数学 DOM；移除脚本、事件属性、iframe/object/embed、自动 refresh、原 base 和非 stylesheet link。添加当前地址 base 与禁止 JS/连接/frame/form 的 CSP。输入框 value 不序列化；textarea 仅复制当前公开控件状态，不输出到诊断。
+相对链接/图片在同一事务中解析成绝对HTTPS URL，currentSrc在同步呈现状态采样中记录。data图片保留；blob图片无法离线复用，以可读占位说明。HTML外链图片可能需要网络、失效或改变；不下载原附件，不保证完全离线。静态打印资源请求限HTTPS、4次重定向、5秒、8MiB/资源，无Cookie/Authorization，并拒绝backend/API路径。保存HTML CSP拒绝脚本/连接/框架/表单；图片允许HTTPS/data，不允许应用再次启动。
 
-JS 同步事务内先读取公开可见性/滚动布局和控件状态，深 clone 后所有正文转换只读 clone。为了阅读/打印已加载的长内容，解除已识别滚动容器的高度/overflow 限制；不触发历史加载。
+canvas bitmap、shadow DOM、运行时JS状态不序列化。数学优先公开LaTeX annotation，保留当前可读文字，不保证原排版。Markdown支持标题/段落/强调/链接/列表/引用/代码fence/表格/数学/图片；保留公开pre-wrap换行。
 
-独立 WebView 禁 JS、窗口、file/content 访问和导航，未安装聊天桥。静态 CSS/图片/字体经限时、限量 HTTPS 加载器取得，不发送 Cookie 或 Authorization，不请求 backend-api/api；资源不可用时允许缺图/缺样式，不能称资源完整。系统全局 Cookie 设置不改变。取消、失败、清除账号、renderer recovery 和 Activity destroy 会关闭临时 WebView；打印由 adapter.onFinish 关闭，没有以该回调宣称保存成功。
+## 限额、生命周期、诊断
 
-## 不可变性的边界
+同步DOM最多100000元素、最终JSON payload最多12Mi UTF-16 code units，超过明确失败，不静默截断。Android回调再核限额；文本UTF-8编码/写盘与64KiB流式复制在后台，取消/销毁检查代次。临时文件和WebView在结束/取消/Activity销毁释放；不修改主聊天输入/导航/上传/下载模块。
 
-冻结的是 DOM 与文本，不是所有远程资源字节。CSS/图片在静态加载期间可能变化或缺失；需要账号资源尤其可能不可用。canvas bitmap、shadow DOM、运行时 JS state 不序列化；srcset 移除以避免静态页面另选响应式资源，保留已有 src。不通过私有 API 恢复它们。
+S01_INVALID_PAGE；S02_SNAPSHOT_FAILED（包括15秒捕获超时）；S03_SNAPSHOT_TOO_LARGE；S04_HTML_WRITE_FAILED；S05_MARKDOWN_WRITE_FAILED；S06_STATIC_WEBVIEW_FAILED（包括30秒渲染超时）；S07_PRINT_FAILED；S08_PAGE_CHANGED_BEFORE_SNAPSHOT；S09_SAVE_PICKER_FAILED；S10_SAVE_FAILED。新路径不使用H02/H03/H06。
 
-MHTML 是单文件网页归档格式，兼容性取决于浏览器；不是普通 .html 文件。保存内容可能包含正文里的私密信息，应由用户自行管理。诊断只含随机 snapshotId、格式、origin、字符/字节数、阶段、版本和耗时，不含真实会话 ID、正文或私密 URL/query。
+诊断只含app/buildRevision/Android/WebView、随机snapshotId、origin、格式、字符数、阶段与耗时，不含正文/真实消息ID/Cookie/token/完整URL query。打印onLayout/onWrite仅记生命周期与页范围个数；不伪造回调成功。
 
-## 验证入口
+## 自动及人工验收
 
-- tools/snapshot/browser.test.cjs：同一次冻结的 HTML/Markdown、多语言与结构、后续 mutation、标题/URL 变化、可信源/体积限制、live DOM 未改动。
-- FrozenPageSnapshotTest：同一个对象的实际 SAF Markdown 与实际 MHTML；另一原生 MHTML 保存路径；实际系统打印界面保存多页 PDF；取消/重复、生命周期/renderer recovery、Cookie 与诊断。
-- scripts/snapshot_android.py：拉取真实文件，用 Python email 解析 MIME HTML part、对比首尾/前后 mutation markers；pdftotext 检查 PDF；Chromium 实际打开 Android .mhtml 并截图；继续跑已有上传/权限/下载/清理/导航/分享/输入/native 测试。
-- 旧 DomTrialExportTest 与浏览器历史扫描测试保留并继续运行；ConversationExportTest 的旧私有 reader/pagination 路线历史已失效，不将其失败混作新快照失败，也不删除证据。
+`tools/snapshot/browser.test.cjs`：同clone、live不变、mutation隔离、脚本/SVG/控件剥离、UTF-8富文本、可信URL/title保护、过量拒绝、公开角色与pre-wrap、100+屏长fixture。
 
-当前为 Commit A 原型，保留 Gecko 依赖和旧入口；原型 PDF 已不调用 Gecko。Commit B 的正式入口切换及移除生产依赖必须等待 A 的受控检查通过。人工真实 PDF、Firefox Android 对照、真实登录与用户 WebView153尚需明确记录，不能用模拟器替代。
+`FrozenPageSnapshotTest`：实际SAF .html/.md字节、同对象打印源、系统打印界面保存实际多页PDF、取消/重复、Activity重建/renderer恢复、Cookie/诊断。`scripts/snapshot_android.py`取回文件，核对UTF-8/首尾/code/table/math及late marker不存在，pdftotext/pdfinfo；实际打开HTML，继续原WebView/上传/权限/下载/清理/分享/全IME/native/原签名v1升级检查。
 
-## 人工验收
+人工在Android35/36保存并打开PDF，检查中英法/emoji/长代码/表格/链接/图片/分页、首尾、返回聊天与取消/重复打印；同一保存HTML在Firefox Android打印做A/B，记录页数/边距/字体/分页差异，不能用桌面Firefox代替。桌面Chrome/Chromium、Firefox和Edge实际打开保存的HTML；禁止把Chromium结果冒充Edge测试。真实账号短会话/长会话也应检查当前挂载内容。
 
-在 Android35/36：冻结可控长页→打印 / 保存为 PDF→选择 A4/Letter与方向并实际保存→打开 PDF 逐页检查首尾、中文/法语、代码、表格、长段落、链接与重叠。返回 Nova、取消和重复打印，检查聊天输入与菜单仍正常。相同 fixture 在 Firefox Android 保存一次 PDF 进行阅读/分页对照，不要求字节相同。
+当前验证进度以handoff/latest及CI实际结果为准，未运行项明确待验证。此前MHTML实验和失败记录留在Git历史，不继续开发。
 
-MHTML用至少一个支持它的 Chromium 浏览器打开；Markdown用 UTF-8 阅读器核对标题/段落/fence/表格/引用/列表/链接/多语言及无交互控件垃圾。三格式都不应含冻结后新增的 marker。
-
-## 错误码
-
-F01 可信源/地址不符；F02 捕获期间地址/标题变化；F03 快照超限；F04 转换/解码失败；F05 捕获超时；F06 静态渲染超时；F07 渲染失败；F08 文件写入失败；F09 归档失败/空文件；F10 无法启动打印；F11 无法启动系统保存选择器；F12 写入保存位置失败。实际诊断码带完整后缀，如 F09_ARCHIVE。取消为正常结束，不报告保存成功。
+三种格式严格对应同一次当前网页冻结快照，但无法证明ChatGPT服务器端完整会话历史；如果网页虚拟化未挂载较早内容，保存结果也不会包含那些内容。

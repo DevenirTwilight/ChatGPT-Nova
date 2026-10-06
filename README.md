@@ -6,9 +6,9 @@
 
 ## 保存当前网页：冻结快照原型
 
-工作分支新增“保存当前网页（原型）”：一次冻结此刻已加载的网页，提供“打印 / 保存为 PDF”“网页归档（MHTML）”“Markdown”。HTML 与 Markdown 从同一个 DOM clone 同步派生，PDF 和 MHTML 使用独立、禁用 JS 的静态 WebView；不滚动加载历史。PDF 打开 Android 标准打印界面，可选择保存为 PDF；MHTML/Markdown 通过系统文件选择器保存。
+工作分支的“保存当前网页（原型）”一次冻结此刻已加载内容，提供 **HTML / Markdown / 打印与保存PDF**。HTML是真正普通UTF-8静态网页，使用内联Nova阅读/打印样式；HTML和Markdown从同一次DOM clone同步派生，PDF只打印同一份frozenHtml的独立无JS WebView。HTML/Markdown通过系统文件选择器保存，PDF使用Android系统打印界面。MHTML已取消。
 
-这是当前网页快照，不证明服务器端完整会话；未挂载历史不会恢复。MHTML 是单文件网页归档格式，兼容性取决于浏览器。远程资源可能变化/缺失，canvas/shadow/runtime 状态不序列化。当前阶段 A 保留旧试用与 Gecko，原型 PDF 自身不调用 Gecko。架构、错误码与验证进度见 [冻结网页保存说明](docs/frozen-page-save.md)。
+三种格式严格对应同一次当前网页冻结快照，但无法证明ChatGPT服务器端完整会话历史；网页虚拟化未挂载的较早内容不会包含。远程图片可能缺失/变化，canvas/shadow/runtime状态不序列化。阶段A保留旧试用和Gecko供对照，新PDF自身不调用Gecko；A全部验证通过后才清理生产Gecko。见[架构、错误和验收说明](docs/frozen-page-save.md)。
 
 ## 新方案导出试用
 
