@@ -4,6 +4,12 @@
 
 安装 Release 构建的 `ChatGPT-Nova.apk` 后，它使用自己的应用包 `com.example.chatgptnova` 和 WebView 数据目录，可与官方 ChatGPT App 同时安装。Android 8.0（API 26）及以上可以安装。
 
+## 保存当前网页：冻结快照原型
+
+工作分支新增“保存当前网页（原型）”：一次冻结此刻已加载的网页，提供“打印 / 保存为 PDF”“网页归档（MHTML）”“Markdown”。HTML 与 Markdown 从同一个 DOM clone 同步派生，PDF 和 MHTML 使用独立、禁用 JS 的静态 WebView；不滚动加载历史。PDF 打开 Android 标准打印界面，可选择保存为 PDF；MHTML/Markdown 通过系统文件选择器保存。
+
+这是当前网页快照，不证明服务器端完整会话；未挂载历史不会恢复。MHTML 是单文件网页归档格式，兼容性取决于浏览器。远程资源可能变化/缺失，canvas/shadow/runtime 状态不序列化。当前阶段 A 保留旧试用与 Gecko，原型 PDF 自身不调用 Gecko。架构、错误码与验证进度见 [冻结网页保存说明](docs/frozen-page-save.md)。
+
 ## 新方案导出试用
 
 修复在同一1.4.0内集中推进；每次提交只运行验证，不自动发布APK。已发布包与工作分支待交付修正的区别见试用说明。

@@ -39,7 +39,7 @@ public final class FrozenPageSnapshotTest extends FixtureActivity {
     private PageSnapshotExport exporter(){return (PageSnapshotExport)field(activity,"pageSnapshotExport");}
     private Object field(Object object,String name){try{Field f=object.getClass().getDeclaredField(name);f.setAccessible(true);return f.get(object);}catch(Exception e){throw new AssertionError(e);}}
     private void click(String label){waitFor("control "+label,()->{AccessibilityNodeInfo node=find(instrument.getUiAutomation().getRootInActiveWindow(),label);while(node!=null&&!node.isClickable())node=node.getParent();return node!=null&&node.performAction(AccessibilityNodeInfo.ACTION_CLICK);});instrument.waitForIdleSync();}
-    private AccessibilityNodeInfo find(AccessibilityNodeInfo n,String label){if(n==null)return null;if(n.getText()!=null&&label.equals(n.getText().toString()))return n;for(int i=0;i<n.getChildCount();i++){AccessibilityNodeInfo found=find(n.getChild(i),label);if(found!=null)return found;}return null;}
+    private AccessibilityNodeInfo find(AccessibilityNodeInfo n,String label){if(n==null)return null;if(n.isVisibleToUser()&&((n.getText()!=null&&label.equalsIgnoreCase(n.getText().toString()))||(n.getContentDescription()!=null&&label.equalsIgnoreCase(n.getContentDescription().toString()))))return n;for(int i=0;i<n.getChildCount();i++){AccessibilityNodeInfo found=find(n.getChild(i),label);if(found!=null)return found;}return null;}
     private FrozenPageSnapshot freeze() {
         main(()->exporter().start());click("冻结此刻网页");
         waitFor("immutable payload",()->field(exporter(),"snapshot")!=null);
@@ -84,8 +84,10 @@ public final class FrozenPageSnapshotTest extends FixtureActivity {
         waitFor("save PDF button",()->{AccessibilityNodeInfo root=instrument.getUiAutomation().getRootInActiveWindow();if(root==null)return false;for(AccessibilityNodeInfo n:root.findAccessibilityNodeInfosByViewId("com.android.printspooler:id/print_button"))if(n.isEnabled())return n.performAction(AccessibilityNodeInfo.ACTION_CLICK);return false;});
         click("Save");waitFor("print job finished",()->!busy());
         String path="/sdcard/Download/Nova-snapshot-"+snapshot.snapshotId+".pdf";
-        byte[] bytes;
-        try(ParcelFileDescriptor fd=instrument.getUiAutomation().executeShellCommand("cat "+path);java.io.InputStream in=new ParcelFileDescriptor.AutoCloseInputStream(fd)){bytes=in.readAllBytes();}
+        byte[] bytes=new byte[0];long until=android.os.SystemClock.uptimeMillis()+20000;
+        do{try(ParcelFileDescriptor fd=instrument.getUiAutomation().executeShellCommand("cat "+path);java.io.InputStream in=new ParcelFileDescriptor.AutoCloseInputStream(fd)){bytes=in.readAllBytes();}
+            if(bytes.length>1000&&new String(bytes,0,5,StandardCharsets.US_ASCII).equals("%PDF-"))break;android.os.SystemClock.sleep(100);
+        }while(android.os.SystemClock.uptimeMillis()<until);
         assertTrue(bytes.length>1000);assertEquals("%PDF-",new String(bytes,0,5,StandardCharsets.US_ASCII));
         File pdf=evidence("frozen-page.pdf",bytes);
         try(ParcelFileDescriptor fd=ParcelFileDescriptor.open(pdf,ParcelFileDescriptor.MODE_READ_ONLY);android.graphics.pdf.PdfRenderer r=new android.graphics.pdf.PdfRenderer(fd)){assertTrue(r.getPageCount()>1);}

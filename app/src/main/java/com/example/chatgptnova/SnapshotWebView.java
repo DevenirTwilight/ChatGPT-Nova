@@ -97,12 +97,12 @@ final class SnapshotWebView {
         if(closed||!ready)throw new IllegalStateException("Renderer not ready");
         PrintDocumentAdapter delegate=web.createPrintDocumentAdapter(snapshot.title);
         return new PrintDocumentAdapter() {
-            @Override public void onStart(){delegate.onStart();}
+            @Override public void onStart(){if(!closed)delegate.onStart();}
             @Override public void onLayout(android.print.PrintAttributes old,android.print.PrintAttributes next,
-                    android.os.CancellationSignal signal,LayoutResultCallback callback,android.os.Bundle extras){delegate.onLayout(old,next,signal,callback,extras);}
+                    android.os.CancellationSignal signal,LayoutResultCallback callback,android.os.Bundle extras){if(closed){callback.onLayoutCancelled();return;}delegate.onLayout(old,next,signal,callback,extras);}
             @Override public void onWrite(android.print.PageRange[] pages,android.os.ParcelFileDescriptor fd,
-                    android.os.CancellationSignal signal,WriteResultCallback callback){delegate.onWrite(pages,fd,signal,callback);}
-            @Override public void onFinish(){try{delegate.onFinish();}finally{close();finished.run();}}
+                    android.os.CancellationSignal signal,WriteResultCallback callback){if(closed){callback.onWriteCancelled();return;}delegate.onWrite(pages,fd,signal,callback);}
+            @Override public void onFinish(){try{if(!closed)delegate.onFinish();}finally{close();finished.run();}}
         };
     }
     void close() {

@@ -117,7 +117,7 @@ final class PageSnapshotExport {
         final File destination=file;
         new Thread(()->{
             try(OutputStream out=new java.io.FileOutputStream(destination)){out.write(content.getBytes(StandardCharsets.UTF_8));}
-            catch(Exception e){activity.runOnUiThread(()->{if(current(ticket))fail("F08_WRITE");});return;}
+            catch(Exception e){activity.runOnUiThread(()->{destination.delete();if(current(ticket))fail("F08_WRITE");});return;}
             activity.runOnUiThread(()->{if(current(ticket))selectDestination(ticket);else destination.delete();});
         },"snapshot-markdown").start();
     }

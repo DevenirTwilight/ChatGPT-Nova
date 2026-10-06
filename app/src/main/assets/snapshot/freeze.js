@@ -26,7 +26,7 @@
     // Runtime JS/shadow/canvas state cannot be represented by cloneNode. Inputs
     // may contain credentials, so do not serialize their current values.
     nodes.forEach((e,i)=>{
-      const tag=e.tagName, st=state[i];
+      const tag=e.tagName.toUpperCase(), st=state[i];
       if(st.hidden)e.setAttribute('data-nova-hidden','true');
       if(st.scroll)e.setAttribute('data-nova-scroll','true');
       if(st.value!==null)e.textContent=st.value;
@@ -39,24 +39,24 @@
       }
       if(tag==='INPUT'){e.removeAttribute('value');e.removeAttribute('checked');}
       if(tag==='FORM')e.removeAttribute('action');
-      if(['SCRIPT','IFRAME','FRAME','OBJECT','EMBED','APPLET','BASE','NOSCRIPT'].includes(tag)
+      if(['SCRIPT','IFRAME','FRAME','OBJECT','EMBED','APPLET','BASE','NOSCRIPT','ANIMATE','ANIMATETRANSFORM','ANIMATEMOTION','SET'].includes(tag)
         || (tag==='META' && /^(?:refresh|content-security-policy|set-cookie)$/i.test(e.getAttribute('http-equiv')||''))
-        || (tag==='LINK' && (e.rel.toLowerCase()!=='stylesheet' || !e.getAttribute('href')))) {e.remove();removed++;}
+        || (tag==='LINK' && ((e.getAttribute('rel')||'').toLowerCase()!=='stylesheet' || !e.getAttribute('href')))) {e.remove();removed++;}
     });
     const head=clone.querySelector('head'),body=clone.querySelector('body');
     if(!head||!body)throw Error('structure');
     const base=document.createElement('base');base.href=sourceUrl;head.prepend(base);
     const csp=document.createElement('meta');csp.httpEquiv='Content-Security-Policy';
     csp.content="default-src 'none'; script-src 'none'; style-src 'unsafe-inline' https:; img-src https: data:; font-src https: data:; connect-src 'none'; frame-src 'none'; object-src 'none'; form-action 'none'; base-uri https:";head.prepend(csp);
-    const css=document.createElement('style');css.textContent='*{animation:none!important;transition:none!important}[data-nova-scroll]{overflow:visible!important;height:auto!important;max-height:none!important;content-visibility:visible!important} @media print{html,body{height:auto!important;overflow:visible!important}pre{white-space:pre-wrap!important;overflow-wrap:anywhere}table{max-width:100%}img{max-width:100%}button,input,textarea,select,[role=menu],[role=toolbar]{display:none!important}}';head.append(css);
+    const css=document.createElement('style');css.textContent='*{animation:none!important;transition:none!important}[data-nova-hidden]{display:none!important}[data-nova-scroll]{overflow:visible!important;height:auto!important;max-height:none!important;content-visibility:visible!important} @media print{html,body{height:auto!important;overflow:visible!important}pre{white-space:pre-wrap!important;overflow-wrap:anywhere}table{max-width:100%}img{max-width:100%}button,input,textarea,select,[role=menu],[role=toolbar]{display:none!important}}';head.append(css);
     const escape=s=>s.replace(/([\\`*_\[\]])/g,'\\$1');
-    const excluded=e=>e.nodeType===1&&(e.hasAttribute('data-nova-hidden')||e.hidden||['BUTTON','INPUT','TEXTAREA','SELECT','OPTION','SCRIPT','STYLE','META','LINK','SVG','CANVAS','NAV','HEADER','FOOTER'].includes(e.tagName)||['button','menu','menubar','toolbar','navigation'].includes(e.getAttribute('role')));
+    const excluded=e=>e.nodeType===1&&(e.hasAttribute('data-nova-hidden')||e.hidden||['BUTTON','INPUT','TEXTAREA','SELECT','OPTION','SCRIPT','STYLE','META','LINK','SVG','CANVAS','NAV','HEADER','FOOTER'].includes(e.tagName.toUpperCase())||['button','menu','menubar','toolbar','navigation'].includes(e.getAttribute('role')));
     const children=e=>[...e.childNodes].map(convert).join('');
     const plain=e=>[...e.childNodes].map(n=>n.nodeType===3?n.nodeValue:excluded(n)?'':plain(n)).join('');
     const convert=n=>{
       if(n.nodeType===3)return escape(n.nodeValue.replace(/\s+/g,' '));
       if(n.nodeType!==1||excluded(n))return '';
-      const tag=n.tagName;
+      const tag=n.tagName.toUpperCase();
       const tex=n.querySelector('annotation[encoding="application/x-tex"]');
       if(tex && (n.classList.contains('katex')||tag==='MATH'))return '$'+tex.textContent+'$';
       if(tag==='PRE'){const code=n.querySelector('code')||n, text=plain(code).replace(/\n$/,'');

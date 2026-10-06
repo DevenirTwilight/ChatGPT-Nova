@@ -32,8 +32,8 @@ public final class UpgradeTest extends FixtureActivity {
         assertEquals("com.example.chatgptnova",activity.getPackageName());
         try {
             android.content.pm.PackageInfo info = activity.getPackageManager().getPackageInfo(activity.getPackageName(),0);
-            assertEquals(11,info.versionCode);
-            assertEquals("1.3.7",info.versionName);
+            assertEquals(BuildConfig.VERSION_CODE,info.versionCode);
+            assertEquals(BuildConfig.VERSION_NAME,info.versionName);
         }
         catch (Exception error) { throw new AssertionError(error); }
     }
