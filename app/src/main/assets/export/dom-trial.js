@@ -93,15 +93,22 @@
       else if (ids.has(id)) { diagnostic.duplicateIds++; error('D08_DUPLICATE_ID'); }
       ids.add(id);
       const role=e.getAttribute('data-message-author-role');
-      const body=e.querySelector('.markdown') || e.querySelector('.whitespace-pre-wrap') || e;
-      diagnostic.chars+=body.textContent.length;
-      if (diagnostic.chars>MAX_CHARS) error('D06_LIMIT');
-      // Include markup to detect structural changes too; transient SPA A-B-A is not proven absent.
-      hashText(id); hashText(role); hashText(body.outerHTML);
+      const roots=role==='assistant' ? [...e.querySelectorAll('.markdown')]
+        .filter(body=>visible(body) && !body.parentElement.closest('.markdown')) : [];
+      const bodies=roots.length ? roots : [e];
+      hashText(id); hashText(role);
+      const parts=[];
+      for (const body of bodies) {
+        diagnostic.chars+=body.textContent.length;
+        if (diagnostic.chars>MAX_CHARS) error('D06_LIMIT');
+        // Include all rendered body blocks, never silently select the first only.
+        hashText(body.outerHTML);
+        if (!verifyOnly) parts.push(content(body));
+      }
       if (!verifyOnly) {
-        const value=content(body);
-        if (!value.markdown.trim()) error('D09_EMPTY_BODY');
-        messages.push({role,html:value.html,markdown:value.markdown.trim()});
+        const markdown=parts.map(p=>p.markdown.trim()).filter(Boolean).join('\n\n');
+        if (!markdown) error('D09_EMPTY_BODY');
+        messages.push({role,html:parts.map(p=>p.html).join(''),markdown});
       }
     }
     if (location.href !== route) error('D10_CHANGED');

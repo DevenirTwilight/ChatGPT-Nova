@@ -220,7 +220,7 @@ final class ConversationExport {
                 @Override public void onLayout(PrintAttributes oldA,PrintAttributes newA,android.os.CancellationSignal signal,LayoutResultCallback callback,android.os.Bundle extras) {stage("N00_PRINT_LAYOUT","print-layout");delegate.onLayout(oldA,newA,signal,callback,extras);}
                 @Override public void onWrite(android.print.PageRange[] pages,android.os.ParcelFileDescriptor output,android.os.CancellationSignal signal,WriteResultCallback callback) {stage("N00_PRINT_WRITE","print-write-requested");delegate.onWrite(pages,output,signal,callback);}
                 @Override public void onFinish() {
-                    try {delegate.onFinish();} finally {web.post(()-> {if(!destroyed) {stage("P06_FINISHED","print-finished-save-unverified");finishPrint(false);busy=false;}});}
+                    try {delegate.onFinish();} finally {web.post(()-> {if(!destroyed) {put("printAdapterFinished",true);if(!diagnostic.optString("code").startsWith("P04") && !diagnostic.optString("code").startsWith("P05")) stage("P06_FINISHED","print-finished-save-unverified");finishPrint(false);busy=false;}});}
                 }
             };
             stopDeadline(); printJob=manager.print(file.getName(),adapter,new PrintAttributes.Builder().setMediaSize(PrintAttributes.MediaSize.ISO_A4).build());
