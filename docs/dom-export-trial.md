@@ -1,5 +1,9 @@
 # 新方案导出试用版
 
+用户随后明确要求“包可以不公开发布，但发给我”。本批改为在当前会话直接提供已验证的原签名APK和仅含主APK/校验值的ZIP，不创建公开Release、不增加版本；可覆盖安装，源码224dae2，版本仍为1.4.0/code14。APK为1888419 bytes，SHA256 `7495ec8792b29d2f47e74d6f92a50fe7baa4e7419737833ef78d6be578c7b88c`。如会话下载不可用，可登录GitHub从[本批CI构建产物](https://github.com/DevenirTwilight/ChatGPT-Nova/actions/runs/37461566300/artifacts/11411334253)下载ZIP，解压只安装 `ChatGPT-Nova.apk`，不要安装 `ChatGPT-Nova-tests.apk`。Actions产物有保留期限，不是永久Release。
+
+复测原H06会话：菜单→导出聊天历史（试用）→滚动收集历史，保持前台且不操作页面；成功后检查此前遗漏的中间消息，失败复制诊断。应显示DOM-SCROLL-TRIAL-2及buildRevision=224dae2完整提交。Android35/36各12项与浏览器检查已通过，但用户WebView153的原会话尚未复测，完整历史仍未证明。下方“尚未发布/后续交付”是本次直接提供安装包前的记录，旧Release链接不包含本修正。
+
 ## 同一1.4.0内集中修正：H06（未发布）
 
 用户实测已发布1.4.0在Android36/WebView153返回H06_UNSETTLED：61.23秒，向上第一轮leg0、49滚动步、缓存10条（5用户/5助手，12573字符），未观察到顶部/底部、未开始第二轮。不能从旧诊断确定根因。本地已复现正文/ID不变、仅滚动高度2px变化使旧版误报H06；修正采用三次相同正文快照即可缓存，边界另按2px容差连续核对，边界持续变化仍拒绝。新增settling分类/计数/窗口年龄/几何数据（不含正文ID），scheme为DOM-SCROLL-TRIAL-2，buildRevision记录构建提交。版本号保持1.4.0/code14，修正尚未发布，旧已安装包不包含本修正。Chromium17原采集+18滚动场景本地通过，Android35/36各12项在工作流37461566300全部通过（新增受控布局抖动保存40条及持续正文变化拒绝/脱敏），已独立下载核对两份OK (12 tests)与实际PDF。源提交224dae2；publish按规则跳过，未发布修正包。用户要求集中修复/功能后再交付，取消每次push自动发布，仅显式workflow_dispatch publish_trial=true才发布；本轮先验证提交，不新增Release。真实原会话仍待后续集中测试包复测，完整历史未证明。
