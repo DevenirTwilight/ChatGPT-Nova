@@ -22,7 +22,7 @@
 
 请先读取该分支的 AGENTS.md、docs/handoff/latest.md、docs/handoff/REVIEW.md、tools/feasibility/REPORT.md 和 tools/feasibility/README.md，再核对远端最新提交，从现有进度继续；不要重新开始八项现状提问。
 
-另读 docs/dom-export-trial.md 和 tools/feasibility/history-coverage/README.md。用户已授权可安装DOM新方案试用版与报错诊断；以最新文档和远端提交核实版本、下载和独立验证证据。用户实测1.3.8在Android36/WebView153普通全文字会话返回D09_EMPTY_BODY；修正版与用户原会话复测结果必须区分。无需重复要求用户先搭建ADB，优先通过可安装版本和脱敏诊断推进；完整历史仍需独立逐条核对，不把首尾四条或DOM并集当作完整历史基准。
+另读 docs/dom-export-trial.md 和 tools/feasibility/history-coverage/README.md。用户已授权可安装DOM新方案试用版与报错诊断；以最新文档和远端提交核实版本、下载和独立验证证据。用户实测1.3.8在Android36/WebView153普通全文字会话返回D09_EMPTY_BODY，随后转述7条HTML缺失大量历史。已授权1.4.0滚动缓存测试版；区分APK/合成验证通过与用户原会话完整覆盖，先看最新试用说明及历史校验设计。无需重复要求用户先搭建ADB，优先通过可安装版本和脱敏诊断推进；完整历史仍需独立逐条核对，不把首尾四条或DOM并集当作完整历史基准。
 
 此前仅可行性阶段已转为用户授权的有限范围试用实现与APK交付，不合并main，不擅自扩展为完整生产功能。允许重做旧路线。优先解决真实登录项目内长会话的历史覆盖问题；合成测试通过、消息数量或指纹稳定不证明完整历史，也不能证明旧403已修好。明确证据边界，继续可独立完成的工作。
 

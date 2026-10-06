@@ -12,7 +12,7 @@
  function dispose(restore) {
   if(!s) return;
   s.observer?.disconnect();document.removeEventListener('click',s.interact,true);document.removeEventListener('keydown',s.interact,true);
-  if(restore && s.container?.isConnected) s.container.scrollTop=s.original;
+  if(restore && s.container?.isConnected) s.container.scrollTo({top:s.original,behavior:"instant"});
   s.messages.clear();s.edges.clear();delete window[KEY];
  }
  function stats() {return {source:'scroll-dom-trial',history:'not-proven',count:s.messages.size,
@@ -107,7 +107,7 @@
    s.edgeStable=0;s.stable=0;s.last='';s.stepStarted=performance.now();
   } else if(!atEdge) {
    const target=pos+(upward?-1:1)*Math.max(1,s.container.clientHeight*0.45);
-   s.container.scrollTop=Math.max(0,Math.min(max,target));s.steps++;
+   s.container.scrollTo({top:Math.max(0,Math.min(max,target)),behavior:"instant"});s.steps++;
    if(Math.abs(s.container.scrollTop-pos)<0.5) abort('H01_SCROLL_CONTAINER');
    s.stable=0;s.last='';s.stepStarted=performance.now();
   }

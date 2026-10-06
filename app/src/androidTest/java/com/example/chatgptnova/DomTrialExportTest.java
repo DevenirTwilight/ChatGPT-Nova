@@ -96,6 +96,7 @@ public final class DomTrialExportTest extends FixtureActivity {
     private void virtualHistory() throws Exception {
         try(java.io.InputStream input=instrument.getContext().getAssets().open("virtual-history.js")) {
             js(new String(input.readAllBytes(),StandardCharsets.UTF_8).replace("__NOVA_FIXTURE_COUNT__","40"));
+            js("document.getElementById('history').style.scrollBehavior='smooth';true");
         }
     }
     @Test public void historyScrollCachesUnmountedMessagesThroughSaf() throws Exception {

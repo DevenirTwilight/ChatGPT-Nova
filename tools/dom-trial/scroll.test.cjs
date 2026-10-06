@@ -17,6 +17,7 @@ const fixture=fs.readFileSync('tools/dom-trial/virtual-fixture.js','utf8');
   assert(all.coverage.topObserved && all.coverage.bottomObserved && all.coverage.secondPass);assert.equal(all.coverage.history,'not-proven');
   assert.equal(await page.locator('[data-message-author-role]').count(),7);assert.equal(await page.locator('#history').evaluate(e=>e.scrollTop),original);
   assert.equal(await page.evaluate(()=>typeof window.__novaHistoryScrollTrial),'undefined');checks++;
+  await setup();await page.evaluate(()=>document.getElementById('history').style.scrollBehavior='smooth');await step('start');const smooth=await finish();assert(smooth.done,JSON.stringify(smooth));assert.equal(smooth.messages.length,40);checks++;
   // Even a stable short window and observed edges must never claim full history.
   await setup(7);await step('start');const short=await finish();assert(short.done);assert.equal(short.coverage.history,'not-proven');assert.equal(short.coverage.text,'not-proven');checks++;
   // Cancellation releases cached bodies, observers and the session and restores position.
