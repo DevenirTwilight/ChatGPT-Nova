@@ -1,5 +1,21 @@
 # 最新复核摘要
 
+## 浏览器式冻结快照 Commit A：源码 c28947b，最新完整验证进行中
+
+用户新目标为 PDF + MHTML + Markdown，不再扩展完整历史/自动滚动算法。实际起点远端2b86b68；原型363cb69及后续集中修正至c28947be326755511deaca3155f6e5e27d07b9a8。保存当前网页（原型）→一次evaluateJavascript同步读取公开呈现状态、clone→同clone派生frozenHtml/markdown→不可变FrozenPageSnapshot。Markdown直接SAF，MHTML独立无JS SnapshotWebView.saveWebArchive，PDF相同renderer标准PrintManager。已移除clone脚本/事件/执行容器、SVG脚本/动画，CSP禁执行、导航与桥隔离；静态资源无Cookie/Auth加载，拒绝backend API。当前仍保留生产Gecko与旧入口，原型PDF本身不用Gecko。版本仍1.4.0/code14，无Release。
+
+[说明/人工验收](../frozen-page-save.md)。本地新快照10浏览器场景、旧17单次/32滚动/19进度/18定位均通过。CI37532352447首次测试编译失败（打印回调非公开构造器、误用私有focus），已改为真实系统Print UI。CI37532804939源码4778c92构建/lint/签名通过，Android35/36旧18项通过、新10项各9通过/1失败：真实PDF测试未打开保存选择器，control Save超时；日志显示17页预览已生成82680bytes，不能当已保存PDF。已修正大小写/描述匹配、明确等候打印目标popup防过渡误点，增加失败UI实物保留。不要把这些失败写成最终通过。
+
+最新CI[37534482218](https://github.com/DevenirTwilight/ChatGPT-Nova/actions/runs/37534482218)为c28947b，正在验证：snapshot10项、真实MD/MHTML/PDF文件、MIME解析、Chromium打开MHTML、旧WebView9/Share5/ClipboardUi5/ClipboardProbe三项完整矩阵/native生命周期及重启/原签名v1升级三步。每个独立检查失败仍继续并写checks.json；unit任务仓库无现有JVM用例时为NO-SOURCE，不声称额外单测通过。Gradle本机wrapper初次下载因Java未使用代理失败，实际构建依靠CI。截图与字节内容需下载产物后独立核对。
+
+待A全部受控检查通过后才做Commit B：正式入口改保存当前网页，移除生产Gecko依赖及GeckoPdfExporter引用，重测/测APK/原签名/交付。可保留旧DOM扫描源码为不在正式UI的legacy，继续旧非PDF检查；若退役旧Gecko PDF两测试，明确标注理由、保留测试与历史证据，不暗删。勿重写ComposerWebView/上传/下载/分享。当前所有生产功能未撤掉Gecko，不要提前报告小包已交付。
+
+远程CSS/图片字节不冻结且可能缺失，canvas/shadow/runtime不序列化；图片srcset目前移除、保留src，后续可评估公开currentSrc但必须仍在同一同步事务中，不能后续读live DOM补内容。真实账号/用户WebView153、人工PDF阅读/Firefox Android同fixture对照尚未完成；三格式只证明此刻已加载网页，不恢复虚拟化未挂载历史，不证明旧403修复。
+
+本地证据：/tmp/nova-snapshot-A-35、/tmp/nova-snapshot-A-36为旧失败轮实物日志；API36产物11446165241/API35产物11446245308，旧构建11444773611（309MB wrapper；当前保留Gecko所以巨大，不需重复直接下载大包）。GitHub下载工具返回file_id后用download_file获取，小证据包约4MB；不要打印临时签名download_url。后续移除Gecko的主APK应直接可下载。CLI gh可读run/artifacts，但写Git对象采用GitHub create_tree/create_commit/update_ref expected_sha/force:false，核对远端、树与本地相同再同步，不强推。
+
+继续指令：读实际远端HEAD与AGENTS/本段/REVIEW/冻结说明，等待并检查37534482218全部结果；失败则修复重测，未通过不切B；通过后按上述B完成生产轻量化、全回归和真实文件独立检查，给测试APK/CI与准确边界，不发布Release。需要压缩/迁移继续入库交接，不为普通回复生成迁移提示词。
+
 ## 功能与实现审查文档已整理；Gecko 轻量化尚未实施
 
 用户现要求整理软件全部功能及实现方式，交给其他 ChatGPT 评估改善。[独立审查资料](../APP-FUNCTIONS-IMPLEMENTATION-REVIEW.md)已按代码 eaeadce、实际 APK 源码190113f整理：原生容器与官网功能边界、登录/输入/文件/媒体/分享/导航、三格式与诊断、构建包体、源码链接及审查指令。本轮只改文档，无新 APK、应用源码或版号变更。文档源码路径存在性及关键版本/包体/验证状态已核对，纯文档未重跑应用测试。
