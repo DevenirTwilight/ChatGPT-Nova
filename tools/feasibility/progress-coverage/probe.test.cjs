@@ -12,8 +12,8 @@ const capture=fs.readFileSync('app/src/main/assets/export/dom-trial.js','utf8').
   await setup(final);let r=await read();assert.equal(r.authors.visibleSupported,1);assert.equal(r.authors.outsideMarkdownChars,0);checks++;
   // Same author with ordinary final Markdown: sibling progress is omitted by capture.
   await setup(final.replace('<div class="markdown">','<p>SECRET-TEXT progress</p><div class="markdown">'));r=await read();assert.equal(r.authorSamples.length,1);assert(r.authors.outsideMarkdownChars>0);let exported=JSON.parse(await page.evaluate(capture));assert(!exported.messages[0].markdown.includes('progress'));checks++;
-  // A visible progress turn without author-role is not one of capture's nodes.
-  await setup('<article data-testid="conversation-turn-0" data-turn="assistant"><p>SECRET-TEXT progress</p></article>'+final);r=await read();assert.equal(r.turns.visibleWithoutSupportedAuthor,1);assert.equal(r.turnSamples[0].declaredRole,'assistant');exported=JSON.parse(await page.evaluate(capture));assert.equal(exported.messages.length,1);checks++;
+  // An explicitly assistant-labelled turn is now a bounded capture fallback.
+  await setup('<article data-testid="conversation-turn-0" data-turn="assistant"><p>SECRET-TEXT progress</p></article>'+final);r=await read();assert.equal(r.turns.visibleWithoutSupportedAuthor,1);assert.equal(r.turnSamples[0].declaredRole,'assistant');exported=JSON.parse(await page.evaluate(capture));assert.equal(exported.messages.length,2);assert.equal(exported.diagnostic.turnFallbacks,1);checks++;
   await setup('<article data-testid="conversation-turn-0" data-turn="assistant"><div data-message-author-role="tool">SECRET-TEXT progress</div></article>'+final);r=await read();assert.equal(r.authors.other,1);assert.equal(r.turns.visibleWithoutSupportedAuthor,1);checks++;
   await setup('<section aria-hidden="true"><div data-message-author-role="assistant">SECRET-TEXT progress</div></section>'+final);r=await read();assert.equal(r.authors.hidden.ariaHidden,1);assert.equal(r.authors.visibleSupported,1);checks++;
   // Conventional assistant markup already includes progress; type itself is not rejected.

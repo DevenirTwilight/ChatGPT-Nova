@@ -41,7 +41,7 @@
   if(command==='start') {
    if(s) abort('H04_BUSY');
    const first=snapshot();if(first.error) return JSON.stringify(first);
-   const authors=[...document.querySelectorAll('[data-message-author-role]')].filter(e=>['user','assistant'].includes(e.dataset.messageAuthorRole)
+   const authors=[...document.querySelectorAll('[data-message-author-role],article[data-turn="assistant"]')].filter(e=>['user','assistant'].includes(e.dataset.messageAuthorRole || e.dataset.turn)
     && readable(e));
    const firstAuthor=authors[0];let container=null;
    for(let e=firstAuthor?.parentElement;e;e=e.parentElement) {
@@ -134,7 +134,7 @@
   let added=0;
   for(const m of rows) {
    const old=s.messages.get(m.id);
-   if(old && (old.role!==m.role || old.html!==m.html || old.markdown!==m.markdown)) abort('H04_CHANGED');
+   if(old && (old.role!==m.role || old.messageType!==m.messageType || old.html!==m.html || old.markdown!==m.markdown)) abort('H04_CHANGED');
    if(!old) {
     const bytes=new TextEncoder().encode(JSON.stringify(m)).length;
     if(s.messages.size>=1000 || s.chars+m.markdown.length>2000000 || s.bytes+bytes>64*1024*1024) abort('H05_LIMIT');

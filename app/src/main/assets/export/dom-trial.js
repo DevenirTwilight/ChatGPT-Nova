@@ -1,7 +1,7 @@
 (function(verifyOnly) {
   'use strict';
   const MAX_MESSAGES = 1000, MAX_CHARS = 2000000;
-  const diagnostic = {source:'read-only-dom-v2', history:'not-proven', count:0, chars:0, processed:0, authorFallbacks:0,
+  const diagnostic = {source:'read-only-dom-v3', history:'not-proven', count:0, chars:0, processed:0, authorFallbacks:0, turnFallbacks:0, explicitProgressBlocks:0,
     missingIds:0, duplicateIds:0, codeBlocks:0, tables:0, math:0, images:0, elapsedMs:0};
   const started = performance.now();
   const error = code => { throw Object.assign(new Error(code), {code}); };
@@ -96,8 +96,21 @@
     if (document.readyState !== 'complete') error('D03_LOADING');
     if (document.querySelector('[data-testid="stop-button"], [data-is-streaming="true"]')) error('D04_STREAMING');
     const route=location.href;
-    const nodes=[...document.querySelectorAll('[data-message-author-role]')]
+    const authors=[...document.querySelectorAll('[data-message-author-role]')];
+    const nodes=authors
       .filter(e=>['user','assistant'].includes(e.getAttribute('data-message-author-role')) && visible(e));
+    // Only an explicitly assistant-labelled turn can supply a missing author.
+    // Never infer a role from prose, status labels, an ordinal, or nearby messages.
+    const turns=[...document.querySelectorAll('article[data-turn="assistant"]')];
+    for (const e of turns) {
+      if (!visible(e) || e.hasAttribute('data-message-author-role')
+          || e.querySelector('[data-message-author-role]')
+          || e.parentElement.closest('[data-message-author-role],article[data-turn="assistant"]')) continue;
+      nodes.push(e);diagnostic.turnFallbacks++;
+    }
+    nodes.sort((a,b)=>a===b ? 0 : a.compareDocumentPosition(b)&Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1);
+    diagnostic.authors={raw:authors.length,supported:authors.filter(e=>['user','assistant'].includes(e.getAttribute('data-message-author-role'))).length,
+      visibleSupported:nodes.length-diagnostic.turnFallbacks};
     diagnostic.count=nodes.length;
     if (!nodes.length) error('D05_NO_MESSAGES');
     if (nodes.length>MAX_MESSAGES) error('D06_LIMIT');
@@ -111,15 +124,23 @@
       if (!id) diagnostic.missingIds++;
       else if (ids.has(id)) { diagnostic.duplicateIds++; error('D08_DUPLICATE_ID'); }
       ids.add(id);
-      const role=e.getAttribute('data-message-author-role');
+      const role=e.getAttribute('data-message-author-role') || e.getAttribute('data-turn');
+      const channel=e.getAttribute('data-message-channel') || e.closest('article[data-message-channel]')?.getAttribute('data-message-channel');
+      const messageType=role==='user' ? 'user' : channel==='commentary' ? 'assistant-progress' : channel==='final' ? 'assistant-final' : 'assistant-unknown';
       const candidates=role==='assistant' ? [...e.querySelectorAll('.markdown')] : [];
       const roots=candidates.filter(body=>visible(body) && !body.parentElement.closest('.markdown'));
-      const bodies=roots.length ? roots : [e];
+      // Explicit commentary siblings outside final Markdown are readable content,
+      // but without independent identity they remain part of this same message.
+      const progress=[...e.querySelectorAll('[data-message-channel="commentary"]')].filter(body=>visible(body)
+        && !roots.some(root=>root.contains(body) || body.contains(root))
+        && !body.parentElement.closest('[data-message-channel="commentary"]'));
+      diagnostic.explicitProgressBlocks+=progress.length;
+      const bodies=roots.length ? [...roots,...progress].sort((a,b)=>a.compareDocumentPosition(b)&Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1) : [e];
       // Bound and verify the complete author subtree, including a safe fallback's source.
       const authorChars=e.textContent.length;
       diagnostic.chars+=authorChars;
       if (diagnostic.chars>MAX_CHARS) error('D06_LIMIT');
-      hashText(id);hashText(role);hashText(e.outerHTML);
+      hashText(id);hashText(role);hashText(messageType);hashText(e.outerHTML);
       if (!verifyOnly) {
         let parts=bodies.map(content);
         let markdown=parts.map(p=>p.markdown.trim()).filter(Boolean).join('\n\n');
@@ -141,7 +162,7 @@
             reason:authorChars===0 ? 'no-dom-text' : 'no-readable-content-after-filtering'};
           error('D09_EMPTY_BODY');
         }
-        messages.push({id,role,html:parts.map(p=>p.html).join(''),markdown});
+        messages.push({id,role,messageType,html:parts.map(p=>p.html).join(''),markdown});
       }
       diagnostic.processed++;
     }

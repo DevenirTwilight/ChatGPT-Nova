@@ -79,9 +79,9 @@ final class ConversationExport {
         if (!trusted() || !active.getAsBoolean()) { fail("N01_PAGE", "请打开 ChatGPT 会话后重试。",null); return; }
         busy=true;
         new AlertDialog.Builder(activity).setTitle("导出聊天历史（试用）")
-            .setMessage("只单向收集一遍，不折返。在顶部向下、在底部向上；从中间开始先定位到底部再向上。请等待回复结束，采集时不要操作页面。到达顶部仍不证明历史完整。图片与附件原文件不会打包。也可只采集当前页面。")
-            .setPositiveButton("滚动收集历史",(d,w)->startScroll())
-            .setNeutralButton("采集并选择格式",(d,w)->capture())
+            .setMessage("快速导出当前已加载消息，不滚动。需要加载更早历史时，可选单向扫描：在顶部向下、在底部向上；从中间先定位到底部再向上，不折返。请等待回复结束，采集时不要操作页面。完整历史仍未确认；图片与附件原文件不会打包。")
+            .setPositiveButton("快速导出已加载消息",(d,w)->capture())
+            .setNeutralButton("单向扫描历史",(d,w)->startScroll())
             .setNegativeButton("取消",(d,w)->busy=false).setOnCancelListener(d->busy=false).show();
     }
     private void capture() {
@@ -116,7 +116,11 @@ final class ConversationExport {
     }
     private String scrollExpression(String command,String token) {
         if(scanAsset==null) scanAsset=asset("scroll-trial.js").replace("__NOVA_SNAPSHOT__",asset().replace("__NOVA_VERIFY_ONLY__","false"));
-        return scanAsset.replace("__NOVA_SCROLL_COMMAND__",JSONObject.quote(command)).replace("__NOVA_SCROLL_TOKEN__",JSONObject.quote(token));
+        return withDiscovery(scanAsset.replace("__NOVA_SCROLL_COMMAND__",JSONObject.quote(command)).replace("__NOVA_SCROLL_TOKEN__",JSONObject.quote(token)),true);
+    }
+    private String withDiscovery(String expression,boolean terminalOnly) {
+        return "(function(){const r=JSON.parse("+expression+");if("+(terminalOnly ? "r.done || r.error" : "true")+") {"
+            +"r.diagnostic=r.diagnostic || {};r.diagnostic.progressDiscovery=JSON.parse("+asset("progress-discovery.js")+");}return JSON.stringify(r);})()";
     }
     private void startScroll() {
         resetDiagnostic();file=null;
@@ -213,7 +217,8 @@ final class ConversationExport {
         stopDeadline(); deadline=()-> {if(!destroyed && ticket==generation) fail("N02_TIMEOUT","页面采集超时，请等待加载完成后重试。",null);};
         web.postDelayed(deadline,15000);
         try {
-            web.evaluateJavascript(asset().replace("__NOVA_VERIFY_ONLY__",verify ? "true" : "false"),value->{
+            String expression=asset().replace("__NOVA_VERIFY_ONLY__",verify ? "true" : "false");
+            web.evaluateJavascript(verify ? expression : withDiscovery(expression,false),value->{
                 if (!current(ticket)) {
                     if(!destroyed && ticket==generation) fail("D10_CHANGED","页面已切换，采集已取消。",null);
                     return;
@@ -245,6 +250,7 @@ final class ConversationExport {
         StringBuilder body=new StringBuilder(), md=new StringBuilder("# "+title.replaceAll("[\\r\\n]"," ")+"\n\n> "+notice+"\n\n"+summary+"\n\n");
         for(int i=0;i<messages.length();i++) {
             JSONObject m=messages.getJSONObject(i); String role="user".equals(m.getString("role")) ? "用户" : "助手";
+            if ("assistant-progress".equals(m.optString("messageType"))) role="助手进度";
             body.append("<article><h2>").append(role).append("</h2>").append(m.getString("html")).append("</article>");
             md.append("## ").append(role).append("\n\n").append(m.getString("markdown")).append("\n\n---\n\n");
         }

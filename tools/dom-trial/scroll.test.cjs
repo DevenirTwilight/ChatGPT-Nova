@@ -27,6 +27,12 @@ const fixture=fs.readFileSync('tools/dom-trial/virtual-fixture.js','utf8');
   await setup();await page.evaluate(()=>document.getElementById('history').style.scrollBehavior='smooth');await step('start');const smooth=await finish();assert(smooth.done,JSON.stringify(smooth));assert.equal(smooth.messages.length,40);checks++;
   // Even a stable short window and observed edges must never claim full history.
   await setup(7);await step('start');const short=await finish();assert(short.done);assert.equal(short.coverage.history,'not-proven');assert.equal(short.coverage.text,'not-proven');checks++;
+  await setup(7);await page.evaluate(()=>{
+    const e=document.querySelector('[data-message-id="m3"]');e.dataset.turn='assistant';e.dataset.messageChannel='commentary';
+    e.querySelector('[data-message-author-role]').removeAttribute('data-message-author-role');
+  });await step('start');const progressTurn=await finish();assert(progressTurn.done,JSON.stringify(progressTurn));
+  assert.equal(progressTurn.messages.length,7);assert.deepEqual(progressTurn.messages.map(m=>m.id),Array.from({length:7},(_,i)=>'m'+i));
+  assert.equal(progressTurn.messages[3].messageType,'assistant-progress');assert(progressTurn.messages[3].markdown.includes('ROW-3'));checks++;
   // Use the same pixel tolerance at the endpoint and while comparing edge geometry.
   await setup(7);await step('start');let jitterEnd;for(let i=0;i<100;i++) {
    await page.evaluate(i=>document.getElementById('space').style.height=(448+(i%2)*2)+'px',i);
