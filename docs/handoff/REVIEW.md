@@ -1,5 +1,10 @@
 # 最新复核摘要
 
+## CI环境安装停滞，重试构建
+
+源码29d3c49的本地17单快照/32滚动/19进度/18定位检查通过。CI37505642553在setup-android停滞超过7分钟（上次该步27秒），尚未编译；两次取消API返回502。工作流改用ubuntu-latest预装SDK，先检查sdkmanager/adb存在并补PATH，再确保所需platform/build-tools，分别2/5分钟超时。版本与采集源码不变；新推送触发替换运行，旧运行不算验证成功，待新CI证据。
+
+
 ## 真机明确助手turn无作者：有限补采批次待CI
 
 e56c225快速采样N00_READY，总224ms；12普通作者均采集（6用户/6助手），13个可见turn，其中domIndex3 declaredRole=assistant/authorNodes0/visibleTextNodes4/visibleTextChars124；无截断。结合上一条定位可见作者外Markdown，明确旧采集器只补article导致这类独立助手会话容器漏采。其他12个turn外侧文字83字符大多署名/UI，不自动采集。12层定位未显示第3个turn标签，不能声称已拿到完整原始DOM或真实ID。
