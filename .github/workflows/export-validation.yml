@@ -1,8 +1,5 @@
-name: Conversation export validation
+name: Legacy export fixture validation (manual)
 on:
-  push:
-    branches: [feature/export-conversation]
-    paths: ['app/**', 'tools/export-tests/**', '.github/workflows/export-validation.yml']
   workflow_dispatch:
 permissions:
   contents: read
@@ -12,6 +9,8 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: 5e969c36fd2751f3bcd39500ee9ed1520394fa1d
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -48,6 +47,8 @@ jobs:
         api: [33, 34, 35]
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: 5e969c36fd2751f3bcd39500ee9ed1520394fa1d
       - uses: actions/setup-java@v4
         with:
           distribution: temurin

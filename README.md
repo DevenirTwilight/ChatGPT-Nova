@@ -4,6 +4,10 @@
 
 安装 Release 构建的 `ChatGPT-Nova.apk` 后，它使用自己的应用包 `com.example.chatgptnova` 和 WebView 数据目录，可与官方 ChatGPT App 同时安装。Android 8.0（API 26）及以上可以安装。
 
+## 新方案导出试用
+
+工作分支提供 1.3.8-dom-trial：菜单“导出已加载消息（试用）”支持 HTML、Markdown 和系统保存为 PDF，“导出诊断”可复制最近一次结果。仅导出页面已加载消息，完整历史未确认；图片/附件不打包，旧捕获器不再安装。安装、范围、错误码与验证状态见 [试用说明](docs/dom-export-trial.md)。
+
 ## 使用
 
 启动后进入官网，顶部显示 ChatGPT Nova 和当前域名。右上角菜单提供刷新、ChatGPT 首页、用浏览器打开和设置；页面明确显示未登录时增加“登录”。设置集中放置退出当前账号（明确已登录时）、清除登录与网站数据、登录帮助和关于 ChatGPT Nova。退出与数据清除都有确认，不影响官方 App 或浏览器。文件上传支持系统文件 / 图片选择器以及拍照；相机和麦克风只为 HTTPS 的 chatgpt.com 及其子域请求 Android 权限。Cookie 在页面完成和应用暂停时写入本地；清除时等待 Cookie 删除完成再加载首页。

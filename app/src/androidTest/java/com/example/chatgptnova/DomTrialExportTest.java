@@ -1,0 +1,235 @@
+package com.example.chatgptnova;
+
+import android.app.Activity;
+import android.app.Instrumentation;
+import android.content.Intent;
+import android.net.Uri;
+import android.view.accessibility.AccessibilityNodeInfo;
+import java.io.File;
+import java.lang.reflect.Field;
+import java.nio.charset.StandardCharsets;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+import static org.junit.Assert.*;
+
+/** DOM trial on Android fixtures; no real account or completeness proof. */
+public final class DomTrialExportTest extends FixtureActivity {
+    private Instrumentation.ActivityMonitor monitor;
+    @Before public void before() {
+        start();
+        android.accessibilityservice.AccessibilityServiceInfo info=instrument.getUiAutomation().getServiceInfo();
+        info.flags |= android.accessibilityservice.AccessibilityServiceInfo.FLAG_REPORT_VIEW_IDS;
+        instrument.getUiAutomation().setServiceInfo(info);
+    }
+    @After public void after() {
+        if (monitor!=null) instrument.removeMonitor(monitor);
+        if (scenario!=null) scenario.close();
+    }
+    private ConversationExport exporter() {
+        try { Field f=MainActivity.class.getDeclaredField("conversationExport");f.setAccessible(true);return (ConversationExport)f.get(activity); }
+        catch (Exception e) {throw new AssertionError(e);}
+    }
+    private File output() {
+        try { Field f=ConversationExport.class.getDeclaredField("file");f.setAccessible(true);return (File)f.get(exporter()); }
+        catch (Exception e) {throw new AssertionError(e);}
+    }
+    private boolean busy() {
+        AtomicReference<Boolean> result=new AtomicReference<>(true);
+        main(()-> {try {Field f=ConversationExport.class.getDeclaredField("busy");f.setAccessible(true);result.set(f.getBoolean(exporter()));}catch(Exception e){throw new AssertionError(e);}});
+        return result.get();
+    }
+    private void click(String label) {
+        long until=android.os.SystemClock.uptimeMillis()+20000;
+        do {
+            AccessibilityNodeInfo node=findControl(instrument.getUiAutomation().getRootInActiveWindow(),label);
+            if(node!=null && node.isVisibleToUser() && node.isEnabled()) {
+                // Labels may be non-clickable TextViews inside an actionable row.
+                // Use the native accessibility action on that row; coordinate taps
+                // can hit the previous window while a popup is still transitioning.
+                AccessibilityNodeInfo target=node;
+                while(target!=null && !target.isClickable()) target=target.getParent();
+                if(target!=null && target.isEnabled() && target.isVisibleToUser()
+                    && target.performAction(AccessibilityNodeInfo.ACTION_CLICK)) return;
+            }
+            android.os.SystemClock.sleep(100);
+        } while(android.os.SystemClock.uptimeMillis()<until);
+        fail("Timed out: export control "+label+"\n"+dumpPrintWindow(instrument.getUiAutomation().getRootInActiveWindow()));
+    }
+    private static String shellScript(String script) {
+        // UiAutomation uses Runtime.exec rather than a shell parser. A whitespace-
+        // free sh -c argument preserves the quoted UTF-8 filename as one command.
+        String encoded=android.util.Base64.encodeToString(script.getBytes(StandardCharsets.UTF_8),android.util.Base64.NO_WRAP);
+        return "sh -c eval${IFS}$(echo${IFS}"+encoded+"|base64${IFS}-d)";
+    }
+    private static AccessibilityNodeInfo findControl(AccessibilityNodeInfo node,String label) {
+        if(node==null) return null;
+        if(node.getText()!=null && label.equalsIgnoreCase(node.getText().toString())
+            || node.getContentDescription()!=null && label.equalsIgnoreCase(node.getContentDescription().toString())) return node;
+        for(int i=0;i<node.getChildCount();i++) {
+            AccessibilityNodeInfo found=findControl(node.getChild(i),label);if(found!=null) return found;
+        }
+        return null;
+    }
+    private void conversation(String ignored) {
+        js("""
+            (()=>{
+              history.replaceState({},'', '/g/g-p-fixture/c/fixture');
+              document.title='DOM trial 中文';
+              document.body.innerHTML='<article data-message-id="u"><div data-message-author-role="user"><div class="whitespace-pre-wrap">USER-FIRST 中文😀</div></div></article>'
+                +'<article data-message-id="a"><div data-message-author-role="assistant"><div class="markdown">'
+                +Array.from({length:80},(_,i)=>'<p>段落 '+i+' 中文 English</p>').join('')
+                +'<pre><code>CODE-FIRST\\n'+('long-code-'.repeat(200))+'CODE-LAST</code></pre>'
+                +'<table><tr><th>名称</th><th>Value</th></tr><tr><td>中文</td><td>TABLE-LAST</td></tr></table><p>ASSISTANT-LAST</p></div></div></article>';
+              return true;
+            })()
+            """);
+    }
+    private void export(String format) { main(()->exporter().start());click("采集并选择格式");click(format); }
+    private void external(java.util.function.Function<Intent,Instrumentation.ActivityResult> action) {
+        monitor=new Instrumentation.ActivityMonitor() {
+            @Override public Instrumentation.ActivityResult onStartActivity(Intent intent) {return action.apply(intent);}
+        };instrument.addMonitor(monitor);
+    }
+    @Test public void htmlSavedThroughSafHasDomBodyAndScopeNotice() throws Exception {
+        conversation("");
+        assertEquals("true",js("typeof window.__novaExportCapture==='undefined'"));
+        AtomicReference<Intent> captured=new AtomicReference<>();
+        external(intent->{
+            if(!Intent.ACTION_CREATE_DOCUMENT.equals(intent.getAction())) return null;
+            captured.set(intent);return new Instrumentation.ActivityResult(Activity.RESULT_OK,new Intent().setData(OUTPUT));
+        });
+        export("HTML 阅读版（推荐）");click("保存到本地…");
+        waitFor("saved",()->captured.get()!=null && !busy());
+        String saved=new String(read(OUTPUT),StandardCharsets.UTF_8);
+        assertTrue(saved.contains("USER-FIRST"));assertTrue(saved.contains("ASSISTANT-LAST"));
+        assertTrue(saved.contains("CODE-LAST"));assertTrue(saved.contains("TABLE-LAST"));
+        assertTrue(saved.contains("完整历史未确认"));assertFalse(saved.contains("prompt-textarea"));
+        assertEquals("text/html",captured.get().getType());
+    }
+    @Test public void markdownCanCancelThenShareReadableFile() throws Exception {
+        conversation("");AtomicReference<Intent> captured=new AtomicReference<>();
+        external(intent->{
+            if(Intent.ACTION_CREATE_DOCUMENT.equals(intent.getAction())) return new Instrumentation.ActivityResult(Activity.RESULT_CANCELED,null);
+            if(Intent.ACTION_CHOOSER.equals(intent.getAction())) {captured.set(intent);return new Instrumentation.ActivityResult(Activity.RESULT_CANCELED,null);}
+            return null;
+        });
+        export("Markdown");File first=output();click("保存到本地…");waitFor("cancelled",()->!busy());
+        export("Markdown");File second=output();assertNotEquals(first.getName(),second.getName());click("分享文件");
+        waitFor("share",()->captured.get()!=null);Intent send=captured.get().getParcelableExtra(Intent.EXTRA_INTENT);
+        assertEquals("text/markdown",send.getType());
+        assertTrue((send.getFlags()&Intent.FLAG_GRANT_READ_URI_PERMISSION)!=0);
+        Uri uri=send.getParcelableExtra(Intent.EXTRA_STREAM);String text=new String(read(uri),StandardCharsets.UTF_8);
+        assertTrue(text.contains("USER-FIRST"));assertTrue(text.contains("CODE-LAST"));assertTrue(text.contains("TABLE-LAST"));assertTrue(text.contains("完整历史未确认"));
+    }
+    @Test public void streamingErrorHasCopyableRedactedDiagnostic() throws Exception {
+        conversation("");js("document.body.insertAdjacentHTML('beforeend','<button data-testid=\"stop-button\">stop</button>');true");
+        main(()->exporter().start());click("采集并选择格式");
+        waitFor("failure dialog",()->findControl(instrument.getUiAutomation().getRootInActiveWindow(),"试用导出失败")!=null);
+        assertFalse(busy());assertNull(output());click("复制诊断");
+        AtomicReference<String> detail=new AtomicReference<>();
+        main(()->{android.content.ClipboardManager c=activity.getSystemService(android.content.ClipboardManager.class);detail.set(c.getPrimaryClip().getItemAt(0).getText().toString());});
+        assertTrue(detail.get().contains("D04_STREAMING"));assertTrue(detail.get().contains("not-proven"));
+        assertFalse(detail.get().contains("USER-FIRST"));assertFalse(detail.get().contains("g-p-fixture"));
+    }
+    @Test public void pdfUsesSystemPrintSaveAndCanCancel() throws Exception {
+        StringBuilder text=new StringBuilder();for(int i=0;i<80;i++) text.append("段落 ").append(i).append(" 中文 English [link](https://example.org)\n\n");
+        conversation(text.toString());
+        export("PDF");
+        waitFor("system PDF print job",()-> {
+            AtomicReference<Boolean> found=new AtomicReference<>(false);
+            main(()-> { try {Field f=ConversationExport.class.getDeclaredField("printJob");f.setAccessible(true);found.set(f.get(exporter())!=null);}catch(Exception e){throw new AssertionError(e);} });
+            return found.get();
+        });
+        waitFor("print service window",()-> {
+            AccessibilityNodeInfo root=instrument.getUiAutomation().getRootInActiveWindow();
+            return root!=null && "com.android.printspooler".contentEquals(root.getPackageName());
+        });
+        long[] nextBack={0};
+        waitFor("PDF cancel releases exporter",()-> {
+            if(!busy()) return true;
+            AccessibilityNodeInfo root=instrument.getUiAutomation().getRootInActiveWindow();
+            long now=android.os.SystemClock.uptimeMillis();
+            if(root!=null && "com.android.printspooler".contentEquals(root.getPackageName()) && now>=nextBack[0]) {
+                instrument.sendKeyDownUpSync(android.view.KeyEvent.KEYCODE_BACK);
+                nextBack[0]=now+2000;
+            }
+            return false;
+        });
+    }
+    @Test public void pdfSavedBySystemOpensWithMultiplePages() throws Exception {
+        StringBuilder text=new StringBuilder();for(int i=0;i<80;i++) text.append("段落 ").append(i).append(" 中文 English [link](https://example.org)\n\n");
+        text.append("## Code / 表格 / 数学\n\n```java\nString name = \"中文\";\n")
+            .append("long-code-".repeat(200)).append("LONG_LINE_END\n```\n\n")
+            .append("| 名称 | Value | Link |\n| --- | --- | --- |\n| export-table-row | **中文** | [target](https://example.org/android-pdf-target) |\n\n")
+            .append("Inline `code` and $E = mc^2$。\n\n");
+        conversation(text.toString());export("PDF");
+        waitFor("print service window",()-> {
+            AccessibilityNodeInfo root=instrument.getUiAutomation().getRootInActiveWindow();
+            return root!=null && "com.android.printspooler".contentEquals(root.getPackageName());
+        });
+        // Android can initially show "Select a printer" rather than choosing PDF.
+        waitFor("printer destination selector",()-> {
+            AccessibilityNodeInfo root=instrument.getUiAutomation().getRootInActiveWindow();
+            if(root==null) return false;
+            for(AccessibilityNodeInfo selector:root.findAccessibilityNodeInfosByViewId("com.android.printspooler:id/destination_spinner"))
+                if(selector.isClickable()) return selector.performAction(AccessibilityNodeInfo.ACTION_CLICK);
+            return false;
+        });
+        waitFor("printer destination popup",()-> {
+            AccessibilityNodeInfo root=instrument.getUiAutomation().getRootInActiveWindow();
+            return findControl(root,"All printers…")!=null && findControl(root,"Save as PDF")!=null
+                && root.findAccessibilityNodeInfosByViewId("com.android.printspooler:id/print_button").isEmpty();
+        });
+        click("Save as PDF");
+        // The long document's preview is asynchronous; wait separately from extraction.
+        long previewDeadline=android.os.SystemClock.uptimeMillis()+60000;
+        boolean saved=false;
+        do {
+            AccessibilityNodeInfo root=instrument.getUiAutomation().getRootInActiveWindow();
+            if(root!=null) {
+                for(AccessibilityNodeInfo button:root.findAccessibilityNodeInfosByViewId("com.android.printspooler:id/print_button"))
+                    if(button.isEnabled() && button.isClickable() && "Save to PDF".contentEquals(button.getContentDescription()))
+                        saved=true;
+            }
+            if(!saved) android.os.SystemClock.sleep(200);
+        } while(!saved && android.os.SystemClock.uptimeMillis()<previewDeadline);
+        String diagnostic="";
+        if(!saved) {
+            diagnostic=dumpPrintWindow(instrument.getUiAutomation().getRootInActiveWindow());
+        }
+        assertTrue("System print preview must enable Save as PDF\n"+diagnostic,saved);
+        click("Save to PDF");
+        click("Save");
+        waitFor("system PDF save finished",()->!busy());
+        String path="/sdcard/Download/"+output().getName();
+        String command="cat '"+path.replace("'","'\\''")+"'";
+        byte[] pdf=new byte[0];
+        long fileDeadline=android.os.SystemClock.uptimeMillis()+20000;
+        do {
+            try(android.os.ParcelFileDescriptor result=instrument.getUiAutomation().executeShellCommand(shellScript(command));
+                java.io.InputStream input=new android.os.ParcelFileDescriptor.AutoCloseInputStream(result);
+                java.io.ByteArrayOutputStream data=new java.io.ByteArrayOutputStream()) {
+                byte[] buffer=new byte[8192];int count;while((count=input.read(buffer))!=-1)data.write(buffer,0,count);pdf=data.toByteArray();
+            }
+            if(pdf.length>1000 && new String(pdf,0,5,StandardCharsets.US_ASCII).equals("%PDF-")) break;
+            android.os.SystemClock.sleep(200);
+        } while(android.os.SystemClock.uptimeMillis()<fileDeadline);
+        assertTrue("System saved a PDF",pdf.length>1000);assertEquals("%PDF-",new String(pdf,0,5,StandardCharsets.US_ASCII));
+        File local=new File(activity.getExternalFilesDir(null),"printed-export.pdf");
+        try(java.io.FileOutputStream out=new java.io.FileOutputStream(local)){out.write(pdf);}
+        try(android.os.ParcelFileDescriptor fd=android.os.ParcelFileDescriptor.open(local,android.os.ParcelFileDescriptor.MODE_READ_ONLY);
+            android.graphics.pdf.PdfRenderer renderer=new android.graphics.pdf.PdfRenderer(fd)) {
+            assertTrue("Long HTML became multiple PDF pages",renderer.getPageCount()>1);
+            try(android.graphics.pdf.PdfRenderer.Page page=renderer.openPage(0)){assertTrue(page.getWidth()>0);assertTrue(page.getHeight()>0);}
+        }
+    }
+    private static String dumpPrintWindow(AccessibilityNodeInfo node) {
+        if(node==null) return "No active window";
+        StringBuilder dump=new StringBuilder(node.toString()).append('\n');
+        for(int i=0;i<node.getChildCount();i++) dump.append(dumpPrintWindow(node.getChild(i)));
+        return dump.toString();
+    }
+}
