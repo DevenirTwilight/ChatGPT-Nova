@@ -14,7 +14,7 @@ try:
                  'com.example.chatgptnova.DomTrialExportTest',
                  'com.example.chatgptnova.test/androidx.test.runner.AndroidJUnitRunner', timeout=600)
     (out/'instrumentation.txt').write_text(result)
-    assert re.search(r'OK \(12 tests\)', result), result
+    assert re.search(r'OK \(13 tests\)', result), result
     assert 'FAILURES!!!' not in result and 'INSTRUMENTATION_FAILED' not in result, result
     adb('pull', '/sdcard/Android/data/com.example.chatgptnova/files/printed-export.pdf', str(out/'printed-export.pdf'))
     subprocess.run(['pdftotext', str(out/'printed-export.pdf'), str(out/'printed-export.txt')], check=True)
