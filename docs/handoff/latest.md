@@ -1,3 +1,9 @@
+## 继续检查点（最新源码6473c32）
+
+CI37544389737构建/lint/签名/浏览器通过，Android35/36正在执行。PDF自动验收现通过真实DocumentsUI明确设置Nova-fixture-UUID.pdf并读取实际保存文件，不再把PrintManager任务标签当文件名；生产仍不要求PDF路径。Firefox失败已从logcat确认默认浏览器系统role窗口阻塞：测试仅处理该明确窗口，新增专属firefox-ui-failure证据，并恢复Nova前台再关闭外部浏览器以验证Scenario生命周期。不要提前记PDF/Firefox通过，不移除Gecko。
+
+实际从Android35前轮SAF取回的普通.html已在Chromium143/Firefox144/Edge154以file://打开：中法英/emoji/首尾/长代码/表格/dataPNG解码、无脚本或HTTP请求、白底print CSS通过，脱敏证据tools/snapshot/evidence/android-saved-html-compatibility.json。可复现命令使用tools/snapshot/compatibility.cjs的NOVA_HTML_FILE指定实际文件，NOVA_HTML_RESULTS指定结果目录；不是只合成新HTML代替保存产物。
+
 # ChatGPT Nova 会话交接
 
 ## 当前检查点：A源码d2e44a8，37542015192失败待修正
