@@ -30,6 +30,7 @@ const fixture=fs.readFileSync('tools/dom-trial/virtual-fixture.js','utf8');
   await setup(7);await page.evaluate(()=>{
     const e=document.querySelector('[data-message-id="m3"]');e.dataset.turn='assistant';e.dataset.messageChannel='commentary';
     e.querySelector('[data-message-author-role]').removeAttribute('data-message-author-role');
+    e.insertAdjacentHTML('beforeend','<span class="animate-spin" style="display:block;width:10px;height:10px"></span>');
   });await step('start');const progressTurn=await finish();assert(progressTurn.done,JSON.stringify(progressTurn));
   assert.equal(progressTurn.messages.length,7);assert.deepEqual(progressTurn.messages.map(m=>m.id),Array.from({length:7},(_,i)=>'m'+i));
   assert.equal(progressTurn.messages[3].messageType,'assistant-progress');assert(progressTurn.messages[3].markdown.includes('ROW-3'));checks++;

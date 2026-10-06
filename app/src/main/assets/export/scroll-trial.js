@@ -22,7 +22,7 @@
   const frame=s.container.getBoundingClientRect();
   return [...s.container.querySelectorAll('[aria-busy="true"],[role="progressbar"],[data-testid="loading-spinner"],[class~="animate-spin"]')].filter(e=>{
    if(!readable(e)) return false;
-   if(e.matches('[class~="animate-spin"]') && e.closest('[data-message-author-role]')) return false;
+   if(e.matches('[class~="animate-spin"]') && e.closest('[data-message-author-role],article[data-turn="assistant"]')) return false;
    const r=e.getBoundingClientRect();return r.width>0 && r.height>0 && r.bottom>Math.max(0,frame.top) && r.top<Math.min(innerHeight,frame.bottom);
   }).length + (s.container.getAttribute('aria-busy')==='true' ? 1 : 0);
  }
@@ -41,8 +41,10 @@
   if(command==='start') {
    if(s) abort('H04_BUSY');
    const first=snapshot();if(first.error) return JSON.stringify(first);
-   const authors=[...document.querySelectorAll('[data-message-author-role],article[data-turn="assistant"]')].filter(e=>['user','assistant'].includes(e.dataset.messageAuthorRole || e.dataset.turn)
-    && readable(e));
+   const authors=[...document.querySelectorAll('[data-message-author-role],article[data-turn="assistant"]')].filter(e=>readable(e)
+    && (['user','assistant'].includes(e.dataset.messageAuthorRole) || (!e.hasAttribute('data-message-author-role')
+      && e.dataset.turn==='assistant' && !e.querySelector('[data-message-author-role]')
+      && !e.parentElement.closest('[data-message-author-role],article[data-turn="assistant"]'))));
    const firstAuthor=authors[0];let container=null;
    for(let e=firstAuthor?.parentElement;e;e=e.parentElement) {
     const css=getComputedStyle(e);

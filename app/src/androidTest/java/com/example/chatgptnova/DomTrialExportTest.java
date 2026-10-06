@@ -213,11 +213,15 @@ public final class DomTrialExportTest extends FixtureActivity {
         String html=new String(read(OUTPUT),StandardCharsets.UTF_8);
         assertTrue(html.contains("助手进度"));assertTrue(html.indexOf("USER-FIRST")<html.indexOf("PROGRESS-BODY"));
         assertTrue(html.indexOf("PROGRESS-BODY")<html.indexOf("ASSISTANT-LAST"));assertFalse(html.contains("PRIVATE-CONTROL"));
-        main(()->exporter().showDiagnostic());
-        AtomicReference<String> detail=new AtomicReference<>();main(()->detail.set(dumpPrintWindow(instrument.getUiAutomation().getRootInActiveWindow())));
-        assertTrue(detail.get().contains("progressDiscovery"));assertTrue(detail.get().contains("turnFallbacks"));
+        main(()->exporter().showDiagnostic());click("复制诊断");
+        AtomicReference<String> detail=new AtomicReference<>();main(()->{
+            android.content.ClipboardManager c=activity.getSystemService(android.content.ClipboardManager.class);
+            detail.set(c.getPrimaryClip().getItemAt(0).getText().toString());
+        });
+        org.json.JSONObject dom=new org.json.JSONObject(detail.get()).getJSONObject("dom");
+        assertEquals(3,dom.getInt("count"));assertEquals(1,dom.getInt("turnFallbacks"));
+        assertEquals(2,dom.getJSONObject("progressDiscovery").getJSONObject("authors").getInt("visibleSupported"));
         for(String secret:new String[]{"PROGRESS-BODY","PRIVATE-PROGRESS-ID","PRIVATE-CONTROL"}) assertFalse(detail.get().contains(secret));
-        click("关闭");
     }
     @Test public void boxlessBodyWrappersStillSaveTextAndCode() throws Exception {
         conversation("");
