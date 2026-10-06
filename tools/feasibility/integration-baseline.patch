@@ -1,0 +1,381 @@
+diff --git a/app/src/main/java/com/example/chatgptnova/MainActivity.java b/app/src/main/java/com/example/chatgptnova/MainActivity.java
+--- a/app/src/main/java/com/example/chatgptnova/MainActivity.java
++++ b/app/src/main/java/com/example/chatgptnova/MainActivity.java
+@@ -298,6 +298,8 @@
+             """.replace("INSERT_FUNCTION", INSERT_COMPOSER_TEXT);
+ 
+     private WebView webView;
++    private int feasibilityGeneration;
++    private ExportFeasibilityProbe.PdfSession feasibilityPdf;
+     private ProgressBar progress;
+     private PermissionRequest pendingWebPermission;
+     private UploadController uploads;
+@@ -484,6 +486,7 @@
+             @Override
+             public void onPageStarted(WebView view, String url, Bitmap favicon) {
+                 if (view != webView || clearing) return;
++                feasibilityGeneration++;
+                 ((ComposerWebView) view).navigationStarted();
+                 if (webShare != null) webShare.navigationStarted();
+                 accountUiState = AccountUiState.UNKNOWN;
+@@ -834,6 +837,11 @@
+             if ("chatgpt.com".equals(Uri.parse(webView.getUrl() == null ? "" : webView.getUrl()).getHost()))
+                 items.add(0, 6, 5, "从剪贴板粘贴");
+             items.add(0, 5, 6, "设置");
++            if ((getApplicationInfo().flags & android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE) != 0) {
++                items.add(0, 0x6311, 80, "验证：DOM 快照");
++                items.add(0, 0x6312, 81, "验证：系统 PDF");
++                items.add(0, 0x6313, 82, "验证：SAF 保存");
++            }
+             overflowMenu.setOnMenuItemClickListener(item -> {
+                 if (clearing || webView == null) return true;
+                 switch (item.getItemId()) {
+@@ -859,6 +867,23 @@
+                         break;
+                     case 5:
+                         showSettings();
++                        break;
++                    case 0x6311:
++                        WebView probePage = webView;
++                        int probeGeneration = feasibilityGeneration;
++                        ExportFeasibilityProbe.snapshot(this, probePage,
++                            () -> !clearing && webView == probePage
++                                && feasibilityGeneration == probeGeneration);
++                        break;
++                    case 0x6312:
++                        if (feasibilityPdf == null || feasibilityPdf.isClosed())
++                            feasibilityPdf = ExportFeasibilityProbe.startPdf(this);
++                        break;
++                    case 0x6313:
++                        try { ExportFeasibilityProbe.startSaf(this); }
++                        catch (RuntimeException error) {
++                            android.util.Log.e("NovaFeasibility", "SAF chooser unavailable", error);
++                        }
+                         break;
+                     default: break;
+                 }
+@@ -1149,6 +1174,7 @@
+     @Override
+     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+         super.onActivityResult(requestCode, resultCode, data);
++        if (ExportFeasibilityProbe.safResult(this, requestCode, resultCode, data)) return;
+         if (webShare != null && webShare.activityResult(requestCode, resultCode)) return;
+         if (requestCode == UploadController.PICK_FILE) uploads.result(resultCode, data);
+         if (requestCode == SAVE_BLOB) {
+@@ -1182,6 +1208,7 @@
+ 
+     @Override
+     protected void onDestroy() {
++        if (feasibilityPdf != null) { feasibilityPdf.close(); feasibilityPdf = null; }
+         if (overflowMenu != null) { overflowMenu.dismiss(); overflowMenu = null; }
+         if (settingsDialog != null) { settingsDialog.dismiss(); settingsDialog = null; }
+         if (clearDialog != null) { clearDialog.dismiss(); clearDialog = null; }
+diff --git a/app/src/main/java/com/example/chatgptnova/ExportFeasibilityProbe.java b/app/src/main/java/com/example/chatgptnova/ExportFeasibilityProbe.java
+new file mode 100644
+--- /dev/null
++++ b/app/src/main/java/com/example/chatgptnova/ExportFeasibilityProbe.java
+@@ -0,0 +1,247 @@
++package com.example.chatgptnova;
++
++import android.app.Activity;
++import android.content.Context;
++import android.content.Intent;
++import android.net.Uri;
++import android.os.CancellationSignal;
++import android.os.Handler;
++import android.os.Looper;
++import android.os.ParcelFileDescriptor;
++import android.print.PageRange;
++import android.print.PrintAttributes;
++import android.print.PrintDocumentAdapter;
++import android.print.PrintJob;
++import android.print.PrintManager;
++import android.util.Log;
++import android.view.View;
++import android.view.ViewGroup;
++import android.webkit.WebView;
++import android.webkit.WebViewClient;
++import org.json.JSONObject;
++import org.json.JSONTokener;
++import java.io.ByteArrayOutputStream;
++import java.io.InputStream;
++import java.io.OutputStream;
++import java.nio.charset.StandardCharsets;
++import java.util.Arrays;
++import java.util.Objects;
++import java.util.function.BooleanSupplier;
++
++/** Temporary feasibility probes, not a conversation exporter. No JS bridge or fetch hook. */
++final class ExportFeasibilityProbe {
++    private static final String TAG = "NovaFeasibility";
++    private static final int SAVE_PROBE = 0x6301;
++
++    private static void requireUiThread() {
++        if (Looper.myLooper() != Looper.getMainLooper())
++            throw new IllegalStateException("Call probe on UI thread");
++    }
++
++    static void snapshot(Activity activity, WebView web, BooleanSupplier current) {
++        requireUiThread();
++        if (web == null || activity.isFinishing() || activity.isDestroyed()
++                || !current.getAsBoolean()) return;
++        final String address = web.getUrl();
++        Uri uri = Uri.parse(address == null ? "" : address);
++        if (!"https".equalsIgnoreCase(uri.getScheme())
++                || !"chatgpt.com".equalsIgnoreCase(uri.getHost())
++                || uri.getUserInfo() != null
++                || (uri.getPort() != -1 && uri.getPort() != 443)) return;
++
++        final String script;
++        try (InputStream in = activity.getAssets().open("feasibility/dom-probe.js")) {
++            ByteArrayOutputStream bytes = new ByteArrayOutputStream();
++            byte[] buffer = new byte[4096];
++            int read;
++            while ((read = in.read(buffer)) != -1) bytes.write(buffer, 0, read);
++            script = bytes.toString(StandardCharsets.UTF_8.name());
++        } catch (Exception error) {
++            Log.e(TAG, "DOM probe asset unavailable", error);
++            return;
++        }
++
++        Handler main = new Handler(Looper.getMainLooper());
++        long start = android.os.SystemClock.elapsedRealtime();
++        boolean[] finished = {false};
++        Runnable timeout = () -> {
++            if (finished[0]) return;
++            finished[0] = true;
++            Log.w(TAG, "DOM callback timeout; provider may be stalled");
++        };
++        main.postDelayed(timeout, 8000);
++        try {
++            web.evaluateJavascript(script, value -> {
++                if (finished[0]) return;
++                finished[0] = true;
++                main.removeCallbacks(timeout);
++                if (activity.isFinishing() || activity.isDestroyed()
++                        || !current.getAsBoolean() || !Objects.equals(address, web.getUrl())) {
++                    Log.i(TAG, "DOM result discarded: page replaced or navigated");
++                    return;
++                }
++                try {
++                    Object decoded = new JSONTokener(value).nextValue();
++                    if (!(decoded instanceof String)) throw new IllegalStateException();
++                    JSONObject report = new JSONObject((String) decoded);
++                    report.put("callbackMain", Looper.myLooper() == Looper.getMainLooper());
++                    report.put("elapsedMs", android.os.SystemClock.elapsedRealtime() - start);
++                    Log.i(TAG, report.toString());
++                } catch (Exception error) { Log.e(TAG, "DOM result decoding failed", error); }
++            });
++        } catch (RuntimeException error) {
++            finished[0] = true;
++            main.removeCallbacks(timeout);
++            Log.e(TAG, "DOM evaluation failed", error);
++        }
++    }
++
++    static PdfSession startPdf(Activity activity) {
++        requireUiThread();
++        PdfSession session = new PdfSession(activity);
++        session.start();
++        return session;
++    }
++
++    static final class PdfSession implements AutoCloseable {
++        private final Activity activity;
++        private final Handler main = new Handler(Looper.getMainLooper());
++        private WebView web;
++        private PrintJob job;
++        private boolean closed, requested;
++        private final Runnable deadline = () -> {
++            Log.e(TAG, "PDF render timeout");
++            close();
++        };
++
++        PdfSession(Activity activity) { this.activity = activity; }
++        boolean isClosed() { return closed; }
++
++        private void start() {
++            if (activity.isFinishing() || activity.isDestroyed()) { close(); return; }
++            try {
++                web = new WebView(activity);
++                web.setFocusable(false);
++                web.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS);
++                ViewGroup root = activity.findViewById(android.R.id.content);
++                root.addView(web, 0, new ViewGroup.LayoutParams(-1, -1));
++                web.getSettings().setJavaScriptEnabled(false);
++                web.getSettings().setAllowFileAccess(false);
++                web.getSettings().setAllowContentAccess(false);
++                web.getSettings().setBlockNetworkLoads(true);
++                web.setWebViewClient(new WebViewClient() {
++                    @Override public void onPageFinished(WebView view, String url) {
++                        if (closed || requested || view != web) return;
++                        requested = true;
++                        view.postVisualStateCallback(1, new WebView.VisualStateCallback() {
++                            @Override public void onComplete(long requestId) {
++                                if (!closed && view == web) print();
++                            }
++                        });
++                    }
++                });
++                StringBuilder html = new StringBuilder("<!doctype html><meta charset='utf-8'>"
++                    + "<style>body{font:14px sans-serif}pre{white-space:pre-wrap;overflow-wrap:anywhere}"
++                    + "table{border-collapse:collapse}td{border:1px solid;padding:4px}</style>"
++                    + "<h1>PDF-FIRST 中文测试</h1>");
++                for (int i = 1; i <= 100; i++)
++                    html.append("<p>段落 ").append(i).append("：检查顺序和分页。</p>");
++                html.append("<pre>code-line-1\ncode-line-2\n");
++                for (int i = 0; i < 80; i++) html.append("LONG-CODE-");
++                html.append("-CODE-LAST</pre>")
++                    .append("<table><tr><td>中文</td><td>table-last</td></tr></table>")
++                    .append("<a href='https://example.org/pdf-probe'>PDF link</a>")
++                    .append("<p>PDF-LAST</p>");
++                main.postDelayed(deadline, 15000);
++                web.loadDataWithBaseURL("https://nova-probe.invalid/", html.toString(),
++                        "text/html", "UTF-8", null);
++            } catch (RuntimeException error) {
++                Log.e(TAG, "PDF setup failed", error);
++                close();
++            }
++        }
++
++        private void print() {
++            if (activity.isFinishing() || activity.isDestroyed()) { close(); return; }
++            try {
++                PrintManager manager = (PrintManager) activity.getSystemService(Context.PRINT_SERVICE);
++                if (manager == null) throw new IllegalStateException("No print service");
++                final PrintDocumentAdapter delegate = web.createPrintDocumentAdapter("Nova-PDF-Probe");
++                PrintDocumentAdapter adapter = new PrintDocumentAdapter() {
++                    @Override public void onStart() { delegate.onStart(); }
++                    @Override public void onLayout(PrintAttributes oldA, PrintAttributes newA,
++                            CancellationSignal signal, LayoutResultCallback callback,
++                            android.os.Bundle extras) {
++                        delegate.onLayout(oldA, newA, signal, callback, extras);
++                    }
++                    @Override public void onWrite(PageRange[] pages, ParcelFileDescriptor output,
++                            CancellationSignal signal, WriteResultCallback callback) {
++                        delegate.onWrite(pages, output, signal, callback);
++                    }
++                    @Override public void onFinish() {
++                        try { delegate.onFinish(); }
++                        finally { main.post(() -> { job = null; close(); }); }
++                    }
++                };
++                job = manager.print("Nova-PDF-Probe", adapter,
++                        new PrintAttributes.Builder().setMediaSize(PrintAttributes.MediaSize.ISO_A4).build());
++                main.removeCallbacks(deadline);
++                Log.i(TAG, "PDF dialog opened; actual saved file still needs inspection");
++            } catch (RuntimeException error) {
++                Log.e(TAG, "PDF print failed", error);
++                close();
++            }
++        }
++
++        @Override public void close() {
++            requireUiThread();
++            if (closed) return;
++            closed = true;
++            main.removeCallbacks(deadline);
++            if (job != null) { job.cancel(); job = null; }
++            if (web != null) {
++                if (web.getParent() instanceof ViewGroup) ((ViewGroup) web.getParent()).removeView(web);
++                web.stopLoading();
++                web.destroy();
++                web = null;
++            }
++        }
++    }
++
++    static void startSaf(Activity activity) {
++        requireUiThread();
++        activity.startActivityForResult(new Intent(Intent.ACTION_CREATE_DOCUMENT)
++            .addCategory(Intent.CATEGORY_OPENABLE).setType("text/plain")
++            .putExtra(Intent.EXTRA_TITLE, "Nova-SAF-Probe.txt"), SAVE_PROBE);
++    }
++
++    static boolean safResult(Activity activity, int code, int result, Intent data) {
++        requireUiThread();
++        if (code != SAVE_PROBE) return false;
++        if (result != Activity.RESULT_OK || data == null || data.getData() == null) {
++            Log.i(TAG, "SAF cancelled; existing download state untouched");
++            return true;
++        }
++        Uri destination = data.getData();
++        if (!"content".equalsIgnoreCase(destination.getScheme())) {
++            Log.e(TAG, "SAF invalid scheme"); return true;
++        }
++        new Thread(() -> {
++            byte[] expected = "Nova-SAF-Probe 中文\nUTF-8 round trip\n".getBytes(StandardCharsets.UTF_8);
++            try {
++                try (OutputStream out = activity.getContentResolver().openOutputStream(destination, "wt")) {
++                    if (out == null) throw new java.io.IOException("No output stream");
++                    out.write(expected);
++                }
++                try (InputStream in = activity.getContentResolver().openInputStream(destination)) {
++                    if (in == null) throw new java.io.IOException("No input stream");
++                    ByteArrayOutputStream got = new ByteArrayOutputStream();
++                    int b;
++                    while ((b = in.read()) != -1 && got.size() < 1024) got.write(b);
++                    Log.i(TAG, "SAF roundTrip=" + Arrays.equals(expected, got.toByteArray()));
++                }
++            } catch (Exception error) { Log.e(TAG, "SAF round trip failed", error); }
++        }, "nova-feasibility-io").start();
++        return true;
++    }
++}
+diff --git a/app/src/main/assets/feasibility/dom-probe.js b/app/src/main/assets/feasibility/dom-probe.js
+new file mode 100644
+--- /dev/null
++++ b/app/src/main/assets/feasibility/dom-probe.js
+@@ -0,0 +1,52 @@
++(() => {
++  if (window !== window.top || location.origin !== 'https://chatgpt.com')
++    return JSON.stringify({error: 'wrong-origin-or-frame'});
++
++  const all = [...document.querySelectorAll('[data-message-author-role]')]
++    .filter(e => ['user', 'assistant'].includes(e.getAttribute('data-message-author-role')));
++  const hash = text => {
++    let h = 2166136261;
++    for (let i = 0; i < text.length; i++)
++      h = Math.imul(h ^ text.charCodeAt(i), 16777619);
++    return (h >>> 0).toString(16);
++  };
++  const rows = [];
++  let budget = 500000, bounded = all.length > 300;
++  for (const e of all.slice(0, 300)) {
++    if (budget <= 0) { bounded = true; break; }
++    const text = e.textContent || '';
++    const limit = Math.min(128000, budget);
++    const sampled = text.slice(0, limit);
++    if (sampled.length !== text.length) bounded = true;
++    budget -= sampled.length;
++    rows.push({
++      id: e.getAttribute('data-message-id')
++        || e.closest('[data-message-id]')?.getAttribute('data-message-id') || '',
++      role: e.getAttribute('data-message-author-role'),
++      chars: text.length,
++      fingerprint: hash(sampled),
++      nestedAuthorNodes: e.querySelectorAll('[data-message-author-role]').length,
++      codeBlocks: e.querySelectorAll('pre').length,
++      tables: e.querySelectorAll('table').length,
++      math: e.querySelectorAll('.katex').length,
++      texSources: e.querySelectorAll('annotation[encoding="application/x-tex"]').length,
++      images: e.querySelectorAll('img').length,
++      loadedImages: [...e.querySelectorAll('img')]
++        .filter(i => i.complete && i.naturalWidth > 0).length
++    });
++  }
++  return JSON.stringify({
++    historyCompleteness: 'not-proven',
++    ready: document.readyState,
++    streamingHint: !!document.querySelector('[data-testid="stop-button"]'),
++    count: all.length, inspected: rows.length, bounded,
++    missingIds: rows.filter(r => !r.id).length,
++    duplicateIds: rows.filter(r => r.id).length
++      - new Set(rows.filter(r => r.id).map(r => r.id)).size,
++    nestedAuthorNodes: rows.reduce((n, r) => n + r.nestedAuthorNodes, 0),
++    chars: rows.reduce((n, r) => n + r.chars, 0),
++    signature: hash(JSON.stringify(rows.map(r => [r.id, r.role, r.chars, r.fingerprint]))),
++    // No conversation text, credentials, storage or network access.
++    samples: rows.filter((r, i) => i < 2 || i >= rows.length - 2)
++  });
++})()

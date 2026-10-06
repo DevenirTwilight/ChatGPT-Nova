@@ -1,0 +1,121 @@
+# ChatGPT Nova 会话交接
+
+首次生成：2026-10-05；入库更新：2026-10-06。当前交接优先于历史资料中的旧任务进度。
+
+## 用户要求与沟通偏好
+
+用户使用中文。希望拿到验证好的结果，曾明确说“给我验证好了再发”；不要用合成测试或编译成功代替真实会话成功。之前反复 debug 失败，正在考虑重做导出功能。
+
+当前目标：验证通过已有 WebView 注入 JS，读取 `[data-message-author-role]`、返回 JSON，客户端转换 Markdown/HTML、SAF 保存，PDF 用独立可渲染 WebView + PrintManager 的方案是否可行。
+
+用户规定：
+1. 先一次性问不超过八个问题，包括语言/minSdk、WebView 配置、加载及 Client、菜单工具栏、保存分享。
+2. 收到回答后检查登录/config、注入时机与 Client、evaluateJavascript 线程、PrintManager Activity/主题、SAF/权限/存储、页面 React/已有脚本的冲突。
+3. 输出风险点/等级/最小验证/判断标准/Plan B 表，按验证成本从低到高；对最高风险的一到两项给可直接接入的最小验证代码；指出失败即必须换路线的条件。
+4. 本阶段不写完整功能代码；优先对现有类最小改动，不重构架构。搜索 GitHub 找到项目，以代码作背景，但允许推翻旧导出路线。
+
+八项问题已经问过，覆盖仓库版本、设备语言、配置登录、Client、菜单、保存分享、完整历史及富文本范围、保留/重做行为。用户统一答：“从仓库核实，但不要被它束缚，可以重做”。设备 Android/WebView 版本、当前安装 APK 的精确提交、实际账号可访问性、是否接受仅已加载消息，仍不能从仓库证明；暂以完整当前分支为最高风险场景，不擅自降低范围。
+
+最新动作：用户手机点击沙箱下载链接无响应，因此明确要求直接将交接写入 GitHub 仓库，并要求后续会话也按此方式更新交接。当前变更只包含交接文档、验证材料和交接约定；不是恢复旧功能开发。
+
+## 仓库和版本，必须区分
+
+- GitHub：https://github.com/DevenirTwilight/ChatGPT-Nova ，公开仓库。
+- 本轮 GitHub 在线核实默认 main：`e8ffa0c6bd9af9ab29aecad50efe2ab6b8099a00`，版本 1.3.6/code10。
+- 本地工作目录 `/workspace/ChatGPT-Nova`：分支 `feature/export-conversation`，HEAD `5e969c36fd2751f3bcd39500ee9ed1520394fa1d`，版本 1.3.7/code11，工作树干净。
+- 可行性补丁指定的隔离基线：`fix/native-share-1.3.7` 的 `200b7898b51cdac9e342e49e7e7a7059067d944f`。为避免旧导出 fetch/React 捕获器干扰而选择，不能假定适用于 main 或当前 feature。
+- 包内 source/ 提供当前 feature 与指定基线的源文件快照，无 .git 历史；若要使用基线补丁应解压到基线快照目录，先做应用检查。快照不是新实现。
+
+## 已核实软件背景
+
+- Java17；minSdk26，compileSdk/targetSdk35。
+- 包名 `com.example.chatgptnova`；debug 后缀 `.debug`，与正式应用登录数据隔离。
+- JS、DOM storage、数据库、第一方/第三方 Cookie 已开启；没有 UA 覆盖，使用系统默认 UA。
+- 聊天 WebView：禁用 file access，允许 content access，禁止混合内容，SafeBrowsing 开启。
+- `MainActivity.configureWebView()` 已安装 WebViewClient/WebChromeClient，负责导航、进度、错误、权限、上传等。不能新建 Client 覆盖已有 Client。
+- `onPageStarted` 做导航和请求状态失效；`onPageFinished` 刷 Cookie、注入已有粘贴兼容和分享脚本。SPA 切页未必触发这些回调，不能只靠 onPageFinished 认定数据准备完毕。
+- `ComposerWebView` 有输入/IME 事务及队列；采集不能加入编辑事务队列。WebView evaluateJavascript 调用和回调走 UI 线程；转换和文件 I/O 应后台处理。
+- 菜单是 PopupMenu，界面主要在 Activity 程序化构建，已有工具栏。
+- 已有 SAF ACTION_CREATE_DOCUMENT 下载，结果码 SAVE_BLOB=1005；上传 PICK_FILE=1001；分享代码段 0x7000..0x7fff。探针 SAF 用独立 0x6301。
+- Manifest 有 INTERNET/RECORD_AUDIO/CAMERA，没有存储权限；已配置 FileProvider。SAF 不需要新增传统存储权限。
+- WebShareAdapter 实现 origin-scoped WebMessage 的 navigator.share；保留网页分享和原生分享行为。
+- AppTheme Material Light NoActionBar；启动 LaunchTheme 转 AppTheme。没有必须为打印改主题的依据；PrintManager 要有效 Activity 上下文。
+- feature 分支已有 ConversationExport 和旧 capture.js：包装 fetch、发现网页内部模块、读取器和分页助手，另有 React Fiber 来源。这些行为需要与新只读 DOM 探针隔离。
+
+## 用户真实失败记录（历史背景，尚未被真实账号证明解决）
+
+项目内地址结构：`https://chatgpt.com/g/g-p-<project-id>/c/<conversation-id>`。
+
+诊断逐步出现：
+```
+诊断 E2：模块=1，导入=1，读取器=1，状态=failed-403，接口=403，分页=failed-error，页数=0，阶段=discovery
+```
+之后阶段有 discovery-source、discovery-loaded-assets；页数=2 时出现 recheck、recheck-verify，最终原因 `head-metadata-changed`。
+
+这些是旧完整读取/分页/复核路径失败，不等同于 DOM evaluateJavascript 不可用。项目参数修复、分页 replay 等曾做过，但用户真机导出成功没有证据。
+
+用户还遇到 GitHub 链接在手机 GitHub App 打开、临时 Azure 签名下载 URL 过期 AuthenticationFailed。新交接使用上传本 ZIP；不要依赖过期 Actions artifact 的临时签名 URL。
+
+## 已完成的可行性工作
+
+用户提供三份材料：REPORT.md、README.md、GPT-Nova-feasibility.zip。独立报告与说明逐字节等于 ZIP 中对应文件。
+
+已阅读 DOM 脚本、浏览器测试、Java DOM/PDF/SAF 探针、基线接入补丁、报告和接入说明。包内有最小接入补丁，生产源码没有应用补丁，本轮没有 push、发布或构建完整 APK。
+
+本轮独立复核：
+- 新 DOM Chromium 合成探针 9/9。
+- Java 探针 API35 编译通过。
+- 基线补丁在指定提交的临时 Git index 上 `git apply --cached --check` 通过，不改工作树。
+- PDF 元数据确认15页A4、191980字节、Skia/PDF m151；文本检查找到第79条消息。
+- 当前生产仓库 git status 干净。
+
+材料报告记录而本轮未重新执行：core33/33、pagination83/83、paged-browser41/41、capture与格式浏览器测试，Java API26 编译。原报告注明 file:// 被环境阻止，使用受控 HTTPS 提供相同文档通过；不能声称 file:// 验证通过。
+
+仍未验证：新方案在真实登录会话/目标 Android WebView 上的 DOM 覆盖；新 PDF 探针的 Android 系统保存、取消和生命周期；新 SAF 探针/提供者；本轮完整 APK 构建和真实输入/分享/登录回归。
+
+旧导出实现历史上有模拟器系统 PDF、签名 APK 和仪器测试，见 history/。这不代表新探针已通过，也不证明真实账号导出成功。
+
+## 关键结论与不能夸大的边界
+
+1. Android 集成条件具备，可以重做；首要问题是数据覆盖，不是先重构 Activity。
+2. DOM 探针始终返回 `historyCompleteness=not-proven`。数量/首尾/签名稳定不是完整性证明；等量替换可提示虚拟化。滚动收集所有“见过”的消息也不能单独证明无遗漏。
+3. 完整历史是硬要求，而 DOM 缺历史且不能可靠加载全量时，单次 DOM 路线必须更换数据来源。可考虑用户提供的官方导出数据或其他可实际验证完整的来源，不能默认内部 API 能用。
+4. 渲染 DOM 不能唯一恢复原始 Markdown 写法；可以生成内容等价 Markdown。必需的隐藏正文/附件不在可读表示中时，同样要换来源或经用户明确调整范围。
+5. PrintManager 交互是系统“保存为 PDF”；不等于应用指定 SAF URI 后静默生成 PDF。若要求直接生成再 SAF 保存，应另验证 PDF 引擎。
+6. PrintDocumentAdapter.onFinish 只表示生命周期结束，不证明用户保存成功；需要实际文件。
+7. 新探针只读 DOM，不读 Cookie/Token/storage，不包装 fetch，不读 React Fiber。结构计数不证明正文/公式/附件正确还原；textContent 可能包含控件和隐藏文字。
+8. 探针节点300、单条指纹128000字符、总指纹500000字符，超限 bounded=true。textContent 分配整条字符串，限制不是硬内存上限；指纹非加密摘要。
+9. 导航保护仍有空隙：Java 比较 URL/WebView/当前代次；补丁代次只在 onPageStarted 递增，不能覆盖所有 SPA A→B→A 迟到回调。生产采集需另外验证内容/路由前后的一致性，不可把探针说成已经完备。
+10. SAF 写入与回读应分别判断；某提供者回读失败不必然意味着写入失败。
+
+## 下一会话建议顺序
+
+先阅读 REVIEW 和 REPORT，保留上述证据分级。若用户仍要求只评估，不自动应用补丁、开发功能或发布 APK。
+
+优先验证目标账号的短会话选择器，再验证普通与项目内长会话：底部采样、顶部等待历史加载采样、回到底部采样，逐条核对已知消息/分支/首尾；覆盖重新生成、编辑、流式更新、SPA 切换。未证明覆盖前，不扩大格式/PDF实现。
+
+若覆盖满足范围，再验证固定 HTML 的 Android PrintManager 真实输出、SAF创建/取消/不同提供者及旧上传下载回调，最后验证输入、粘贴、网页/原生分享、上传、语音、登录持久化和销毁。
+
+没有真机/账号时可以推进静态审查、合成探针或独立测试构建（需用户当前任务允许），但明确缺少真实证据。此前八项已问，不再反复问仓库事实；只询问不能从代码核实且影响下一步的信息。
+
+## 历史旧功能，供追踪而非本阶段目标
+
+旧实现 APK 提交 `3fced4a6ce97915a20b3deb32892b0cc950f94d4`；最终测试提交当前 HEAD。Android CI run37336090843，API33/34/35 导出目标各11/11，通过合成完整400条 replay及隐藏祖先变化拒绝。整体工作流仍失败：API33旧输入性能门槛失败5613.8ms，对照3455.6ms，未修改输入实现或放宽标准。
+
+旧 release：https://github.com/DevenirTwilight/ChatGPT-Nova/releases/download/nova-export-test-3fced4a/ChatGPT-Nova.apk 。APK SHA256 `7ba618b29cc6b508af011c2f4e94b76626cb37479692dfa649963c7252601986`；原证书 SHA256 `f93221ee0d2be2b806233a0b3427ec9c14766100c1bab3208841e6203e2b4289`。包名正式、1.3.7/code11。链接存在性本轮未重查；不是新方案交付，未附 APK。
+
+旧方案尝试额外元数据漂移时独立再遍历和第三次 head guard，要求全文逐条一致，保留 title/update_time/moderation/safe_urls/blocked_urls 等严格检查。仍无真实账号成功证据。不要因为旧模拟器测试通过就继续无限修补内部网页接口。
+
+## 仓库续接入口（优先使用）
+
+当前交接文件：`docs/handoff/latest.md`；证据复核：`docs/handoff/REVIEW.md`；后续交接约定与提示词：`docs/handoff/README.md`；探针、报告和基线最小补丁：`tools/feasibility/`。这些文件位于 `feature/export-conversation` 分支。新会话应先读取对应分支，而不是默认 main。包内 source 快照、originals 等描述属于先前 ZIP；GitHub 续接直接使用提交历史中的对应源码，不需要下载 ZIP。
+
+新增用户偏好：今后的交接要更新上述仓库文件并提交、推送至当前工作分支，返回 GitHub 链接和新会话提示词，不能只提供 sandbox 下载链接。
+
+## 可移植材料与环境
+
+包内含两份源码快照、新探针与最小补丁、原始验证 ZIP/文档、HTML/Markdown/PDF样例、历史说明和 SHA256 清单。没有签名私钥、用户 Cookie/Token、node_modules、Android SDK、.git 或 APK。
+
+前一环境有 /usr/bin/chromium、Node24、playwright-core；Java编译器 `/tmp/nova-build-env/jdk17/bin/javac`，API35 android.jar 在 `/tmp/nova-build-env/android-sdk/platforms/android-35/android.jar`。这些绝对路径不保证在新会话存在；代码材料在本包内，不依赖旧 workspace。
+
+用户原上传 file IDs/旧 workspace 路径可能跨会话不可用，优先使用本 ZIP 自带的 originals/ 和 feasibility/。

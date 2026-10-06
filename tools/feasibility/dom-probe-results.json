@@ -1,0 +1,529 @@
+[
+  {
+    "name": "all loaded messages remain explicitly unproven as complete history",
+    "report": {
+      "historyCompleteness": "not-proven",
+      "ready": "complete",
+      "streamingHint": false,
+      "count": 80,
+      "inspected": 80,
+      "bounded": false,
+      "missingIds": 0,
+      "duplicateIds": 0,
+      "nestedAuthorNodes": 0,
+      "chars": 790,
+      "signature": "542d0b54",
+      "samples": [
+        {
+          "id": "m0",
+          "role": "user",
+          "chars": 9,
+          "fingerprint": "6c42f9a1",
+          "nestedAuthorNodes": 0,
+          "codeBlocks": 0,
+          "tables": 0,
+          "math": 0,
+          "texSources": 0,
+          "images": 0,
+          "loadedImages": 0
+        },
+        {
+          "id": "m1",
+          "role": "assistant",
+          "chars": 9,
+          "fingerprint": "6b42f80e",
+          "nestedAuthorNodes": 0,
+          "codeBlocks": 0,
+          "tables": 0,
+          "math": 0,
+          "texSources": 0,
+          "images": 0,
+          "loadedImages": 0
+        },
+        {
+          "id": "m78",
+          "role": "user",
+          "chars": 10,
+          "fingerprint": "c7133e4",
+          "nestedAuthorNodes": 0,
+          "codeBlocks": 0,
+          "tables": 0,
+          "math": 0,
+          "texSources": 0,
+          "images": 0,
+          "loadedImages": 0
+        },
+        {
+          "id": "m79",
+          "role": "assistant",
+          "chars": 10,
+          "fingerprint": "d713577",
+          "nestedAuthorNodes": 0,
+          "codeBlocks": 0,
+          "tables": 0,
+          "math": 0,
+          "texSources": 0,
+          "images": 0,
+          "loadedImages": 0
+        }
+      ]
+    }
+  },
+  {
+    "name": "partial DOM does not become complete history",
+    "report": {
+      "historyCompleteness": "not-proven",
+      "ready": "complete",
+      "streamingHint": false,
+      "count": 20,
+      "inspected": 20,
+      "bounded": false,
+      "missingIds": 0,
+      "duplicateIds": 0,
+      "nestedAuthorNodes": 0,
+      "chars": 200,
+      "signature": "951926f3",
+      "samples": [
+        {
+          "id": "m60",
+          "role": "user",
+          "chars": 10,
+          "fingerprint": "8a7438d5",
+          "nestedAuthorNodes": 0,
+          "codeBlocks": 0,
+          "tables": 0,
+          "math": 0,
+          "texSources": 0,
+          "images": 0,
+          "loadedImages": 0
+        },
+        {
+          "id": "m61",
+          "role": "assistant",
+          "chars": 10,
+          "fingerprint": "89743742",
+          "nestedAuthorNodes": 0,
+          "codeBlocks": 0,
+          "tables": 0,
+          "math": 0,
+          "texSources": 0,
+          "images": 0,
+          "loadedImages": 0
+        },
+        {
+          "id": "m78",
+          "role": "user",
+          "chars": 10,
+          "fingerprint": "c7133e4",
+          "nestedAuthorNodes": 0,
+          "codeBlocks": 0,
+          "tables": 0,
+          "math": 0,
+          "texSources": 0,
+          "images": 0,
+          "loadedImages": 0
+        },
+        {
+          "id": "m79",
+          "role": "assistant",
+          "chars": 10,
+          "fingerprint": "d713577",
+          "nestedAuthorNodes": 0,
+          "codeBlocks": 0,
+          "tables": 0,
+          "math": 0,
+          "texSources": 0,
+          "images": 0,
+          "loadedImages": 0
+        }
+      ]
+    }
+  },
+  {
+    "name": "equal-count virtualization changes identity signature",
+    "report": {
+      "historyCompleteness": "not-proven",
+      "ready": "complete",
+      "streamingHint": false,
+      "count": 20,
+      "inspected": 20,
+      "bounded": false,
+      "missingIds": 0,
+      "duplicateIds": 0,
+      "nestedAuthorNodes": 0,
+      "chars": 190,
+      "signature": "ba4e05dd",
+      "samples": [
+        {
+          "id": "m0",
+          "role": "user",
+          "chars": 9,
+          "fingerprint": "6c42f9a1",
+          "nestedAuthorNodes": 0,
+          "codeBlocks": 0,
+          "tables": 0,
+          "math": 0,
+          "texSources": 0,
+          "images": 0,
+          "loadedImages": 0
+        },
+        {
+          "id": "m1",
+          "role": "assistant",
+          "chars": 9,
+          "fingerprint": "6b42f80e",
+          "nestedAuthorNodes": 0,
+          "codeBlocks": 0,
+          "tables": 0,
+          "math": 0,
+          "texSources": 0,
+          "images": 0,
+          "loadedImages": 0
+        },
+        {
+          "id": "m18",
+          "role": "user",
+          "chars": 10,
+          "fingerprint": "106cbd02",
+          "nestedAuthorNodes": 0,
+          "codeBlocks": 0,
+          "tables": 0,
+          "math": 0,
+          "texSources": 0,
+          "images": 0,
+          "loadedImages": 0
+        },
+        {
+          "id": "m19",
+          "role": "assistant",
+          "chars": 10,
+          "fingerprint": "116cbe95",
+          "nestedAuthorNodes": 0,
+          "codeBlocks": 0,
+          "tables": 0,
+          "math": 0,
+          "texSources": 0,
+          "images": 0,
+          "loadedImages": 0
+        }
+      ]
+    }
+  },
+  {
+    "name": "same-ID edits change the content signature",
+    "report": {
+      "historyCompleteness": "not-proven",
+      "ready": "complete",
+      "streamingHint": false,
+      "count": 20,
+      "inspected": 20,
+      "bounded": false,
+      "missingIds": 0,
+      "duplicateIds": 0,
+      "nestedAuthorNodes": 0,
+      "chars": 200,
+      "signature": "fd91f408",
+      "samples": [
+        {
+          "id": "m0",
+          "role": "user",
+          "chars": 19,
+          "fingerprint": "6e92e83d",
+          "nestedAuthorNodes": 0,
+          "codeBlocks": 0,
+          "tables": 0,
+          "math": 0,
+          "texSources": 0,
+          "images": 0,
+          "loadedImages": 0
+        },
+        {
+          "id": "m1",
+          "role": "assistant",
+          "chars": 9,
+          "fingerprint": "6b42f80e",
+          "nestedAuthorNodes": 0,
+          "codeBlocks": 0,
+          "tables": 0,
+          "math": 0,
+          "texSources": 0,
+          "images": 0,
+          "loadedImages": 0
+        },
+        {
+          "id": "m18",
+          "role": "user",
+          "chars": 10,
+          "fingerprint": "106cbd02",
+          "nestedAuthorNodes": 0,
+          "codeBlocks": 0,
+          "tables": 0,
+          "math": 0,
+          "texSources": 0,
+          "images": 0,
+          "loadedImages": 0
+        },
+        {
+          "id": "m19",
+          "role": "assistant",
+          "chars": 10,
+          "fingerprint": "116cbe95",
+          "nestedAuthorNodes": 0,
+          "codeBlocks": 0,
+          "tables": 0,
+          "math": 0,
+          "texSources": 0,
+          "images": 0,
+          "loadedImages": 0
+        }
+      ]
+    }
+  },
+  {
+    "name": "rich structure is detected without modifying DOM, fetch, Fiber or globals",
+    "report": {
+      "historyCompleteness": "not-proven",
+      "ready": "complete",
+      "streamingHint": false,
+      "count": 20,
+      "inspected": 20,
+      "bounded": false,
+      "missingIds": 0,
+      "duplicateIds": 0,
+      "nestedAuthorNodes": 0,
+      "chars": 195,
+      "signature": "99d6b01b",
+      "samples": [
+        {
+          "id": "m0",
+          "role": "user",
+          "chars": 14,
+          "fingerprint": "729b0b13",
+          "nestedAuthorNodes": 0,
+          "codeBlocks": 1,
+          "tables": 1,
+          "math": 1,
+          "texSources": 1,
+          "images": 0,
+          "loadedImages": 0
+        },
+        {
+          "id": "m1",
+          "role": "assistant",
+          "chars": 9,
+          "fingerprint": "6b42f80e",
+          "nestedAuthorNodes": 0,
+          "codeBlocks": 0,
+          "tables": 0,
+          "math": 0,
+          "texSources": 0,
+          "images": 0,
+          "loadedImages": 0
+        },
+        {
+          "id": "m18",
+          "role": "user",
+          "chars": 10,
+          "fingerprint": "106cbd02",
+          "nestedAuthorNodes": 0,
+          "codeBlocks": 0,
+          "tables": 0,
+          "math": 0,
+          "texSources": 0,
+          "images": 0,
+          "loadedImages": 0
+        },
+        {
+          "id": "m19",
+          "role": "assistant",
+          "chars": 10,
+          "fingerprint": "116cbe95",
+          "nestedAuthorNodes": 0,
+          "codeBlocks": 0,
+          "tables": 0,
+          "math": 0,
+          "texSources": 0,
+          "images": 0,
+          "loadedImages": 0
+        }
+      ]
+    }
+  },
+  {
+    "name": "ambiguous and missing IDs are reported",
+    "report": {
+      "historyCompleteness": "not-proven",
+      "ready": "complete",
+      "streamingHint": false,
+      "count": 20,
+      "inspected": 20,
+      "bounded": false,
+      "missingIds": 1,
+      "duplicateIds": 1,
+      "nestedAuthorNodes": 0,
+      "chars": 195,
+      "signature": "8c00977f",
+      "samples": [
+        {
+          "id": "m0",
+          "role": "user",
+          "chars": 14,
+          "fingerprint": "729b0b13",
+          "nestedAuthorNodes": 0,
+          "codeBlocks": 1,
+          "tables": 1,
+          "math": 1,
+          "texSources": 1,
+          "images": 0,
+          "loadedImages": 0
+        },
+        {
+          "id": "m0",
+          "role": "assistant",
+          "chars": 9,
+          "fingerprint": "6b42f80e",
+          "nestedAuthorNodes": 0,
+          "codeBlocks": 0,
+          "tables": 0,
+          "math": 0,
+          "texSources": 0,
+          "images": 0,
+          "loadedImages": 0
+        },
+        {
+          "id": "m18",
+          "role": "user",
+          "chars": 10,
+          "fingerprint": "106cbd02",
+          "nestedAuthorNodes": 0,
+          "codeBlocks": 0,
+          "tables": 0,
+          "math": 0,
+          "texSources": 0,
+          "images": 0,
+          "loadedImages": 0
+        },
+        {
+          "id": "m19",
+          "role": "assistant",
+          "chars": 10,
+          "fingerprint": "116cbe95",
+          "nestedAuthorNodes": 0,
+          "codeBlocks": 0,
+          "tables": 0,
+          "math": 0,
+          "texSources": 0,
+          "images": 0,
+          "loadedImages": 0
+        }
+      ]
+    }
+  },
+  {
+    "name": "node cap is explicit rather than silent truncation",
+    "report": {
+      "historyCompleteness": "not-proven",
+      "ready": "complete",
+      "streamingHint": false,
+      "count": 400,
+      "inspected": 300,
+      "bounded": true,
+      "missingIds": 0,
+      "duplicateIds": 0,
+      "nestedAuthorNodes": 0,
+      "chars": 3190,
+      "signature": "840a509d",
+      "samples": [
+        {
+          "id": "m0",
+          "role": "user",
+          "chars": 9,
+          "fingerprint": "6c42f9a1",
+          "nestedAuthorNodes": 0,
+          "codeBlocks": 0,
+          "tables": 0,
+          "math": 0,
+          "texSources": 0,
+          "images": 0,
+          "loadedImages": 0
+        },
+        {
+          "id": "m1",
+          "role": "assistant",
+          "chars": 9,
+          "fingerprint": "6b42f80e",
+          "nestedAuthorNodes": 0,
+          "codeBlocks": 0,
+          "tables": 0,
+          "math": 0,
+          "texSources": 0,
+          "images": 0,
+          "loadedImages": 0
+        },
+        {
+          "id": "m298",
+          "role": "user",
+          "chars": 11,
+          "fingerprint": "2f56687a",
+          "nestedAuthorNodes": 0,
+          "codeBlocks": 0,
+          "tables": 0,
+          "math": 0,
+          "texSources": 0,
+          "images": 0,
+          "loadedImages": 0
+        },
+        {
+          "id": "m299",
+          "role": "assistant",
+          "chars": 11,
+          "fingerprint": "30566a0d",
+          "nestedAuthorNodes": 0,
+          "codeBlocks": 0,
+          "tables": 0,
+          "math": 0,
+          "texSources": 0,
+          "images": 0,
+          "loadedImages": 0
+        }
+      ]
+    }
+  },
+  {
+    "name": "text sampling cap is explicit",
+    "report": {
+      "historyCompleteness": "not-proven",
+      "ready": "complete",
+      "streamingHint": false,
+      "count": 1,
+      "inspected": 1,
+      "bounded": true,
+      "missingIds": 0,
+      "duplicateIds": 0,
+      "nestedAuthorNodes": 0,
+      "chars": 200000,
+      "signature": "880687f5",
+      "samples": [
+        {
+          "id": "m0",
+          "role": "user",
+          "chars": 200000,
+          "fingerprint": "6e452dc5",
+          "nestedAuthorNodes": 0,
+          "codeBlocks": 0,
+          "tables": 0,
+          "math": 0,
+          "texSources": 0,
+          "images": 0,
+          "loadedImages": 0
+        }
+      ]
+    }
+  },
+  {
+    "name": "other origins are rejected",
+    "report": {
+      "error": "wrong-origin-or-frame"
+    }
+  }
+]
