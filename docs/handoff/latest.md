@@ -1,3 +1,11 @@
+## A校验修正批（待最新CI，Gecko仍保留）
+
+37546450115/e7759f6现Android35/36均失败。API36产物11451104498已取/tmp/nova-html-a4-36：系统保存窗口真实文件名已设置/保存并返回Nova，随后actual saved system PDF采样超时；UiAutomation公开Android15源码确认Runtime.exec不解释find的shell引号/2>/dev/null，故本批用公开Rw+sh stdin修正采样，不以spooler完成记录代PDF实物。Firefox已实际显示正文（截图Before可见），但findByText快捷查询没返回其virtual节点，本批改现有公开递归find；正式157.0.1公开源码确认Save as PDF在More子菜单，也补真实菜单导航。无私有浏览器API。原18/回归及HTML/MD仍通过，不删失败证据。
+
+本批还修Markdown隐藏行/list/form过滤和blob图片alt占位，PrintJob启动失败/已销毁窗口守卫、文件名48码点UTF8安全上限、renderer未附着/加载失败释放以及静态资源64请求/总32MiB上限；Gecko依赖完全未动，仍在A。PNG fixture由1px改可见320×120，真实PDF检查增加长代码/表格/法语/数学/图片对象及保留同份打印源HTML/MD。CI记录实际APK/native ABI/安装代码目录字节及releaseRuntime依赖树，用于后续B准确对比，不预设小包数字。
+
+本地13快照场景及同实际普通HTML在Chromium143/Firefox144/Edge154 file://解码/UTF8/结构/no scripts or HTTP/print CSS通过；不是AndroidPDF证据。下一步核最新远端源码/CI，等Android35/36真实PDF及FirefoxA/B，通过才启动下方B清理。无需下一会话提示词或普通回复迁移。
+
 ## 最新续接点：e7759f6 / CI37546450115（Commit B仍禁止启动）
 
 当前应用/测试源码e7759f6cc83a31d696879cc570cb4ccda6d18715，新CI37546450115进行中。前一6473c32/37544389737的API35产物11450901856已取回/tmp/nova-html-a3-35：新10九通过一失败，真实系统PDF停在native PDF filename等待；UI实物明确DocumentsUI EditText id为android:id/title，而非猜测的包:id/filename。已把观测id加入测试。没有PDF实物，不得记通过。API36因后续修正提交并发取消，未完成认证。

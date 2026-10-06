@@ -23,9 +23,13 @@ final class SnapshotWebView {
     final FrozenPageSnapshot snapshot;
     private volatile boolean closed;
     private boolean ready;
+    private final java.util.concurrent.atomic.AtomicInteger resourceRequests=new java.util.concurrent.atomic.AtomicInteger();
+    private final java.util.concurrent.atomic.AtomicLong resourceBytes=new java.util.concurrent.atomic.AtomicLong();
     private final Runnable timeout;
     SnapshotWebView(Activity activity,WebView live,FrozenPageSnapshot snapshot,Callback callback) {
         this.snapshot=snapshot;
+        if(!(live.getParent() instanceof ViewGroup))throw new IllegalStateException("Renderer requires attached host");
+        ViewGroup parent=(ViewGroup)live.getParent();
         web=new WebView(activity);
         web.getSettings().setJavaScriptEnabled(false);
         web.getSettings().setDomStorageEnabled(false);
@@ -58,11 +62,10 @@ final class SnapshotWebView {
                 if(!closed)callback.failed("S06_STATIC_WEBVIEW_FAILED");return true;
             }
         });
-        ViewGroup parent=(ViewGroup)live.getParent();
-        if(parent==null)throw new IllegalStateException("Renderer requires attached host");
         parent.addView(web,0,new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,ViewGroup.LayoutParams.MATCH_PARENT));
         web.postDelayed(timeout,30000);
-        web.loadDataWithBaseURL(snapshot.baseUrl,snapshot.frozenHtml,"text/html","UTF-8",null);
+        try{web.loadDataWithBaseURL(snapshot.baseUrl,snapshot.frozenHtml,"text/html","UTF-8",null);}
+        catch(RuntimeException e){close();throw e;}
     }
     static boolean staticUrl(String address) {
         try {Uri u=Uri.parse(address);return "https".equals(u.getScheme())&&u.getHost()!=null&&u.getUserInfo()==null
@@ -71,7 +74,7 @@ final class SnapshotWebView {
     }
     private static WebResourceResponse denied(){return new WebResourceResponse("text/plain","UTF-8",new ByteArrayInputStream(new byte[0]));}
     private WebResourceResponse resource(String address) {
-        if(closed||!staticUrl(address))return denied();
+        if(closed||!staticUrl(address)||resourceRequests.incrementAndGet()>64)return denied();
         HttpURLConnection connection=null;
         try {
             for(int redirects=0;redirects<4;redirects++) {
@@ -87,7 +90,7 @@ final class SnapshotWebView {
                 // octet-stream is accepted only for font extensions, never arbitrary application content.
                 if(mime.equals("application/octet-stream")&&!address.matches("(?i).*\\.(?:woff2?|ttf|otf)(?:\\?.*)?$"))return denied();
                 try(java.io.InputStream in=connection.getInputStream();ByteArrayOutputStream out=new ByteArrayOutputStream()) {
-                    byte[] buffer=new byte[32768];int n;while((n=in.read(buffer))!=-1){if(closed||out.size()+n>8*1024*1024)return denied();out.write(buffer,0,n);}
+                    byte[] buffer=new byte[32768];int n;while((n=in.read(buffer))!=-1){if(closed||out.size()+n>8*1024*1024||resourceBytes.addAndGet(n)>32L*1024*1024)return denied();out.write(buffer,0,n);}
                     return new WebResourceResponse(mime,"UTF-8",new ByteArrayInputStream(out.toByteArray()));
                 }
             }
@@ -96,7 +99,7 @@ final class SnapshotWebView {
     }
     PrintDocumentAdapter printAdapter(Runnable finished) {
         if(closed||!ready)throw new IllegalStateException("Renderer not ready");
-        PrintDocumentAdapter delegate=web.createPrintDocumentAdapter(snapshot.title);
+        PrintDocumentAdapter delegate=web.createPrintDocumentAdapter(PageSnapshotExport.documentName(snapshot.title));
         return new PrintDocumentAdapter() {
             @Override public void onStart(){if(!closed)delegate.onStart();}
             @Override public void onLayout(android.print.PrintAttributes old,android.print.PrintAttributes next,

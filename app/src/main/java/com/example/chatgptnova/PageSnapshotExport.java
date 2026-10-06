@@ -95,6 +95,7 @@ final class PageSnapshotExport {
             .setNegativeButton("取消",(d,w)->cancel()).setOnCancelListener(d->cancel()).show();
     }
     private void saveFormat(int index) {
+        if(destroyed||!busy||snapshot==null)return;
         format=index==0?"html":index==1?"markdown":"pdf";put("format",format);
         final long ticket=generation;
         if(index<2){mime=index==0?"text/html":"text/markdown";writeText(ticket,index==0);return;}
@@ -127,26 +128,30 @@ final class PageSnapshotExport {
             activity.runOnUiThread(()->{if(current(ticket))selectDestination(ticket);else destination.delete();});
         },"snapshot-text").start();
     }
-    private String saveName() {
-        String name=snapshot.title.replaceAll("[\\\\/:*?\"<>|\\p{Cntrl}]","_").trim();
+    static String documentName(String title) {
+        String name=title.replaceAll("[\\\\/:*?\"<>|\\p{Cntrl}]","_").trim();
+        name=name.replaceAll("[. ]+$", "");
         if(name.isEmpty())name="Nova-snapshot";
-        int points=name.codePointCount(0,name.length());if(points>80)name=name.substring(0,name.offsetByCodePoints(0,80));
-        return name+("html".equals(format)?".html":".md");
+        int points=name.codePointCount(0,name.length());if(points>48)name=name.substring(0,name.offsetByCodePoints(0,48));
+        name=name.replaceAll("[. ]+$", "");
+        return name.isEmpty()?"Nova-snapshot":name;
     }
+    private String saveName(){return documentName(snapshot.title)+("html".equals(format)?".html":".md");}
     private void print(long ticket) {
         stage("S00_PRINT_UI");
         try {
             PrintManager manager=activity.getSystemService(PrintManager.class);
             if(manager==null)throw new IllegalStateException();
-            manager.print("Nova-snapshot-"+snapshot.snapshotId,renderer.printAdapter(()->{
+            android.print.PrintJob job=manager.print("Nova-snapshot-"+snapshot.snapshotId,renderer.printAdapter(()->{
                 if(current(ticket)){renderer=null;stage("S00_PRINT_UI_FINISHED");finish();}
             }),new PrintAttributes.Builder().build());
+            if(job==null)throw new IllegalStateException("Print service did not start");
             // No success toast: onFinish also occurs when the user cancels.
         }catch(Exception e){fail("S07_PRINT_FAILED");}
     }
     private void selectDestination(long ticket) {
         if(!current(ticket))return;
-        if(file==null||!file.isFile()||file.length()==0){fail("S04_HTML_WRITE_FAILED");return;}
+        if(file==null||!file.isFile()||file.length()==0){fail("html".equals(format)?"S04_HTML_WRITE_FAILED":"S05_MARKDOWN_WRITE_FAILED");return;}
         stage("S00_SAVE_PICKER");
         try{activity.startActivityForResult(new Intent(Intent.ACTION_CREATE_DOCUMENT).addCategory(Intent.CATEGORY_OPENABLE)
             .setType(mime).putExtra(Intent.EXTRA_TITLE,saveName()),SAVE);}

@@ -115,6 +115,15 @@ jobs:
                   if name.startswith('classes') and name.endswith('.dex'):
                       assert b'FixtureDocuments' not in apk.read(name)
           PY
+          python3 - <<'PY'
+          import json, zipfile, os
+          from pathlib import Path
+          apk=Path('dist/ChatGPT-Nova.apk')
+          with zipfile.ZipFile(apk) as z:
+              abis=sorted({n.split('/')[1] for n in z.namelist() if n.startswith('lib/') and n.endswith('.so')})
+          Path('dist/package-size.json').write_text(json.dumps({'sourceCommit':os.environ['GITHUB_SHA'],'apkBytes':apk.stat().st_size,'nativeAbis':abis},indent=2))
+          PY
+          ./gradlew :app:dependencies --configuration releaseRuntimeClasspath --no-daemon > dist/release-runtime-dependencies.txt
           (cd dist && sha256sum ChatGPT-Nova.apk > ChatGPT-Nova.apk.sha256)
       - uses: actions/upload-artifact@v4
         with:

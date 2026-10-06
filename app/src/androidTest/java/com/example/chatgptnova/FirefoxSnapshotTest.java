@@ -15,7 +15,7 @@ import static org.junit.Assert.*;
 
 /** Separate real Firefox Android UI A/B on synthetic frozen HTML only. No production path. */
 public final class FirefoxSnapshotTest extends FrozenPageSnapshotTest {
-    private String shell(String command){try(ParcelFileDescriptor fd=instrument.getUiAutomation().executeShellCommand(command);java.io.InputStream in=new ParcelFileDescriptor.AutoCloseInputStream(fd)){return new String(in.readAllBytes(),StandardCharsets.UTF_8);}catch(Exception e){throw new AssertionError(e);}}
+    private String shell(String command){return fixtureShell(command);}
     private static String quote(String s){return "'"+s.replace("'","'\\''")+"'";}
     private Set<String> downloads(){Set<String> paths=new HashSet<>();for(String s:shell("find /sdcard/Download -maxdepth 3 -type f -name '*.pdf'").split("\\r?\\n"))if(s.startsWith("/sdcard/Download/"))paths.add(s);return paths;}
     private boolean press(String text){AccessibilityNodeInfo n=find(instrument.getUiAutomation().getRootInActiveWindow(),text);for(int i=0;n!=null&&i<5;i++,n=n.getParent())if(n.isClickable()&&n.isEnabled())return n.performAction(AccessibilityNodeInfo.ACTION_CLICK);return false;}
@@ -35,7 +35,7 @@ public final class FirefoxSnapshotTest extends FrozenPageSnapshotTest {
             final long[] nextStartupAction={0};
             waitFor("Firefox frozen fixture",()->{
                 AccessibilityNodeInfo root=instrument.getUiAutomation().getRootInActiveWindow();
-                if(root!=null&&!root.findAccessibilityNodeInfosByText("Before snapshot marker").isEmpty())return true;
+                if(find(root,"Before snapshot marker")!=null)return true;
                 long now=android.os.SystemClock.uptimeMillis();if(now<nextStartupAction[0])return false;
                 // A closing system role window can remain in accessibility briefly.
                 // Do not send repeated Back events through it into the browser.
@@ -53,12 +53,18 @@ public final class FirefoxSnapshotTest extends FrozenPageSnapshotTest {
                 return false;
             });
             waitFor("Firefox menu",()->press("More options")||press("Menu"));
-            waitFor("Firefox Save as PDF",()->press("Save as PDF"));
+            final long[] nextMenuAction={0};
+            waitFor("Firefox Save as PDF",()->{
+                if(press("Save as PDF"))return true;
+                // Firefox 157.0.1 publicly groups this action under MoreSettingsSubmenu.
+                long now=android.os.SystemClock.uptimeMillis();if(now>=nextMenuAction[0]){press("More");nextMenuAction[0]=now+2000;}
+                return false;
+            });
             final byte[][] result={null};
             waitFor("Firefox actual PDF file",()->{
                 press("Save"); // Handles an optional native document picker; no unrelated UI matching.
-                for(String path:downloads())if(!before.contains(path))try(ParcelFileDescriptor fd=instrument.getUiAutomation().executeShellCommand("cat "+quote(path));java.io.InputStream in=new ParcelFileDescriptor.AutoCloseInputStream(fd)){
-                    byte[] bytes=in.readAllBytes();if(bytes.length>1000&&new String(bytes,0,5,StandardCharsets.US_ASCII).equals("%PDF-")){
+                for(String path:downloads())if(!before.contains(path))try{
+                    byte[] bytes=fixtureShellBytes("cat "+quote(path));if(bytes.length>1000&&new String(bytes,0,5,StandardCharsets.US_ASCII).equals("%PDF-")){
                         File pdf=evidence("firefox-frozen.pdf",bytes);
                         try(ParcelFileDescriptor check=ParcelFileDescriptor.open(pdf,ParcelFileDescriptor.MODE_READ_ONLY);android.graphics.pdf.PdfRenderer r=new android.graphics.pdf.PdfRenderer(check)){if(r.getPageCount()>1){result[0]=bytes;return true;}}
                     }

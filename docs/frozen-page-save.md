@@ -16,7 +16,7 @@
 
 只保留clone的main（或公开role=main/body兜底）阅读正文。移除脚本、事件、按钮/菜单/导航/输入/反馈、隐藏控制、应用样式和属性。公开data-message-author-role及无普通作者的显式assistant/user conversation-turn可提供角色标签；不猜角色。内联Nova stylesheet，无ChatGPT CSS依赖；860px正文宽度、代码/表格屏幕横向滚动、图片max-width。打印白底黑字、16mm页边距、标题避免孤行、代码换行、表格单行尽量避免切割；长消息/pre/table允许跨页，不强制整条不可分页。
 
-相对链接/图片在同一事务中解析成绝对HTTPS URL，currentSrc在同步呈现状态采样中记录。data图片保留；blob图片无法离线复用，以可读占位说明。HTML外链图片可能需要网络、失效或改变；不下载原附件，不保证完全离线。静态打印资源请求限HTTPS、4次重定向、5秒、8MiB/资源，无Cookie/Authorization，并拒绝backend/API路径。保存HTML CSP拒绝脚本/连接/框架/表单；图片允许HTTPS/data，不允许应用再次启动。
+相对链接/图片在同一事务中解析成绝对HTTPS URL，currentSrc在同步呈现状态采样中记录。data图片保留；blob图片无法离线复用，以可读占位说明。HTML外链图片可能需要网络、失效或改变；不下载原附件，不保证完全离线。静态打印资源请求限HTTPS、4次重定向、5秒、8MiB/资源、64资源及总32MiB下载，无Cookie/Authorization，并拒绝backend/API路径。保存HTML CSP拒绝脚本/连接/框架/表单；图片允许HTTPS/data，不允许应用再次启动。
 
 canvas bitmap、shadow DOM、运行时JS状态不序列化。数学优先公开LaTeX annotation，保留当前可读文字，不保证原排版。Markdown支持标题/段落/强调/链接/列表/引用/代码fence/表格/数学/图片；保留公开pre-wrap换行。
 
@@ -47,3 +47,9 @@ S01_INVALID_PAGE；S02_SNAPSHOT_FAILED（包括15秒捕获超时）；S03_SNAPSH
 最初沿用的1px图片存在IDAT CRC错误，已替换为有正确校验的实际PNG并保留图片解码断言（没有放宽测试）。系统托管Chromium的file策略限制不代表HTML错误；最终结果用独立测试版Chromium及真实Firefox/Edge，三者均file直接打开，无更改既有浏览器策略。`compatibility.cjs`明确区分file与可能的localhost降级，不冒充结果。
 
 已新增FirefoxSnapshotTest受控Android A/B：官方Firefox157.0.1 x86_64仅在CI安装，不加入生产依赖；同一个frozenHtml通过临时loopback fixture服务交给Firefox，以正常菜单Save as PDF保存并拉回实物。此测试不使用私有浏览器打印API、不包含真实会话、不发送正文给第三方，结果待CI，不宣称通过。真机人工对照仍应执行。
+
+## 受控验收采样修正
+
+Android标准保存窗口已实测为android:id/title（文件名EditText），保存测试通过真实窗口明确命名后读取实际文件，不把任务label误作文件名。UiAutomation.executeShellCommand在Android15公开源码中使用Runtime.exec，不解析shell引号/重定向；测试使用公开executeShellCommandRw启动sh并通过stdin传入固定fixture命令，非生产能力。Firefox157.0.1首次启动role窗口/首页Continue卡片按明确UI操作处理，正文标记通过递归公开accessibility节点检查（Gecko虚拟节点不一定响应findByText快捷查询）；Save as PDF在公开MoreSettingsSubmenu中，不调用Firefox私有打印API。未有实物之前不能宣称PDF通过。
+
+fixture图像改为320×120可见PNG，不以单像素解码冒充图片打印品质；PDF验收保留打印源HTML/同快照MD，核法语重音、数学、长代码/长表格、首尾和late marker隔离，并检查图片对象。快照浏览器增加隐藏table/list/form及临时图片占位，13场景本地通过；资源总量有界、无附加live读取，超量DOM/payload仍明确失败。

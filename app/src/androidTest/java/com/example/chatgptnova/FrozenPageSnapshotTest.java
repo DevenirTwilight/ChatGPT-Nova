@@ -46,7 +46,15 @@ public class FrozenPageSnapshotTest extends FixtureActivity {
     private String dump(AccessibilityNodeInfo n){if(n==null)return "no window";StringBuilder s=new StringBuilder(n.toString()).append('\n');for(int i=0;i<n.getChildCount();i++)s.append(dump(n.getChild(i)));return s.toString();}
     protected AccessibilityNodeInfo find(AccessibilityNodeInfo n,String label){if(n==null)return null;if(n.isVisibleToUser()&&((n.getText()!=null&&label.equalsIgnoreCase(n.getText().toString()))||(n.getContentDescription()!=null&&label.equalsIgnoreCase(n.getContentDescription().toString()))))return n;for(int i=0;i<n.getChildCount();i++){AccessibilityNodeInfo found=find(n.getChild(i),label);if(found!=null)return found;}return null;}
     protected static String shellQuote(String s){return "'"+s.replace("'","'\\''")+"'";}
-    protected byte[] fixtureShellBytes(String command){try(ParcelFileDescriptor fd=instrument.getUiAutomation().executeShellCommand(command);java.io.InputStream in=new ParcelFileDescriptor.AutoCloseInputStream(fd)){return in.readAllBytes();}catch(Exception e){throw new AssertionError(e);}}
+    protected byte[] fixtureShellBytes(String command){
+        if(android.os.Build.VERSION.SDK_INT<31)throw new UnsupportedOperationException("Shell evidence requires API31+");
+        // UiAutomation invokes Runtime.exec, not a shell parser. Use the public
+        // stdin/stdout API so quoted fixture paths and redirects are interpreted by sh.
+        ParcelFileDescriptor[] pipes=instrument.getUiAutomation().executeShellCommandRw("sh");
+        try(java.io.InputStream in=new ParcelFileDescriptor.AutoCloseInputStream(pipes[0]);java.io.OutputStream input=new ParcelFileDescriptor.AutoCloseOutputStream(pipes[1])){
+            input.write((command+"\n").getBytes(StandardCharsets.UTF_8));input.close();return in.readAllBytes();
+        }catch(Exception e){throw new AssertionError(e);}
+    }
     protected String fixtureShell(String command){return new String(fixtureShellBytes(command),StandardCharsets.UTF_8);}
     protected FrozenPageSnapshot freeze() {
         main(()->exporter().start());click("冻结此刻网页");
@@ -83,7 +91,10 @@ public class FrozenPageSnapshotTest extends FixtureActivity {
     }
     @Test public void realSystemPrintUiSavesFrozenMultipagePdf() throws Exception {
         try {
-        FrozenPageSnapshot snapshot=freeze();mutate();click("打印 / 保存为 PDF");
+        FrozenPageSnapshot snapshot=freeze();
+        evidence("frozen-page-print-source.html",snapshot.frozenHtml.getBytes(StandardCharsets.UTF_8));
+        evidence("frozen-page-print-source.md",snapshot.markdown.getBytes(StandardCharsets.UTF_8));
+        mutate();click("打印 / 保存为 PDF");
         waitFor("system print window",()->{AccessibilityNodeInfo root=instrument.getUiAutomation().getRootInActiveWindow();return root!=null&&"com.android.printspooler".contentEquals(root.getPackageName());});
         AccessibilityNodeInfo selected=instrument.getUiAutomation().getRootInActiveWindow();
         if(find(selected,"Save as PDF")==null) {

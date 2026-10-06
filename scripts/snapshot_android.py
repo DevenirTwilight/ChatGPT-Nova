@@ -2,6 +2,10 @@
 """Controlled Android evidence, never a real-account or full-history proof."""
 import json
 import re
+import os
+import hashlib
+import zipfile
+import unicodedata
 import subprocess
 from pathlib import Path
 out=Path('snapshot-results');out.mkdir(exist_ok=True)
@@ -36,21 +40,44 @@ def markdown():
         assert marker not in md,marker
 def pdf(name='frozen-page.pdf'):
     subprocess.run(['pdftotext','-layout',str(out/name),str(out/(name+'.txt'))],check=True)
-    text=(out/(name+'.txt')).read_text();logical=re.sub(r'\s+','',text)
-    for marker in ['Beforesnapshotmarker','TAIL-SNAPSHOT-MARKER','CODE-LAST','TABLE-LAST','中文','café','Reference','Longparagraph']:
+    text=unicodedata.normalize('NFC',(out/(name+'.txt')).read_text());logical=re.sub(r'\s+','',text)
+    for marker in ['Beforesnapshotmarker','TAIL-SNAPSHOT-MARKER','CODE-LAST','TABLE-LAST','中文','café','Reference','Longparagraph','Noël','naïve','français','E=mc^2','LONG-CODE-HEAD','LONG-CODE-TAIL','LONG-TABLE-TAIL']:
         assert marker in logical,('PDF',marker)
-    assert 'Aftersnapshotmarker' not in logical and 'AFTER-TABLE' not in logical
+    for late in ['Aftersnapshotmarker','AFTER-TITLE','AFTER-TABLE','AFTER-BODY']:assert late not in logical,late
+    images=subprocess.check_output(['pdfimages','-list',str(out/name)]).decode();(out/(name+'.images.txt')).write_text(images)
+    assert re.search(r'\b320\s+120\b',images),('PDF fixture image',name)
+    (out/(name+'.urls.txt')).write_text(subprocess.check_output(['pdfinfo','-url',str(out/name)]).decode())
     (out/(name+'.info.txt')).write_text(subprocess.check_output(['pdfinfo',str(out/name)]).decode())
+def assert_print_markdown():
+    text=(out/'frozen-page-print-source.md').read_text(encoding='utf-8')
+    assert 'Before snapshot marker' in text and 'TAIL-SNAPSHOT-MARKER' in text
+    for marker in ['After snapshot marker','AFTER-TABLE','AFTER-TITLE','AFTER-BODY']:assert marker not in text
+
+def installed_metrics():
+    apk=Path('dist/ChatGPT-Nova.apk');info={'sourceCommit':os.environ.get('GITHUB_SHA','unknown'),'android':adb('shell','getprop','ro.build.version.sdk').strip(),'apkBytes':apk.stat().st_size,'scope':'installed code directory; excludes app data/cache and shared system WebView'}
+    with apk.open('rb') as stream:info['apkSha256']=hashlib.file_digest(stream,'sha256').hexdigest()
+    with zipfile.ZipFile(apk) as z:info['nativeAbis']=sorted({n.split('/')[1] for n in z.namelist() if n.startswith('lib/') and n.endswith('.so')})
+    path=adb('shell','pm','path','com.example.chatgptnova').strip().removeprefix('package:')
+    try:info['installedBaseApkBytes']=int(adb('shell','stat','-c','%s',path).strip())
+    except Exception:info['installedBaseApkBytes']=None
+    try:info['installedCodeAllocatedBytes']=int(adb('shell','du','-sk',str(Path(path).parent)).split()[0])*1024
+    except Exception:info['installedCodeAllocatedBytes']=None
+    (out/'package-metrics.json').write_text(json.dumps(info,indent=2))
+
 try:
+    independent('installed-package-metrics',installed_metrics)
     suite('com.example.chatgptnova.FrozenPageSnapshotTest','snapshot',10)
-    for name in ['frozen-page.md','frozen-page.html','frozen-page-saf.html','frozen-page.pdf']:
+    for name in ['frozen-page.md','frozen-page.html','frozen-page-saf.html','frozen-page-print-source.html','frozen-page-print-source.md','frozen-page.pdf']:
         independent('pull-'+name,lambda name=name:adb('pull','/sdcard/Android/data/com.example.chatgptnova/files/'+name,str(out/name)))
     # Retain synthetic UI evidence only when the controlled print test failed.
     for name in ['snapshot-ui-failure.txt','snapshot-ui-failure.png']:
         try:adb('pull','/sdcard/Android/data/com.example.chatgptnova/files/'+name,str(out/name))
         except Exception:pass
+    (out/'fixture-downloads.txt').write_text(adb('shell','ls','-l','/sdcard/Download'))
     independent('html-same-object',lambda:html('frozen-page.html'))
     independent('html-saf',lambda:html('frozen-page-saf.html'))
+    independent('actual-print-source-html',lambda:html('frozen-page-print-source.html'))
+    independent('actual-print-source-markdown',lambda:assert_print_markdown())
     independent('markdown-content',markdown)
     independent('pdf-content',pdf)
     independent('chromium-open',lambda:subprocess.run(['node','tools/snapshot/open-html.cjs'],check=True))
