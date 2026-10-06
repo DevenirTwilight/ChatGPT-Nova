@@ -1,5 +1,18 @@
 # 最新复核摘要
 
+## 本批已验证并交付：8ed24f7 / 1.4.0（进度补采、诊断、快速入口）
+
+最终源码`8ed24f74d0f6fc8f4183e0b797a199926300b5e9`，[CI37487134618](https://github.com/DevenirTwilight/ChatGPT-Nova/actions/runs/37487134618)构建/lint/原签名、Chromium17单快照+30滚动+12进度场景、Android35/36各16项通过，publish skipped；本地10个只读探针场景也通过。早先37486497116/37486763034因本批修正被取消，不算完整验证结果。新增Android测试实际通过快速入口→HTML→SAF保存并核对USER-FIRST→PROGRESS-BODY→ASSISTANT-LAST顺序、助手进度标签、复制诊断count3/turnFallbacks1/原作者2及无正文/ID泄露。均为明确标记的合成结构，不是用户缺失条目的真实DOM复现。
+
+独立下载35/36证据核对`OK (16 tests)`及新增进度测试名称。系统保存PDF分别4页且包含首尾/代码/表格标记：API35 140385 bytes/SHA256 `027111ce658f8b31b7ed3ba39805e49f702b85c2d1011e42e89fc749117bbe6f`；API36 141613 bytes/SHA256 `a68cedd02d60cd89261506c5987cd97cb6cbc1a032f921ab4e582dba5c3fbf78`。模拟器WebView分别124.0.6367.219、133.0.6943.137，不是用户153.0.8010.36或真实长会话PDF证据。
+
+原签名主APK1892188 bytes/SHA256 `e5f2ad82e37eab80de28d6801e7c853014416d69680f6542540f6480de57544e`。独立核对下载ZIP摘要、APK校验值、版本1.4.0-scroll-trial/code14、原证书记录、三份采集脚本与源码逐字节一致、DEX完整buildRevision=8ed24f7、主APK不含测试夹具。版本不递增、不创建Release；会话直接提供主APK和仅主APK/校验值ZIP。[GitHub备用构建产物](https://github.com/DevenirTwilight/ChatGPT-Nova/actions/runs/37487134618/artifacts/11423542887)，需登录/解压，仅安装ChatGPT-Nova.apk，不安装ChatGPT-Nova-tests.apk；产物有保留期限。
+
+手机复测：原会话等待回复结束→导出聊天历史（试用）→快速导出已加载消息→HTML。该入口不滚动；只在需要加载更早内容时用单向扫描历史。核对缺失的第12条进度文字是否恢复，并在第11和13条之间；不要只检查count是否30。若仍缺，复制导出诊断，应为buildRevision8ed24f7且dom.source=read-only-dom-v3，包含dom.progressDiscovery、authors、turnFallbacks、explicitProgressBlocks（滚动终止只保证progressDiscovery，普通采集计数在快速路径完整提供）。无需用户搭建ADB。
+
+本批仅补明确助手turn与明确commentary正文，不猜未标角色的候选，不按文本去重，不伪造分片ID；同一消息内的进度/最终正文可能保持一条。真实第12条可见性及结构仍没有设备证据，30/30尚待原会话复测；网页若已不保留，DOM不能还原。普通消息29/29、可见有序参照29/30为用户此前提供对照，不是本环境独立解析。完整历史始终not-proven，原附件未备份，旧403未复测。下方待CI/未接入APK为本批交付之前的历史记录，以上结果优先。
+
+
 ## 进度补采与结构诊断批次（待CI及原会话复测）
 
 用户已要求继续修。版本保持1.4.0-scroll-trial/code14，不发布Release。快速导出已加载消息改为显眼的主按钮；单向扫描历史仍为可选入口，不新增遍历。采集v3只补明确`article[data-turn="assistant"]`且没有自身/后代作者标记的可见turn，保持DOM顺序；未标角色的turn/工具角色/隐藏内容不会猜作助手。整体明确commentary的作者保留完整可见正文（复现检查曾发现非空Markdown外文字仍遗漏，已修）；已选Markdown之外明确`data-message-channel="commentary"`的可见内容也保留，但没有独立身份的分片仍归原消息，不人为拆出第30条。类型仅明确channel时标进度/最终，否则assistant-unknown；同文本不同ID保留，重复ID仍拒绝D08，缺ID不能用于跨窗口缓存。
