@@ -1,3 +1,7 @@
+## Archive first Android runtime failure
+
+29be171 build/lint/signature/JVM38 succeeded (downloaded XML verified). API26 foundation tests failed A06 before transaction because row-returning PRAGMA was sent through execSQL; use Android setMaximumSize instead. This was a real adapter failure, not covered by pure Java fixtures. Source fix now requires fresh Android verification; no real OpenAI export verified.
+
 ## Archive bounded list checkpoint
 
 UI now holds at most200 conversation rows via LIMIT/OFFSET previous/next pages, including bounded displayed titles. Reader lifecycle generation/destroyed are volatile for background export cancellation visibility. Fixture pagination assertions verify actual page contents. Runtime results remain pending; no new feature scope added.

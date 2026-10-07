@@ -1,0 +1,15 @@
+{
+  "sourceCommit": "29be17176cc3ed26ea0139b8f2a6deadf8f3179e",
+  "ciRun": 37604805034,
+  "api26": "failed: both foundation tests A06 in import bootstrap before transaction",
+  "cause": "non-query execSQL used for row-returning PRAGMA max_page_count",
+  "fix": "Android SQLiteDatabase.setMaximumSize(512MiB)",
+  "jvm": {
+    "tests": 38,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "api35Api36": "still running at fix; no success claim",
+  "validation": "synthetic fixtures only"
+}

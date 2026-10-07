@@ -108,7 +108,7 @@ public final class ArchiveStore extends SQLiteOpenHelper {
     SQLiteDatabase db;
     try {
       db = getWritableDatabase();
-      db.execSQL("PRAGMA max_page_count=131072");
+      db.setMaximumSize(512L * 1024 * 1024);
       ContentValues source = new ContentValues();
       source.put("id", importId);
       source.put("filename", filename);

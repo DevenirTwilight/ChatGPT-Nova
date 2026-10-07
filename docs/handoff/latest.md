@@ -1,3 +1,11 @@
+## Nova Archive — Step 4f：首轮 Android 数据库容量接口失败（2026-10-07）
+
+- 分支 `feature/export-conversation`；源码基线 `29be17176cc3ed26ea0139b8f2a6deadf8f3179e`，CI `37604805034`。
+- success：该源码 Gradle build/lint/签名/browser与 JVM38 全部通过；已独立下载 XML 核对 tests38/failures0/errors0/skipped0。
+- failed：API26 两项基础测试在 import bootstrap 捕捉 A06（事务前）。原因：通过非查询 execSQL 执行返回结果的 PRAGMA max_page_count。改用 Android SQLiteDatabase.setMaximumSize(512MiB)，保持同一安全上限。
+- 证据 `tools/archive/evidence/first-runtime-failure.json`；保留 CI 失败记录。API35/36尚在运行，不声明 success；本提交需要新的真实Android验收。
+- 下一步：重新执行 API26/35/36、实际PDF和所有正式回归；只修真实运行失败。
+
 ## Nova Archive — Step 4e：有界列表分页与导出销毁可见性（2026-10-07）
 
 - 分支 `feature/export-conversation`；基线源码 `66172a1`，CI build 正在运行，运行验收未完成。
