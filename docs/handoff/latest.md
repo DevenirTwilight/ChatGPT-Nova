@@ -1,3 +1,13 @@
+## Deep Research — Step T：澄清反馈并确认生成文件恢复缺口（2026-10-07）
+
+- 用户澄清“重装后看不到”指的是 **Deep Research 生成的文档**，不能据此记录成所有普通上传附件恢复失败。当前待明确：缺失完整研究报告正文，还是报告中的 PDF／Word 下载文件；已提出单项澄清，尚未回答。新的工作范围是调查该缺失，不再把真实 AR3–5 清单当成唯一下一步。
+- 分支 feature/export-conversation；开始前 fetch / ls-remote 核对默认远端 HEAD main/e8ffa0c6bd9af9ab29aecad50efe2ab6b8099a00，工作分支 HEAD 2a86746d36d87cc33cbbeed8628e29021b7bcae1 与远端一致、工作树干净。实际生产源码仍 787f18f5296e7bbf4148146c21c9c7656e8c7859。最新正式 37677076099 与 Legacy 37677076223 均 completed/success；本步仅调查和文档，无新 APK 或生产修复。
+- success 源码确认：ArchiveDisplay 目前只解释 parts.asset_pointer / metadata.attachments[].id；ArchiveAssetStore 以这些引用规划恢复。ArchiveRenderer Markdown 链接只允许 HTTP(S)，sandbox 下载链接被呈现成普通标签，尚无生成文件恢复绑定。这是明确的功能覆盖缺口，但未证明就是用户所指 Deep Research 文档的具体原因。
+- success 授权真实副本在仓库外按现有有界 parser 只读统计：现有普通附件引用全部属于 user；包含 sandbox: 的消息 15 条，当前主链可见 9 条。未找到已知 research 作者／模型标记不能证明导出没有研究报告。正文可能是普通 text，也可能位于其他分支；不自动展示隐藏 thoughts 或把任意 widget metadata 当正文。
+- 仓库外 ZIP 审查发现 filename-map 未覆盖的 dat 有 266 个，前缀分类 PNG47/JPEG128/ZIP-container52/PDF7/other32；不能从前缀推断用途或把 ZIP-container 等同 Word。metadata.content_references 的 type=file 有 733 个 canonical 引用／80 个唯一文件条目，其中 730 次存在、3 次缺失；6 个唯一条目不在 filename-map。它们可能是引用来源文件，未证明与生成文件下载链接的绑定；不按名称、正文、ZIP 顺序或相似度猜归属，不宣称二进制不存在。
+- privacy：真实聊天正文、名称、ID、路径、链接、二进制不进入 Git/CI/log；仅以上计数与固定 schema 字段记录。not verified：具体 Deep Research 文档、报告正文与生成文件的对应关系、真实手机阅读／重复导入等。没有 backend／网络抓取／Fiber／选择器扩张，Stable/Legacy 未改。
+- 下一步：收到“报告正文／生成 PDF-Word”澄清后继续针对性调查；只有找到可靠官方数据归属才能实现本地恢复，否则明确标记不支持或源文件缺失。若改生产源码，补合成回归与 Android 实际 Reader/导出验证；保留此前验收和历史失败，不复用普通附件成功替代研究文档验证。
+
 ## Attachment Restoration — Step S：最终fixture/实际输出/原签名APK验收，真实手机AR3–5待验收（2026-10-07）
 
 - 分支feature/export-conversation；完整已测源码**787f18f5296e7bbf4148146c21c9c7656e8c7859**，上一文档检查点62bc70c，本提交仅最终文档/证据，生产源码未再修改。正式[37677076099](https://github.com/DevenirTwilight/ChatGPT-Nova/actions/runs/37677076099)与Legacy[37677076223](https://github.com/DevenirTwilight/ChatGPT-Nova/actions/runs/37677076223)全部job success、head绑定787。success独立JVM93 XML0fail/error/skip；API26原生14（2+7+3+2），35/36各Archive34（7+3+20+concurrency2+true force-stop2）及Stable43；Legacy各19+历史Gecko2ignore。

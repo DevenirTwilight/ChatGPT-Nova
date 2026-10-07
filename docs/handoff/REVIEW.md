@@ -1,3 +1,9 @@
+## Deep Research investigation supersedes the previous next-step-only boundary
+
+用户最新反馈指 Deep Research 生成文档，尚待区分完整报告正文与 PDF/Word 下载文件。当前生产源码仍 787f18f，最近两 CI success 不证明研究文档恢复。源码确认生成 sandbox 下载链接未接入附件规划，HTML Reader 只留下普通标签；已有 PNG/JPEG/上传 PDF/Office 恢复不能称覆盖 Deep Research 生成文件。
+
+授权仓库外只读统计有15条 sandbox 消息（主链可见9条），以及未被 filename-map 覆盖的266个 dat（含52个 ZIP-container 前缀、7个 PDF 前缀）；不能说生成文档二进制必不存在，也不能凭名称或 ZIP 顺序绑定。官方 content_references 的 file 类型可能为引用资料，不等于生成文件下载。已知 research 标记未出现不证明研究报告不存在。报告正文、特定文件归属、真实手机路径均 not verified；禁止以隐藏 thoughts／任意 widget metadata 充当报告。下一步按用户澄清建立可靠归属，再决定最小实现；本检查点只有文档，未交付修复 APK。真实内容仍不进仓库／CI／日志，Stable/Legacy 不变。
+
 ## Final attachment implementation/fixture acceptance complete; real device AR3–5 remain pending
 
 实际源码787f18f5296e7bbf4148146c21c9c7656e8c7859，正式37677076099与Legacy37677076223全部job success、同head。独立JVM93/API26 native14/API35-36各Archive34+Stable43/Legacy各19+原Gecko2ignore；Archive actual HTML/MD/16页PDF的12×8RGB24/108/150图片及文档描述/正文/Unicode，Stable31页System/Firefox PDF/same source/OCR/图/升级全部核对，installed APK SHA与signed artifact一致。原签名正式APK11507044105/2106973bytes/source787/defaultflagfalse/版本14保持，无.so/test-only诊断，另显式实验flagtrue也核对。
