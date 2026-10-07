@@ -26,6 +26,12 @@
 
 读取4ca3c04实际job logs：Android35 job112682669293、36 job112682669294均执行19项、1项失败，均为historyScrollCachesUnmountedMessagesThroughSaf第152行旧文件文案断言；其余18项（含新确认/前台取消/脱敏）通过。两套run最终被新提交取消，不能标overall success。失败摘要入isolation-validation.json previousRuns，不删除证据。最新源码5d9efe8eee0c24d1ce2b1a48b6e14f74360ae583正式37588638317/实验37588638326正在重跑，尚未最终验收。下一步等待新Android结果并独立核对最终文件与APK。
 
+### Step 4f：最终候选包独立核对 success
+
+源码5d9efe8，正式run37588638317/artifact11467268360，实验run37588638326/artifact11467472980。实际APK再次独立核SHA、v2RSA签名+签名content digest、原证书、5份assets、无native so；读取实际DEX核EXPORT_REVISION=5d9efe8、原applicationId、正式flag=false/实验=true。报告package-verification.json；前包报告另存package-verification-4ca3c04.json不覆盖失败历史。
+
+正式1916153bytes/SHA4f9212d7dca36cb1563b88acce17051c89afe03ae9cb3d692a03cc19eb469ea5；实验1917377bytes/SHA423270eda1b8811372867a5fbc0ed7c466e1241a36d60b08b2af75d305e66204。两套build/lint/签名success，四Android jobs尚进行中；本步仅包核对、未完成最终Android验收。下一步等待19项legacy/default2/正式保存与回归，核实际文件，更新最终交接。
+
 ## 已实现
 
 用户最终要求普通HTML/Markdown/PDF，取消Share/MHTML/新完整历史算法。正式“保存当前网页”→一次evaluateJavascript同步深clone→同clone静态HTML和Markdown→不可变FrozenPageSnapshot。HTML为唯一标准表示；PDF仅同frozenHtml→独立无JS/static WebView→Android System Print。Nova860px阅读/白底print CSS，不复制ChatGPT SPA。无滚动/backend/private reader/React/token/storage读取/ID去重/跨窗口缓存，不重构输入上传下载分享。

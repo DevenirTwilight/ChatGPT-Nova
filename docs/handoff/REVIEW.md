@@ -32,6 +32,10 @@ Stable=当前网页Frozen Snapshot三格式；Archive=未来主动导入官方Da
 
 4ca3c04两档legacy各19项仅旧文案断言1失败，新增三项与其他旧项通过。两套run最终cancelled；实际failures如实入JSON，不改写。最新5d9efe8两套CI仍进行中，不能宣称安全隔离已全部验收。
 
+## Step 4f最终候选包
+
+5d9efe8实际包DEX source与false/true已核、原签名v2crypto verified；1916153/1917377bytes。最终package-verification.json与旧4ca3c04报告分开，Android仍待验证，不宣称完整安全隔离已验收。
+
 ## 现有验收结果
 
 已测source ac4776ff31feaed9794dbc434e423ac291fbee83；CI37556129018 build、Android35/36全success。两API实际HTML/MD/PDF下载独立核Unicode/结构/首尾/后续mutation排除，两份打印源与Firefox逐字节相同，四PDF均31页，抽查长代码/表格/尾页可读。最终SAF HTML在Chromium/Firefox/Edge以普通file打开通过。完整13项报告及限制见../frozen-page-save.md，来源与原失败保留tools/snapshot/evidence。

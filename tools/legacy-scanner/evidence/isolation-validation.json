@@ -1,5 +1,5 @@
 {
-  "sourceCommit": "4ca3c0428f46a646fc6c95a476349e35942888d8",
+  "sourceCommit": "5d9efe8eee0c24d1ce2b1a48b6e14f74360ae583",
   "baseline": "da4176c5731ee07ea3c8815d56169abf1b143b25",
   "branch": "feature/export-conversation",
   "scope": "controlled fixtures, no live account or physical-device proof",
@@ -28,13 +28,14 @@
   },
   "ci": {
     "stable": {
-      "runId": 37587862891,
+      "runId": 37588638317,
       "status": "in_progress",
       "build": "success"
     },
     "experimental": {
-      "runId": 37587862825,
-      "status": "in_progress"
+      "runId": 37588638326,
+      "status": "in_progress",
+      "build": "success"
     }
   },
   "deviceAcceptance": "not_verified",
@@ -66,5 +67,6 @@
       },
       "reason": "obsolete file notice assertion; preserved content/count/restore checks, replaced with experimental metadata assertions in 5d9efe8"
     }
-  ]
+  ],
+  "packageVerification": "package-verification.json"
 }

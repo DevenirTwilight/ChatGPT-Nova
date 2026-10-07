@@ -1,8 +1,8 @@
 {
   "stable": {
-    "artifactZipSha256": "d2708833f174ae96132114ea2290f4b9d745675abfc26d22ed4037b25a70fef2",
-    "apkBytes": 1916153,
-    "apkSha256": "4f9212d7dca36cb1563b88acce17051c89afe03ae9cb3d692a03cc19eb469ea5",
+    "artifactZipSha256": "5d81b705bfe1e361ba6c8bc4eb69bb2df7c5fc1185948d17e8f8b9bb68343e53",
+    "apkBytes": 1916121,
+    "apkSha256": "a37d8cd6371591f263ac00dc13eb49283abc0e3adda45d0e933351d941af5eaa",
     "certificateSha256": "f93221ee0d2be2b806233a0b3427ec9c14766100c1bab3208841e6203e2b4289",
     "apkV2Signature": "verified",
     "apkV2ContentDigest": "verified",
@@ -15,13 +15,12 @@
     ],
     "nativeLibraries": [],
     "enableLegacyScannerDexValue": false,
-    "sourceCommit": "5d9efe8eee0c24d1ce2b1a48b6e14f74360ae583",
-    "applicationId": "com.example.chatgptnova"
+    "sourceCommit": "4ca3c0428f46a646fc6c95a476349e35942888d8"
   },
   "experimental": {
-    "artifactZipSha256": "f53879b820e340696de1e51aef8acd3d06c008d08e7d833f4dfbb1855dabcb98",
-    "apkBytes": 1917377,
-    "apkSha256": "423270eda1b8811372867a5fbc0ed7c466e1241a36d60b08b2af75d305e66204",
+    "artifactZipSha256": "84e213a46d7ff666eb9c68e6468d013d55ca8688be0e033ba89da4425a345813",
+    "apkBytes": 1917341,
+    "apkSha256": "6856865eb9439088910a02625d7005f2b4f9be68ec54426a4f2c1cdab7e02e3c",
     "certificateSha256": "f93221ee0d2be2b806233a0b3427ec9c14766100c1bab3208841e6203e2b4289",
     "apkV2Signature": "verified",
     "apkV2ContentDigest": "verified",
@@ -34,7 +33,6 @@
     ],
     "nativeLibraries": [],
     "enableLegacyScannerDexValue": true,
-    "sourceCommit": "5d9efe8eee0c24d1ce2b1a48b6e14f74360ae583",
-    "applicationId": "com.example.chatgptnova"
+    "sourceCommit": "4ca3c0428f46a646fc6c95a476349e35942888d8"
   }
 }
