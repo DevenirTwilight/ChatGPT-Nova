@@ -194,10 +194,22 @@ public final class ArchiveActivity extends Activity {
       return;
     }
     if (t.error != null) {
-      diagnostic = "schema=1\nimportId=" + t.id + "\nerror=" + t.error.code;
+      diagnostic =
+          "schema=1\nbuildRevision="
+              + BuildConfig.EXPORT_REVISION
+              + "\nimportId="
+              + t.id
+              + "\nerror="
+              + t.error.code;
       status.setText(t.error.code + "\n" + t.error.explanation());
     } else {
-      diagnostic = "importId=" + t.id + "\n" + t.stats.diagnostic();
+      diagnostic =
+          "buildRevision="
+              + BuildConfig.EXPORT_REVISION
+              + "\nimportId="
+              + t.id
+              + "\n"
+              + t.stats.diagnostic();
       status.setText(
           "导入完成：新增 "
               + t.stats.newConversations
@@ -370,6 +382,7 @@ public final class ArchiveActivity extends Activity {
 
     private void run() {
       File temp = null;
+      long started = System.nanoTime(), copied = 0, freeBefore = 0, heapPeak = 0;
       try {
         String name = "selected-export";
         long size = -1;
@@ -393,27 +406,43 @@ public final class ArchiveActivity extends Activity {
         String lower = name.toLowerCase(Locale.ROOT);
         boolean zip = lower.endsWith(".zip"), json = lower.endsWith(".json");
         if (!zip && !json) throw new ArchiveError("A01_UNSUPPORTED_FILE");
-        if (size > ArchiveImporter.FILE_LIMIT) throw new ArchiveError("A05_ARCHIVE_TOO_LARGE");
+        ArchiveImporter.checkContainerSize(size);
         File dir = new File(context.getCacheDir(), "nova-archive-import");
         if (!dir.isDirectory() && !dir.mkdirs()) throw new ArchiveError("A09_STORAGE_FAILED");
+        freeBefore = dir.getUsableSpace();
+        ArchiveStorageBudget.checkBeforeCopy(freeBefore, size);
         temp = File.createTempFile("import-", ".tmp", dir);
         try (InputStream in = context.getContentResolver().openInputStream(uri);
             OutputStream out = new FileOutputStream(temp)) {
           if (in == null) throw new ArchiveError("A09_STORAGE_FAILED");
           byte[] b = new byte[32768];
-          long count = 0;
+          long count = 0, checkedAt = 0;
           int n;
           while ((n = in.read(b)) != -1) {
             control.check();
             count += n;
-            if (count > ArchiveImporter.FILE_LIMIT) throw new ArchiveError("A05_ARCHIVE_TOO_LARGE");
+            ArchiveImporter.checkContainerSize(count);
+            if (count - checkedAt >= 1024 * 1024) {
+              ArchiveStorageBudget.checkCopySpace(dir.getUsableSpace());
+              checkedAt = count;
+              Runtime rt = Runtime.getRuntime();
+              heapPeak = Math.max(heapPeak, rt.totalMemory() - rt.freeMemory());
+            }
             out.write(b, 0, n);
           }
         }
+        copied = System.nanoTime();
         control.check();
+        ArchiveStorageBudget.checkCopySpace(dir.getUsableSpace());
         try (ArchiveStore db = new ArchiveStore(context)) {
           stats = db.importFile(temp, zip, name, id, control);
         }
+        stats.copyDurationMs = (copied - started) / 1000000;
+        stats.totalDurationMs = (System.nanoTime() - started) / 1000000;
+        stats.temporaryBytes = temp.length();
+        stats.freeStorageBefore = freeBefore;
+        stats.sampledHeapPeakBytes = Math.max(stats.sampledHeapPeakBytes, heapPeak);
+        stats.databaseBytes = context.getDatabasePath(ArchiveStore.DATABASE).length();
       } catch (ArchiveError e) {
         error = e;
       } catch (Exception e) {
@@ -422,6 +451,7 @@ public final class ArchiveActivity extends Activity {
                 control.cancelled.get() ? "A07_IMPORT_CANCELLED" : "A09_STORAGE_FAILED");
       } finally {
         if (temp != null) temp.delete();
+        if (stats != null) stats.freeStorageAfter = context.getCacheDir().getUsableSpace();
         done = true;
         ACTIVE.decrementAndGet();
         notifyUi();

@@ -752,4 +752,89 @@ public final class ArchiveTest extends FixtureActivity {
       assertNotNull(field(reader, "reader"));
     }
   }
+
+  @Test
+  public void safLargeMetadataUnknownSizeAndContainerRejection() throws Exception {
+    for (String name : List.of("metadata300.zip", "unknown-size.zip")) {
+      Uri uri = Uri.parse("content://com.example.chatgptnova.test.archive.documents/" + name);
+      write(uri, ArchiveFixtures.zip(false));
+      intercept(Intent.ACTION_OPEN_DOCUMENT, uri, false);
+      click("导入 ChatGPT 数据");
+      waitFor("accepted synthetic metadata", () -> status().startsWith("导入完成"));
+    }
+    Uri large = Uri.parse("content://com.example.chatgptnova.test.archive.documents/oversize.zip");
+    write(large, ArchiveFixtures.zip(false));
+    intercept(Intent.ACTION_OPEN_DOCUMENT, large, false);
+    click("导入 ChatGPT 数据");
+    waitFor("container rejected", () -> status().startsWith("A05_ARCHIVE_TOO_LARGE"));
+    try (ArchiveStore db = new ArchiveStore(instrument.getTargetContext())) {
+      assertEquals(1, db.list("", false, 10).size());
+    }
+    File[] files = new File(archive.getCacheDir(), "nova-archive-import").listFiles();
+    assertTrue(files == null || files.length == 0);
+  }
+
+  @Test
+  public void threeMiConversationPersistsReloadsAndUpserts() throws Exception {
+    Map<String, Object> c =
+        ArchiveFixtures.conversation("bounded-large", "Synthetic large", 100, false);
+    Map<String, Object> mapping = new LinkedHashMap<>();
+    String text = "x".repeat(60000);
+    for (int i = 0; i < 50; i++)
+      mapping.put(
+          "n" + i, ArchiveFixtures.node("n" + i, i == 0 ? "" : "n" + (i - 1), "assistant", text));
+    c.put("mapping", mapping);
+    c.put("current_node", "n49");
+    byte[] bytes = ArchiveModel.JSON.toJson(List.of(c)).getBytes(StandardCharsets.UTF_8);
+    assertTrue(bytes.length > 2 * 1024 * 1024);
+    assertTrue(bytes.length < 4 * 1024 * 1024);
+    ArchiveStore.Stats first = store(bytes);
+    assertEquals(50, first.newMessages);
+    long firstImport;
+    try (ArchiveStore db = new ArchiveStore(instrument.getTargetContext());
+        android.database.Cursor q =
+            db.getReadableDatabase().rawQuery("SELECT first_import FROM conversations", null)) {
+      assertTrue(q.moveToFirst());
+      firstImport = q.getLong(0);
+      assertEquals(50, db.load(firstRow()).messageCount());
+    }
+    ArchiveStore.Stats again = store(bytes);
+    assertEquals(0, again.newConversations);
+    assertEquals(0, again.newMessages);
+    assertEquals(50, again.skipped);
+    try (ArchiveStore db = new ArchiveStore(instrument.getTargetContext());
+        android.database.Cursor q =
+            db.getReadableDatabase()
+                .rawQuery("SELECT first_import,latest_import FROM conversations", null)) {
+      assertTrue(q.moveToFirst());
+      assertEquals(firstImport, q.getLong(0));
+      assertTrue(q.getLong(1) >= firstImport);
+      assertEquals(50, ArchiveTree.select(db.load(firstRow()), false).messages.size());
+    }
+  }
+
+  @Test
+  public void schemaRawPersistenceReaderAndBothExportScopesAgree() throws Exception {
+    store(ArchiveFixtures.json(1, true));
+    try (ArchiveStore db = new ArchiveStore(instrument.getTargetContext())) {
+      ArchiveModel.Conversation c = db.load(firstRow());
+      assertTrue(c.nodes.get("thought").raw.contains("SYNTHETIC-HIDDEN-THOUGHT"));
+      assertTrue(c.nodes.get("u").raw.contains("asset_pointer"));
+      for (boolean all : new boolean[] {false, true}) {
+        ArchiveTree.Selection selected = ArchiveTree.select(c, all);
+        for (String doc :
+            List.of(ArchiveRenderer.html(c, selected), ArchiveRenderer.markdown(c, selected))) {
+          assertTrue(doc.contains("SCHEMA-OBJECT-TEXT"));
+          assertTrue(doc.contains("SCHEMA-RECAP"));
+          assertTrue(doc.contains("推理摘要"));
+          assertFalse(doc.contains("SYNTHETIC-HIDDEN-THOUGHT"));
+        }
+      }
+    }
+    openReader();
+    String html = (String) field(reader, "html");
+    assertTrue(html.contains("SCHEMA-OBJECT-TEXT"));
+    assertTrue(html.contains("SCHEMA-RECAP"));
+    assertFalse(html.contains("SYNTHETIC-HIDDEN-THOUGHT"));
+  }
 }

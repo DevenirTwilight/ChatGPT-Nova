@@ -29,7 +29,7 @@ public final class ArchiveError extends Exception {
       case "A08_SCHEMA_UNSUPPORTED":
         return "此会话数据结构暂不支持。";
       case "A09_STORAGE_FAILED":
-        return "无法读取所选文件或写入应用私有存储。";
+        return "私有存储空间不足，或无法读取所选文件 / 写入存储。已有档案请重新核对。";
       default:
         return "无法完成本地档案操作。";
     }

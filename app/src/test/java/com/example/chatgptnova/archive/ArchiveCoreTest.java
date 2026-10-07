@@ -213,7 +213,7 @@ public class ArchiveCoreTest {
     m.put("developer", node("developer", "tool", "developer", List.of()));
     Conversation c = new Conversation(d);
     assertEquals(4, c.messageCount());
-    assertTrue(c.nodes.get("tool").text().contains("非文本"));
+    assertTrue(c.nodes.get("tool").text().contains("图片 / 附件"));
     assertTrue(c.nodes.get("tool").raw.contains("asset_pointer"));
   }
 
@@ -430,15 +430,13 @@ public class ArchiveCoreTest {
 
   @Test
   public void objectKeyBudgetBeforeAllocationGrows() throws Exception {
-    String json =
-        "{\""
-            + "a".repeat(400000)
-            + "\":null,\""
-            + "b".repeat(400000)
-            + "\":null,\""
-            + "c".repeat(400000)
-            + "\":null}";
-    error("A05_ARCHIVE_TOO_LARGE", json(json), false);
+    StringBuilder text = new StringBuilder("{");
+    for (int i = 0; i < 11; i++) {
+      if (i > 0) text.append(',');
+      text.append('"').append((char) ('a' + i)).append("x".repeat(400000)).append("\":null");
+    }
+    text.append('}');
+    error("A05_ARCHIVE_TOO_LARGE", json(text.toString()), false);
   }
 
   @Test
@@ -533,5 +531,238 @@ public class ArchiveCoreTest {
                         + "```\n|a|b|\n|-|-|\n|1|2|\n$E=mc^2$")));
     assertTrue(
         parse(json(encode(List.of(d))), false).get(0).nodes.get("a").text().contains("$E=mc^2$"));
+  }
+
+  @Test
+  public void containerMetadataAndUnchangedByteBoundaries() throws Exception {
+    ArchiveImporter.checkContainerSize(370566688L);
+    ArchiveImporter.checkContainerSize(ArchiveImporter.ARCHIVE_CONTAINER_LIMIT);
+    try {
+      ArchiveImporter.checkContainerSize(ArchiveImporter.ARCHIVE_CONTAINER_LIMIT + 1);
+      fail();
+    } catch (ArchiveError e) {
+      assertEquals("A05_ARCHIVE_TOO_LARGE", e.code);
+    }
+    ArchiveImporter.checkParsedBytes(ArchiveImporter.ENTRY_LIMIT, ArchiveImporter.TOTAL_LIMIT);
+    for (long[] pair :
+        new long[][] {{ArchiveImporter.ENTRY_LIMIT + 1, 0}, {1, ArchiveImporter.TOTAL_LIMIT + 1}}) {
+      try {
+        ArchiveImporter.checkParsedBytes(pair[0], pair[1]);
+        fail();
+      } catch (ArchiveError e) {
+        assertEquals("A05_ARCHIVE_TOO_LARGE", e.code);
+      }
+    }
+  }
+
+  private static byte[] zipHeader(int size) {
+    return new byte[size];
+  }
+
+  /** Sparse unselected STORE body: no giant committed fixture and no whole-container read. */
+  @Test
+  public void sparseLargeContainerWithSmallSelectedJson() throws Exception {
+    byte[] body = encode(List.of(data("sparse"))).getBytes(StandardCharsets.UTF_8);
+    byte[][] names = {
+      "unused.bin".getBytes(StandardCharsets.UTF_8),
+      "conversations-000.json".getBytes(StandardCharsets.UTF_8)
+    };
+    long[] sizes = {300L * 1024 * 1024, body.length}, offsets = new long[2], crcs = {0, 0};
+    CRC32 crc = new CRC32();
+    crc.update(body);
+    crcs[1] = crc.getValue();
+    File f = File.createTempFile("nova-sparse-", ".zip");
+    try {
+      try (RandomAccessFile out = new RandomAccessFile(f, "rw")) {
+        for (int i = 0; i < 2; i++) {
+          offsets[i] = out.getFilePointer();
+          java.nio.ByteBuffer h =
+              java.nio.ByteBuffer.wrap(zipHeader(30)).order(java.nio.ByteOrder.LITTLE_ENDIAN);
+          h.putInt(0x04034b50)
+              .putShort((short) 20)
+              .putShort((short) 0)
+              .putShort((short) 0)
+              .putInt(0)
+              .putInt((int) crcs[i])
+              .putInt((int) sizes[i])
+              .putInt((int) sizes[i])
+              .putShort((short) names[i].length)
+              .putShort((short) 0);
+          out.write(h.array());
+          out.write(names[i]);
+          if (i == 0) out.seek(out.getFilePointer() + sizes[i]);
+          else out.write(body);
+        }
+        long central = out.getFilePointer();
+        for (int i = 0; i < 2; i++) {
+          java.nio.ByteBuffer h =
+              java.nio.ByteBuffer.wrap(zipHeader(46)).order(java.nio.ByteOrder.LITTLE_ENDIAN);
+          h.putInt(0x02014b50)
+              .putShort((short) 20)
+              .putShort((short) 20)
+              .putShort((short) 0)
+              .putShort((short) 0)
+              .putInt(0)
+              .putInt((int) crcs[i])
+              .putInt((int) sizes[i])
+              .putInt((int) sizes[i])
+              .putShort((short) names[i].length)
+              .putShort((short) 0)
+              .putShort((short) 0)
+              .putShort((short) 0)
+              .putShort((short) 0)
+              .putInt(0)
+              .putInt((int) offsets[i]);
+          out.write(h.array());
+          out.write(names[i]);
+        }
+        int directorySize = (int) (out.getFilePointer() - central);
+        java.nio.ByteBuffer h =
+            java.nio.ByteBuffer.wrap(zipHeader(22)).order(java.nio.ByteOrder.LITTLE_ENDIAN);
+        h.putInt(0x06054b50)
+            .putShort((short) 0)
+            .putShort((short) 0)
+            .putShort((short) 2)
+            .putShort((short) 2)
+            .putInt(directorySize)
+            .putInt((int) central)
+            .putShort((short) 0);
+        out.write(h.array());
+      }
+      assertTrue(f.length() > 256L * 1024 * 1024);
+      assertEquals(1, parse(f, true).size());
+    } finally {
+      f.delete();
+    }
+  }
+
+  static Map<String, Object> largeObject(int count, String text) {
+    Map<String, Object> d = data("bounded-large");
+    Map<String, Object> mapping = new LinkedHashMap<>();
+    for (int i = 0; i < count; i++)
+      mapping.put("n" + i, node("n" + i, i == 0 ? "" : "n" + (i - 1), "assistant", List.of(text)));
+    d.put("mapping", mapping);
+    d.put("current_node", "n" + (count - 1));
+    return d;
+  }
+
+  @Test
+  public void boundedConversationBetweenTwoAndFourMiChars() throws Exception {
+    Map<String, Object> d = largeObject(50, "x".repeat(60000));
+    String json = encode(d);
+    assertTrue(json.length() > 2 * 1024 * 1024);
+    assertEquals(50, parse(json(json), false).get(0).messageCount());
+    error("A05_ARCHIVE_TOO_LARGE", json(encode(largeObject(75, "x".repeat(60000)))), false);
+  }
+
+  @Test
+  public void serializedExpansionStillBounded() throws Exception {
+    // Visible chars below4Mi but escaped raw JSON exceeds4Mi; still reject.
+    error("A05_ARCHIVE_TOO_LARGE", json(encode(largeObject(40, "<".repeat(20000)))), false);
+  }
+
+  static Conversation contentConversation(String type, Map<String, Object> content)
+      throws Exception {
+    Map<String, Object> d = data("content");
+    Map<String, Object> message =
+        ArchiveModel.object(
+            ArchiveModel.object(ArchiveModel.object(d.get("mapping")).get("a")).get("message"));
+    Map<String, Object> c = new LinkedHashMap<>(content);
+    c.put("content_type", type);
+    message.put("content", c);
+    return parse(json(encode(d)), false).get(0);
+  }
+
+  @Test
+  public void multimodalObjectsPreserveTextAssetsAndUnknownRaw() throws Exception {
+    Conversation c =
+        contentConversation(
+            "multimodal_text",
+            Map.of(
+                "parts",
+                List.of(
+                    "plain text",
+                    Map.of("text", "synthetic object text", "future", true),
+                    Map.of("asset_pointer", "synthetic"),
+                    Map.of("unknown", 3),
+                    Map.of("text", 9))));
+    String text = c.nodes.get("a").text();
+    assertTrue(text.contains("plain text"));
+    assertTrue(text.contains("synthetic object text"));
+    assertTrue(text.contains("图片 / 附件"));
+    assertTrue(text.contains("未支持的非文本"));
+    assertTrue(c.nodes.get("a").raw.contains("asset_pointer"));
+    for (String doc :
+        List.of(
+            ArchiveRenderer.html(c, ArchiveTree.select(c, false)),
+            ArchiveRenderer.markdown(c, ArchiveTree.select(c, false))))
+      assertTrue(doc.contains("synthetic object text"));
+  }
+
+  @Test
+  public void thoughtsPersistButNeverEnterEitherDisplayScope() throws Exception {
+    Conversation c =
+        contentConversation(
+            "thoughts", Map.of("thoughts", List.of(Map.of("text", "SYNTHETIC-HIDDEN-THOUGHT"))));
+    assertTrue(c.nodes.get("a").raw.contains("SYNTHETIC-HIDDEN-THOUGHT"));
+    assertEquals("", c.nodes.get("a").text());
+    assertEquals(2, c.messageCount());
+    for (boolean all : new boolean[] {false, true}) {
+      String html = ArchiveRenderer.html(c, ArchiveTree.select(c, all)),
+          md = ArchiveRenderer.markdown(c, ArchiveTree.select(c, all));
+      assertFalse(html.contains("SYNTHETIC-HIDDEN-THOUGHT"));
+      assertFalse(md.contains("SYNTHETIC-HIDDEN-THOUGHT"));
+      assertFalse(html.contains("非文本或空内容"));
+    }
+  }
+
+  @Test
+  public void reasoningRecapUsesExplicitLabelAndReadableSchema() throws Exception {
+    for (String field : List.of("content", "text", "recap")) {
+      Conversation c = contentConversation("reasoning_recap", Map.of(field, "Synthetic recap"));
+      assertEquals("Synthetic recap", c.nodes.get("a").text());
+      for (String doc :
+          List.of(
+              ArchiveRenderer.html(c, ArchiveTree.select(c, false)),
+              ArchiveRenderer.markdown(c, ArchiveTree.select(c, false)))) {
+        assertTrue(doc.contains("推理摘要"));
+        assertTrue(doc.contains("Synthetic recap"));
+        assertFalse(doc.contains("attachment"));
+      }
+    }
+  }
+
+  @Test
+  public void privateSpaceBudgetKnownUnknownAndReserve() throws Exception {
+    long size = 370566688L,
+        reserve = ArchiveStorageBudget.DB_WAL_ALLOWANCE + ArchiveStorageBudget.FIXED_RESERVE;
+    ArchiveStorageBudget.checkBeforeCopy(size + reserve, size);
+    ArchiveStorageBudget.checkBeforeCopy(reserve, -1);
+    for (long[] pair : new long[][] {{size + reserve - 1, size}, {reserve - 1, -1}}) {
+      try {
+        ArchiveStorageBudget.checkBeforeCopy(pair[0], pair[1]);
+        fail();
+      } catch (ArchiveError e) {
+        assertEquals("A09_STORAGE_FAILED", e.code);
+      }
+    }
+    try {
+      ArchiveStorageBudget.checkReserve(ArchiveStorageBudget.FIXED_RESERVE - 1);
+      fail();
+    } catch (ArchiveError e) {
+      assertEquals("A09_STORAGE_FAILED", e.code);
+    }
+  }
+
+  @Test
+  public void deepParentChainAndWideBranchesWithoutChildren() throws Exception {
+    Map<String, Object> d = largeObject(648, "Synthetic");
+    Map<String, Object> mapping = ArchiveModel.object(d.get("mapping"));
+    for (int i = 0; i < 16; i++)
+      mapping.put(
+          "branch" + i, node("b" + i, "n300", "assistant", List.of("Synthetic alternative")));
+    Conversation c = parse(json(encode(d)), false).get(0);
+    assertEquals(648, ArchiveTree.select(c, false).messages.size());
+    assertEquals(664, c.nodes.size());
   }
 }

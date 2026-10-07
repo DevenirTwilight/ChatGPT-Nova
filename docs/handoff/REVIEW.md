@@ -1,3 +1,7 @@
+## Bounded real-schema compatibility implementation
+
+Local JVM48 pass under128MiB heap. Container512MiB and one-conversation chars/serialized/Store aggregate4Mi, remaining byte/depth/node/DB limits unchanged. Storage precheck ZIP+128MiB DB/WAL allowance+32MiB reserve, periodic checks, rollback; no extraction/media expansion. Unified visibility hides thoughts in Reader/both export scopes while retaining raw/tree/DB; recap explicitly labeled, object text preserved, unknown metadata retained. New Android20 and actual PDF schema markers awaiting full CI. Legacy algorithm/snapshot unchanged. User confirms real ZIP stays on their phone/computer: local real Levels2–4 pending; Level5 only user manual confirmation. No private export uploaded or checked into repo.
+
 ## Real-export compatibility work opened
 
 Remote branch0c154064 and accepted core7854f3ea unchanged; previous full synthetic CI37609817075/Legacy37604491058 success. User supplied audited sample statistics identify container256MiB and conversation1/2Mi char incompatibilities plus object-text/thoughts/recap display loss. Real ZIP is not attached/accessible here: no local old-build runtime failure, Level2/3/4 or manual Level5 claimed. New scope only bounded limit/storage/schema fixes with fabricated equivalents; private data excluded from repo/CI. Plan container512MiB and conversation4Mi chars including Store aggregate; preserve all other limits/raw metadata/branches and stable/legacy boundaries.

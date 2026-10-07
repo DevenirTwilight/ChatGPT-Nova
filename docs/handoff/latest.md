@@ -1,3 +1,13 @@
+## Real export compatibility — Step B：有界兼容修复与虚构回归（2026-10-07）
+
+- 分支feature/export-conversation；实施基线9668e8b，本提交为修复源码；测试buildRevision将记录实际本提交SHA，后续交接引用CI真实源码。
+- success本地JVM48（128MiB heap），300MiB sparse container+small selected JSON、512MiB metadata/64MiB entry/256MiB selected boundary、2–4Mi conversation/超限/escaped序列化、空间预算、multimodal/text/asset/未知Map、隐藏thoughts/recap标签、648主链/16分支无children等。既有39项保留（资产文案/字符预算断言同步）；先前1个旧占位断言失败已修为附件语义，不删除场景。
+- 修复：container512MiB；parser字符及serialized/Store聚合写入与重载4Mi chars。其他限额未放大；数据原始metadata/分支/空根/未知roles保留。复制前ZIP+128MiB DB/WAL规划+32MiB余量，复制中/逐会话检查，A09低空间回滚。诊断新增安全计数/阶段时间/空间/采样heap/WAL，无正文/真实身份/路径。
+- UI与导出共用Node.displayable/text；thoughts不作为回答显示，recap单独推理摘要；Map.text:String保留可见文字，资产与未知Map分别占位。Reader可见count与保存message count区分。
+- Android新增3项至20：mocked300MiB/未知SIZE/超限SAF、3MiB SQLite往返/重复来源时间、schema raw与两scope/Reader一致。真实PDF fixture包含object text/recap/hidden thought，CI输出断言加强；真实数据未进入fixture/CI。Legacy workflow补ArchiveModel变更触发，以新APK跑用户本轮要求的Legacy回归，不改scanner。
+- not verified：新源码Gradle/Android26/35/36/Stable/Legacy/实际PDF待CI。用户确认真实ZIP仅在手机/电脑，可用修复APK本地验收；Level2–4 pending，Level5 manual content validation pending，旧版real runtime也未执行。
+- 下一步：完整CI验证新源码；提供签名APK与本地清单，等待用户脱敏验收结果。无FTS/附件/DOM扩展，不改签名/版号，不merge/Release。
+
 ## Real export compatibility — Step A：远端调查与样本边界（2026-10-07）
 
 - 分支feature/export-conversation，远端/本地HEAD `0c154064bfa092bd2ec2025c9f0b01e81b76ae69`；远端默认HEAD main/e8ffa0c6，未作为开发基线。Archive核心与已测7854f3ea一致；当前正式CI37609817075、Legacy37604491058均success。

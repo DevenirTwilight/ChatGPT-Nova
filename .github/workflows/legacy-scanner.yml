@@ -11,6 +11,8 @@ on:
       - 'app/src/main/java/com/example/chatgptnova/MainActivity.java'
       - 'app/src/main/java/com/example/chatgptnova/SnapshotWebView.java'
       - 'app/build.gradle'
+      # Verify the retained experimental APK when packaged Archive display semantics change.
+      - 'app/src/main/java/com/example/chatgptnova/archive/ArchiveModel.java'
       - 'app/src/androidTest/java/com/example/chatgptnova/DomTrialExportTest.java'
       - 'app/src/androidTest/java/com/example/chatgptnova/FixtureActivity.java'
       - 'app/src/androidTest/assets/**'

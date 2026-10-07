@@ -4,7 +4,7 @@
 
 远端HEAD为main/e8ffa0c6；工作分支feature/export-conversation最新d48aed0da152025902b83b1027b3a8e8bfc918ad。正式CI37593888527及实验37588638326已success；历史红/取消不当现状。仓库没有可使用的真实官方Data Export样本，本轮只建立脱敏synthetic/compatible fixtures，不声称real OpenAI export verified。此段记录调查基线；当前验收见下节。
 
-## 当前结果（2026-10-07）
+## 前轮 MVP 验收结果（2026-10-07）
 
 **Nova Archive MVP implemented — synthetic / fixture validation passed。** 验证实际源码 `7854f3ea06309fa20e5e26a7acc4b77750322968`，后续提交仅文档/证据；[正式 CI 37609817075](https://github.com/DevenirTwilight/ChatGPT-Nova/actions/runs/37609817075) 的 build、API26、API35、API36 全部 success。没有真实官方 Data Export ZIP，也没有物理设备验证，**不是 real OpenAI export verified**。
 
@@ -40,15 +40,15 @@ Nova Archive是用户主动导入OpenAI官方Data Export兼容ZIP/JSON后，本�
 
 ACTION_OPEN_DOCUMENT → content URI → 后台限量复制私有 cache → 按所选文件扩展名识别 ZIP 或 UTF-8 JSON → ZipFile中央目录检查 → 遍历/发现conversations.json或conversations[-_]编号.json（可在文件夹，顺序无关）→ JsonReader逐会话 → validate/model → SQLite transaction/upsert → summary → 删除临时ZIP。
 
-JSON支持会话数组、conversations数组wrapper和单会话mapping对象；未知会话/节点字段及显式 null 保留，未知wrapper字段仅有界解析。malformed JSON、重复JSON键、mapping类型错误明确失败。消息字段未知/非text不猜正文，原始metadata保留；附件文件本轮不解压/嵌入。
+JSON支持会话数组、conversations数组wrapper和单会话mapping对象；未知会话/节点字段及显式 null 保留，未知wrapper字段仅有界解析。malformed JSON、重复JSON键、mapping类型错误明确失败。parts中的String和Map.text:String读取；明确asset_pointer/image_url/file_id用附件占位，未知Map用不支持占位，全部raw保留。thoughts默认不显示为答案，主链与全部节点视图/HTML/Markdown/PDF同样隐藏，但数据库/树完整保留。reasoning_recap支持content/text/recap:String（或已有parts），单独标“推理摘要”；没有可读文本时明确摘要占位，不猜任意字段。消息字段未知/非text不猜正文，原始metadata保留；附件文件本轮不解压/嵌入。
 
 树按current_node parent链重建；可确定唯一叶时使用其链；缺失 parent 所指节点标注部分链；parent 字段本身缺失/类型错误时明确使用全部节点安全顺序；cycle/多叶无法确定时按时间+稳定node key的明确“非单一分支安全顺序”回退。保留所有节点，并可查看全部节点；不按正文相似度拼接，不伪造身份。
 
 ## 安全上限
 
-输入256MiB；ZIP 中央目录先有界逐条检查（最多 16MiB，拒绝 ZIP64/多卷/自解压封装），之后 ZipFile；最多10000 entries、单entry64MiB、声明总解压512MiB、所选JSON实际累计256MiB、压缩比最多200；拒绝absolute/drive/backslash/traversal/重复canonical entry。任何entry都不写入用户路径，无Zip Slip解压面，忽略无关文件正文但校验目录大小/路径。CRC/实际长度检查用于所选entry。
+容器输入512MiB（ARCHIVE_CONTAINER_LIMIT）；ZIP 中央目录先有界逐条检查（最多 16MiB，拒绝 ZIP64/多卷/自解压封装），之后 ZipFile；最多10000 entries、单entry64MiB、声明总解压512MiB、所选JSON实际累计256MiB、压缩比最多200；拒绝absolute/drive/backslash/traversal/重复canonical entry。任何entry都不写入用户路径，无Zip Slip解压面，忽略无关文件正文但校验目录大小/路径。CRC/实际长度检查用于所选entry。
 
-UTF-8严格解码；JsonReader流式逐会话，预读取guard限制单字符串512Ki chars和嵌套64，避免nextString先分配巨大token；单会话总字符串1Mi chars、最多100000 JSON values/10000 nodes；最多 10000 conversations / 200000 nodes 每次导入。数据库512MiB、单存储会话 payload 2Mi chars（最多约 8MiB UTF-8），单 header/node 1MiB UTF-8，identity/parent key 最多4096字符，避免 CursorWindow 超限、HTML4Mi chars/Markdown2Mi chars，超限明确失败不截断。输入和解析过程检查取消/5分钟耗时；provider自身阻塞只能尽力关闭/中断，不保证任意SAF provider立即响应。
+UTF-8严格解码；JsonReader流式逐会话，预读取guard限制单字符串512Ki chars和嵌套64，避免nextString先分配巨大token；单会话总字符串及对象键4Mi UTF-16 chars、最多100000 JSON values/10000 nodes；最多 10000 conversations / 200000 nodes 每次导入。数据库512MiB、单序列化/合并存储/重载会话 payload 4Mi UTF-16 chars（最多约 16MiB UTF-8），单 header/node 1MiB UTF-8，identity/parent key 最多4096字符，避免 CursorWindow 超限、HTML4Mi chars/Markdown2Mi chars，超限明确失败不截断。输入和解析过程检查取消/5分钟耗时；provider自身阻塞只能尽力关闭/中断，不保证任意SAF provider立即响应。
 
 Reader/print静态HTML：JS/storage/file/content/混合内容/bridge关闭，所有请求阻止，无远程图片/字体/脚本；仅用户点击HTTP(S)链接时交系统浏览器，不转发Cookie/header。Markdown AST 节点数/深度有界检查，防 HTML renderer 递归过深。Raw HTML转义；不执行Markdown HTML或data/javascript链接。图片/附件保留文字metadata占位，LaTeX保留可读源，不新增MathJax/网络/OCR。
 
@@ -70,13 +70,25 @@ A01 unsupported、A02 invalid ZIP、A03 no conversations、A04 malformed JSON、
 
 JVM：ZIP发现/分片/顺序/无关文件/重复entry/traversal/bomb/CRC、strict JSON/未知字段/深度/超长、树current/编辑/分支/孤儿/cycle/角色/非text、重复导入/新旧版本、安全Markdown HTML，以及1/100/1000会话/长代码/中法英/emoji合成夹具。Android：SAF/取消/持久化/重启/列表搜索排序/Reader/HTML/MD/实际System Print PDF/取消/旋转/销毁/导入生命周期；原有Nova回归与原签名升级必须保留。证据严格标synthetic / fixture validation passed。
 
+## Real OpenAI Data Export compatibility — 本轮待验收
+
+用户提供结构审计：370566688 bytes（约353.40MiB）、605 entries、普通non-ZIP64单卷Deflate；两个JSON约49.44MiB/6.00MiB，合计55.44MiB；122 conversations、7250 mapping nodes、7130 message-bearing nodes、约4267 current-branch messages。content_type约text3216/multimodal_text892/thoughts1874/reasoning_recap1148；这些是用户审计数据，**本开发环境未独立读取真实ZIP**。当前样本据用户审计未使用ZIP64；ZIP64仍不支持。
+
+旧版容器256MiB必拒绝此样本，SAF有SIZE时复制前A05，否则复制超限A05；旧parser chars1Mi、序列化与Store聚合2Mi也不足。本轮只将容器增至512MiB、单会话字符/序列化及Store合并/重载统一4Mi chars，其余entry64MiB/selected total256MiB/声明解压512MiB/节点1MiB UTF-8/depth64/字符串512Ki chars/100000 values/10000 mapping/entries/ratio200/DB512MiB保持。不是所有预算一起放大；parent链深度不是JSON nesting。
+
+私有空间：复制前要求已知ZIP大小 + 128MiB DB/WAL规划额度 + 32MiB固定余量（当前已知样本约需513.40MiB空闲）。SIZE未知时先保留160MiB，并每复制1MiB再检查；解析/事务逐会话保留32MiB，空间不足A09并回滚；128MiB仅规划额度，不保证任意输入足够。临时文件成功/失败/取消删除，process death后下一次无运行任务的Archive启动清理stale temp。保留单事务，未扩大数据库。
+
+成功诊断新增buildRevision、输入mapping/message/current-branch/可见branch计数、白名单content_type统计、复制/解析/总耗时、临时bytes、前后空闲、关闭DB后的主库bytes、采样Java used heap与WAL峰值。采样值不是精确profiler峰值，整个进程heap包括WebView/应用；取消延迟/ANR需设备人工观察，诊断不含正文/title/ID/文件路径/原filename/私有文件hash。Reader数量为可见记录，列表message count仍含已保存thoughts，不将隐藏误称删除。
+
+当前等级：Level1新修复回归待CI；Level2容器/Level3真实导入重启/Level4真实重复导入 **pending**；Level5 **manual content validation pending**。用户明确真实ZIP在其手机/电脑，仅使用修复签名APK本地验证，不上传开发服务器、GitHub/CI或输出文件。旧版真实运行失败也需用户本地实测，不能以源码推断冒充运行结果。[本地验收清单](archive-local-validation.md)。前轮MVP的已通过证据保留，不能代替本轮新源码验收。
+
 ## 数据删除与限制
 
 Archive 首页“删除本地档案”：先结束导入、关闭DB、删除nova-archive.db及WAL/SHM和Archive临时文件，不清ChatGPT登录。卸载或Android清除应用数据也删除Archive。Nova“清除登录与网站数据”继续仅管理在线会话。用户自行导出的外部HTML/MD/PDF需自行删除。
 
 schema、解析器、Activity、实际三格式导出、重启/生命周期和正式回归已通过上述受控验收。没有真实官方ZIP或物理设备验证；官方格式未来可能变化，不是对任何版本/大小/附件完整性的保证。ZIP64、多卷、自解压、大于限额的官方导出本轮不支持；图片/附件只是metadata占位；LaTeX保留源，不执行数学渲染；标题搜索，不含全文搜索。没有本地全文检索之外的云同步/自动摘要/embedding。
 
-下一步先由用户选择真实兼容的官方导出文件进行本地人工验收，真实聊天内容不得提交代码仓库或上传到GitHub。若标题搜索不足，再单独评估SQLite FTS全文搜索与索引大小/隐私/迁移，不新增大型搜索引擎。
+下一步先由用户选择真实兼容的官方导出文件进行本地人工验收，真实聊天内容不得提交代码仓库或上传到GitHub。本轮不要加入FTS/标签/附件下载/Cloud/Legacy增强；先完成真实样本分级验收。
 
 ## 文件导航
 

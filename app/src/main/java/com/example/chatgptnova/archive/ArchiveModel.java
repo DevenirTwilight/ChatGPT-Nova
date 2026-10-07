@@ -52,18 +52,39 @@ public final class ArchiveModel {
       created = number(m.get("create_time"));
     }
 
+    /** Visibility is independent of persistence: raw reasoning nodes remain in the tree/DB. */
+    public boolean displayable() {
+      return hasMessage && !contentType.equals("thoughts");
+    }
+
     public String text() {
+      if (!displayable()) return "";
       Map<String, Object> c = object(object(data.get("message")).get("content"));
+      if (contentType.equals("reasoning_recap")) {
+        for (String field : Arrays.asList("content", "text", "recap"))
+          if (c.get(field) instanceof String) return (String) c.get(field);
+      }
       Object p = c.get("parts");
       StringBuilder out = new StringBuilder();
       if (p instanceof List)
         for (Object part : (List<?>) p) {
           if (out.length() > 0) out.append('\n');
           if (part instanceof String) out.append(part);
-          else out.append("[非文本内容 / attachment metadata 已保存在本地档案]");
+          else if (part instanceof Map) {
+            Map<String, Object> map = object(part);
+            if (map.get("text") instanceof String) out.append(map.get("text"));
+            else if (map.containsKey("asset_pointer")
+                || map.containsKey("image_url")
+                || map.containsKey("file_id")) out.append("[图片 / 附件 metadata 已保存在本地档案]");
+            else out.append("[未支持的非文本内容；metadata 已保留]");
+          } else out.append("[未支持的非文本内容；metadata 已保留]");
         }
       else if (c.get("text") instanceof String) out.append(c.get("text"));
-      if (out.length() == 0 && !c.isEmpty()) out.append("[非文本或空内容；原始 metadata 已保留]");
+      if (out.length() == 0 && !c.isEmpty())
+        out.append(
+            contentType.equals("reasoning_recap")
+                ? "[推理摘要无可读文本；metadata 已保留]"
+                : "[非文本或空内容；原始 metadata 已保留]");
       return out.toString();
     }
   }

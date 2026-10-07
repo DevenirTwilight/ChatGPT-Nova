@@ -58,7 +58,46 @@ public final class ArchiveStore extends SQLiteOpenHelper {
         skipped,
         parsed,
         failed;
-    public long bytes, duration;
+    public long bytes,
+        duration,
+        copyDurationMs,
+        totalDurationMs,
+        temporaryBytes,
+        freeStorageBefore,
+        freeStorageAfter,
+        sampledHeapPeakBytes,
+        databaseBytes,
+        sampledWalPeakBytes;
+    public int mappingNodes,
+        messageNodes,
+        currentBranchMessages,
+        displayableCurrentBranchMessages,
+        fallbackConversations;
+    public final Map<String, Integer> contentTypes = new TreeMap<>();
+
+    private void observe(Conversation c, SQLiteDatabase db) {
+      mappingNodes += c.nodes.size();
+      messageNodes += c.messageCount();
+      for (Node n : c.nodes.values())
+        if (n.hasMessage) {
+          String type =
+              Arrays.asList("text", "multimodal_text", "thoughts", "reasoning_recap")
+                      .contains(n.contentType)
+                  ? n.contentType
+                  : "other";
+          contentTypes.put(type, contentTypes.getOrDefault(type, 0) + 1);
+        }
+      ArchiveTree.Selection selection = ArchiveTree.select(c, false);
+      if (selection.scope.equals("current-branch")) {
+        currentBranchMessages += selection.messages.size();
+        for (Node n : selection.messages) if (n.displayable()) displayableCurrentBranchMessages++;
+      } else fallbackConversations++;
+      Runtime rt = Runtime.getRuntime();
+      sampledHeapPeakBytes = Math.max(sampledHeapPeakBytes, rt.totalMemory() - rt.freeMemory());
+      sampledWalPeakBytes =
+          Math.max(sampledWalPeakBytes, new java.io.File(db.getPath() + "-wal").length());
+    }
+
     private final Set<Long> newRows = new HashSet<>(), updatedRows = new HashSet<>();
 
     public String diagnostic() {
@@ -79,7 +118,35 @@ public final class ArchiveStore extends SQLiteOpenHelper {
           + "\nbytes="
           + bytes
           + "\ndurationMs="
-          + duration;
+          + duration
+          + "\nmappingNodes="
+          + mappingNodes
+          + "\nmessageNodes="
+          + messageNodes
+          + "\ncurrentBranchMessages="
+          + currentBranchMessages
+          + "\ndisplayableCurrentBranchMessages="
+          + displayableCurrentBranchMessages
+          + "\nfallbackConversations="
+          + fallbackConversations
+          + "\ncontentTypeCounts="
+          + ArchiveModel.JSON.toJson(contentTypes)
+          + "\ncopyDurationMs="
+          + copyDurationMs
+          + "\ntotalDurationMs="
+          + totalDurationMs
+          + "\ntemporaryBytes="
+          + temporaryBytes
+          + "\nfreeStorageBefore="
+          + freeStorageBefore
+          + "\nfreeStorageAfter="
+          + freeStorageAfter
+          + "\nsampledHeapPeakBytes="
+          + sampledHeapPeakBytes
+          + "\ndatabaseBytes="
+          + databaseBytes
+          + "\nsampledWalPeakBytes="
+          + sampledWalPeakBytes;
     }
   }
 
@@ -129,13 +196,18 @@ public final class ArchiveStore extends SQLiteOpenHelper {
               zip,
               c -> {
                 control.check();
+                ArchiveStorageBudget.checkReserve(
+                    new java.io.File(db.getPath()).getParentFile().getUsableSpace());
                 upsert(db, c, importId, start, stats);
                 stats.parsed++;
+                stats.observe(c, db);
               });
       control.check();
       db.setTransactionSuccessful();
     } catch (ArchiveError e) {
       failure = e;
+    } catch (SQLiteFullException e) {
+      failure = new ArchiveError("A09_STORAGE_FAILED");
     } catch (RuntimeException e) {
       failure = new ArchiveError("A06_DATABASE_WRITE_FAILED");
     } finally {
@@ -146,6 +218,8 @@ public final class ArchiveStore extends SQLiteOpenHelper {
           failure = new ArchiveError("A06_DATABASE_WRITE_FAILED");
         }
     }
+    stats.sampledWalPeakBytes =
+        Math.max(stats.sampledWalPeakBytes, new java.io.File(db.getPath() + "-wal").length());
     stats.duration = System.currentTimeMillis() - start;
     if (failure != null) {
       stats.newConversations =
@@ -203,7 +277,8 @@ public final class ArchiveStore extends SQLiteOpenHelper {
     }
     long payload = c.header.length();
     for (Node n : c.nodes.values()) payload += n.raw.length();
-    if (payload > 2 * 1024 * 1024) throw new ArchiveError("A05_ARCHIVE_TOO_LARGE");
+    if (payload > ArchiveImporter.SERIALIZED_CONVERSATION_CHAR_LIMIT)
+      throw new ArchiveError("A05_ARCHIVE_TOO_LARGE");
     if (old != null)
       for (Node n : next.nodes.values())
         if (old.nodes.containsKey(n.key)) {
@@ -273,7 +348,7 @@ public final class ArchiveStore extends SQLiteOpenHelper {
               ArchiveModel.object(ArchiveModel.JSON.fromJson(q.getString(0), Map.class)));
     }
     Map<String, Object> mapping = new LinkedHashMap<>();
-    long size = 0;
+    long size = ArchiveModel.JSON.toJson(header).length();
     try (Cursor q =
         db.rawQuery(
             "SELECT node_key,raw FROM messages WHERE conversation=? ORDER BY node_key",
@@ -281,7 +356,8 @@ public final class ArchiveStore extends SQLiteOpenHelper {
       while (q.moveToNext()) {
         String raw = q.getString(1);
         size += raw.length();
-        if (size > 2 * 1024 * 1024) throw new ArchiveError("A05_ARCHIVE_TOO_LARGE");
+        if (size > ArchiveImporter.SERIALIZED_CONVERSATION_CHAR_LIMIT)
+          throw new ArchiveError("A05_ARCHIVE_TOO_LARGE");
         mapping.put(q.getString(0), ArchiveModel.JSON.fromJson(raw, Map.class));
       }
     }

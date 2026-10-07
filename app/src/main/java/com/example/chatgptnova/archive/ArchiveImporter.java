@@ -11,9 +11,22 @@ import java.util.zip.*;
 
 /** Bounded streaming ZIP/JSON parser. Never extracts a ZIP path or logs source data. */
 public final class ArchiveImporter {
-  public static final long FILE_LIMIT = 256L * 1024 * 1024,
+  public static final long ARCHIVE_CONTAINER_LIMIT = 512L * 1024 * 1024,
       ENTRY_LIMIT = 64L * 1024 * 1024,
       TOTAL_LIMIT = 256L * 1024 * 1024;
+
+  // UTF-16 char budgets for one bounded object; independent of ZIP/entry byte limits.
+  public static final int CONVERSATION_CHAR_LIMIT = 4 * 1024 * 1024;
+  public static final int SERIALIZED_CONVERSATION_CHAR_LIMIT = 4 * 1024 * 1024;
+
+  public static void checkContainerSize(long size) throws ArchiveError {
+    if (size > ARCHIVE_CONTAINER_LIMIT) throw new ArchiveError("A05_ARCHIVE_TOO_LARGE");
+  }
+
+  static void checkParsedBytes(long entryBytes, long selectedBytes) throws ArchiveError {
+    if (entryBytes > ENTRY_LIMIT || selectedBytes > TOTAL_LIMIT)
+      throw new ArchiveError("A05_ARCHIVE_TOO_LARGE");
+  }
 
   public interface Sink {
     void accept(ArchiveModel.Conversation c) throws ArchiveError;
@@ -48,7 +61,7 @@ public final class ArchiveImporter {
   }
 
   public int read(File file, boolean zip, Sink sink) throws ArchiveError {
-    if (file.length() > FILE_LIMIT) throw new ArchiveError("A05_ARCHIVE_TOO_LARGE");
+    checkContainerSize(file.length());
     try {
       if (zip) readZip(file, sink);
       else
@@ -193,7 +206,7 @@ public final class ArchiveImporter {
         while (json.hasNext()) {
           String key = json.nextName();
           budget.chars += key.length();
-          if (budget.chars > 1024 * 1024 || keys.size() > 100000)
+          if (budget.chars > CONVERSATION_CHAR_LIMIT || keys.size() > 100000)
             throw new ArchiveError("A05_ARCHIVE_TOO_LARGE");
           if (!keys.add(key)) throw new ArchiveError("A04_JSON_PARSE_FAILED");
           if (key.equals("conversations")) {
@@ -231,7 +244,7 @@ public final class ArchiveImporter {
   private void accept(Map<String, Object> data, Sink sink) throws ArchiveError {
     if (++conversations > 10000) throw new ArchiveError("A05_ARCHIVE_TOO_LARGE");
     ArchiveModel.Conversation c = new ArchiveModel.Conversation(data);
-    if (ArchiveModel.JSON.toJson(data).length() > 2 * 1024 * 1024)
+    if (ArchiveModel.JSON.toJson(data).length() > SERIALIZED_CONVERSATION_CHAR_LIMIT)
       throw new ArchiveError("A05_ARCHIVE_TOO_LARGE");
     nodes += c.nodes.size();
     if (nodes > 200000) throw new ArchiveError("A05_ARCHIVE_TOO_LARGE");
@@ -249,7 +262,7 @@ public final class ArchiveImporter {
 
   private Object value(JsonReader json, int depth, Budget b) throws IOException, ArchiveError {
     control.check();
-    if (depth > 64 || ++b.values > 100000 || b.chars > 1024 * 1024)
+    if (depth > 64 || ++b.values > 100000 || b.chars > CONVERSATION_CHAR_LIMIT)
       throw new ArchiveError("A05_ARCHIVE_TOO_LARGE");
     switch (json.peek()) {
       case BEGIN_OBJECT:
@@ -277,7 +290,7 @@ public final class ArchiveImporter {
         {
           String s = json.nextString();
           b.chars += s.length();
-          if (b.chars > 1024 * 1024) throw new ArchiveError("A05_ARCHIVE_TOO_LARGE");
+          if (b.chars > CONVERSATION_CHAR_LIMIT) throw new ArchiveError("A05_ARCHIVE_TOO_LARGE");
           return s;
         }
       case NUMBER:
@@ -325,7 +338,11 @@ public final class ArchiveImporter {
         count += n;
         total += n;
         crc.update(b, off, n);
-        if (count > ENTRY_LIMIT || total > TOTAL_LIMIT) throw new LimitIOException();
+        try {
+          checkParsedBytes(count, total);
+        } catch (ArchiveError e) {
+          throw new LimitIOException();
+        }
       }
       return n;
     }

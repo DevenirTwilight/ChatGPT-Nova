@@ -12,18 +12,21 @@ def suite(selection,label,count):
     assert re.search(r'OK \('+str(count)+r' tests?\)',text),text
     assert 'FAILURES!!!' not in text and 'INSTRUMENTATION_FAILED' not in text,text
 try:
-    suite('com.example.chatgptnova.ArchiveTest','archive-instrumentation',17)
+    suite('com.example.chatgptnova.ArchiveTest','archive-instrumentation',20)
     for name in ['archive.html','archive.md','archive-print-source.html','archive.pdf']:
         adb('pull','/sdcard/Android/data/com.example.chatgptnova/files/'+name,str(out/name))
     html=(out/'archive.html').read_text();md=(out/'archive.md').read_text()
     assert html.startswith('<!doctype html>') and '<table>' in html and '<script' not in html
     assert 'current-branch' in html and 'OTHER-BRANCH' not in html
     assert '```java' in md and 'OTHER-BRANCH' not in md
+    for document in [html,md,(out/'archive-print-source.html').read_text()]:
+        assert 'SCHEMA-OBJECT-TEXT' in document and 'SCHEMA-RECAP' in document and '推理摘要' in document
+        assert 'SYNTHETIC-HIDDEN-THOUGHT' not in document
     subprocess.run(['pdftotext','-layout',str(out/'archive.pdf'),str(out/'archive-pdf.txt')],check=True)
     text=re.sub(r'\s+','',unicodedata.normalize('NFKC',(out/'archive-pdf.txt').read_text()))
-    for marker in ['ARCHIVE-FIRST','ARCHIVE-LAST','CODE-TAIL','TABLE-TAIL','中文','café','LongArchiveparagraph','Noël','E=mc^2']:
+    for marker in ['ARCHIVE-FIRST','ARCHIVE-LAST','CODE-TAIL','TABLE-TAIL','中文','café','LongArchiveparagraph','Noël','E=mc^2','SCHEMA-OBJECT-TEXT','SCHEMA-RECAP','推理摘要']:
         assert marker in text,('PDF marker',marker)
-    assert 'OTHER-BRANCH' not in text
+    assert 'OTHER-BRANCH' not in text and 'SYNTHETIC-HIDDEN-THOUGHT' not in text
     suite('com.example.chatgptnova.ArchiveProcessTest#seedPrivateArchiveForProcessRestart','archive-seed',1)
     adb('shell','am','force-stop','com.example.chatgptnova')
     suite('com.example.chatgptnova.ArchiveProcessTest#verifyPrivateArchiveAfterProcessRestart','archive-restart',1)

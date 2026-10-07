@@ -58,6 +58,7 @@ public final class ArchiveRenderer {
   }
 
   public static String role(ArchiveModel.Node n) {
+    if (n.contentType.equals("reasoning_recap")) return "推理摘要";
     switch (n.role) {
       case "user":
         return "User";
@@ -81,9 +82,13 @@ public final class ArchiveRenderer {
             .append(c.title.replace('\n', ' '))
             .append("\n\nSource: Nova Archive / user-selected export\nScope: ")
             .append(selection.scope)
-            .append("\nCompleteness: depends on imported data; not independently verified.\n\n");
+            .append(
+                "\n"
+                    + "Completeness: depends on imported data; not independently verified.\n"
+                    + "Display: thoughts nodes hidden; raw metadata retained.\n\n");
     for (String w : selection.warnings) out.append("> 警告：").append(w).append("\n\n");
     for (ArchiveModel.Node n : selection.messages) {
+      if (!n.displayable()) continue;
       out.append("## ").append(role(n));
       if (!n.channel.isEmpty()) out.append(" · ").append(n.channel.replace('\n', ' '));
       out.append("\n\n").append(n.text()).append("\n\n");
@@ -139,10 +144,13 @@ public final class ArchiveRenderer {
             .append(escape(c.title))
             .append("</h1><p class=\"meta\">Nova Archive · 用户选择的导出文件 · ")
             .append(escape(selection.scope))
-            .append("<br>完整性取决于导入文件本身；Nova 未独立验证完整历史。LaTeX 保留源文；附件 metadata 保存在本地，不下载附件。</p>");
+            .append(
+                "<br>完整性取决于导入文件本身；Nova 未独立验证完整历史。thoughts 节点默认隐藏，raw metadata 保留。LaTeX 保留源文；附件"
+                    + " metadata 保存在本地，不下载附件。</p>");
     for (String w : selection.warnings)
       out.append("<p class=\"meta\">警告：").append(escape(w)).append("</p>");
     for (ArchiveModel.Node n : selection.messages) {
+      if (!n.displayable()) continue;
       out.append("<article><h2>").append(role(n));
       if (!n.channel.isEmpty()) out.append(" · ").append(escape(n.channel));
       out.append("</h2>").append(renderMarkdown(n.text())).append("</article>");

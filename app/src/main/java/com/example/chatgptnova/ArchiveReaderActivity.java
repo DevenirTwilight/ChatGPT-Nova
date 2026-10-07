@@ -110,8 +110,8 @@ public final class ArchiveReaderActivity extends Activity {
                 public void ready() {
                   if (destroyed || current != generation) return;
                   status.setText(
-                      selection.messages.size()
-                          + " 条 · "
+                      displayCount()
+                          + " 条可见记录 · "
                           + selection.scope
                           + (selection.warnings.isEmpty() ? "" : " · 有顺序警告")
                           + " · 完整性取决于导入文件");
@@ -137,6 +137,12 @@ public final class ArchiveReaderActivity extends Activity {
     } catch (RuntimeException e) {
       status.setText("A10_READER_FAILED");
     }
+  }
+
+  private int displayCount() {
+    int count = 0;
+    for (ArchiveModel.Node node : selection.messages) if (node.displayable()) count++;
+    return count;
   }
 
   private void formats() {

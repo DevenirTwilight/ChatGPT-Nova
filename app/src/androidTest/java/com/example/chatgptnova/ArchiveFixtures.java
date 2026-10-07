@@ -55,6 +55,35 @@ final class ArchiveFixtures {
     if (longBody) body += ("Long Archive paragraph français Noël naïve 中文.\n\n").repeat(350);
     body += "ARCHIVE-LAST";
     m.put("a", node("a", "u", "assistant", body));
+    if (longBody) {
+      Map<String, Object> user =
+          ArchiveModel.object(ArchiveModel.object(m.get("u")).get("message"));
+      user.put(
+          "content",
+          Map.of(
+              "content_type",
+              "multimodal_text",
+              "parts",
+              List.of(
+                  "ARCHIVE-FIRST 中文 café 😀",
+                  Map.of("text", "SCHEMA-OBJECT-TEXT"),
+                  Map.of("asset_pointer", "synthetic-asset"))));
+      Map<String, Object> thought = node("thought", "u", "assistant", "");
+      ArchiveModel.object(thought.get("message"))
+          .put(
+              "content",
+              Map.of(
+                  "content_type",
+                  "thoughts",
+                  "thoughts",
+                  List.of(Map.of("text", "SYNTHETIC-HIDDEN-THOUGHT"))));
+      Map<String, Object> recap = node("recap", "thought", "assistant", "");
+      ArchiveModel.object(recap.get("message"))
+          .put("content", Map.of("content_type", "reasoning_recap", "content", "SCHEMA-RECAP"));
+      m.put("thought", thought);
+      m.put("recap", recap);
+      ArchiveModel.object(m.get("a")).put("parent", "recap");
+    }
     m.put("b", node("b", "u", "assistant", "OTHER-BRANCH"));
     c.put("mapping", m);
     c.put("future", Map.of("keep", "metadata"));
