@@ -11,7 +11,7 @@
     if(liveNodes.length>100000)return JSON.stringify({error:'S03_SNAPSHOT_TOO_LARGE'});
     const state=liveNodes.map(e=>{
       const s=getComputedStyle(e);
-      return {hidden:e.hidden || e.getAttribute('aria-hidden')==='true' || s.display==='none' || s.visibility==='hidden' || s.contentVisibility==='hidden',
+      return {hidden:e.hidden || e.getAttribute('aria-hidden')==='true' || s.display==='none' || s.visibility==='hidden' || s.contentVisibility==='hidden' || ((s.position==='absolute'||s.position==='fixed') && s.clip==='rect(0px, 0px, 0px, 0px)') || s.clipPath==='inset(50%)',
         scroll:(s.overflowY==='auto'||s.overflowY==='scroll') && e.scrollHeight>e.clientHeight,
         whiteSpace:s.whiteSpace, imageSrc:e.tagName==='IMG'?(e.currentSrc||e.getAttribute('src')):null,
         value:e.tagName==='TEXTAREA'?e.value:null,open:e.tagName==='DETAILS'?e.open:null};

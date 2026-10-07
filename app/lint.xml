@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<lint>
-    <!-- Gecko's bundled player has an unused notification helper. The export
-         session loads only CSP-restricted local HTML and never plays media.
-         Keep the check enabled for Nova's own code and any other dependency. -->
-    <issue id="NotificationPermission">
-        <ignore regexp=".*usage from org\.mozilla\.thirdparty\.com\.google\.android\.exoplayer2\.util\.NotificationUtil.*" />
-    </issue>
-</lint>

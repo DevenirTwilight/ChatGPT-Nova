@@ -1,3 +1,5 @@
+> 历史记录：旧滚动/Gecko试用方案已从正式入口退役。当前保存路线为普通HTML与Markdown同一次clone，PDF使用系统WebView打印同HTML；实际最新状态见docs/handoff/latest.md和docs/frozen-page-save.md。以下原证据保留，不代表当前产品行为。
+
 # 新方案导出试用版
 
 ## 手机首选改为ARM64包：170MiB APK / 81MiB ZIP，版本不变

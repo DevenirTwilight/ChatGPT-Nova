@@ -1,4 +1,4 @@
-name: DOM export trial APK
+name: Frozen page save validation
 on:
   push:
     branches: [feature/export-conversation]
@@ -10,17 +10,11 @@ on:
       - 'scripts/dom_trial_android.py'
       - '.github/workflows/dom-trial.yml'
   workflow_dispatch:
-    inputs:
-      publish_trial:
-        description: "Publish the tested batch as an APK release (normally leave false)"
-        type: boolean
-        default: false
-        required: false
 concurrency:
   group: nova-dom-trial-${{ github.ref }}
   cancel-in-progress: true
 permissions:
-  contents: write
+  contents: read
   actions: read
 jobs:
   build:
@@ -110,10 +104,14 @@ jobs:
               assert 'assets/export/progress-discovery.js' in apk.namelist()
               assert 'assets/export/locate-text.js' in apk.namelist()
               assert 'assets/virtual-history.js' not in apk.namelist()
+              assert not any(n.startswith('lib/') and n.endswith('.so') for n in apk.namelist()), 'Unexpected native engine'
+              assert 'assets/licenses/GeckoView.txt' not in apk.namelist()
               for name in apk.namelist():
                   assert not name.endswith(('.jks', '.keystore', 'keystore.properties'))
                   if name.startswith('classes') and name.endswith('.dex'):
                       assert b'FixtureDocuments' not in apk.read(name)
+                      assert b'org/mozilla/geckoview' not in apk.read(name)
+                      assert b'GeckoPdfExporter' not in apk.read(name)
           PY
           python3 - <<'PY'
           import json, zipfile, os
@@ -124,11 +122,22 @@ jobs:
           Path('dist/package-size.json').write_text(json.dumps({'sourceCommit':os.environ['GITHUB_SHA'],'apkBytes':apk.stat().st_size,'nativeAbis':abis},indent=2))
           PY
           ./gradlew :app:dependencies --configuration releaseRuntimeClasspath --no-daemon > dist/release-runtime-dependencies.txt
+          if grep -i geckoview dist/release-runtime-dependencies.txt; then exit 1; fi
           (cd dist && sha256sum ChatGPT-Nova.apk > ChatGPT-Nova.apk.sha256)
       - uses: actions/upload-artifact@v4
         with:
           name: nova-dom-trial-build
           path: dist/
+          if-no-files-found: error
+      - name: APK for device testing (no public Release)
+        uses: actions/upload-artifact@v4
+        with:
+          name: nova-frozen-page-apk
+          path: |
+            dist/ChatGPT-Nova.apk
+            dist/ChatGPT-Nova.apk.sha256
+            dist/signature.txt
+            dist/package-size.json
           if-no-files-found: error
       - name: Remove signing material
         if: always()
@@ -153,6 +162,13 @@ jobs:
         with:
           node-version: '22'
       - run: npm install --prefix /tmp/nova-dom-deps playwright-core@1.57.0 --no-audit --no-fund
+      - name: Validated signed Gecko baseline before retirement
+        uses: actions/download-artifact@v4
+        with:
+          name: nova-dom-trial-build
+          run-id: 37552313716
+          github-token: ${{ github.token }}
+          path: gecko-baseline
       - name: Original signed v1 upgrade baseline
         uses: actions/download-artifact@v4
         with:
@@ -160,7 +176,7 @@ jobs:
           run-id: 36923256012
           github-token: ${{ github.token }}
           path: baseline
-      - run: sudo apt-get update && sudo apt-get install -y poppler-utils
+      - run: sudo apt-get update && sudo apt-get install -y poppler-utils tesseract-ocr
       - name: Official Firefox Android A/B fixture dependency
         timeout-minutes: 3
         run: curl -fL --retry 2 https://archive.mozilla.org/pub/fenix/releases/157.0.1/android/fenix-157.0.1-android-x86_64/fenix-157.0.1.multi.android-x86_64.apk -o /tmp/nova-firefox.apk
@@ -193,33 +209,3 @@ jobs:
             dom-trial-results/
             snapshot-results/
           if-no-files-found: warn
-  publish:
-    needs: [build, android]
-    if: github.ref == 'refs/heads/feature/export-conversation' && github.event_name == 'workflow_dispatch' && inputs.publish_trial
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/download-artifact@v4
-        with:
-          name: nova-dom-trial-build
-          path: dist
-      - name: Publish signed trial with permanent download
-        env:
-          GH_TOKEN: ${{ github.token }}
-          GH_REPO: ${{ github.repository }}
-        run: |
-          (cd dist && sha256sum --check ChatGPT-Nova.apk.sha256)
-          NOTES=$(mktemp)
-          cat > "$NOTES" <<EOFNOTES
-          滚动历史导出试用版 1.4.0-scroll-trial / code14，原发布证书签名，可覆盖安装。实现提交：${GITHUB_SHA}。
-
-          菜单“导出聊天历史（试用）”提供 HTML、Markdown、系统保存为 PDF；“导出诊断”和报错弹窗可复制诊断。旧捕获器不再安装。
-
-          滚动过程中缓存已挂载消息并做两轮遍历，仍未确认完整项目长会话历史；另可单次采集当前页面。图片和附件不打包。没有证明旧403修复，改为不调用旧接口。真实账号与用户设备仍待验证。
-
-          构建、lint、Chromium夹具与Android35/36各十二项导出集成夹具通过，包含系统实际保存PDF并检查首尾/代码/表格文字；不是全量输入、登录、分享回归或所有Android版本认证。
-
-          使用与错误码：https://github.com/${GITHUB_REPOSITORY}/blob/${GITHUB_SHA}/docs/dom-export-trial.md
-          EOFNOTES
-          gh release create "nova-dom-trial-${GITHUB_SHA::7}" dist/ChatGPT-Nova.apk dist/ChatGPT-Nova.apk.sha256 \
-            --target "$GITHUB_SHA" --title "ChatGPT Nova 新方案导出试用版 (${GITHUB_SHA::7})" \
-            --notes-file "$NOTES" --prerelease --latest=false

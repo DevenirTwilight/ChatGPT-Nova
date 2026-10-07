@@ -1,5 +1,0 @@
-Mozilla GeckoView 140.0.20250707120347
-Mozilla Public License 2.0
-Unmodified engine source: https://maven.mozilla.org/maven2/org/mozilla/geckoview/geckoview/140.0.20250707120347/geckoview-140.0.20250707120347-sources.jar
-Mozilla revision: https://hg.mozilla.org/releases/mozilla-release/rev/65c832029a47e8865556ad3f4dbfe690863f637c
-See https://github.com/DevenirTwilight/ChatGPT-Nova/blob/feature/export-conversation/docs/third-party-gecko.md

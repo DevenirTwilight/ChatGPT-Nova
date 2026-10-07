@@ -84,7 +84,12 @@ public class FrozenPageSnapshotTest extends FixtureActivity {
         assertEquals("After snapshot marker",js("document.querySelector('h1').textContent"));
     }
     @Test public void htmlProductionPathUsesSafAndFrozenTitleBodyTable() throws Exception {
-        FrozenPageSnapshot snapshot=freeze();mutate();interceptSave(false);click("HTML");waitFor("HTML SAF",()->!busy());
+        FrozenPageSnapshot snapshot=freeze();mutate();
+        // Overwriting a longer destination must not leave bytes from another snapshot.
+        try(java.io.OutputStream old=activity.getContentResolver().openOutputStream(OUTPUT,"wt")){
+            old.write("STALE-DESTINATION-TAIL".repeat(10000).getBytes(StandardCharsets.UTF_8));
+        }
+        interceptSave(false);click("HTML");waitFor("HTML SAF",()->!busy());
         byte[] saved=read(OUTPUT);assertEquals(snapshot.frozenHtml,new String(saved,StandardCharsets.UTF_8));evidence("frozen-page-saf.html",saved);
         assertTrue(snapshot.frozenHtml.contains("TABLE-LAST"));assertFalse(snapshot.frozenHtml.contains("AFTER-TABLE"));
         assertNull(field(exporter(),"renderer"));

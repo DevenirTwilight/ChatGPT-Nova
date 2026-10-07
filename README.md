@@ -4,17 +4,13 @@
 
 安装 Release 构建的 `ChatGPT-Nova.apk` 后，它使用自己的应用包 `com.example.chatgptnova` 和 WebView 数据目录，可与官方 ChatGPT App 同时安装。Android 8.0（API 26）及以上可以安装。
 
-## 保存当前网页：冻结快照原型
+## 保存当前网页：HTML / Markdown / PDF
 
-工作分支的“保存当前网页（原型）”一次冻结此刻已加载内容，提供 **HTML / Markdown / 打印与保存PDF**。HTML是真正普通UTF-8静态网页，使用内联Nova阅读/打印样式；HTML和Markdown从同一次DOM clone同步派生，PDF只打印同一份frozenHtml的独立无JS WebView。HTML/Markdown通过系统文件选择器保存，PDF使用Android系统打印界面。MHTML已取消。
+菜单“保存当前网页”一次冻结此刻已加载内容。HTML是真正普通UTF-8静态网页，采用Nova内联阅读/打印样式；HTML与Markdown从同一次DOM clone同步派生。PDF只打印同一份frozenHtml，在独立无JS WebView中使用Android系统打印界面，可选择Save as PDF、纸张和方向。
 
-三种格式严格对应同一次当前网页冻结快照，但无法证明ChatGPT服务器端完整会话历史；网页虚拟化未挂载的较早内容不会包含。远程图片可能缺失/变化，canvas/shadow/runtime状态不序列化。阶段A保留旧试用和Gecko供对照，新PDF自身不调用Gecko；A全部验证通过后才清理生产Gecko。见[架构、错误和验收说明](docs/frozen-page-save.md)。
+HTML/Markdown由系统文件选择器保存；“网页保存诊断”仅记录版本、格式、字符数与失败阶段，不含正文/账号凭据。MHTML和Share快照路线已终止，旧滚动源码与测试仅作legacy对照，不进入正式保存菜单。PDF不再依赖Gecko，生产引擎与大包专属交付工作流已移除；实际验证/包体见[架构与验收说明](docs/frozen-page-save.md)。
 
-## 新方案导出试用
-
-修复在同一1.4.0内集中推进；每次提交只运行验证，不自动发布APK。已发布包与工作分支待交付修正的区别见试用说明。
-
-工作分支提供 1.4.0-scroll-trial：菜单“导出聊天历史（试用）”主按钮快速导出已加载消息，可选单向滚动一遍并缓存消息、取消与覆盖结果；保留单次采集。支持 HTML、Markdown 和 Gecko 直接生成 PDF 后保存到本地，“导出诊断”可复制最近一次结果。从顶部向下、从底部向上；中间开始先定位到底部再向上，去除自动折返和第二轮。缓存扫描期间已加载的消息，完整历史未确认；图片/附件不打包，旧捕获器不再安装。Gecko仅用于导出，聊天仍由原WebView显示；手机首选ARM64包约170MiB（下载ZIP约81MiB），约650MiB的四架构通用包为其他架构备用。安装、范围、错误码与验证状态见 [试用说明](docs/dom-export-trial.md)。
+三种格式严格对应同一次当前网页冻结快照，但无法证明ChatGPT服务器端完整会话历史；如果网页虚拟化未挂载较早内容，保存结果也不会包含那些内容。外部图片可能需要网络/变化，blob/附件原文件、canvas/shadow/runtime状态不备份。版号仍1.4.0-scroll-trial/code14，修正以buildRevision区分，不发布公开Release。
 
 ## 功能与实现审查
 

@@ -31,8 +31,8 @@ public final class NativeUiTest extends FixtureActivity {
                 && "function".equals(js("typeof navigator.share")));
         capture("portrait");
         click("菜单");
-        for (String item : new String[]{"刷新","ChatGPT 首页","用浏览器打开","设置"}) waitFor("menu item " + item, () -> shown(item));
-        for (String old : new String[]{"清除第二账号登录数据","在 Nova 内登录","关于 / 登录帮助"}) assertFalse(shown(old));
+        for (String item : new String[]{"刷新","ChatGPT 首页","用浏览器打开","保存当前网页","网页保存诊断","设置"}) waitFor("menu item " + item, () -> shown(item));
+        for (String old : new String[]{"清除第二账号登录数据","在 Nova 内登录","关于 / 登录帮助","导出聊天历史（试用）","导出诊断","保存当前网页（原型）"}) assertFalse(shown(old));
         capture("menu");
         click("设置");
         waitFor("settings visible", () -> shown("关于 ChatGPT Nova"));
@@ -112,7 +112,7 @@ public final class NativeUiTest extends FixtureActivity {
         waitFor("Nova title in accessibility window", () -> shown("ChatGPT Nova"));
         assertTrue(shown("ChatGPT Nova"));
         click("菜单");
-        for (String item : new String[]{"刷新","ChatGPT 首页","用浏览器打开","设置"}) waitFor("menu item " + item, () -> shown(item));
+        for (String item : new String[]{"刷新","ChatGPT 首页","用浏览器打开","保存当前网页","网页保存诊断","设置"}) waitFor("menu item " + item, () -> shown(item));
         capture("restart-menu");
     }
 

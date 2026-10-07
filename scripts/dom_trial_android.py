@@ -14,15 +14,8 @@ try:
                  'com.example.chatgptnova.DomTrialExportTest',
                  'com.example.chatgptnova.test/androidx.test.runner.AndroidJUnitRunner', timeout=600)
     (out/'instrumentation.txt').write_text(result)
-    assert re.search(r'OK \(18 tests\)', result), result
+    assert re.search(r'OK \(16 tests\)', result), result
     assert 'FAILURES!!!' not in result and 'INSTRUMENTATION_FAILED' not in result, result
-    adb('pull', '/sdcard/Android/data/com.example.chatgptnova/files/printed-export.pdf', str(out/'printed-export.pdf'))
-    subprocess.run(['pdftotext', str(out/'printed-export.pdf'), str(out/'printed-export.txt')], check=True)
-    text = (out/'printed-export.txt').read_text()
-    # PDF text extraction may insert line breaks inside wrapped code tokens.
-    logical = re.sub(r'\s+', '', text)
-    for marker in ('USER-FIRST', 'ASSISTANT-LAST', 'CODE-LAST', 'TABLE-LAST', 'PDF-PROGRESS'):
-        assert marker in logical, marker
-    print('PASS: 18 Android DOM trial fixture tests and Gecko-generated PDF first/last/code/table text; no live-account proof')
+    print('PASS: 16 legacy DOM fixture tests; 2 Gecko PDF cases explicitly retired; no live-account proof')
 finally:
     (out/'logcat.txt').write_text(adb('logcat', '-d', '-v', 'threadtime'))

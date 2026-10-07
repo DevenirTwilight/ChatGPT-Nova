@@ -312,6 +312,7 @@ public final class DomTrialExportTest extends FixtureActivity {
         assertTrue(detail.get().contains("D04_STREAMING"));assertTrue(detail.get().contains("not-proven"));
         assertFalse(detail.get().contains("USER-FIRST"));assertFalse(detail.get().contains("g-p-fixture"));
     }
+    @org.junit.Ignore("Retired Gecko engine; frozen HTML System Print PDF is tested separately")
     @Test public void geckoPdfDirectSaveCanCancelAndRetry() throws Exception {
         conversation("");
         AtomicReference<Intent> picker=new AtomicReference<>();
@@ -330,6 +331,7 @@ public final class DomTrialExportTest extends FixtureActivity {
         assertEquals("S03_CANCELLED",d.getString("code"));assertTrue(d.getInt("pdfPages")>0);
         picker.set(null);export("PDF");waitFor("Gecko PDF retry cancelled",()->picker.get()!=null && !busy());
     }
+    @org.junit.Ignore("Retired Gecko engine; frozen HTML System Print PDF is tested separately")
     @Test public void geckoPdfSavedDirectlyOpensWithMultiplePages() throws Exception {
         StringBuilder text=new StringBuilder();for(int i=0;i<80;i++) text.append("段落 ").append(i).append(" 中文 English [link](https://example.org)\n\n");
         conversation(text.toString());

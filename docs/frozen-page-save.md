@@ -1,10 +1,10 @@
 # 当前网页：普通 HTML 冻结快照
 
-本轮 Commit A 的唯一快照表示是普通 UTF-8 HTML，取消 MHTML 和 Share 后续开发。Gecko 暂留旧试用路径供 A/B，新保存 PDF 使用 Android System WebView Print。版号保持1.4.0/code14，不发布Release。Commit B必须在A的Android35/36和实际PDF验证通过后进行。
+当前阶段B已实现：唯一快照表示为普通UTF-8 HTML，HTML/Markdown同一次clone，PDF使用Android System WebView Print。A的Android35/36与Firefox实际PDF文件已经独立验证；Gecko唯一旧生产路径、依赖和大包ABI交付已移除，B完整CI及包体待验证。版号仍1.4.0/code14，不发布Release。下方A历史验证保留，勿把旧“待Firefox”当当前结论。
 
 ## 数据流
 
-保存当前网页（原型）→确认冻结此刻→一次evaluateJavascript同步记录公开呈现状态与URL/title/time→深clone一次→同clone派生静态阅读HTML及Markdown→不可变FrozenPageSnapshot。
+保存当前网页→确认冻结此刻→一次evaluateJavascript同步记录公开呈现状态与URL/title/time→深clone一次→同clone派生静态阅读HTML及Markdown→不可变FrozenPageSnapshot。
 
 - HTML：frozenHtml原字符串→后台UTF-8缓存.html→SAF流式复制/非空校验。不是WebArchive，不含MIME封装。
 - Markdown：同clone转换的markdown原字符串→后台UTF-8缓存.md→SAF。不是从HTML文件/PDF再解析。
@@ -61,3 +61,9 @@ CI37548381063/source462ba8c：Android35与36均通过新快照10项与原18项�
 从Android35 SAF实际保存的frozen-page-saf.html取回同一文件，以file://在Chromium143.0.7499.4、Firefox144.0.2、Edge154.0.4258.62打开：中法英/emoji、首尾、代码/表格/数学、320×120PNG解码、无脚本/HTTP请求、白底打印CSS通过。结果更新tools/snapshot/evidence/android-saved-html-compatibility.json。
 
 此轮唯一未通过项为Firefox Android PDF菜单自动化，尚无Firefox PDF，不记A/B通过。Gecko仍保留，清理需等对照完成。以上真实文件来自受控模拟器，不等于真实账号/物理设备人工验收。
+
+## 阶段A实物完成、阶段B提交待验证
+
+source544/CI37552313716所有Android instrumentation实际通过，Nova/Firefox×35/36的四份PDF已取回；原CI仅host PDF检验误判仍标failure。Firefox粗体标题视觉正常却不在提取文本、中文为兼容字形，现正文按NFKC等价核对，首标记仅Firefox必要时实际第一页渲染+离线OCR验证，没有删除断言。四份全部正文/首尾/长代码/表格/数学/法语/320×120图像/AFTER排除独立重验通过；均31页Letter，Firefox356099/355771字节，附网页页眉页脚和日期；Nova无该额外页眉页脚，分页面积有轻微差异，代码表格及文本均可读。证据android-pdf-firefox-A7.json保留失败来源及重核方法。
+
+B正式入口退役旧扫描UI并移除生产Gecko。16旧Android例继续，2Gecko专用Ignore保留历史；完整新测试/正常容器回归、A大包及v1覆盖升级、APK/依赖校验待CI。SAF使用wt并测覆盖较长旧目标；CSS clip零面积/clip-path50%辅助隐藏控制不进入两格式，样例已证明旧行为误包含。OCR/Firefox仅CI测试，主APK无新增OCR依赖。

@@ -165,7 +165,7 @@ final class PageSnapshotExport {
         final long ticket=generation;final File source=file;stage("S00_COPY");
         new Thread(()->{
             boolean ok=false;
-            try(InputStream in=new java.io.FileInputStream(source);OutputStream out=activity.getContentResolver().openOutputStream(uri,"w")) {
+            try(InputStream in=new java.io.FileInputStream(source);OutputStream out=activity.getContentResolver().openOutputStream(uri,"wt")) {
                 if(out==null)throw new java.io.IOException();byte[] b=new byte[65536];int n;long count=0;
                 while((n=in.read(b))!=-1){if(destroyed||ticket!=generation)throw new java.io.IOException();out.write(b,0,n);count+=n;}
                 out.flush();ok=count>0&&count==source.length();

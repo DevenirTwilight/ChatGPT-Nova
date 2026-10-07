@@ -1,0 +1,128 @@
+{
+  "sourceCommit": "544f6f0d902b8224a46028d6032208c886af5981",
+  "run": 37552313716,
+  "originalCiConclusion": "failure: Firefox PDF text-layer first heading/Unicode verifier; instrumentation all passed",
+  "scope": "actual saved Android synthetic fixture PDFs; offline independent file verification and sampled visual review",
+  "results": [
+    {
+      "android": 35,
+      "files": [
+        {
+          "file": "frozen-page.pdf",
+          "bytes": 278246,
+          "sha256": "ba01e18a253db118bdd741b04f84041cd6bbe8d9c5b63b11047248c5ee5c7993",
+          "pages": 31,
+          "pagePoints": [
+            0.0,
+            0.0,
+            612.0,
+            792.0
+          ],
+          "links": 2,
+          "verification": {
+            "beforeMarker": "pdf-text",
+            "otherMarkers": "pdf-text",
+            "unicodeNormalization": "NFKC",
+            "lateMarkersAbsent": true,
+            "fixtureImage": "320x120"
+          }
+        },
+        {
+          "file": "firefox-frozen.pdf",
+          "bytes": 356099,
+          "sha256": "1ec573ef7699363651f061448c8ecfb835ca54b41601fc56243e242966523030",
+          "pages": 31,
+          "pagePoints": [
+            0.0,
+            0.0,
+            612.0,
+            792.0
+          ],
+          "links": 4,
+          "verification": {
+            "beforeMarker": "first-page-render-ocr",
+            "otherMarkers": "pdf-text",
+            "unicodeNormalization": "NFKC",
+            "lateMarkersAbsent": true,
+            "fixtureImage": "320x120"
+          }
+        }
+      ],
+      "apk": {
+        "sourceCommit": "544f6f0d902b8224a46028d6032208c886af5981",
+        "android": "35",
+        "apkBytes": 681117497,
+        "scope": "installed code directory; excludes app data/cache and shared system WebView",
+        "apkSha256": "663b877fd591a4e423668c27f51f2b0f52c875275ae6f1ee9459a14de7545ff5",
+        "nativeAbis": [
+          "arm64-v8a",
+          "armeabi-v7a",
+          "x86",
+          "x86_64"
+        ],
+        "installedBaseApkBytes": 681117497,
+        "installedCodeAllocatedBytes": null
+      }
+    },
+    {
+      "android": 36,
+      "files": [
+        {
+          "file": "frozen-page.pdf",
+          "bytes": 293928,
+          "sha256": "b839ce7a80752979b81ebe89f45440e6548c2d595926122addc8743142bf1ed0",
+          "pages": 31,
+          "pagePoints": [
+            0.0,
+            0.0,
+            612.0,
+            792.0
+          ],
+          "links": 2,
+          "verification": {
+            "beforeMarker": "pdf-text",
+            "otherMarkers": "pdf-text",
+            "unicodeNormalization": "NFKC",
+            "lateMarkersAbsent": true,
+            "fixtureImage": "320x120"
+          }
+        },
+        {
+          "file": "firefox-frozen.pdf",
+          "bytes": 355771,
+          "sha256": "76c1fc1be5b6332226f1cdf84c7d6cea46f51813eecdf49328d42fe8e0464e83",
+          "pages": 31,
+          "pagePoints": [
+            0.0,
+            0.0,
+            612.0,
+            792.0
+          ],
+          "links": 4,
+          "verification": {
+            "beforeMarker": "first-page-render-ocr",
+            "otherMarkers": "pdf-text",
+            "unicodeNormalization": "NFKC",
+            "lateMarkersAbsent": true,
+            "fixtureImage": "320x120"
+          }
+        }
+      ],
+      "apk": {
+        "sourceCommit": "544f6f0d902b8224a46028d6032208c886af5981",
+        "android": "36",
+        "apkBytes": 681117497,
+        "scope": "installed code directory; excludes app data/cache and shared system WebView",
+        "apkSha256": "663b877fd591a4e423668c27f51f2b0f52c875275ae6f1ee9459a14de7545ff5",
+        "nativeAbis": [
+          "arm64-v8a",
+          "armeabi-v7a",
+          "x86",
+          "x86_64"
+        ],
+        "installedBaseApkBytes": 681117497,
+        "installedCodeAllocatedBytes": null
+      }
+    }
+  ]
+}

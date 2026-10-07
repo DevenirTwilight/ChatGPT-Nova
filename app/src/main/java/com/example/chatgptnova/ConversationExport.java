@@ -22,7 +22,7 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 import org.json.JSONTokener;
 
-/** DOM trial: no hooks, private readers, network capture or completeness claim. */
+/** Legacy experiment retained for fixture comparison; no normal menu entry or PDF engine. */
 final class ConversationExport {
     private static final int SAVE = 0x6201;
     private final Activity activity;
@@ -34,8 +34,6 @@ final class ConversationExport {
     private long started;
     private File file, pendingSave;
     private String mime, address;
-    private GeckoPdfExporter geckoPdf;
-    private AlertDialog pdfDialog;
     private Runnable deadline;
     private JSONObject diagnostic = new JSONObject();
     private AlertDialog scanDialog;
@@ -254,27 +252,24 @@ final class ConversationExport {
     private void chooseFormat(JSONObject data) {
         if (destroyed) return;
         new AlertDialog.Builder(activity).setTitle("已采集 "+data.optInt("count")+" 条已加载消息")
-            .setItems(new String[]{"HTML 阅读版（推荐）","Markdown","PDF"},(dialog,index)-> {
+            .setItems(new String[]{"HTML 阅读版（推荐）","Markdown"},(dialog,index)-> {
                 if (destroyed) return;
-                stage("N00_FILE",index==2 ? "pdf-load" : "cache-write");
+                stage("N00_FILE","cache-write");
                 try {
-                    String extension=index==0 ? "html" : index==1 ? "md" : "pdf";
-                    mime=index==0 ? "text/html" : index==1 ? "text/markdown" : "application/pdf";
+                    String extension=index==0 ? "html" : "md";
+                    mime=index==0 ? "text/html" : "text/markdown";
                     File dir=new File(activity.getCacheDir(),"exports");
                     if (!dir.exists() && !dir.mkdirs()) throw new java.io.IOException();
                     File[] old=dir.listFiles();
                     if(old!=null) for(File f:old) if(f.lastModified()<System.currentTimeMillis()-7L*86400000) f.delete();
                     file=new File(dir,filename(data.optString("title"),extension));
-                    if(index==2) pdf(data.getString("html"));
-                    else {
-                        File target=file; String content=data.getString(index==0 ? "html" : "markdown");
-                        new Thread(()-> {
-                            try (FileOutputStream out=new FileOutputStream(target)) {
-                                out.write(content.getBytes(StandardCharsets.UTF_8));
-                                activity.runOnUiThread(()-> {if(!destroyed) {put("bytes",target.length());stage("N00_FILE_READY","cache-ready");actions();}});
-                            } catch(Exception e) {activity.runOnUiThread(()->fail("S01_CACHE","无法生成导出文件。",e));}
-                        },"dom-trial-file").start();
-                    }
+                    File target=file; String content=data.getString(index==0 ? "html" : "markdown");
+                    new Thread(()-> {
+                        try (FileOutputStream out=new FileOutputStream(target)) {
+                            out.write(content.getBytes(StandardCharsets.UTF_8));
+                            activity.runOnUiThread(()-> {if(!destroyed) {put("bytes",target.length());stage("N00_FILE_READY","cache-ready");actions();}});
+                        } catch(Exception e) {activity.runOnUiThread(()->fail("S01_CACHE","无法生成导出文件。",e));}
+                    },"dom-trial-file").start();
                 } catch(Exception e) {fail("S01_CACHE","无法生成导出文件。",e);}
             }).setNegativeButton("取消",(d,w)->busy=false).setOnCancelListener(d->busy=false).show();
     }
@@ -283,34 +278,6 @@ final class ConversationExport {
         if(cleaned.isEmpty()) cleaned="未命名会话";
         if(cleaned.codePointCount(0,cleaned.length())>48) cleaned=cleaned.substring(0,cleaned.offsetByCodePoints(0,48));
         return "ChatGPT-"+cleaned+"-"+new SimpleDateFormat("yyyyMMdd-HHmmss-SSS",Locale.ROOT).format(new Date())+"-"+UUID.randomUUID().toString().substring(0,6)+"."+extension;
-    }
-    private void pdf(String html) {
-        put("pdfEngine","gecko");put("gecko",GeckoPdfExporter.VERSION);
-        put("pdfSource","sanitized-loaded-messages");
-        stage("G00_START","gecko-pdf-rendering");
-        final File target=file;
-        deadline=()->fail("G01_TIMEOUT","PDF 生成超时，请复制诊断。",null);
-        web.postDelayed(deadline,90000);
-        pdfDialog=new AlertDialog.Builder(activity).setTitle("正在生成 PDF")
-            .setMessage("首次启动 PDF 引擎可能稍慢，生成后直接选择保存位置。")
-            .setNegativeButton("取消",(d,w)->cancelPdf()).setOnCancelListener(d->cancelPdf()).show();
-        try {
-            geckoPdf=new GeckoPdfExporter(activity,target,new GeckoPdfExporter.Callback() {
-                @Override public void ready(int pages) {
-                    if(destroyed) return;
-                    finishPrint(false);put("pdfPages",pages);put("bytes",target.length());
-                    stage("G00_READY","gecko-pdf-validated");
-                    saveToLocal(target,"application/pdf");
-                }
-                @Override public void failed(String code,Exception error) {
-                    if(!destroyed) fail(code,"Gecko 无法生成 PDF，请复制诊断。",error);
-                }
-            });
-            geckoPdf.load(html);
-        } catch(Exception error) {fail("G07_START","无法启动 Gecko PDF 引擎。",error);}
-    }
-    private void cancelPdf() {
-        finishPrint(false);busy=false;stage("G08_CANCELLED","gecko-pdf-cancelled");
     }
     private void saveToLocal(File ready,String type) {
         try {
@@ -353,11 +320,6 @@ final class ConversationExport {
     }
     void navigationStarted() {if(collecting) fail("D10_CHANGED","页面已切换，采集已取消。",null);generation++;}
     private void stopDeadline() {if(deadline!=null) web.removeCallbacks(deadline);deadline=null;}
-    private void finishPrint(boolean cancel) {
-        stopDeadline();
-        if(pdfDialog!=null) {pdfDialog.dismiss();pdfDialog=null;}
-        if(geckoPdf!=null) {geckoPdf.close();geckoPdf=null;}
-    }
     private void resetDiagnostic() {
         diagnostic=new JSONObject();started=android.os.SystemClock.elapsedRealtime();
         put("scheme","DOM-SCROLL-TRIAL-2");put("buildRevision",BuildConfig.EXPORT_REVISION);put("historyCompleteness","not-proven");put("oldCaptureInstalled",false);
@@ -412,7 +374,7 @@ final class ConversationExport {
         if(clipboard!=null) {clipboard.setPrimaryClip(ClipData.newPlainText("Nova DOM 试用诊断",diagnostic.toString()));toast("已复制诊断（不含聊天正文和登录凭据）。");}
     }
     private void fail(String code,String message,Exception error) {
-        stopDeadline();stopScan(true);generation++;collecting=false;busy=false;finishPrint(true);
+        stopDeadline();stopScan(true);generation++;collecting=false;busy=false;
         stage(code,"failed");if(error!=null) put("exceptionType",error.getClass().getSimpleName());
         if(!destroyed && !activity.isFinishing() && !activity.isDestroyed())
             new AlertDialog.Builder(activity).setTitle("试用导出失败").setMessage(message+"\n\n错误码："+code+"\n可复制诊断发回排查。")
@@ -447,5 +409,5 @@ final class ConversationExport {
     }
     private static void copy(java.io.InputStream in,OutputStream out) throws java.io.IOException {byte[] buffer=new byte[16384];int n;while((n=in.read(buffer))!=-1) out.write(buffer,0,n);}
     private void toast(String message) {if(!destroyed) Toast.makeText(activity,message,Toast.LENGTH_LONG).show();}
-    void destroy() {stopScan(true);destroyed=true;generation++;collecting=false;busy=false;pendingSave=null;finishPrint(true);}
+    void destroy() {stopScan(true);destroyed=true;generation++;collecting=false;busy=false;pendingSave=null;stopDeadline();}
 }
