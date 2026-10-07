@@ -1,3 +1,10 @@
+## Nova Archive — Step 4m：最新修正源码的安装包核对（2026-10-07）
+
+- 分支 `feature/export-conversation`；实际源码 `7854f3ea06309fa20e5e26a7acc4b77750322968`，CI `37609817075`。
+- success：build/Gradle/lint/browser、JVM39、API26基础2项；独立下载APK/JVM/API26 Artifact，验证签名与内容digest、原证书、源码revision、包名、code14/name不变、默认legacy=false、旧assets一致、无native.so。证据 `tools/archive/evidence/accepted-package-verification.json`。
+- not verified：该源码API35/36完整Archive/Stable与实际输出仍运行中；证据文件名不表示整个MVP已验收。没有真实官方ZIP或物理设备验证。
+- 下一步：下载全部Android输出并独立核对，完整正式回归全绿后完成最终交接；本提交仅证据/文档，不修改测试源码。
+
 ## Nova Archive — Step 4l：Archive 实際输出通过；正式回归夹具修正（2026-10-07）
 
 - 分支 `feature/export-conversation`；验证源码 `880c8fb`，CI `37607311483`。完整下载两份API35/36 Artifact，Archive summaries failures=[]，各 instrumentation17 + 独立 seed/restart2 通过。真实 System Print PDF 各16页，独立pdftotext核对首尾/code/table/中法英/LaTeX标记，非当前分支不混入HTML/MD/PDF。

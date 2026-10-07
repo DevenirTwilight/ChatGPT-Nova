@@ -1,3 +1,7 @@
+## Latest corrected source package verified
+
+7854f3ea / CI37609817075 build/JVM39/API26 foundation2 pass. Independently downloaded APK v2 signature/content digest/original cert/revision/default legacy=false/assets verified; package/version unchanged. API35/36 full runtime and Stable output still pending. No real OpenAI export verified; evidence does not yet establish complete MVP acceptance.
+
 ## Archive actual files pass; formal fixture failures identified
 
 37607311483 API35/36 Archive17+restart2 pass. Independently downloaded actual HTML/MD/PDF verify current-branch scope, markers, no other branch and16 PDF pages each. Stable total remains failed: old menu expectations lacked authorized Archive entry; API35 PDF filename loop mistook existing file tile for editable title. Fix fixtures with accurate menu list and visible EditText selection, retain actual PDF assertions. API36 Snapshot10/31page output passed. No production print rewrite needed; new source still requires full-green regression.
