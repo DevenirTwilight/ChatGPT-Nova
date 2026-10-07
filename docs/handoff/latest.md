@@ -2,6 +2,14 @@
 
 工作分支 feature/export-conversation；已验收应用/测试源码 ac4776ff31feaed9794dbc434e423ac291fbee83。文档提交不是APK源码HEAD，开始续接先fetch核远端，读AGENTS/latest/REVIEW/docs/frozen-page-save.md、实际源码和CI，不回退旧修复。
 
+## 最新要求与本步结果（2026-10-07）
+
+用户要求：将最新要求和进展写入交接文档，**每完成一步都更新一次，并要求之后接手的AI也这样做**。已核对远端HEAD d33cae70439bb82a498f7c671442b233dd25fc8a（之前最终报告文档提交），工作区无旧未提交修改；已同步AGENTS.md、本文件、REVIEW.md和交接README/模板，清除“只在压缩/迁移才更新文档”的旧限制。本文档更新提交不会改变已验收APK源码ac4776ff31feaed9794dbc434e423ac291fbee83。
+
+本步仅修改交接约定和进度记录，检查文档一致性及git diff --check，使用[skip ci]提交/push；不重跑无关Android构建，不改生产源码/包名/签名/版号、不公开Release。下一步等用户真机测试反馈；现有受控验收已完成，真实账号/物理设备验收仍未完成，不自动继续开发历史扫描或新增数据源。
+
+后续每步记录：完成了什么、实际源码/分支、证据与通过/失败/未验证状态、下一步；在开始下一步前同步，提交push到工作分支。工作步骤按有独立结果的阶段划分，不为每条命令或交接维护自身递归提交。详情以根AGENTS.md和交接README为准。
+
 ## 已实现
 
 用户最终要求普通HTML/Markdown/PDF，取消Share/MHTML/新完整历史算法。正式“保存当前网页”→一次evaluateJavascript同步深clone→同clone静态HTML和Markdown→不可变FrozenPageSnapshot。HTML为唯一标准表示；PDF仅同frozenHtml→独立无JS/static WebView→Android System Print。Nova860px阅读/白底print CSS，不复制ChatGPT SPA。无滚动/backend/private reader/React/token/storage读取/ID去重/跨窗口缓存，不重构输入上传下载分享。
@@ -22,6 +30,6 @@
 
 DOM100000元素/12MiJSON硬限，无静默截断；SAF后台UTF8/64KiB流式复制/wt截断旧目标、非空长度核对，取消/destroy释放。S01–S10脱敏diag不含正文/真实ID/URLquery/凭据。外链图片字节非冻结/可能需网络与变化；blob/附件原文件/canvas/shadow/runtime未备份，inlineSVG移除，数学可读/公开LaTeX非像素级。静态资源无Cookie/Auth、有数量/大小/时间上限。
 
-保持原签名/包名/版号；不main/forcepush/公开Release。必要源码/测试/文档可提交push本分支。仅实际压缩/迁移或用户明确要求时维护入库交接及下一会话提示词，普通回复不生成。/tmp/nova-stage-b.py已应用勿重复执行；CI证据永久描述在Git，原artifact有期限。
+保持原签名/包名/版号；不main/forcepush/公开Release。必要源码/测试/文档可提交push本分支。每完成一个工作步骤都更新本交接，验证结论或边界变化时同步REVIEW，并随步骤提交push本分支；所有后续接手AI必须执行。仅实际压缩/迁移或用户明确要求时提供下一会话提示词，普通回复不生成。/tmp/nova-stage-b.py已应用勿重复执行；CI证据永久描述在Git，原artifact有期限。
 
 三种格式严格对应同一次当前网页冻结快照，但无法证明ChatGPT服务器端完整会话历史；如果网页虚拟化未挂载较早内容，保存结果也不会包含那些内容。
