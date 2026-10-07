@@ -1,3 +1,7 @@
+## Current production Java preserves observed ordinary long text; specific report remains unresolved
+
+本会话独立在128MiB JVM运行实际production importer/model/tree/display/renderer。184条>4000字符纯文本assistant消息逐字通过Model/Display与全部分支Markdown检查；118主链/66非主链，全部122会话Reader HTML生成成功。报告tools/archive/evidence/research-body-local-audit.json及显式本地工具已入库；真实输入/输出未入库。不能把这等同特定研究报告已找到、HTML视觉全文验收、手机SQLite恢复或Deep Research完整性。用户已确认缺完整报告正文，待一份会话标题/主题+日期定位。当前无生产修复、新APK或新CI，原有thoughts隐藏/分支选择保持。
+
 ## User confirms missing full report body; regenerated input acquired
 
 用户本会话确认Deep Research缺的是完整报告正文，不是PDF/Word生成文件。已通过其提供的单个Drive文件夹取得连续15分卷并在仓库外合并；独立只读结构审查122会话与既有节点规模一致。长assistant文本184条，主链118/其他分支66；这些统计不是研究报告识别，也不是手机恢复证明。源码复查默认current_node分支且Reader可查看全部分支，thoughts仍隐藏，不猜正文归属。尚缺具体报告定位（会话标题或主题/日期已询问），没有生产修复、新APK或新的Android验收。此前sandbox文件缺口保持记录但不代替正文问题。输入和所有私人标识不入公开仓库。

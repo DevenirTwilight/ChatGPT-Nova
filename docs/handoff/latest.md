@@ -1,3 +1,11 @@
+## Deep Research — Step V：实际Java正文保留检查完成，待具体报告定位（2026-10-07）
+
+- 用户目标仍是完整研究报告正文。文档基点56d9c47；实际生产源码仍787f18f；本步骤只加显式本地工具/脱敏报告，无生产代码、APK、版号或CI变更。
+- success 本会话独立ECJ编译当前ArchiveImporter/Model/Tree/Display/Renderer等，Java -Xmx128m读取用户15卷合并副本。122会话/7250节点/7130消息/1874隐藏thoughts。184条纯字符串parts、长度>4000的assistant text正文：184/184模型与Display逐字相同、184/184在全部分支Markdown中完整匹配；118在默认主链、66在其他分支。122个全部分支Reader HTML均成功生成。这不是特定Deep Research识别、Android SQLite/真机阅读或HTML视觉全文验收。
+- 新工具tools/archive/ArchiveBodyAudit.java与body-audit.sh只显式本地输入、输出固定字段计数/错误码、不保存生成正文。报告tools/archive/evidence/research-body-local-audit.json。初次工具编译因ECJ不支持classpath通配符并缺StorageBudget源失败，已修正依赖和源清单后实际运行通过；生产代码未改。
+- 根据本次证据不能把普通长正文统一归因于导入/Display/MD截断，也不能认定66条分支正文就是缺失报告；Reader已有“查看全部分支”。特定报告仍可能不在此导出、在其他分支或其他表示中，须定位后判断。
+- 下一步依赖用户给出一份缺失报告的会话标题或主题+日期（已询问待答）。收到后只在仓库外做精确定位，核正文与current_node/显示/DB关系再实施最小修复；不猜归属、不展开thoughts、不拼多分支、不扩在线数据源。保留全部历史边界和失败。
+
 ## Deep Research — Step U：确认缺失报告正文并重新取得输入（2026-10-07）
 
 - 用户在本会话明确：缺失的是 **完整研究报告正文**，不是生成 PDF/Word 下载文件。此前 sandbox 文件缺口不能代替本任务定位。

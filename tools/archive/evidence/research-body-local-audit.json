@@ -1,0 +1,20 @@
+{
+  "sourceBaseline": "787f18f5296e7bbf4148146c21c9c7656e8c7859",
+  "documentationBase": "56d9c4799128a83e98eb4c33226c1a6c12cc282a",
+  "execution": "independent local JVM; actual production parser/model/display/renderer; -Xmx128m",
+  "conversations": 122,
+  "nodes": 7250,
+  "messages": 7130,
+  "hiddenNodes": 1874,
+  "longPlainAssistant": 184,
+  "longOnCurrentBranch": 118,
+  "longOffCurrentBranch": 66,
+  "exactModelDisplayMatches": 184,
+  "exactAllBranchMarkdownMatches": 184,
+  "allBranchHtmlRendering": "completed",
+  "specificResearchReportIdentified": false,
+  "androidDatabaseOrDeviceValidated": false,
+  "researchReportCompletenessProven": false,
+  "privacy": "aggregate counts only; no source text, names, IDs, links, paths, hashes or binary",
+  "initialHarnessCompile": "failed due ECJ wildcard classpath and missing StorageBudget; corrected explicit classpath and source list; no production change"
+}
