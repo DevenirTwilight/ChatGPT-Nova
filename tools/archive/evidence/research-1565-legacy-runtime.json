@@ -1,0 +1,19 @@
+{
+  "sourceCommit": "15651dc5d0ea9289128c753900b6f65aef0de847",
+  "ciRun": 37704403572,
+  "validation": "actual downloaded synthetic instrumentation; history completeness not-proven",
+  "android": {
+    "35": {
+      "artifactId": 11519530918,
+      "artifactSha256": "ff3aada55297cc7a6a9707d7a81a0d32bc9b24af37b9f7f07ba307cd5ec78249",
+      "executedPassed": 19,
+      "historicalGeckoIgnored": 2
+    },
+    "36": {
+      "artifactId": 11519122828,
+      "artifactSha256": "fb0f55315d11a230f254ef6b77e5c63b274170c8a25614c0cc57dd337710d86d",
+      "executedPassed": 19,
+      "historicalGeckoIgnored": 2
+    }
+  }
+}

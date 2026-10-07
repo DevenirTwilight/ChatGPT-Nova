@@ -1,3 +1,8 @@
+## Deep Research — Step AE：最终源码Legacy35/36回归通过（2026-10-07）
+
+- 实际生产源码15651dc，Legacy37704403572所有job success。独立下载artifact35=11519530918、36=11519122828均匹配provider ZIP digest，各actual instrumentation 19执行通过+原Gecko2ignore，非将ignore算通过；证据research-1565-legacy-runtime.json。默认交付包DEX仍Legacy=false。
+- 此独立阶段不替代正式35/36研究与三格式回归，正式37704403878 API35/36仍运行；API26原生19/JVM101/原签名包前步已通过。下一步核正式新research5与原回归、实际PDF报告首尾/代码/表格与资产像素，然后最终交付。无生产变更/版本/Release/main，真实手机未验证。
+
 ## Deep Research — Step AD：最终源码API26原生19项通过（2026-10-07）
 
 - 生产15651dc，正式37704403878 API26 job113076222839 success；独立下载artifact11518279550匹配digest并核actual instrumentation，foundation2+asset7+Reader3+concurrency2+research5=19全部OK。新增第5项补充平面Unicode重导入超限回滚，旧31份报告仍可读，确已运行通过，不是只编译。

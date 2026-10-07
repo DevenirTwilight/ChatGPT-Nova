@@ -1,3 +1,7 @@
+## Final source1565 Legacy35/36 independently passed
+
+Run37704403572 all jobs successful. Independently downloaded fixture artifacts35=11519530918 and36=11519122828 matched ZIP digests, each actual instrumentation19 passed with historicalGecko2 ignored (not counted as passed). Default APK independently has Legacy=false. Formal35/36 research5/full Archive/Stable and actual PDF acceptance still pending; API26 native19/JVM101/package already passed. No physical-device conclusion.
+
 ## Final source1565 API26 native19 independently passed
 
 Artifact11518279550 digest matches and actual instrumentation logs confirm foundation2/assets7/Reader3/concurrency2/research5 all passed. New supplementary-Unicode budget rollback test actually ran and preserved readable31 reports; original research SQLite/migration/Reader four passed too. Formal35/36 actual exports/Stable and Legacy35/36 remain running, final acceptance pending; no physical-device/private-export SQLite conclusion.
