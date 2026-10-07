@@ -9,6 +9,7 @@ on:
       - 'app/src/main/assets/export/locate-text.js'
       - 'app/src/main/java/com/example/chatgptnova/ConversationExport.java'
       - 'app/src/main/java/com/example/chatgptnova/MainActivity.java'
+      - 'app/src/main/java/com/example/chatgptnova/SnapshotWebView.java'
       - 'app/build.gradle'
       - 'app/src/androidTest/java/com/example/chatgptnova/DomTrialExportTest.java'
       - 'app/src/androidTest/java/com/example/chatgptnova/FixtureActivity.java'

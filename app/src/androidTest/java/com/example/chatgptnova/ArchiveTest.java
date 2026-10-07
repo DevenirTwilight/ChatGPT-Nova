@@ -54,6 +54,11 @@ public final class ArchiveTest extends FixtureActivity {
   public void after() {
     if (monitor != null) instrument.removeMonitor(monitor);
     if (readerScenario != null) readerScenario.close();
+    if (archiveScenario != null)
+      archiveScenario.onActivity(
+          a ->
+              a.setRequestedOrientation(
+                  android.content.pm.ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED));
     if (archiveScenario != null) archiveScenario.close();
     if (scenario != null) scenario.close();
     ArchiveActivity.Task t = archive == null ? null : (ArchiveActivity.Task) field(archive, "task");
@@ -205,6 +210,66 @@ public final class ArchiveTest extends FixtureActivity {
       assertFalse(diagnostic.contains(value));
     File[] leftovers = new File(archive.getCacheDir(), "nova-archive-import").listFiles();
     assertTrue(leftovers == null || leftovers.length == 0);
+  }
+
+  @Test
+  public void safJsonAndMalformedFilesHaveFixedErrors() throws Exception {
+    Uri json = Uri.parse("content://com.example.chatgptnova.test.archive.documents/input.json");
+    write(json, ArchiveFixtures.json(1, false));
+    intercept(Intent.ACTION_OPEN_DOCUMENT, json, false);
+    click("导入 ChatGPT 数据");
+    waitFor("JSON imported", () -> status().startsWith("导入完成"));
+    write(json, "[{SECRET-DO-NOT-LOG]".getBytes(StandardCharsets.UTF_8));
+    click("导入 ChatGPT 数据");
+    waitFor("JSON fixed error", () -> status().startsWith("A04_JSON_PARSE_FAILED"));
+    assertFalse(status().contains("SECRET"));
+    assertFalse(((String) field(archive, "diagnostic")).contains("SECRET"));
+    write(INPUT, "invalid ZIP".getBytes(StandardCharsets.UTF_8));
+    intercept(Intent.ACTION_OPEN_DOCUMENT, INPUT, false);
+    click("导入 ChatGPT 数据");
+    waitFor("ZIP fixed error", () -> status().startsWith("A02_INVALID_ZIP"));
+    try (ArchiveStore db = new ArchiveStore(instrument.getTargetContext())) {
+      assertEquals(1, db.list("", false, 10).size());
+    }
+  }
+
+  @Test
+  public void cancellationDuringDatabaseTransactionRollsBack() throws Exception {
+    store(ArchiveFixtures.json(1, false));
+    File f = input(ArchiveFixtures.json(1000, false));
+    ArchiveImporter.Control control = new ArchiveImporter.Control();
+    AtomicReference<ArchiveError> failure = new AtomicReference<>();
+    String source = UUID.randomUUID().toString();
+    Thread worker =
+        new Thread(
+            () -> {
+              try (ArchiveStore db = new ArchiveStore(instrument.getTargetContext())) {
+                db.importFile(f, false, "synthetic.json", source, control);
+              } catch (ArchiveError e) {
+                failure.set(e);
+              }
+            });
+    worker.start();
+    waitFor(
+        "transaction started",
+        () -> {
+          try (ArchiveStore db = new ArchiveStore(instrument.getTargetContext());
+              android.database.Cursor q =
+                  db.getReadableDatabase()
+                      .rawQuery(
+                          "SELECT status FROM import_sources WHERE id=?", new String[] {source})) {
+            return q.moveToFirst() && q.getString(0).equals("running");
+          }
+        });
+    control.cancelled.set(true);
+    worker.join(60000);
+    assertFalse(worker.isAlive());
+    assertNotNull(failure.get());
+    assertEquals("A07_IMPORT_CANCELLED", failure.get().code);
+    try (ArchiveStore db = new ArchiveStore(instrument.getTargetContext())) {
+      assertEquals(1, db.list("", false, 1001).size());
+    }
+    f.delete();
   }
 
   @Test
@@ -378,8 +443,17 @@ public final class ArchiveTest extends FixtureActivity {
     main(() -> archive.startImport(SLOW));
     waitFor("task running", () -> field(archive, "task") != null);
     ArchiveActivity.Task before = (ArchiveActivity.Task) field(archive, "task");
-    archiveScenario.recreate();
-    archiveScenario.onActivity(a -> archive = a);
+    ArchiveActivity old = archive;
+    main(
+        () ->
+            archive.setRequestedOrientation(
+                android.content.pm.ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE));
+    waitFor(
+        "rotation recreates Archive",
+        () -> {
+          archiveScenario.onActivity(a -> archive = a);
+          return archive != old;
+        });
     assertSame(before, field(archive, "task"));
     assertFalse(before.control.cancelled.get());
     waitFor("retained import complete", () -> before.done);

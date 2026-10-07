@@ -1,3 +1,13 @@
+## Nova Archive — Step 4d：运行前最终边界与 UI 检查（2026-10-07）
+
+- 分支 `feature/export-conversation`；基线源码 `174ad7e`。
+- success：该基线正式 CI `37603996077` build 通过（Gradle/签名/lint/JVM36/browser），Android jobs 进行中。此检查点新增后须以新源码重新运行，不能沿用旧结果当新验收。
+- success：本地38项JVM synthetic tests；identity/parent key 4096字符限额避免 CursorWindow 组合超限；非字符串/缺 parent 字段保留metadata、明确全部节点安全顺序；相同 message id 的多个mapping节点保留并警告。
+- Android tests 现为17项，新增 SAF JSON + malformed ZIP/JSON 的固定错误体验、SQLite事务进行中取消回滚；导入生命周期测试使用真正 orientation change。另 process restart2项、API26基础2项。
+- 新 ArchiveUi 复用已有 AndroidX Insets，在target35边到边窗口内保证原生控件不被状态/导航栏遮挡；仅 Archive 使用。Legacy CI 同步关注共享 SnapshotWebView 变更，旧算法/fixtures全部保留。
+- not verified：本提交实际Android运行、PDF内容、正式回归待新CI。真实官方ZIP/物理设备未验证。
+- 下一步：不增加新功能，完成CI、修正实际失败、归档验收。
+
 ## Nova Archive — Step 4c：最低 Android 版本与 Markdown 边界（2026-10-07）
 
 - 分支 `feature/export-conversation`；基线源码 `0eab4e3`。

@@ -33,6 +33,7 @@ public final class ArchiveReaderActivity extends Activity {
     LinearLayout root = new LinearLayout(this);
     root.setOrientation(LinearLayout.VERTICAL);
     setContentView(root);
+    ArchiveUi.inset(root, 0);
     LinearLayout actions = new LinearLayout(this);
     root.addView(actions);
     branch = new Button(this);

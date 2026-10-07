@@ -39,8 +39,8 @@ public final class ArchiveActivity extends Activity {
     super.onCreate(state);
     root = new LinearLayout(this);
     root.setOrientation(LinearLayout.VERTICAL);
-    root.setPadding(16, 16, 16, 16);
     setContentView(root);
+    ArchiveUi.inset(root, 12);
     TextView heading = new TextView(this);
     heading.setText("Nova Archive");
     heading.setTextSize(24);

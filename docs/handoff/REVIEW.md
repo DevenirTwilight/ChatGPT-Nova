@@ -1,3 +1,7 @@
+## Archive pre-runtime boundary review
+
+Baseline 174ad7e build/lint/signature/JVM36 passed in 37603996077; updated source now has JVM38 fixtures and awaits fresh CI. Missing/non-string parent is explicitly unsafe-order fallback, duplicate message identities retained with warnings, keys bounded to prevent combined CursorWindow overflow. Native Insets apply only to Archive. Actual orientation change, SAF JSON errors and transaction cancellation are part of instrumentation17. No runtime acceptance claimed yet.
+
 ## Archive minimum Android compatibility checkpoint
 
 Java8-compatible CommonMark/GFM 0.21.0 replaces 0.24.0; unnecessary coreLibraryDesugaring removed. 36 JVM fixtures pass including pre-render Markdown depth cap. Separate API26 fixture job added; API35/36 actual PDF and formal regression remain required. These runtime results are pending, not success.

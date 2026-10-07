@@ -468,6 +468,26 @@ public class ArchiveCoreTest {
   }
 
   @Test
+  public void malformedParentIsNotSilentlyTreatedAsRoot() throws Exception {
+    Map<String, Object> d = data("malformed");
+    ArchiveModel.object(ArchiveModel.object(d.get("mapping")).get("a")).put("parent", 7);
+    ArchiveTree.Selection s = ArchiveTree.select(new Conversation(d), false);
+    assertEquals("all-nodes-safe-order", s.scope);
+    assertFalse(s.warnings.isEmpty());
+  }
+
+  @Test
+  public void oversizedIdentityRejectedWithoutTruncation() throws Exception {
+    Map<String, Object> d = data("x".repeat(4097));
+    try {
+      new Conversation(d);
+      fail();
+    } catch (ArchiveError e) {
+      assertEquals("A05_ARCHIVE_TOO_LARGE", e.code);
+    }
+  }
+
+  @Test
   public void generatedScaleAndLongCode() throws Exception {
     for (int count : new int[] {1, 100, 1000}) {
       List<Object> d = new ArrayList<>();

@@ -30,7 +30,7 @@ public final class ArchiveModel {
   public static final class Node {
     public final String key, id, parent, role, channel, contentType, status, raw;
     public final Double created;
-    public final boolean hasMessage;
+    public final boolean hasMessage, malformedParent;
     public final Map<String, Object> data;
 
     public Node(String key, Map<String, Object> data) {
@@ -38,6 +38,9 @@ public final class ArchiveModel {
       this.data = data;
       raw = JSON.toJson(data);
       parent = string(data.get("parent"));
+      malformedParent =
+          !data.containsKey("parent")
+              || (data.get("parent") != null && !(data.get("parent") instanceof String));
       Map<String, Object> m = object(data.get("message"));
       hasMessage = data.get("message") instanceof Map;
       id = string(m.get("id"));
@@ -76,6 +79,8 @@ public final class ArchiveModel {
               : string(data.get("conversation_id"));
       title = string(data.get("title")).isEmpty() ? "无标题会话" : string(data.get("title"));
       currentNode = string(data.get("current_node"));
+      if (id.length() > 4096 || currentNode.length() > 4096)
+        throw new ArchiveError("A05_ARCHIVE_TOO_LARGE");
       created = number(data.get("create_time"));
       updated = number(data.get("update_time"));
       if (!(data.get("mapping") instanceof Map)) throw new ArchiveError("A08_SCHEMA_UNSUPPORTED");
@@ -88,7 +93,10 @@ public final class ArchiveModel {
       for (Map.Entry<String, Object> e : mapping.entrySet()) {
         if (e.getKey().isEmpty() || !(e.getValue() instanceof Map))
           throw new ArchiveError("A08_SCHEMA_UNSUPPORTED");
-        nodes.put(e.getKey(), new Node(e.getKey(), object(e.getValue())));
+        Node n = new Node(e.getKey(), object(e.getValue()));
+        if (n.key.length() > 4096 || n.id.length() > 4096 || n.parent.length() > 4096)
+          throw new ArchiveError("A05_ARCHIVE_TOO_LARGE");
+        nodes.put(e.getKey(), n);
       }
     }
 

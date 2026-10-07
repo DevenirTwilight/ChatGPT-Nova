@@ -19,9 +19,13 @@ public final class ArchiveTree {
 
   public static Selection select(Conversation c, boolean all) {
     List<String> w = new ArrayList<>();
-    boolean cycle = false, orphan = false;
+    boolean cycle = false, orphan = false, malformed = false;
+    Set<String> messageIds = new HashSet<>();
+    boolean duplicateId = false;
     Map<String, Integer> colors = new HashMap<>();
     for (Node n : c.nodes.values()) {
+      if (n.malformedParent) malformed = true;
+      if (!n.id.isEmpty() && !messageIds.add(n.id)) duplicateId = true;
       List<String> path = new ArrayList<>();
       String k = n.key;
       while (!k.isEmpty() && c.nodes.containsKey(k) && !colors.containsKey(k)) {
@@ -33,6 +37,8 @@ public final class ArchiveTree {
       else if (!k.isEmpty() && colors.get(k) != null && colors.get(k) == 1) cycle = true;
       for (String p : path) colors.put(p, 2);
     }
+    if (malformed) w.add("存在缺失或非字符串 parent；显示全部节点安全顺序，未猜测关系。");
+    if (duplicateId) w.add("多个 mapping 节点使用相同 message id；已保留，未按正文合并。");
     if (cycle) w.add("发现 parent cycle；使用明确标注的安全顺序。");
     if (orphan) w.add("存在缺失 parent 的节点；分支可能不连续。");
     String head = c.currentNode;
@@ -46,7 +52,7 @@ public final class ArchiveTree {
       if (head.isEmpty() && !all) w.add("无法确定唯一主链；显示全部节点的安全顺序（不是单一分支）。");
     }
     List<Node> result = new ArrayList<>();
-    if (!all && !cycle && !head.isEmpty()) {
+    if (!all && !cycle && !malformed && !head.isEmpty()) {
       Set<String> seen = new HashSet<>();
       String k = head;
       while (c.nodes.containsKey(k) && seen.add(k)) {
