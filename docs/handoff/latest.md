@@ -1,3 +1,10 @@
+## Deep Research — Step AB：Unicode持久化预算一致性修正（2026-10-07）
+
+- 当前基点f44d6f3，此前生产8966489的build/API26成功仍有效，但正式35/36与Legacy35/36尚运行；不是最终新源码验收。
+- 独立复查发现SQLite LENGTH(message)按Unicode码点，而load按Java UTF-16单元计数，补充平面字符可导致写入通过但读取超限。现upsert逐行使用String.length与load一致，超限仍事务回滚；没有放宽4Mi字符/32报告限制。
+- 增加第5个Android研究用例：先持久化31份可读报告，再重导入含大量补充平面字符的新正文，要求A05及旧31份可读正文保持。虚构STORED ZIP避免重复字符触发既有压缩比限制，UTF-8单消息保持1MiB以内；接入API26/35/36必需断言。
+- 本地101 JVM、format与diff检查通过；新增native5与最终包完整CI待验证，不交旧8966包作为最终修正交付。下步核此源码签名/包版本、API26/35/36与Legacy回归、实际HTML/MD/PDF，保留真实手机待验边界。无版号/Release/main变更。
+
 ## Deep Research — Step AA：API26实物18项与默认DEX开关验收（2026-10-07）
 
 - 源码仍8966489，正式37703447205 API26 job113072536668 success。独立下载artifact11517963703匹配ZIP digest并核原instrumentation：foundation2+asset persistence7+asset reader3+concurrency2+research4=18全部OK。research四个真实方法包括Reader切换/重建/离线、SQLite去重/来源ZIP删除重开、schema2→3、坏重导入保留/超限/取消回滚；不是仅编译。匿名证据research-8966-api26.json。

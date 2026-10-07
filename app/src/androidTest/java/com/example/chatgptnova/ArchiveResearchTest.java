@@ -151,6 +151,53 @@ public final class ArchiveResearchTest {
   }
 
   @Test
+  public void supplementaryUnicodeBudgetUsesReadableUtf16AndRollsBack() throws Exception {
+    File good = input(0), large = input(3);
+    try (ArchiveStore s = new ArchiveStore(context)) {
+      importFile(s, good);
+      long id = row(s);
+      String original = s.load(id).reports.get(0).message;
+      com.google.gson.JsonObject message =
+          ArchiveModel.JSON.fromJson(original, com.google.gson.JsonObject.class);
+      com.google.gson.JsonArray parts = new com.google.gson.JsonArray();
+      parts.add(ArchiveResearchFixtures.emoji(65000));
+      message.getAsJsonObject("content").add("parts", parts);
+      String seeded = ArchiveModel.JSON.toJson(message);
+      for (int i = 0; i < 30; i++) {
+        s.getWritableDatabase()
+            .execSQL(
+                "INSERT INTO research_reports"
+                    + " (conversation,official_id,title,state,message,created,first_source,latest_source)"
+                    + " SELECT conversation,?,title,state,?,created,first_source,latest_source FROM"
+                    + " research_reports WHERE conversation=? AND official_id=?",
+                new Object[] {
+                  String.format("file_%032x", i), seeded, id, ArchiveResearchFixtures.FILE
+                });
+      }
+      assertEquals(31, s.load(id).reports.size());
+      try {
+        importFile(s, large);
+        fail("Import must reject a report set that the Reader cannot load");
+      } catch (ArchiveError e) {
+        assertEquals("A05_ARCHIVE_TOO_LARGE", e.code);
+      }
+      assertEquals(31, count(s));
+      ArchiveModel.Conversation restored = s.load(id);
+      assertEquals(31, restored.reports.size());
+      assertEquals(
+          original,
+          restored.reports.stream()
+              .filter(r -> r.identity.equals(ArchiveResearchFixtures.FILE))
+              .findFirst()
+              .get()
+              .message);
+    } finally {
+      good.delete();
+      large.delete();
+    }
+  }
+
+  @Test
   public void nativeReportsEntryAndRecreationUseOfflineBody() throws Exception {
     File f = input(0);
     long id;

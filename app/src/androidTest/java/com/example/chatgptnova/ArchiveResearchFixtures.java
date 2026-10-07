@@ -1,8 +1,10 @@
 package com.example.chatgptnova;
 
 import com.example.chatgptnova.archive.*;
+import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
+import java.util.zip.*;
 
 final class ArchiveResearchFixtures {
   static final String FILE = "file_44444444444444444444444444444444", THREAD = "synthetic-research";
@@ -95,6 +97,36 @@ final class ArchiveResearchFixtures {
         "conversations.json",
         ArchiveModel.JSON.toJson(Collections.singletonList(c)).getBytes(StandardCharsets.UTF_8));
     add(entries, THREAD);
+    if (mode == 3) {
+      com.google.gson.JsonObject root =
+          ArchiveModel.JSON.fromJson(
+              new String(entries.get(FILE + ".dat"), StandardCharsets.UTF_8),
+              com.google.gson.JsonObject.class);
+      com.google.gson.JsonArray parts = new com.google.gson.JsonArray();
+      parts.add(emoji(200000));
+      root.getAsJsonObject("widget_state")
+          .getAsJsonObject("report_message")
+          .getAsJsonObject("content")
+          .add("parts", parts);
+      entries.put(FILE + ".dat", ArchiveModel.JSON.toJson(root).getBytes(StandardCharsets.UTF_8));
+      // STORED keeps this deliberately repetitive Unicode fixture below the ZIP ratio guard.
+      ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+      try (ZipOutputStream zip = new ZipOutputStream(bytes)) {
+        for (Map.Entry<String, byte[]> item : entries.entrySet()) {
+          ZipEntry entry = new ZipEntry(item.getKey());
+          CRC32 crc = new CRC32();
+          crc.update(item.getValue());
+          entry.setMethod(ZipEntry.STORED);
+          entry.setSize(item.getValue().length);
+          entry.setCompressedSize(item.getValue().length);
+          entry.setCrc(crc.getValue());
+          zip.putNextEntry(entry);
+          zip.write(item.getValue());
+          zip.closeEntry();
+        }
+      }
+      return bytes.toByteArray();
+    }
     if (mode == 1) entries.put(FILE + ".dat", "{".getBytes(StandardCharsets.UTF_8));
     if (mode == 2) {
       List<Object> records = new ArrayList<>();
@@ -103,5 +135,11 @@ final class ArchiveResearchFixtures {
           "library_files.json", ArchiveModel.JSON.toJson(records).getBytes(StandardCharsets.UTF_8));
     }
     return ArchiveAssetFixtures.zip(entries);
+  }
+
+  static String emoji(int count) {
+    StringBuilder out = new StringBuilder(count * 2);
+    for (int i = 0; i < count; i++) out.appendCodePoint(0x1f642);
+    return out.toString();
   }
 }

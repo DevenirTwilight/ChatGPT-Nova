@@ -529,13 +529,17 @@ public final class ArchiveStore extends SQLiteOpenHelper {
     }
     try (Cursor q =
         db.rawQuery(
-            "SELECT COUNT(*),COALESCE(SUM(LENGTH(message)),0) FROM research_reports WHERE"
-                + " conversation=?",
+            "SELECT message FROM research_reports WHERE conversation=?",
             new String[] {Long.toString(row)})) {
-      q.moveToFirst();
-      if (q.getInt(0) > ArchiveResearch.PER_CONVERSATION_LIMIT
-          || q.getLong(1) > ArchiveImporter.CONVERSATION_CHAR_LIMIT)
-        throw new ArchiveError("A05_ARCHIVE_TOO_LARGE");
+      int count = 0;
+      long chars = 0;
+      while (q.moveToNext()) {
+        // SQLite LENGTH counts code points; load() budgets Java UTF-16 code units.
+        chars += q.getString(0).length();
+        if (++count > ArchiveResearch.PER_CONVERSATION_LIMIT
+            || chars > ArchiveImporter.CONVERSATION_CHAR_LIMIT)
+          throw new ArchiveError("A05_ARCHIVE_TOO_LARGE");
+      }
     }
   }
 

@@ -1,3 +1,7 @@
+## Unicode report persistence budget fixed; new source runtime pending
+
+SQLite LENGTH counts code points while Reader String.length counts UTF-16 units. Upsert now sums Java lengths using the same 4Mi limit as load. New native fifth research test verifies a readable 31-report set remains readable and unchanged after an emoji-heavy replacement exceeds that budget and rolls back. Local JVM101 passed; API26/35/36 must revalidate the changed production source and native5 before final APK delivery. Earlier8966 API26/build evidence remains historical, not new source acceptance.
+
 ## Source8966 API26 native acceptance independently passed
 
 正式API26 actual artifact11517963703独立digest/原instrumentation确认18项全OK：foundation2/persistence7/Reader3/concurrency2/research4。新增四项SQLite恢复、迁移、保留/回滚及实际Reader入口/重建/离线已执行。APK的BuildConfig DEX静态值独立确认默认Legacy=false、revision8966及原包版本14。35/36与Legacy运行中，尚无新实际PDF/全部回归结论，用户手机未测。
