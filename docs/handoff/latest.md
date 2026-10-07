@@ -1,3 +1,11 @@
+## Attachment Restoration — Step J：schema2与私有binary恢复接入（2026-10-07）
+
+- 分支feature/export-conversation，实施基线657b436；本提交为源码检查点，CI revision以实际SHA为准。success本地ECJ Android API编译core+新增test、JVM88、python脚本语法/diff检查；**Android实际执行未验证**，不能称AR1/3完成。
+- SQLite升级1→2非破坏新增assets/message_assets，旧conversation/message/source表保留；官方稳定身份唯一、generated private path/hash/size/magic+declared MIME/state/first-latest source、节点ordinal/kind/raw ref。SAF仍私有cache，先streaming plan+exact basename唯一解析（wrapper目录可支持，歧义拒绝），空间规划仅新候选，DB事务内copy/CRC/MIME/PNG-JPEG bounds，结束事务后committed，再清理无DB引用文件。旧complete经size/hash校验可复用，missing/damaged候选不覆盖已验证旧binary。
+- 原conversation upsert不变；相同RAW再导入也重建asset refs，支持从schema1 metadata档案恢复；prepared plan不保留所有正文。diagnostic增安全asset计数/bytes/mime mismatch，schema2。Archive-only删除同时private assets/pending，onOpen持锁清理死进程orphan/pending，保留DB complete路径，不碰Cookie/外部SAF。
+- 新5项Android synthetic persistence tests：files+refs/reimport/close-reopen+ZIP删除，malformed/cancel保留旧档案，Archive删除隔离，schema1迁移保留会话并恢复assets，死进程文件清理。夹具只有虚构PNG/DOCX/runtime ZIP；API26/35/36 CI明确执行新5项，旧Archive20+restart/Stable/Legacy保留。
+- Reader/provider/HTMLMDPDF尚未接assets；真实ZIP只做过结构/CRC/parser审计，未实际Nova DB导入。AR2 repack结构passed，AR1端到端/AR3/4/5待验收。下一步核本源码CI并接reader/export安全边界；不删除Legacy，不改Stable/签名/版号，不发布Release。
+
 ## Attachment Restoration — Step I：精确引用与shared Display解析（2026-10-07）
 
 - 分支feature/export-conversation，实施基线66a62c6；本提交为源码检查点。success本地JVM88=原48/file25/map7/display8（128MiB heap），仅新造synthetic values，无私人正文/ID/filename/bytes进fixtures。

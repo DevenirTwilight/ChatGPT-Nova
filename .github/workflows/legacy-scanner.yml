@@ -18,6 +18,8 @@ on:
       - 'app/src/main/java/com/example/chatgptnova/archive/ArchiveAssetFiles.java'
       - 'app/src/main/java/com/example/chatgptnova/archive/ArchiveAssetMap.java'
       - 'app/src/main/java/com/example/chatgptnova/archive/ArchiveDisplay.java'
+      - 'app/src/main/java/com/example/chatgptnova/archive/ArchiveAssetStore.java'
+      - 'app/src/main/java/com/example/chatgptnova/archive/ArchiveStore.java'
       - 'app/src/test/java/com/example/chatgptnova/archive/ArchiveAssetFilesTest.java'
       - 'app/src/test/java/com/example/chatgptnova/archive/ArchiveAssetMapTest.java'
       - 'app/src/test/java/com/example/chatgptnova/archive/ArchiveDisplayTest.java'

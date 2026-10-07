@@ -1,3 +1,7 @@
+## Private file restoration wired to schema2; native verification pending
+
+Non-destructive v1→v2 assets/reference migration, exact observed pointer identities and uniquely matched wrapper entry basename, streaming candidate plan without retaining corpus, independent new-file space budget, transaction/CRC/hash/MIME/bounds, official-identity upsert, verified old binaries retained on missing/damaged reimport, per-node links reconstructed for metadata-only prior imports. New generated private files roll back if DB fails/cancels; after commit recovery keeps only DB complete paths, startup removes uncommitted orphans; Archive delete removes private assets/pending only. Compile/JVM88 pass locally. Five synthetic native tests added on API26/35/36, not yet executed. Reader/provider/exports not wired; no AR1/3/4/5 or real DB claim. Original Stable/Legacy unchanged.
+
 ## Shared observed-content interpretation implemented, not yet wired end-to-end
 
 JVM88 passed with8 new fictional Display tests. Exact verified sediment pointer/attachment identity, ordered text/asset blocks, per-message parts/metadata duplicate suppression, attachment-only label, hidden thought ref persistence and visible exclusion, recap and conservative unknown refs. Singleasset64MiB justified by actual63.62MiB PDF; independent total256MiB/JSON limits unchanged. Display/File primitives are not yet connected to Store/Reader; schema1 and AR1/3–5 remain pending. Actual input structure evidence complete; proceed schema2 and offline display, no further user structure request.

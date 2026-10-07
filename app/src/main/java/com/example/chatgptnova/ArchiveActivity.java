@@ -25,7 +25,7 @@ public final class ArchiveActivity extends Activity {
   private Button cancel, more, previous, sort;
   private boolean earliest;
   private int offset;
-  private String diagnostic = "schema=1\nstage=idle";
+  private String diagnostic = "schema=2\nstage=idle";
   private Task task;
   private List<ArchiveStore.Row> rows = new ArrayList<>();
   private int listGeneration;
@@ -195,7 +195,7 @@ public final class ArchiveActivity extends Activity {
     }
     if (t.error != null) {
       diagnostic =
-          "schema=1\nbuildRevision="
+          "schema=2\nbuildRevision="
               + BuildConfig.EXPORT_REVISION
               + "\nimportId="
               + t.id
@@ -275,7 +275,7 @@ public final class ArchiveActivity extends Activity {
     }
     new AlertDialog.Builder(this)
         .setTitle("删除本地档案？")
-        .setMessage("删除 Nova Archive 数据库与导入临时文件。不会删除在线 ChatGPT 聊天，也不会删除你已保存到外部的导出文件。")
+        .setMessage("删除 Nova Archive 数据库、私有附件与导入临时文件。不会删除在线 ChatGPT 聊天，也不会删除你已保存到外部的导出文件。")
         .setNegativeButton("取消", null)
         .setPositiveButton(
             "删除",
@@ -284,7 +284,7 @@ public final class ArchiveActivity extends Activity {
                   () -> {
                     boolean ok;
                     synchronized (ArchiveStore.LOCK) {
-                      ok = getApplicationContext().deleteDatabase(ArchiveStore.DATABASE);
+                      ok = ArchiveStore.deleteArchive(getApplicationContext());
                       cleanTemporary(getApplicationContext());
                     }
                     runOnUiThread(
@@ -292,7 +292,7 @@ public final class ArchiveActivity extends Activity {
                           if (destroyed) return;
                           if (ok) task = null;
                           status.setText(ok ? "本地档案已删除" : "A09_STORAGE_FAILED：无法删除本地档案。");
-                          diagnostic = "schema=1\nstage=deleted";
+                          diagnostic = "schema=2\nstage=deleted";
                           refresh();
                         });
                   });

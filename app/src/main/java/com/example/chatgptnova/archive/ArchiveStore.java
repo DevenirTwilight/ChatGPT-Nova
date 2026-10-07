@@ -7,13 +7,15 @@ import com.example.chatgptnova.archive.ArchiveModel.*;
 import java.text.Normalizer;
 import java.util.*;
 
-/** Private SQLite schema v1. No WebView/session access and no external storage. */
+/** Private SQLite schema v2. No WebView/session access and no external storage. */
 public final class ArchiveStore extends SQLiteOpenHelper {
   public static final Object LOCK = new Object();
+  private final Context context;
   public static final String DATABASE = "nova-archive.db";
 
   public ArchiveStore(Context context) {
-    super(context.getApplicationContext(), DATABASE, null, 1);
+    super(context.getApplicationContext(), DATABASE, null, 2);
+    this.context = context.getApplicationContext();
     setWriteAheadLoggingEnabled(true);
   }
 
@@ -43,14 +45,56 @@ public final class ArchiveStore extends SQLiteOpenHelper {
             + " KEY(conversation,node_key))");
     db.execSQL("CREATE INDEX message_identity ON messages(conversation,message_id)");
     db.execSQL("CREATE INDEX conversation_dates ON conversations(updated,created)");
+    ArchiveAssetStore.create(db);
   }
 
   @Override
   public void onUpgrade(SQLiteDatabase db, int old, int next) {
-    throw new SQLiteException("A08_SCHEMA_UNSUPPORTED");
+    if (old == 1 && next == 2) ArchiveAssetStore.create(db);
+    else throw new SQLiteException("A08_SCHEMA_UNSUPPORTED");
+  }
+
+  @Override
+  public void onOpen(SQLiteDatabase db) {
+    super.onOpen(db);
+    synchronized (LOCK) {
+      try {
+        ArchiveAssetStore.recover(db, context.getFilesDir());
+      } catch (java.io.IOException e) {
+        throw new SQLiteException("A09_STORAGE_FAILED");
+      }
+    }
+  }
+
+  /** Archive-only deletion; never touches online Cookie/WebView data or external SAF outputs. */
+  public static boolean deleteArchive(Context context) {
+    synchronized (LOCK) {
+      boolean db = context.deleteDatabase(DATABASE);
+      boolean assets =
+          deletePrivate(new java.io.File(context.getFilesDir(), "nova-archive-assets"));
+      boolean pending =
+          deletePrivate(new java.io.File(context.getFilesDir(), "nova-archive-pending"));
+      return db && assets && pending;
+    }
+  }
+
+  private static boolean deletePrivate(java.io.File file) {
+    if (!file.exists()) return true;
+    if (java.nio.file.Files.isSymbolicLink(file.toPath())) return file.delete();
+    boolean ok = true;
+    java.io.File[] children = file.listFiles();
+    if (children != null) for (java.io.File child : children) if (!deletePrivate(child)) ok = false;
+    return file.delete() && ok;
   }
 
   public static final class Stats {
+    public int newAssets,
+        updatedAssets,
+        skippedAssets,
+        assetReferences,
+        unavailableAssets,
+        mimeMismatchCount;
+    public long assetBytes, assetStorageBytes;
     public int newConversations,
         updatedConversations,
         newMessages,
@@ -101,7 +145,23 @@ public final class ArchiveStore extends SQLiteOpenHelper {
     private final Set<Long> newRows = new HashSet<>(), updatedRows = new HashSet<>();
 
     public String diagnostic() {
-      return "schema=1\nnewConversations="
+      return "schema=2\nnewAssets="
+          + newAssets
+          + "\nupdatedAssets="
+          + updatedAssets
+          + "\nskippedAssets="
+          + skippedAssets
+          + "\nassetReferences="
+          + assetReferences
+          + "\nunavailableAssets="
+          + unavailableAssets
+          + "\nmimeMismatchCount="
+          + mimeMismatchCount
+          + "\nassetBytes="
+          + assetBytes
+          + "\nassetStorageBytes="
+          + assetStorageBytes
+          + "\nnewConversations="
           + newConversations
           + "\nupdatedConversations="
           + updatedConversations
@@ -181,13 +241,19 @@ public final class ArchiveStore extends SQLiteOpenHelper {
       source.put("filename", filename);
       source.put("started", start);
       source.put("status", "running");
+      source.put("schema_version", 2);
       db.insertOrThrow("import_sources", null, source);
     } catch (RuntimeException e) {
       throw new ArchiveError("A06_DATABASE_WRITE_FAILED");
     }
     ArchiveError failure = null;
     boolean transaction = false;
+    ArchiveAssetStore assets = null;
     try {
+      assets =
+          new ArchiveAssetStore(
+              db, context.getFilesDir(), file, zip, importId, start, control, stats);
+      final ArchiveAssetStore assetSink = assets;
       db.beginTransaction();
       transaction = true;
       new ArchiveImporter(control)
@@ -198,7 +264,7 @@ public final class ArchiveStore extends SQLiteOpenHelper {
                 control.check();
                 ArchiveStorageBudget.checkReserve(
                     new java.io.File(db.getPath()).getParentFile().getUsableSpace());
-                upsert(db, c, importId, start, stats);
+                upsert(db, c, importId, start, stats, assetSink);
                 stats.parsed++;
                 stats.observe(c, db);
               });
@@ -206,6 +272,8 @@ public final class ArchiveStore extends SQLiteOpenHelper {
       db.setTransactionSuccessful();
     } catch (ArchiveError e) {
       failure = e;
+    } catch (java.io.IOException e) {
+      failure = new ArchiveError("A09_STORAGE_FAILED");
     } catch (SQLiteFullException e) {
       failure = new ArchiveError("A09_STORAGE_FAILED");
     } catch (RuntimeException e) {
@@ -214,9 +282,17 @@ public final class ArchiveStore extends SQLiteOpenHelper {
       if (transaction)
         try {
           db.endTransaction();
+          if (failure == null && assets != null) assets.committed();
         } catch (RuntimeException e) {
           failure = new ArchiveError("A06_DATABASE_WRITE_FAILED");
         }
+    }
+    if (assets != null) {
+      try {
+        assets.close();
+      } catch (java.io.IOException e) {
+        if (failure == null) failure = new ArchiveError("A09_STORAGE_FAILED");
+      }
     }
     stats.sampledWalPeakBytes =
         Math.max(stats.sampledWalPeakBytes, new java.io.File(db.getPath() + "-wal").length());
@@ -224,6 +300,8 @@ public final class ArchiveStore extends SQLiteOpenHelper {
     if (failure != null) {
       stats.newConversations =
           stats.updatedConversations = stats.newMessages = stats.updatedMessages = 0;
+      stats.newAssets = stats.updatedAssets = 0;
+      stats.assetBytes = 0;
       stats.failed = 1;
     }
     try {
@@ -240,7 +318,13 @@ public final class ArchiveStore extends SQLiteOpenHelper {
     return stats;
   }
 
-  private void upsert(SQLiteDatabase db, Conversation next, String source, long time, Stats stats)
+  private void upsert(
+      SQLiteDatabase db,
+      Conversation next,
+      String source,
+      long time,
+      Stats stats,
+      ArchiveAssetStore assets)
       throws ArchiveError {
     long row = 0;
     if (!next.id.isEmpty())
@@ -322,6 +406,13 @@ public final class ArchiveStore extends SQLiteOpenHelper {
         else stats.updatedMessages++;
       }
     stats.skipped += plan.skipped;
+    List<Node> assetNodes = new ArrayList<>();
+    for (String key : next.nodes.keySet()) assetNodes.add(c.nodes.get(key));
+    try {
+      assets.attach(row, assetNodes);
+    } catch (java.io.IOException e) {
+      throw new ArchiveError("A09_STORAGE_FAILED");
+    }
   }
 
   private static void putNumber(ContentValues v, String k, Double n) {

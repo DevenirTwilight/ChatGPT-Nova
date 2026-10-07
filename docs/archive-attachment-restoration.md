@@ -71,3 +71,9 @@ single32MiB暂定预算被真实63.62MiB PDF证明不足，应独立调整为64M
 ## Step I：shared ordered Display基础
 
 ArchiveDisplay已按实证指针形式解析身份/entry，保留Map.text与inline part顺序，抑制同消息metadata重复图片，metadata附件按collection顺序接正文后；attachment-only合法标签，thoughts visible隐藏/refs保留，recap readable。unknown reference不猜转换。single64MiB实证调整，total256MiB/JSON不变。JVM88通过，新增8项值均虚构。当前尚未接schema2/Reader/export，不构成AR1完成。
+
+## Step J：数据库与files接通，原生验证待CI
+
+Schema2非破坏增加assets与message_assets，原v1记录保留。资产官方身份唯一，original/sanitized display/private UUID path/MIME/bytes/hash/state/first-latest source；refs节点+ordinal/kind/raw。导入先streaming候选计划+唯一exact basename→实际wrapper ZIP entry，只有新/变更候选按空间预算copy。DB事务内publish文件后记录complete、DB end成功后才保留；失败删本次文件、旧complete不删。重复输入核old size/hash与source CRC/size，复用binary；保留first来源并更新latest。缺失/损坏输入不覆盖旧verified binary。reimport相同node raw仍可为schema1元数据档案建refs。onOpen持锁依据DB complete paths回收orphan/pending；删除Archive包含数据库/私有assets/pending/cache，Cookie与外部SAF输出保留。
+
+新5项native synthetic测试已加入API26/35/36，编译与JVM88通过但实际Android尚未验证。Reader/exports仍未接assets，AR1/3/4/5不能报完成。真实binary/corpus仍仅repo外审计，绝不进入fixtures/CI。
