@@ -31,7 +31,10 @@
       "runId": 37593888527,
       "sourceCommit": "3149507ef3fb88d66428dde610894ccac82cf44b",
       "status": "in_progress",
-      "build": "success"
+      "build": "success",
+      "android35Attempt1": "failure-system-accessibility-query-NPE",
+      "android36": "in_progress",
+      "android35Evidence": "stable-35-3149507-attempt1-verification.json"
     },
     "experimental": {
       "runId": 37588638326,

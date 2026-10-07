@@ -1,0 +1,16 @@
+{
+  "sourceCommit": "3149507ef3fb88d66428dde610894ccac82cf44b",
+  "android": 35,
+  "attempt": 1,
+  "jobId": 112702223776,
+  "artifactId": 11470687017,
+  "zipSha256": "e54d7964080ac2877df3908c43922ed8381b67dc154e9c480888473e0801e9c2",
+  "result": "failure",
+  "failures": [
+    "snapshot",
+    "pull-frozen-page.pdf",
+    "pdf-content"
+  ],
+  "reason": "Android AccessibilityInteractionClient.checkFindAccessibilityNodeInfoResultIntegrity null List, from findAccessibilityNodeInfosByViewId while waiting PDF preview button (fixture line121); no Nova PDF yet",
+  "visibleState": "Save as PDF, page 1/31 and 2/31; no print error screen"
+}

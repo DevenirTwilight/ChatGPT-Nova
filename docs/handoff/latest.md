@@ -67,6 +67,10 @@
 
 当前HEAD3149507ef3fb88d66428dde610894ccac82cf44b，正式run37593888527 build/lint/browser/unit/签名success，两API Android进行中。已独立取默认artifact11470220775核ZIP digest、APK v2RSA/content digest、原证书、5份assets、DEX flag=false/revision3149507/applicationId、无native so；1916153bytes/SHAb35bed4d50df1a2b7bdeb50d902f7fba0274ddb533e4aaada90d5b4ad5498b96。此前包报告另存package-verification-fbd7130.json。实验源码/fixture仍和5d9相同，不重跑无关legacy；当前只包验证success，正式两API实际文件待核。下一步等待回归结果并独立核实物，不把预览截图当已保存PDF。
 
+### Step 4m：API35无障碍框架查询失败留证
+
+当前HEADbf54abb；已测源码3149507。API35 job112702223776/artifact11470687017正式job失败，realSystemPrintUiSavesFrozenMultipagePdf在line121等待PDF按钮时Android AccessibilityInteractionClient.checkFindAccessibilityNodeInfoResultIntegrity内部null List抛NPE，不是Nova应用正文/渲染异常。实际截图Save as PDF与1/31、2/31预览正常，无spooler错误，但没有保存Nova PDF，不能标success。原instrumentation/UI/JSON入stable-35-3149507-attempt1-*；其他正式测试继续执行。API36尚进行中，先核其结果，再决定同源重试35；不吞异常/不放宽PDF要求。本步failure，下一步核36并完成必要重试/实物验证。
+
 ## 此前 Frozen Snapshot 实现与验收（历史）
 
 用户最终要求普通HTML/Markdown/PDF，取消Share/MHTML/新完整历史算法。正式“保存当前网页”→一次evaluateJavascript同步深clone→同clone静态HTML和Markdown→不可变FrozenPageSnapshot。HTML为唯一标准表示；PDF仅同frozenHtml→独立无JS/static WebView→Android System Print。Nova860px阅读/白底print CSS，不复制ChatGPT SPA。无滚动/backend/private reader/React/token/storage读取/ID去重/跨窗口缓存，不重构输入上传下载分享。
