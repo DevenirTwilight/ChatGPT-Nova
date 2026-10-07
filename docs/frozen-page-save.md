@@ -76,7 +76,7 @@ DOM100000元素，最终JSON12Mi UTF-16 units；native外层callback24Mi检查�
 
 ## 下载与证据
 
-本轮最新源码 `3149507ef3fb88d66428dde610894ccac82cf44b` 的默认关闭扫描器 APK 在 [正式构建 artifact](https://github.com/DevenirTwilight/ChatGPT-Nova/actions/runs/37593888527/artifacts/11470220775)，沿用原签名/包名/code14；实验包是另一个显式开启构建，不能当默认正式包。当前验证见 [Legacy 隔离报告](../tools/legacy-scanner/evidence/isolation-validation.json)，本节以下ac4776f链接保留为此前Frozen Snapshot验收历史。
+本轮最新源码 `3149507ef3fb88d66428dde610894ccac82cf44b` 的默认关闭扫描器 APK 在 [正式构建 artifact](https://github.com/DevenirTwilight/ChatGPT-Nova/actions/runs/37593888527/artifacts/11470220775)，沿用原签名/包名/code14；实验包是另一个显式开启构建，不能当默认正式包。当前35/36各43项及实际HTML/MD/四份31页PDF已通过并独立核对；原生打印测试补初态/分页同步，生产冻结/打印代码不改，失败历史留证。当前验证见 [Legacy 隔离报告](../tools/legacy-scanner/evidence/isolation-validation.json)，本节以下ac4776f链接保留为此前Frozen Snapshot验收历史。
 
 [主 APK artifact（解压后安装 ChatGPT-Nova.apk）](https://github.com/DevenirTwilight/ChatGPT-Nova/actions/runs/37556129018/artifacts/11454731981)仅含主包和校验/签名/大小记录；需要GitHub登录，非公开Release。可同签名覆盖安装，不要求清除账号。版本未频繁递增，诊断buildRevision为ac4776ff31feaed9794dbc434e423ac291fbee83。
 

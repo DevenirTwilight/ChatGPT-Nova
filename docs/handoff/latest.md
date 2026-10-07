@@ -1,14 +1,18 @@
 # 当前交接：Legacy Scanner 隔离（2026-10-07）
 
-工作分支 `feature/export-conversation`；本轮最新构建源码 `3149507ef3fb88d66428dde610894ccac82cf44b`；实验已测源码 `5d9efe8eee0c24d1ce2b1a48b6e14f74360ae583`（应用/legacy源码和夹具完全一致，仅正式原生测试同步变更）；当前文档基点 `3149507ef3fb88d66428dde610894ccac82cf44b`。最终文档提交可由git log核对，不等于APK源码HEAD。远端默认HEAD仍main/e8ffa0c6，本轮全程以工作分支最新远端为准；开始续接先fetch并读AGENTS/latest/REVIEW/legacy-conversation-scanner/frozen-page-save，不回退旧修复。
+工作分支 `feature/export-conversation`；本轮最新构建源码 `3149507ef3fb88d66428dde610894ccac82cf44b`；实验已测源码 `5d9efe8eee0c24d1ce2b1a48b6e14f74360ae583`（应用/legacy源码和夹具完全一致，仅正式原生测试同步变更）；当前文档基点 `1682ecf`（完整HEAD以git log核对）。最终文档提交可由git log核对，不等于APK源码HEAD。远端默认HEAD仍main/e8ffa0c6，本轮全程以工作分支最新远端为准；开始续接先fetch并读AGENTS/latest/REVIEW/legacy-conversation-scanner/frozen-page-save，不回退旧修复。
 
 ## 当前结论（优先于下方分步历史）
 
-隔离实现已完成：Stable保存当前网页三格式；Archive官方导入仍未来规划；Experimental只显式flag启用，默认debug/release=false且不构造controller，不注入或自动扫描。实验设置警告确认→用户开始→前台当前会话→可取消/恢复；结果/文件/脱敏diagnostic永远not-proven。ConversationExport类名保留，历史源码/算法/失败证据未删除，不扩数据源/selector，不改包名/签名/code14，不main/forcepush/Release。
+**本轮 Legacy scanner safely isolated：实现、受控验收与实物核对完成。** Stable仍保存当前已加载网页→HTML/Markdown/System Print PDF；Archive官方导入仍未来规划；Experimental只显式-PnovaLegacyScanner=true启用，默认debug/release=false、不构造controller、不注入或自动扫描。实验设置警告确认→用户开始→前台当前会话→可取消/恢复，结果/文件/脱敏diagnostic永远not-proven。旧ConversationExport类名/包路径保持以兼容package-private测试，职责与三层映射见legacy文档；算法/四份assets/失败历史未删除，不扩数据源或ChatGPT selector。
 
-验证源码5d9efe8：本地DOM18/scroll32/progress19/locator18/snapshot13通过；实验CI37588638326 build和Android35/36全success，各19项通过（旧16+新3），Gecko2项明确退役。此前正式CI37588638317 API35全success、API36两次实际System Print失败；fbd7130正式CI37592089643两API因新增等待过窄失败，已保留；修正后3149507正式CI37593888527 build/lint/签名及API36全success并独立核实物；API35无障碍查询框架NPE已留证，正在同源重试，不放宽PDF断言。实际default/experimental APK DEX false/true、sourceRevision、原签名v2及content digest已独立核对，约1.83MiB。证据tools/legacy-scanner/evidence/isolation-validation.json、package-verification.json。
+正式源码3149507ef3fb88d66428dde610894ccac82cf44b，正式CI37593888527 attempt2全success：API35/36各17套43项（default合同2、快照10、Firefox1、web/share/input/IME/native/两个旧签名基线上覆盖升级）。独立下载实际HTML/MD及Nova/Firefox四PDF（各31页）核首尾、Unicode、长代码/表格、320×120图片、后续mutation排除及相同打印源；Firefox首页独立render/OCR。只修原生测试的目的地初态/分页等待；FrozenPageSnapshot/PageSnapshotExport/SnapshotWebView/freeze.js/输入/分享核心源码与基线无diff。
 
-下一步核API35同源重试和实际文件，再更新最终结论；之后仅物理设备/真实账号人工验证，不能证明完整历史；不重新投入selector扩张或批量采集。下方保留每步当时状态，ac4776f快照验收属于历史。
+实验已测源码5d9efe8eee0c24d1ce2b1a48b6e14f74360ae583，CI37588638326全success，35/36各旧16+新3=19通过；Gecko2项明确退役。与3149507应用/legacy源码及fixtures完全一致，后续仅正式原生测试/文档/证据变更。本地DOM18/scroll32/progress19/locator18/snapshot13通过。默认APK1916153bytes/SHAb35bed4d50df1a2b7bdeb50d902f7fba0274ddb533e4aaada90d5b4ad5498b96；实验APK1917377bytes/SHA423270eda1b8811372867a5fbc0ed7c466e1241a36d60b08b2af75d305e66204。均独立核原证书/v2签名content digest、DEX默认false/实验true/各自revision及5份assets，无native so。包名/签名/code14不变，无main合并/forcepush/公开Release。
+
+证据：[隔离验收JSON](../../tools/legacy-scanner/evidence/isolation-validation.json)、[实际包核对](../../tools/legacy-scanner/evidence/package-verification.json)、[正式API35](../../tools/legacy-scanner/evidence/stable-35-final-verification.json)、[正式API36](../../tools/legacy-scanner/evidence/stable-36-final-verification.json)。原5d9零页范围打印失败、fbd过窄等待失败、314 API35首次系统无障碍NPE及更早旧文案失败均如实保留，不改写为成功。
+
+下一步仅物理设备/真实账号人工体验与覆盖率对照（未验证）；不把fixture成功/scan completed等同完整历史。保留not-proven，不新增后台/批量/API/internal reader；暂不建议sourceSet，四研究脚本约37.6KB且默认无初始化。正式未来Archive保持独立，不自动访问官方导出。下方是每步当时状态，ac4776f冻结网页验收属于历史。
 
 ## 分步历史：最新要求与 Step 4b（2026-10-07）
 
@@ -76,6 +80,10 @@
 当前HEADc3a4fad，正式源码3149507，run37593888527 API36 job112702223798全success。独立下载artifact11470851615核ZIP digest、checks无失败、17套/43个执行项（默认关闭2、快照10、Firefox1、web9、share5、input5、IME3、native2、两基线升级6）均OK；实际HTML/MD首尾/结构/安全过滤/后续变更排除，同打印源逐字一致；Nova与Firefox两PDF各31页，独立pdftotext/NFKC/长代码/长表格/首尾/320×120图片通过，Firefox粗体首页独立render/OCR确认，不借历史报告。报告stable-36-final-verification.json及默认关闭/快照原instrumentation入库。
 
 只重跑API35失败的无障碍框架NPE job，源码/断言不改；API35原failure不改成success，仍需新实物验证。当前总体正式尚未全绿。实验5d9两API19项已通过且生产/legacy源码不变，真实账号/物理设备未测。下一步核35重试，完成最终文档及推送，不增selector或发布Release。
+
+### Step 4o：最终验收与交接 success（受控）
+
+当前文档基点1682ecf，最终正式源码3149507；35同源重试job112707846774成功，run37593888527 attempt2 overall success。独立取35 artifact11470933678复核checks无失败、17套43项及实际HTML/MD/Nova与Firefox各31页PDF，和36结果一致；31页/首尾/长代码长表格/图片/Unicode/晚变更排除/OCR同打印源全部核对。35初次NPE仍failure留证，不覆盖。实验5d9各19通过且应用/legacy源码与314一致，18项隔离要求在代码/受控夹具范围确认；不证明真实长历史或真机。最新JSON、legacy docs、README和本交接/REVIEW同步完成；下一步真机手动反馈，保持三层边界，不继续selector军备竞赛。本提交仅文档/证据，skip ci；完整最终HEAD从git log读取，推送至feature/export-conversation，无产品发布。
 
 ## 此前 Frozen Snapshot 实现与验收（历史）
 

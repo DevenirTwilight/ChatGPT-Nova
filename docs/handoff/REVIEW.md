@@ -6,7 +6,11 @@
 
 ## 当前隔离结论
 
-已实现默认BuildConfig关闭、无controller初始化/自动注入，显式property才开放实验设置；用户主动警告确认/前台/取消/恢复、固定not-proven/文件前缀/脱敏诊断。保持正式Frozen Snapshot不滚动、未来Archive独立；不新增网站selector或内部数据源，不删除研究证据。5d9efe8实验CI37588638326两API各19通过，正式37588638317 API35通过、API36两次spooler错误实物失败均留证。日志显示额外重选/layout/空范围write；初始目的地判断存在race，仅补测试同步等待，生产PDF路径不改。fbd7130两API失败因新增目的地等待过窄，已保留。修正后的3149507/run37593888527 build与独立包核对通过，API36全success并独立核实物，API35首次系统无障碍NPE留证后同源重试中。原签名及实际APK DEX false/true已独立核对，真实账号/物理设备未验收。不建议此时新增sourceSet。
+Legacy scanner safely isolated（代码与受控验收范围）。默认BuildConfig=false，无controller初始化/实验注入/入口；显式property才开放实验设置，警告确认后用户主动运行，前台/取消/恢复、固定not-proven与实验文件前缀，诊断白名单脱敏。正式Frozen Snapshot不滚动；未来Archive独立。类名/包路径保持兼容旧package-private测试，注释/docs/flag/UI明确legacy；旧算法/四assets/失败证据未删除，没有新增ChatGPT selector或内部数据源，不批量/后台访问，不作完整备份或法律安全承诺。
+
+正式3149507/run37593888527 attempt2全success：35/36各17套43项，实际HTML/MD和四份31页PDF独立核Unicode/首尾/长代码表格/图片/晚变更排除与同打印源；Firefox首页独立render/OCR。实验5d9/run37588638326两API各19通过+2明确退役，应用/legacy源码与314一致，旧16回归保留。本地DOM18/scroll32/progress19/locator18/snapshot13通过。实际APK签名content digest/原证书/DEX false与true/源码revision/assets已核，约1.83MiB；原包名/code14/签名不变。生产冻结/打印/输入/分享核心源码未改，仅正式原生测试同步调整，原失败与NPE重试均留证，不把失败历史改绿。
+
+完整报告tools/legacy-scanner/evidence/isolation-validation.json、package-verification.json、stable-35/36-final-verification.json。真实ChatGPT账号/物理设备未验收，算法停止不证明完整历史。暂不建议sourceSet（四脚本37.6KB且默认不初始化）；以后若研究依赖扩大再评估。不main/forcepush/公开Release，下一步仅人工设备反馈与独立官方导出对照。
 
 ## 分步历史：本轮隔离边界（Step 1）
 
@@ -73,6 +77,10 @@ fbd7130默认APK artifact11468968104独立签名crypto/content digest/原证书/
 当前HEADc3a4fad，正式源码3149507，run37593888527 API36 job112702223798全success。独立下载artifact11470851615核ZIP digest、checks无失败、17套/43个执行项（默认关闭2、快照10、Firefox1、web9、share5、input5、IME3、native2、两基线升级6）均OK；实际HTML/MD首尾/结构/安全过滤/后续变更排除，同打印源逐字一致；Nova与Firefox两PDF各31页，独立pdftotext/NFKC/长代码/长表格/首尾/320×120图片通过，Firefox粗体首页独立render/OCR确认，不借历史报告。报告stable-36-final-verification.json及默认关闭/快照原instrumentation入库。
 
 只重跑API35失败的无障碍框架NPE job，源码/断言不改；API35原failure不改成success，仍需新实物验证。当前总体正式尚未全绿。实验5d9两API19项已通过且生产/legacy源码不变，真实账号/物理设备未测。下一步核35重试，完成最终文档及推送，不增selector或发布Release。
+
+## Step 4o 最终正式验收
+
+3149507 API35同源重试成功，attempt2 overall success；35/36真实保存文件和各43执行项独立核对通过。35最初无障碍NPE与其他失败保留，不吞异常/不放宽PDF断言。隔离18项条件在代码与fixtures范围确认，最新交接与证据同步，仅文档提交不重复CI/发布。
 
 ## 此前 Frozen Snapshot 验收（历史）
 

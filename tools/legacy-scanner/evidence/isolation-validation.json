@@ -30,14 +30,38 @@
     "stable": {
       "runId": 37593888527,
       "sourceCommit": "3149507ef3fb88d66428dde610894ccac82cf44b",
-      "status": "retry_in_progress",
+      "status": "completed",
       "build": "success",
       "android35Attempt1": "failure-system-accessibility-query-NPE",
       "android36": "success",
       "android35Evidence": "stable-35-3149507-attempt1-verification.json",
-      "android35Retry": "requested",
+      "android35Retry": "success",
       "android36ArtifactId": 11470851615,
-      "android36IndependentVerification": "stable-36-final-verification.json"
+      "android36IndependentVerification": "stable-36-final-verification.json",
+      "conclusion": "success",
+      "runAttempt": 2,
+      "android35JobId": 112707846774,
+      "android36JobId": 112702223798,
+      "android": {
+        "35": {
+          "result": "success",
+          "artifactId": 11470933678,
+          "zipSha256": "150eec8859db5c4e0b1a8eb3577620a9994602db5f265082387e34019ea02107",
+          "suites": 17,
+          "executed": 43,
+          "actualHtmlMarkdownPdfIndependentlyVerified": true,
+          "evidence": "stable-35-final-verification.json"
+        },
+        "36": {
+          "result": "success",
+          "artifactId": 11470851615,
+          "zipSha256": "d5e047632457f7a62158c332f3f1801bf55c6640eb5b98e953a92bdd697daf07",
+          "suites": 17,
+          "executed": 43,
+          "actualHtmlMarkdownPdfIndependentlyVerified": true,
+          "evidence": "stable-36-final-verification.json"
+        }
+      }
     },
     "experimental": {
       "runId": 37588638326,
@@ -191,6 +215,22 @@
     "observed": "Original API36 twice forwarded zero page ranges; Chromium AwPrintDocumentAdapter explicitly calls onWriteFailed for empty ranges. fbd7130 both APIs show initial Select a printer with 31-page preview, not an already-selected PDF destination.",
     "correction": "Earlier default-PDF reselection explanation was a hypothesis, not established. Too-narrow title-ID wait failed; revised native test awaits visible initial destination state and paginated preview before selecting PDF. Current CI pending.",
     "reference": "https://chromium.googlesource.com/chromium/src/+/main/android_webview/java/src/org/chromium/android_webview/AwPrintDocumentAdapter.java",
-    "productionCodeChanged": false
+    "productionCodeChanged": false,
+    "currentOutcome": "3149507 real System Print and all 43 stable tests passed on both APIs after initial preview synchronization; API35 first native accessibility NPE retained, same-source retry passed. No production PDF code changed."
+  },
+  "acceptance": {
+    "defaultBuildDisabled": "verified-code-and-default-fixtures",
+    "experimentalOptInAndManualWarning": "verified-fixtures",
+    "manualForegroundScanCancelRestore": "verified-fixtures",
+    "diagnosticRedactionAndNotProvenMetadata": "verified-fixtures",
+    "publicDomOnlyNoNewInternalReaderOrBatchCrawler": "code-reviewed",
+    "legacyOld16AndNew3": "passed-on-35-and-36",
+    "formalHtmlMarkdownSystemPrintPdf": "passed-and-actual-files-independently-verified-on-35-and-36",
+    "stableCoreSourceUnchanged": true,
+    "researchAssetsBytes": 37578,
+    "historicalEvidenceDeleted": false,
+    "readmeDeveloperOnlyAndLegacyDocs": "updated",
+    "handoff": "updated-per-step",
+    "physicalDevicesOrLiveAccounts": "not-verified"
   }
 }

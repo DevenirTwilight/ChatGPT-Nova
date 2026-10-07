@@ -83,9 +83,16 @@ Java diagnostic对白名单数字/布尔、受限枚举和结构数组做递归�
 
 ## 当前验证与后续
 
-隔离实现/实验测试源码 `5d9efe8eee0c24d1ce2b1a48b6e14f74360ae583`；最新正式源码 `3149507ef3fb88d66428dde610894ccac82cf44b` 仅补原生打印测试目的地加载同步，生产/legacy源码及夹具不变。本地DOM18/scroll32/progress19/locator18/snapshot13通过。实验CI [37588638326](https://github.com/DevenirTwilight/ChatGPT-Nova/actions/runs/37588638326) build/lint/browser及Android35/36全通过，各19个执行项、2个明确退役Gecko项。正式CI [37588638317](https://github.com/DevenirTwilight/ChatGPT-Nova/actions/runs/37588638317) API35通过，API36两次真实System Print失败，原生测试已补目的地标题加载同步，新正式CI [37592089643](https://github.com/DevenirTwilight/ChatGPT-Nova/actions/runs/37592089643) build通过，两API失败是新增原生测试等待未覆盖Select a printer初态；已修正初态与分页同步。最新正式CI [37593888527](https://github.com/DevenirTwilight/ChatGPT-Nova/actions/runs/37593888527) build及API36全通过并独立核HTML/MD/31页PDF，API35首次系统无障碍查询NPE已留证，同源重试中；失败截图及报告保留，不写成成功。
+最新正式源码 `3149507ef3fb88d66428dde610894ccac82cf44b`；实验已测源码 `5d9efe8eee0c24d1ce2b1a48b6e14f74360ae583`。两者的应用、scanner、JS及legacy夹具完全一致；后续仅修正正式原生打印测试的初始目的地/分页同步，没有更改生产SnapshotWebView/PageSnapshotExport。
 
-两实际APK独立核原证书/签名content digest、DEX默认flag=false/实验true、源码revision及assets，未改变包名/签名/code14。报告 [isolation-validation.json](../tools/legacy-scanner/evidence/isolation-validation.json) 与 [package-verification.json](../tools/legacy-scanner/evidence/package-verification.json)。通过仅证明受控fixtures，未做真实ChatGPT账号或物理设备验收，永远不能由算法正常结束推断完整服务器历史。不合并main/forcepush/公开Release。
+- 本地浏览器：DOM18、scroll32、progress19、locator18、Frozen Snapshot13通过。
+- [实验CI37588638326](https://github.com/DevenirTwilight/ChatGPT-Nova/actions/runs/37588638326)：build/lint/browser、Android35/36全success，各19个执行项（旧16+新3）、2个明确退役Gecko项。
+- [正式CI37593888527](https://github.com/DevenirTwilight/ChatGPT-Nova/actions/runs/37593888527)：build/lint/browser/签名及Android35/36全success（attempt2）；API35首次系统无障碍查询NPE留证，同源重试通过。两API独立各核17套/43项、HTML/MD、同打印源和Nova/Firefox各31页PDF，首尾/长代码/表格/图片/后续变更排除通过，Firefox首页实际render/OCR重验。
+- 两实际APK独立核原证书/v2签名content digest、DEX默认flag=false/实验true、各自源码revision及assets；包名/签名/code14保持，约1.83MiB。
+
+报告：[isolation-validation.json](../tools/legacy-scanner/evidence/isolation-validation.json)、[package-verification.json](../tools/legacy-scanner/evidence/package-verification.json)、[正式API35实物核对](../tools/legacy-scanner/evidence/stable-35-final-verification.json)、[正式API36实物核对](../tools/legacy-scanner/evidence/stable-36-final-verification.json)。5d9 API36两次零页范围导致spooler错误、fbd过窄等待两档失败、314 API35无障碍框架异常均保留原始instrumentation/UI及摘要，不写成成功；修正同步没有跳过PDF或放宽文件内容要求。
+
+通过仅证明受控fixtures，未做真实ChatGPT账号或物理设备验收；算法正常结束不能推断完整服务器历史。不合并main/forcepush/公开Release。
 
 未来Archive可把用户主动导入的官方记录作为独立人工基准（例如官方40 vs scanner39），但scanner不自动访问官方导出，不与Archive共用完整性承诺。不描述为官方导出替代、完整备份或绝对安全/法律结论。
 

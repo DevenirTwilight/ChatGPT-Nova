@@ -1,0 +1,98 @@
+{
+  "sourceCommit": "3149507ef3fb88d66428dde610894ccac82cf44b",
+  "android": 35,
+  "artifactId": 11470933678,
+  "zipSha256": "150eec8859db5c4e0b1a8eb3577620a9994602db5f265082387e34019ea02107",
+  "failures": [],
+  "suites": {
+    "legacy-disabled": {
+      "expected": 2,
+      "passed": true
+    },
+    "snapshot": {
+      "expected": 10,
+      "passed": true
+    },
+    "firefox-android": {
+      "expected": 1,
+      "passed": true
+    },
+    "web-regressions": {
+      "expected": 9,
+      "passed": true
+    },
+    "share-regressions": {
+      "expected": 5,
+      "passed": true
+    },
+    "input-regressions": {
+      "expected": 5,
+      "passed": true
+    },
+    "input-imeCommitText": {
+      "expected": 1,
+      "passed": true
+    },
+    "input-imePasteCommand": {
+      "expected": 1,
+      "passed": true
+    },
+    "input-longPressSystemPaste": {
+      "expected": 1,
+      "passed": true
+    },
+    "native-lifecycle": {
+      "expected": 1,
+      "passed": true
+    },
+    "native-restart": {
+      "expected": 1,
+      "passed": true
+    },
+    "gecko-upgrade-current": {
+      "expected": 1,
+      "passed": true
+    },
+    "gecko-upgrade-persistence": {
+      "expected": 1,
+      "passed": true
+    },
+    "gecko-upgrade-seed": {
+      "expected": 1,
+      "passed": true
+    },
+    "upgrade-current": {
+      "expected": 1,
+      "passed": true
+    },
+    "upgrade-persistence": {
+      "expected": 1,
+      "passed": true
+    },
+    "upgrade-seed": {
+      "expected": 1,
+      "passed": true
+    }
+  },
+  "pdf": {
+    "frozen-page.pdf": {
+      "sha256": "c050366332c6bc34681d53e445125b6319978d4742e46c6dc1716515ca54b44a",
+      "pages": 31,
+      "markersVerified": true,
+      "beforeMarker": "pdf-text",
+      "lateMutationAbsent": true,
+      "fixtureImageDimensionsVerified": "320x120"
+    },
+    "firefox-frozen.pdf": {
+      "sha256": "dcbe5d7b5979d7857f9ff71a31ffec381c3abb192be664f20aef41ca67b28bcd",
+      "pages": 31,
+      "markersVerified": true,
+      "beforeMarker": "independent-rendered-first-page-OCR",
+      "lateMutationAbsent": true,
+      "fixtureImageDimensionsVerified": "320x120"
+    }
+  },
+  "installedPackageMatchesVerifiedApk": true,
+  "htmlMarkdownMarkersVerified": true,
+  "firefoxPrintSourceIdentical": true
+}
