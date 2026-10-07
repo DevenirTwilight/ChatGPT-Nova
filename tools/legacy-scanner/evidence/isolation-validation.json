@@ -1,5 +1,5 @@
 {
-  "sourceCommit": "fbd7130a7656d4839c6a527d1e509dcc7b4193d6",
+  "sourceCommit": "3149507ef3fb88d66428dde610894ccac82cf44b",
   "baseline": "da4176c5731ee07ea3c8815d56169abf1b143b25",
   "branch": "feature/export-conversation",
   "scope": "controlled fixtures, no live account or physical-device proof",
@@ -28,14 +28,10 @@
   },
   "ci": {
     "stable": {
-      "runId": 37592089643,
-      "sourceCommit": "fbd7130a7656d4839c6a527d1e509dcc7b4193d6",
-      "status": "completed",
-      "build": "success",
-      "conclusion": "failure",
-      "android35": "failure",
-      "android36": "failure",
-      "reason": "new print destination wait too narrow: initial Select a printer state has no title ID"
+      "runId": 37593888527,
+      "sourceCommit": "3149507ef3fb88d66428dde610894ccac82cf44b",
+      "status": "in_progress",
+      "build": "success"
     },
     "experimental": {
       "runId": 37588638326,
@@ -107,7 +103,7 @@
         }
       },
       "sourceCommit": "5d9efe8eee0c24d1ce2b1a48b6e14f74360ae583",
-      "legacyCodeAndFixturesUnchangedAt": "fbd7130a7656d4839c6a527d1e509dcc7b4193d6"
+      "legacyCodeAndFixturesUnchangedAt": "3149507ef3fb88d66428dde610894ccac82cf44b"
     }
   },
   "deviceAcceptance": "not_verified",
@@ -169,7 +165,26 @@
         "sourceCommit": "5d9efe8eee0c24d1ce2b1a48b6e14f74360ae583"
       },
       "reason": "Two API36 real System Print failures retained; fbd7130 changes only native print test destination readiness, no production/legacy code change."
+    },
+    {
+      "stable": {
+        "runId": 37592089643,
+        "sourceCommit": "fbd7130a7656d4839c6a527d1e509dcc7b4193d6",
+        "status": "completed",
+        "build": "success",
+        "conclusion": "failure",
+        "android35": "failure",
+        "android36": "failure",
+        "reason": "new print destination wait too narrow: initial Select a printer state has no title ID"
+      },
+      "reason": "Initial destination text Select a printer has no title resource ID; both native test waits failed. Original evidence retained, corrected initial state/page preview synchronization in 3149507."
     }
   ],
-  "packageVerification": "package-verification.json"
+  "packageVerification": "package-verification.json",
+  "printDiagnosis": {
+    "observed": "Original API36 twice forwarded zero page ranges; Chromium AwPrintDocumentAdapter explicitly calls onWriteFailed for empty ranges. fbd7130 both APIs show initial Select a printer with 31-page preview, not an already-selected PDF destination.",
+    "correction": "Earlier default-PDF reselection explanation was a hypothesis, not established. Too-narrow title-ID wait failed; revised native test awaits visible initial destination state and paginated preview before selecting PDF. Current CI pending.",
+    "reference": "https://chromium.googlesource.com/chromium/src/+/main/android_webview/java/src/org/chromium/android_webview/AwPrintDocumentAdapter.java",
+    "productionCodeChanged": false
+  }
 }

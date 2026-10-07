@@ -1,14 +1,14 @@
 {
   "stable": {
-    "artifactId": 11470220775,
-    "artifactZipSha256": "be2746e90d4a845e3270fdc410c337d8e4a4e7a8f2a6ee6b785087f5683dd62f",
-    "apkBytes": 1916153,
-    "apkSha256": "b35bed4d50df1a2b7bdeb50d902f7fba0274ddb533e4aaada90d5b4ad5498b96",
+    "artifactId": 11468968104,
+    "artifactZipSha256": "c438edb11de99087c79ec948e51aaeae5e49c0f0136e23f0101680e204312923",
+    "apkBytes": 1916145,
+    "apkSha256": "44a337745c9a5c5c3e26bda1dc95f6807f847451600f186c8bc9a8460095046a",
     "certificateSha256": "f93221ee0d2be2b806233a0b3427ec9c14766100c1bab3208841e6203e2b4289",
     "apkV2Signature": "verified",
     "apkV2ContentDigest": "verified",
     "enableLegacyScannerDexValue": false,
-    "sourceCommit": "3149507ef3fb88d66428dde610894ccac82cf44b",
+    "sourceCommit": "fbd7130a7656d4839c6a527d1e509dcc7b4193d6",
     "applicationId": "com.example.chatgptnova",
     "assetsMatchSource": [
       "export/dom-trial.js",

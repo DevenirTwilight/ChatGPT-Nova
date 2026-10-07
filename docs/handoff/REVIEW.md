@@ -6,7 +6,7 @@
 
 ## 当前隔离结论
 
-已实现默认BuildConfig关闭、无controller初始化/自动注入，显式property才开放实验设置；用户主动警告确认/前台/取消/恢复、固定not-proven/文件前缀/脱敏诊断。保持正式Frozen Snapshot不滚动、未来Archive独立；不新增网站selector或内部数据源，不删除研究证据。5d9efe8实验CI37588638326两API各19通过，正式37588638317 API35通过、API36两次spooler错误实物失败均留证。日志显示额外重选/layout/空范围write；初始目的地判断存在race，仅补测试同步等待，生产PDF路径不改。新正式fbd7130/run37592089643 build与独立包核对通过，35/36 Android均因新增目的地等待过窄失败，已修正Select a printer初态及分页同步、待新CI。原签名及实际APK DEX false/true已独立核对，真实账号/物理设备未验收。不建议此时新增sourceSet。
+已实现默认BuildConfig关闭、无controller初始化/自动注入，显式property才开放实验设置；用户主动警告确认/前台/取消/恢复、固定not-proven/文件前缀/脱敏诊断。保持正式Frozen Snapshot不滚动、未来Archive独立；不新增网站selector或内部数据源，不删除研究证据。5d9efe8实验CI37588638326两API各19通过，正式37588638317 API35通过、API36两次spooler错误实物失败均留证。日志显示额外重选/layout/空范围write；初始目的地判断存在race，仅补测试同步等待，生产PDF路径不改。fbd7130两API失败因新增目的地等待过窄，已保留。修正后的3149507/run37593888527 build与独立包核对通过，35/36 Android待核。原签名及实际APK DEX false/true已独立核对，真实账号/物理设备未验收。不建议此时新增sourceSet。
 
 ## 分步历史：本轮隔离边界（Step 1）
 
@@ -58,7 +58,11 @@ fbd7130默认APK artifact11468968104独立签名crypto/content digest/原证书/
 
 ### Step 4k：修正过窄原生目的地等待（failure保留）
 
-当前HEAD8e70aa1，fbd7130正式CI37592089643两API失败均在新增print destination populated等待，并非实际PDF内容断言。新等待错误假设标题有com.android.printspooler:id/title，初态实际Select a printer文本无ID；两档截图已有1/31与2/31完整分页预览。原instrumentation/UI/摘要分别保留stable-35/36-fbd7130-*。修正为等可见Select a printer/Save as PDF状态，再等真实分页预览page_number，才切换目的地，避免未生成页面即切换造成原empty-range路径；所有实际PDF/文件/内容/多页/对照仍保留，不改生产代码。新修正待CI，不能记success；下一步核新两API实际文件。
+当前HEAD8e70aa1，fbd7130正式CI37592089643两API失败均在新增print destination populated等待，并非实际PDF内容断言。新等待错误假设标题有com.android.printspooler:id/title，初态实际Select a printer文本无ID；两档截图已有1/31与2/31完整分页预览。原instrumentation/UI/摘要分别保留stable-35/36-fbd7130-*。修正为等可见Select a printer/Save as PDF状态，再等真实分页预览page_number，才切换目的地，避免未生成页面即切换造成原empty-range路径；所有实际PDF/文件/内容/多页/对照仍保留，不改生产代码。新修正待CI，不能记success；下一步核新两API实际文件。此前“重选默认PDF”属初始假设，fbd截图表明未选择打印机，现修正为初始异步预览/分页未完成便切换的时序假设；Chromium公开源码已确认空页范围onWrite会失败，不擅自认定完整触发原因。
+
+## Step 4l分页同步候选包
+
+3149507默认实际APK artifact11470220775原签名/content digest/DEX false/source/assets均独立通过。生产保存路径和legacy源码/fixture无变化；两API Android待核，预览31页不等于PDF已保存。
 
 ## 此前 Frozen Snapshot 验收（历史）
 
