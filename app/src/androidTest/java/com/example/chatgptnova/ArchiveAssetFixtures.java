@@ -70,6 +70,59 @@ final class ArchiveAssetFixtures {
     return zip(entries);
   }
 
+  static final String JPEG = "file_33333333333333333333333333333333",
+      PDF = "file_44444444444444444444444444444444",
+      SHEET = "file_55555555555555555555555555555555";
+
+  static byte[] allTypes() throws Exception {
+    Map<String, byte[]> entries = new LinkedHashMap<>();
+    try (ZipInputStream in = new ZipInputStream(new ByteArrayInputStream(fixture(false)))) {
+      ZipEntry e;
+      while ((e = in.getNextEntry()) != null) {
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        byte[] b = new byte[4096];
+        int n;
+        while ((n = in.read(b)) != -1) out.write(b, 0, n);
+        entries.put(e.getName(), out.toByteArray());
+      }
+    }
+    Map<String, Object> mapping = new LinkedHashMap<>();
+    mapping.put("root", Collections.singletonMap("parent", null));
+    List<Map<String, Object>> attachments = new ArrayList<>();
+    Map<String, String> names = new LinkedHashMap<>();
+    String[] ids = {IMAGE, DOC, JPEG, PDF, SHEET};
+    String[] displays = {
+      "fictional.png", "fictional.docx", "fictional.jpg", "fictional.pdf", "fictional.xlsx"
+    };
+    for (int i = 0; i < ids.length; i++) {
+      Map<String, Object> ref = new LinkedHashMap<>();
+      ref.put("id", ids[i]);
+      ref.put("name", displays[i]);
+      attachments.add(ref);
+      names.put(ids[i] + ".dat", displays[i]);
+    }
+    mapping.put("one", node("root", Collections.singletonList(""), attachments));
+    Map<String, Object> c = new LinkedHashMap<>();
+    c.put("conversation_id", "synthetic-all-types");
+    c.put("title", "Synthetic types");
+    c.put("mapping", mapping);
+    c.put("current_node", "one");
+    entries.put(
+        "wrapper/conversations.json",
+        ArchiveModel.JSON.toJson(Collections.singletonList(c)).getBytes(StandardCharsets.UTF_8));
+    entries.put(
+        "wrapper/conversation_asset_file_names.json",
+        ArchiveModel.JSON.toJson(names).getBytes(StandardCharsets.UTF_8));
+    entries.put("wrapper/" + JPEG + ".dat", image("jpeg"));
+    // A fictional bounded PDF signature fixture, not a document-reader validity claim.
+    entries.put("wrapper/" + PDF + ".dat", "%PDF-1.4\n%%EOF\n".getBytes(StandardCharsets.US_ASCII));
+    Map<String, byte[]> sheet = new LinkedHashMap<>();
+    sheet.put("[Content_Types].xml", "<Types/>".getBytes(StandardCharsets.UTF_8));
+    sheet.put("xl/workbook.xml", "<fictional/>".getBytes(StandardCharsets.UTF_8));
+    entries.put("wrapper/" + SHEET + ".dat", zip(sheet));
+    return zip(entries);
+  }
+
   static Map<String, Object> node(String parent, List<?> parts, List<?> attachments) {
     Map<String, Object> content = new LinkedHashMap<>();
     content.put("content_type", "multimodal_text");

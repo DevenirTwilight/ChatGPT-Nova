@@ -1,6 +1,6 @@
 # 真实官方导出的本地验收清单
 
-真实ZIP由用户保存在手机/电脑，本轮不上传开发环境/GitHub/CI。开发与CI只使用完全虚构的schema等价fixtures。请只反馈统计、固定错误码、是否通过和测试数量；不要反馈title、正文、ID、姓名、邮箱、附件文件名、路径、截图、真实HTML/MD/PDF或其hash。
+真实原始ZIP由用户保存在手机/电脑。用户后来主动提供15个Drive分卷，开发环境已在仓库外私有目录合并并做结构/CRC检查；没有提交真实内容到GitHub/CI，CI只使用完全虚构的schema等价fixtures。请只反馈统计、固定错误码、是否通过和测试数量；不要反馈title、正文、ID、姓名、邮箱、附件文件名、路径、截图、真实HTML/MD/PDF或其hash。
 
 ## 准备与旧版失败
 
@@ -13,7 +13,7 @@
 
 在新版本 Settings → Nova Archive → 导入ChatGPT数据选择ZIP。输入容器通过、两个conversations JSON能被解析后，结合用户已做的non-ZIP64/605-entry结构审计记录container stage passed。若导入报错，反馈固定A码；单凭新限额不能写Level2通过。
 
-本轮605 entries与两JSON大小来自用户先前审计，开发环境未独立读取。需要新增独立central-directory证据时，在用户本地运行有界结构审计；不要把ZIP上传来完成审计。
+开发环境已独立检查手机重打包container：607 entries含2目录，两个conversations JSON，122 conversations/7250 mapping/7130 messages；它不是原官方ZIP的逐字节验证。原始官方ZIP仍应由用户在手机上测试。
 
 ## Level3 — import and restart
 
@@ -39,7 +39,7 @@
 
 只用ordinal1–5记录pass/fail，不写标题或正文。覆盖短普通、长会话、编辑/重新生成分支、代码/列表/引用/表格/Unicode、multimodal及有附件metadata的会话；检查开头、中间、结尾、角色顺序和current_node主链。全部节点安全视图仍保留分支；thoughts在任何阅读/导出scope隐藏，但数据库raw保留；reasoning recap单独“推理摘要”。
 
-特别确认至少一个原Map.text被误当附件的multimodal文字现在显示；asset不联网下载，未知非文本明确占位。包含thoughts/recap的会话检查普通答案不受影响、摘要标签正确、没有误导的未知空内容占位。
+特别确认至少一个原Map.text被误当附件的multimodal文字现在显示；附件从本次ZIP精确恢复到Nova私有目录，不联网下载；未知非文本明确占位。包含thoughts/recap的会话检查普通答案不受影响、摘要标签正确、没有误导的未知空内容占位。
 
 选若干会话在本地分别导出HTML/Markdown/System Print PDF，核对相同scope和object text/摘要、thoughts隐藏、代码表格Unicode/首尾；记录各格式抽查数量/pass/fail，文件只留用户设备。完整性依赖官方导出本身，不能推出服务器完整或任意未来格式兼容。
 
@@ -82,3 +82,17 @@ local-PDF-samples=0 / 数量；pass / pending
 cancel-latency-ms=... / not verified
 ANR=none observed / observed / not verified
 ```
+
+## Attachment Restoration：AR3–AR5 手机验收（新 schema2 构建）
+
+上方1990cb1链接属于历史schema1兼容修复，**不能用于附件恢复验收**。新包应从附件恢复最终验收记录中的同签名正式artifact取得；以诊断buildRevision识别，不按相同versionName判断。最终artifact未核对前不要用旧包宣称成功。
+
+1. 导入原始官方ZIP，记录新附件数、更新/跳过数、引用数、不可用数、MIME不一致数、assetBytes/assetStorageBytes及导入耗时。当前结构审计参考：unique326，PNG82/JPEG148/DOCX82/PDF5/XLSX5/unknown4，mapped154521964bytes；实际统计可因已有档案/输入不同而变化。unknown卡片不自动打开为图片。
+2. 同ZIP二次导入，预期没有复制同一binary或额外重复引用；首次来源保留，最近来源更新。用计数与存储量核对，不反馈真实文件名/ID/hash。
+3. 完全退出/强制停止应用后重启；在至少5个会话抽查附件。移动或删除**测试副本ZIP**、撤销其SAF授权，再开启飞行模式；已恢复图片仍应可读，文档仍应能用系统应用打开。请保留原始官方备份，勿删除唯一副本。
+4. 至少PNG2、JPEG2、multimodal1、attachment-only2、PDF2、DOCX2、XLSX2（若没有对应类型则明确not available）。只反馈类型、数量与pass/fail。检查图片在原消息中的前后文字顺序、重复引用不会重复展示、未知/缺失有卡片说明。
+5. PDF/DOCX/XLSX通过系统外部应用打开；没有兼容应用时Nova应明确提示，这是not verified，不是文件损坏。它们不被合并到会话PDF页内。
+6. 在同一阅读scope导出HTML/Markdown/System Print PDF。HTML只在单图2MiB/累计6MiB范围嵌入PNG/JPEG，超限保留描述；Markdown保留可编辑正文和附件描述，不携带binary；PDF应包含实际图片和文档描述。检查首/中/尾、角色、代码/表格/Unicode；文件留在手机，不上传真实输出。
+7. 如测试删除，使用Archive自己的删除入口，确认档案及私有附件移除，原ZIP和在线登录保持。不要在重要档案上卸载应用来模拟删除。
+
+AR2当前仅compatible repack结构审计passed；AR3真实Android恢复、AR4真实重复/离线重启、AR5真实内容人工核对仍pending，不能用JVM/模拟器通过替代。可安全反馈：buildRevision；first-import；asset counts/bytes；second-import；restart；source-ZIP-unavailable；airplane-mode；每类型抽查数量与pass/fail；HTML/MD/PDF数量与pass/fail；固定A码；ANR是否观察到。请勿发真实截图、导出文件、聊天内容或文件名。

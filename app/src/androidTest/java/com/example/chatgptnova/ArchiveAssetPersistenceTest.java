@@ -102,6 +102,115 @@ public final class ArchiveAssetPersistenceTest {
   }
 
   @Test
+  public void allSupportedTypesPersistAndProviderUsesDetectedMime() throws Exception {
+    File input = File.createTempFile("fictional-types-", ".zip", context.getCacheDir());
+    try (OutputStream out = new FileOutputStream(input)) {
+      out.write(ArchiveAssetFixtures.allTypes());
+    }
+    long row;
+    try (ArchiveStore store = new ArchiveStore(context)) {
+      ArchiveStore.Stats stats =
+          store.importFile(
+              input,
+              true,
+              "fictional.zip",
+              UUID.randomUUID().toString(),
+              new ArchiveImporter.Control());
+      assertEquals(5, stats.newAssets);
+      assertEquals(5, stats.assetReferences);
+      assertEquals(0, stats.unavailableAssets);
+      row = store.list("", false, 10).get(0).id;
+    } finally {
+      assertTrue(input.delete());
+    }
+    try (ArchiveStore reopened = new ArchiveStore(context)) {
+      java.util.Map<String, ArchiveAsset> assets = reopened.assets(row);
+      String[] ids = {
+        ArchiveAssetFixtures.IMAGE,
+        ArchiveAssetFixtures.JPEG,
+        ArchiveAssetFixtures.DOC,
+        ArchiveAssetFixtures.PDF,
+        ArchiveAssetFixtures.SHEET
+      };
+      String[] mimes = {
+        "image/png", "image/jpeg", ArchiveAssetFiles.DOCX, "application/pdf", ArchiveAssetFiles.XLSX
+      };
+      for (int i = 0; i < ids.length; i++) {
+        ArchiveAsset a = assets.get(ids[i]);
+        assertNotNull(a);
+        assertTrue(a.available());
+        assertEquals(mimes[i], a.mime);
+        android.net.Uri uri =
+            androidx.core.content.FileProvider.getUriForFile(
+                context, context.getPackageName() + ".archiveassets", a.file, a.name);
+        assertEquals(mimes[i], context.getContentResolver().getType(uri));
+        try (InputStream in = context.getContentResolver().openInputStream(uri)) {
+          assertNotNull(in);
+          long bytes = 0;
+          byte[] buffer = new byte[4096];
+          int n;
+          while ((n = in.read(buffer)) != -1) bytes += n;
+          assertEquals(a.bytes, bytes);
+        }
+      }
+      ArchiveModel.Conversation c = reopened.load(row);
+      String html =
+          ArchiveRenderer.html(
+              c, ArchiveTree.select(c, false), assets, ArchiveRenderer.AssetMode.PORTABLE);
+      assertTrue(html.contains("data:image/png;base64,"));
+      assertTrue(html.contains("data:image/jpeg;base64,"));
+      assertTrue(html.contains("fictional.pdf"));
+      assertTrue(html.contains("fictional.xlsx"));
+      assertTrue(html.contains("fictional.docx"));
+    }
+  }
+
+  @Test
+  public void nativeImageRejectionPreservesVerifiedOldBinary() throws Exception {
+    File good = input(false),
+        bad = File.createTempFile("fictional-bad-image-", ".zip", context.getCacheDir());
+    java.util.Map<String, byte[]> entries = new java.util.LinkedHashMap<>();
+    try (java.util.zip.ZipInputStream in =
+        new java.util.zip.ZipInputStream(new FileInputStream(good))) {
+      java.util.zip.ZipEntry e;
+      while ((e = in.getNextEntry()) != null) {
+        ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+        byte[] b = new byte[4096];
+        int n;
+        while ((n = in.read(b)) != -1) bytes.write(b, 0, n);
+        entries.put(e.getName(), bytes.toByteArray());
+      }
+    }
+    byte[] rejected = ArchiveAssetFixtures.image("png");
+    // Corrupt IHDR CRC: header detector can see dimensions; native codec rejects it.
+    rejected[29] ^= 0x55;
+    android.graphics.BitmapFactory.Options options = new android.graphics.BitmapFactory.Options();
+    options.inJustDecodeBounds = true;
+    android.graphics.BitmapFactory.decodeByteArray(rejected, 0, rejected.length, options);
+    assertTrue(options.outWidth <= 0 || options.outHeight <= 0);
+    entries.put("wrapper/" + ArchiveAssetFixtures.IMAGE + ".dat", rejected);
+    try (OutputStream out = new FileOutputStream(bad)) {
+      out.write(ArchiveAssetFixtures.zip(entries));
+    }
+    try (ArchiveStore store = new ArchiveStore(context)) {
+      store.importFile(
+          good, true, "fictional.zip", UUID.randomUUID().toString(), new ArchiveImporter.Control());
+      long row = store.list("", false, 1).get(0).id;
+      ArchiveAsset before = store.assets(row).get(ArchiveAssetFixtures.IMAGE);
+      store.importFile(
+          bad, true, "fictional.zip", UUID.randomUUID().toString(), new ArchiveImporter.Control());
+      ArchiveAsset after = store.assets(row).get(ArchiveAssetFixtures.IMAGE);
+      assertTrue(after.available());
+      assertEquals(before.file, after.file);
+      assertEquals(before.bytes, after.bytes);
+      assertEquals(2, new File(context.getFilesDir(), "nova-archive-assets").list().length);
+    } finally {
+      good.delete();
+      bad.delete();
+    }
+  }
+
+  @Test
   public void malformedReimportAndCancellationPreserveExistingArchive() throws Exception {
     File good = input(false), bad = input(true);
     try (ArchiveStore store = new ArchiveStore(context)) {

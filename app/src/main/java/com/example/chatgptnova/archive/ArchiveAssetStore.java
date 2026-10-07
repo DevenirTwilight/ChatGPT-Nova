@@ -268,6 +268,12 @@ final class ArchiveAssetStore implements AutoCloseable {
           }
         }
         r.crc = crcs.getOrDefault(ref.entry, -1L);
+        // Native image bounds are a second validation stage after the streaming detector.
+        // A failed replacement at either stage must retain the verified previous binary.
+        if (!r.state.equals("complete") && old != null && intact(old)) {
+          r = old;
+          reused = true;
+        }
       }
     }
     r.originalName = names.getOrDefault(ref.entry, ref.displayName);

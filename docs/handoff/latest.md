@@ -1,3 +1,12 @@
+## Attachment Restoration — Step L：五类型与进程重启回归补齐（2026-10-07）
+
+- 分支feature/export-conversation，实施基线fd3f4fc4bdace96e675b25dd6839b12beb51313e；本提交实际SHA由git log/新CI确认。success本地JVM93、ECJ Android API编译新的fixture/persistence/store、脚本语法与diff检查；本地完整ProcessTest依赖既有FixtureActivity由Gradle CI编译，不冒称本地执行。
+- native persistence5→7：新增PNG/JPEG/DOCX/PDF/XLSX实际私有存储、原ZIP删除、数据库重开、FileProvider detected MIME/原bytes、portable PNG+JPEG；PDF/OOXML夹具只检测/存储/分享，非第三方阅读应用有效文档验收。另加IHDR CRC坏输入被native bounds拒绝时保留old verified file，修复第二验证阶段此前会把旧资产改damaged的边界；stream detector、outer CRC和native阶段均保持。
+- shell force-stop重启原100会话测试保留，加独立第101会话/五种私有asset；删除两个input文件后新进程确认5binary available、JPEG portable与XLSX描述。不是仅Activity recreation。
+- fd3f4fc build与API26 foundation2/persistence5/Reader3已独立下载核对success；APK v2签名/content digest/原证书、包名/code14/name、legacyfalse/revision核对通过（artifact11500920427）。API35/36与Legacy runtime仍进行中，不预记通过，也未手工取消。新提交仍需全套CI实际执行/输出。
+- 本地验收清单更新：明确15分卷授权结构审计和原ZIP差别，历史1990 schema1 APK不用于附件验收；真实AR3–5检查≥5会话、各附件类型、duplicate/force-stop/撤销来源授权/移动测试ZIP副本/飞行模式/实际导出/删除。仅安全计数与固定码反馈；真实corpus/输出不入GitHub/CI。
+- AR2 compatible repack结构passed；AR1端到端尚待新CI、AR3/4/5真实Android与人工pending。下一步等全套实物验证和稳定同签名APK，再由用户本地反馈，不改Stable/Legacy/签名/版号，不发布Release。
+
 ## Attachment Restoration — Step K：offline Reader/provider/三格式接通（2026-10-07）
 
 - 分支feature/export-conversation，实施基线962df47；本提交为完整功能接通源码检查点。success本地JVM93（原48+files25/map7/display8/renderer5）、ECJ Android API编译core/reader/provider/新增native tests、host脚本/XML/diff；只有stub BuildConfig用于本地编译，不冒充Gradle或实际Android。

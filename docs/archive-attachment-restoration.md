@@ -1,3 +1,5 @@
+> 当前实现为schema2私有附件恢复、精确引用、离线Reader/窄FileProvider、bounded portable HTML/Markdown/System Print图片。下方调查/schema1段落为历史，不能用作当前调用链。最新验证以[handoff](handoff/latest.md)和[REVIEW](handoff/REVIEW.md)为准；AR3–5真实设备与人工验收仍pending。
+
 # Archive Attachment Restoration — 调查与设计
 
 2026-10-07，工作分支 feature/export-conversation，调查源码 e0ecabddfe6bb52a0569d8fc5b0fafee16f71180（生产测试源码1990cb1）。远端默认HEAD main/e8ffa0c6，不作为开发基线。正式CI37634607647与Legacy37631515308均success。

@@ -12,7 +12,7 @@ def suite(selection,label,count):
     assert re.search(r'OK \('+str(count)+r' tests?\)',text),text
     assert 'FAILURES!!!' not in text and 'INSTRUMENTATION_FAILED' not in text,text
 try:
-    suite('com.example.chatgptnova.ArchiveAssetPersistenceTest','archive-asset-persistence',5)
+    suite('com.example.chatgptnova.ArchiveAssetPersistenceTest','archive-asset-persistence',7)
     suite('com.example.chatgptnova.ArchiveAssetReaderTest','archive-asset-reader',3)
     suite('com.example.chatgptnova.ArchiveTest','archive-instrumentation',20)
     for name in ['archive.html','archive.md','archive-print-source.html','archive.pdf']:

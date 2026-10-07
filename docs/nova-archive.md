@@ -8,7 +8,9 @@ SQLite schema2非破坏升级新增assets/message_assets；用户导入ZIP中已
 
 本地JVM93与编译通过；新Android/实际三格式/签名/Stable/Legacy验收待CI，不称AR1完成。真实手机重打包数据已授权在repo外审计122/7250/7130、mapped326 CRC全部通过，230PNG/JPEG、82DOCX、5PDF、5XLSX、4unknown；此为AR2结构检查，真实Nova DB/Reader/重复/离线/人工AR3–5仍需用户本地验收。私有原文件/正文/ID/name/path/hash不进入repo/CI/fixtures/logs。详情[完整步骤与证据](archive-attachment-restoration.md)。下方历史schema1与metadata-only段落记录当时实现，以上为本轮当前状态。
 
-> 最新用户任务报告：真实会话兼容Level2–4已在用户设备通过（首次/重复导入和统计）。这是user-reported local validation，开发环境未读取该ZIP；下方历史pending保留其当时状态。附件metadata占位属于当前Nova实现限制，用户官方ZIP已报告包含实际binary。本轮Attachment Restoration正在进行，尚未接入Reader/exports，详见[调查/安全基础与待办](archive-attachment-restoration.md)。AR1–5与会话Level独立，未验收。
+## 历史 schema1 兼容修复记录（不代表当前附件实现）
+
+> 当时用户任务报告：真实会话兼容Level2–4已在用户设备通过（首次/重复导入和统计）。这是user-reported local validation，开发环境未读取该ZIP；下方历史pending保留其当时状态。附件metadata占位属于当前Nova实现限制，用户官方ZIP已报告包含实际binary。本轮Attachment Restoration正在进行，尚未接入Reader/exports，详见[调查/安全基础与待办](archive-attachment-restoration.md)。AR1–5与会话Level独立，未验收。
 
 # Nova Archive
 
