@@ -1,3 +1,11 @@
+## Nova Archive — Step 4k：最终源码签名包与 JVM Artifact 独立核对（2026-10-07）
+
+- 分支 `feature/export-conversation`；当前实际源码 `880c8fbab3393c7a10084a3bc08266e29a093482`；后续提交只有文档/证据；CI `37607311483`。
+- success：独立下载同源码APK与JVM/API26 Artifact。APK v2签名与内容digest、原证书、SHA256、DEX源码revision、包名/versionCode14/versionName不变、默认scanner=false、旧4assets一致、无native.so均确认；JVM XML tests39/failures0/errors0，API26 `OK (2 tests)`。
+- 证据 `tools/archive/evidence/final-package-verification.json`，保留前轮 package/失败报告，不覆盖失败历史。
+- not verified：Android35/36同一job仍运行Archive17、进程重启2与Stable43执行；没有最终结果和PDF内容验收，不称MVP验收完成。没有真实官方ZIP/物理设备验证。
+- 下一步：下载模拟器完整结果与实际输出，依据证据完成最终交接。
+
 ## Nova Archive — Step 4j：修正后最低版本再次通过（2026-10-07）
 
 - 分支 `feature/export-conversation`；实际源码 `880c8fb`；CI `37607311483`。

@@ -1,3 +1,7 @@
+## Final source package artifact checked independently
+
+880c8fb actual signed APK verifies original cert/v2 digest/SHA256, identity and version unchanged, DEX source revision/legacy=false, retained assets and no native.so. Downloaded XML confirms39 JVM tests, API26 foundation2 passed. Final API35/36 Archive/Stable/actualPDF results still pending; no real official export verified.
+
 ## Archive880c8fb minimum version revalidated
 
 37607311483 build/JVM39/API26 foundation2 pass after explicit-null fix. Legacy tier docs now point to actual Archive implementation/validation state instead of stale future-only wording. API35/36 full Archive, actual PDF, restart and Stable suites still running; acceptance pending.
