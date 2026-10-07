@@ -2,13 +2,11 @@ package com.example.chatgptnova.archive;
 
 import static org.junit.Assert.*;
 
-import java.awt.image.BufferedImage;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.*;
 import java.util.zip.*;
-import javax.imageio.ImageIO;
 import org.junit.*;
 
 /** Generated fictional bytes only. No real export or filename is present. */
@@ -50,13 +48,61 @@ public final class ArchiveAssetFilesTest {
   }
 
   static byte[] image(String type) throws Exception {
-    BufferedImage image =
-        new BufferedImage(
-            12, 8, type.equals("png") ? BufferedImage.TYPE_INT_ARGB : BufferedImage.TYPE_INT_RGB);
-    for (int x = 0; x < 12; x++) for (int y = 0; y < 8; y++) image.setRGB(x, y, 0xff186c96);
     ByteArrayOutputStream out = new ByteArrayOutputStream();
-    assertTrue(ImageIO.write(image, type, out));
+    if (type.equals("png")) {
+      out.write(new byte[] {(byte) 137, 80, 78, 71, 13, 10, 26, 10});
+      ByteArrayOutputStream header = new ByteArrayOutputStream();
+      DataOutputStream h = new DataOutputStream(header);
+      h.writeInt(12);
+      h.writeInt(8);
+      h.write(new byte[] {8, 2, 0, 0, 0});
+      pngChunk(out, "IHDR", header.toByteArray());
+      ByteArrayOutputStream compressed = new ByteArrayOutputStream();
+      try (DeflaterOutputStream deflater = new DeflaterOutputStream(compressed)) {
+        for (int y = 0; y < 8; y++) {
+          deflater.write(0);
+          for (int x = 0; x < 12; x++) deflater.write(new byte[] {24, 108, (byte) 150});
+        }
+      }
+      pngChunk(out, "IDAT", compressed.toByteArray());
+      pngChunk(out, "IEND", new byte[0]);
+    } else {
+      // Small valid baseline grayscale JPEG: two all-zero DCT blocks, custom tiny Huffman tables.
+      out.write(new byte[] {(byte) 255, (byte) 216});
+      byte[] quant = new byte[65];
+      Arrays.fill(quant, (byte) 16);
+      quant[0] = 0;
+      jpegMarker(out, 0xdb, quant);
+      jpegMarker(out, 0xc0, new byte[] {8, 0, 8, 0, 12, 1, 1, 0x11, 0});
+      byte[] table = new byte[18];
+      table[1] = 1;
+      jpegMarker(out, 0xc4, table);
+      table[0] = 0x10;
+      jpegMarker(out, 0xc4, table);
+      jpegMarker(out, 0xda, new byte[] {1, 1, 0, 0, 63, 0});
+      out.write(new byte[] {15, (byte) 255, (byte) 217});
+    }
     return out.toByteArray();
+  }
+
+  static void pngChunk(ByteArrayOutputStream out, String type, byte[] data) throws Exception {
+    DataOutputStream writer = new DataOutputStream(out);
+    writer.writeInt(data.length);
+    byte[] name = type.getBytes(StandardCharsets.US_ASCII);
+    writer.write(name);
+    writer.write(data);
+    CRC32 crc = new CRC32();
+    crc.update(name);
+    crc.update(data);
+    writer.writeInt((int) crc.getValue());
+  }
+
+  static void jpegMarker(ByteArrayOutputStream out, int marker, byte[] data) throws Exception {
+    DataOutputStream writer = new DataOutputStream(out);
+    writer.writeByte(255);
+    writer.writeByte(marker);
+    writer.writeShort(data.length + 2);
+    writer.write(data);
   }
 
   ArchiveAssetFiles.Type type(byte[] bytes) throws Exception {

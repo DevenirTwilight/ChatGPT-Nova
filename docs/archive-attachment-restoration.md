@@ -41,3 +41,7 @@ ArchiveAssetFiles提供32MiB单件/256MiB总量/2048候选/空间计划、随机
 已在本地只读检查用户提供conversation_asset_file_names.json，未复制进repo/cache/CI或输出名称/ID。根object，326个string key→string value；键固定file_ +32hex+.dat，值为非空原display filename。不含MIME/bytes/dimensions/message relationship。只按原名称扩展名统计：PNG90/JPG140/PDF5/DOCX82/XLSX5/other4；**不是magic/type或binary已恢复统计**。证据attachment-map-schema.json不包含真实名称、ID、路径或文件hash。
 
 这完成map结构核对，不完成真实ZIP central/binary及message-reference核对；AR2只partial mapping audit，AR1端到端仍pending。仍需一条完全虚构但等结构的图片/attachment-only消息引用，并以同一假ID对应map键，以确认精确转换（不能按filename、大小、hash、正文或顺序猜关联）。
+
+## Step D：Android Gradle测试编译失败记录
+
+55830d1两CI的测试编译失败：桌面AWT/ImageIO在Android bootclasspath不存在。改用纯Java生成同样12×8的虚构PNG/JPEG；原73项本地再通过，独立Pillow实际decode两图通过。生产实现不变，Android运行尚未验证；失败证据保留attachment-foundation-build-failure.json，不把本地ECJ通过当Gradle通过。

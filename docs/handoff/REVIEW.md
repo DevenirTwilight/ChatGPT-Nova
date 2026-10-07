@@ -1,3 +1,10 @@
+## Fixture-only build failure retained; portable image generator corrected
+
+- 分支feature/export-conversation，失败源码55830d144dd0418267beba47667580c54b6388a4；正式37644928632/Legacy37644928646在unit test编译失败，Android suites未执行，不报回归成功。错误为新增test使用桌面AWT/ImageIO，Android Gradle bootclasspath不提供。
+- 修正只test：普通Java生成12×8虚构PNG（deflate+CRC）与有效baseline grayscale JPEG（DCT/Huffman markers）；不加入私有图片或额外依赖，原测试断言不删。本地JVM73再次通过，独立Pillow实际decode两图12×8通过；生产ZIP/file基础代码不因fixture失败变更。证据tools/archive/evidence/attachment-foundation-build-failure.json。
+- not verified：新源码完整CI仍需跑；附件端到端/DB/UI与AR1–5仍pending，真实映射结构已核对但消息ref待用户完全虚构示例。
+- 下一步：新CI验证，继续bounded真实string→string map parser；不猜message linkage。
+
 ## Actual user-provided asset filename map audited without exposing private values
 
 - 分支feature/export-conversation，安全基础源码55830d144dd0418267beba47667580c54b6388a4；当前正式CI37644928632、Legacy37644928646进行中，尚未验收。

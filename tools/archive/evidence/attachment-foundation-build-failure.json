@@ -1,0 +1,10 @@
+{
+  "source": "55830d144dd0418267beba47667580c54b6388a4",
+  "formalRun": 37644928632,
+  "legacyRun": 37644928646,
+  "stage": "compileReleaseUnitTestJavaWithJavac",
+  "error": "Test-only AWT/ImageIO unavailable on Android Gradle boot classpath",
+  "runtimeSuites": "not executed",
+  "fix": "Generate tiny fictional PNG/JPEG with plain Java ZIP/deflate/CRC/binary marker primitives; preserve all 73 tests",
+  "productionChangesForFix": false
+}
