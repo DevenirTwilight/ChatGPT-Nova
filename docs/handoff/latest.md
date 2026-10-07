@@ -1,3 +1,10 @@
+## Attachment Restoration — Step C：真实映射文件仅结构审计（2026-10-07）
+
+- 分支feature/export-conversation，安全基础源码55830d144dd0418267beba47667580c54b6388a4；当前正式CI37644928632、Legacy37644928646进行中，尚未验收。
+- success用户提供的mapping文件本地只读核对：326 string→string，file_32hex.dat→原display name。只有结构与扩展名分类计数入库，真实文件及名称/ID/路径/hash未入库或输出。无MIME/size/dimensions/消息引用关系，无真实binary检查。证据tools/archive/evidence/attachment-map-schema.json。
+- 不把扩展名统计当magic/恢复结果；AR2仅partial mapping审计，AR1完整mapped storage与AR3–5未验证。尚需完全虚构图片/attachment-only消息引用，已请求，不上传正文/conversationsJSON。
+- 下一步：核对CI、安全基础，继续独立数据模型与存储准备；拿到引用格式后精确关联，不能猜file-service与entry变换。Stable/Legacy不改。
+
 ## Attachment Restoration — Step B：有界安全基础与25项新增fixture（2026-10-07）
 
 - 分支feature/export-conversation，实施基线306ffa6，本提交为安全基础源码检查点（CI sourceRevision以实际提交SHA为准）。success本地JVM73，原48保持+新增25；ECJ/Java21 -Xmx128m，纯虚构生成binary。

@@ -1,0 +1,24 @@
+{
+  "evidence": "developer-read user-provided mapping file only",
+  "rootType": "object",
+  "entries": 326,
+  "keyType": "string",
+  "valueType": "string",
+  "keyPattern": "file_<32 hex characters>.dat",
+  "originalNamesPresent": true,
+  "mimeMetadataPresent": false,
+  "sizeMetadataPresent": false,
+  "dimensionsMetadataPresent": false,
+  "originalExtensionCounts": {
+    "png": 90,
+    "jpg": 140,
+    "pdf": 5,
+    "docx": 82,
+    "xlsx": 5,
+    "other": 4
+  },
+  "binaryMagicVerified": false,
+  "conversationReferenceSchemaVerified": false,
+  "AR2": "partial mapping audit only, real ZIP/reference not accessed",
+  "privateNamesIdsOrHashIncluded": false
+}
