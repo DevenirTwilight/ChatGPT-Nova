@@ -1,3 +1,7 @@
+## Independent Deep Research artifact explains missing body; branch hypothesis superseded
+
+用户确认全部分支仍缺失并提供启动/范围更新确认原文。精确会话的报告源位于library_files.json的deep_research_report inventory及file_id对应.dat，不在聊天mapping。4条record以origination_thread_id精确关联指定外层会话；version1 completed widget_state.report_message assistant/text且is_complete=true，四份正文20797/24339/25569/26872字符。report与origination message id未在mapping，不能推断精确气泡位置；backing_conversation_id也非外层thread。现在有可靠本地源和归属，可最小实现独立报告展示/持久化/导出，只取report_message，不展示activity thoughts。前步长文本分支统计保留但不能解释此报告缺失。未实现/未Android验证/未交付修复包，禁止提前称成功。
+
 ## Exact user-selected conversation demonstrates off-current long text
 
 用户给出会话定位，本会话仓库外唯一精确匹配，真实title/ID不入Git。实际production Java独立核606节点/605消息，current_node主链55消息；19条长assistant正文中18条不在主链，5条>8000均在其他分支，全部分支Markdown19/19完整匹配，当前/全部HTML生成成功。证据research-body-target-branch-audit.json。这证明分支显示范围差异，仍不证明其中哪篇为用户所指Deep Research或手机SQLite/视觉全文恢复。仓库外全部分支HTML/MD只供该用户核对，不将多分支拼接当单一完整报告；已有Reader“查看全部分支”保留。没有production修复或新APK，后续依用户核对具体报告继续。

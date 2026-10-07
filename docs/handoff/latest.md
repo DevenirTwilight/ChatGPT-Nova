@@ -1,3 +1,11 @@
+## Deep Research — Step X：独立报告源与精确会话归属已确认（2026-10-07）
+
+- 用户提供研究范围更新前后的两段原文，明确“查看全部分支”仍无报告。已在仓库外唯一指定会话定位两段原文；它们是研究任务启动/更新确认，不是研究报告正文。前一步分支差异真实但不能解释此缺失。
+- 生产源码仍787f18f，文档基点1328309。success独立发现标准library_files.json（1969888bytes，635条inventory），19条library_artifact_type=deep_research_report。指定会话有4条，origination_thread_id精确匹配official conversation id，file_id为canonical file_32hex且对应唯一.dat存在。报告是application/json、sediment backing，而非PNG/Office或聊天mapping节点。
+- success四个JSON version1均widget_state.status=completed，widget_state.report_message为assistant/text、metadata.is_complete=true、parts单字符串，正文20797/24339/25569/26872字符。report_message.id及inventory.origination_message_id均不在该聊天mapping，backing_conversation_id是独立研究会话而非外层thread；不能猜具体聊天插入位置。activity_messages包含思考与搜索进度，只恢复明确report_message正文，不显示thoughts或任意widget metadata。
+- 实施条件具备：标准inventory artifact类型+origination_thread_id→同会话独立研究报告，file_id→唯一.dat→严格version1完成报告结构；无名称/顺序/正文相似度归属。设计将研究报告单独列为“研究报告”区/入口并支持同模型HTML/Markdown/SystemPrint；不伪造它们在用户给定两段之间的精确位置。
+- 下一步最小有界本地解析、非破坏持久化与Reader/三格式接入；missing/malformed/ambiguous/pending标记不支持或不可用，重复导入保持已恢复内容，取消/失败事务回滚。补全虚构fixtures与JVM/Android验证，保留签名/包名/code14，CI不公开Release。真实title/ID/正文/文件/路径只在repo外，入库仅schema/匿名计数。
+
 ## Deep Research — Step W：用户指定会话精确定位与分支核对（2026-10-07）
 
 - 用户提供一份缺失正文所在的会话标题；在仓库外ZIP中发现唯一精确标题匹配。原始title/ID/内容不写Git，相关近似标题未合并。
