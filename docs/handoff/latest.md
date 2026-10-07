@@ -1,3 +1,12 @@
+## Deep Research — Step U：确认缺失报告正文并重新取得输入（2026-10-07）
+
+- 用户在本会话明确：缺失的是 **完整研究报告正文**，不是生成 PDF/Word 下载文件。此前 sandbox 文件缺口不能代替本任务定位。
+- 工作分支 feature/export-conversation；开始源码/文档基点6d035f391e8ea3062b26f6065a0a2468a289477f；已测生产源码仍787f18f。本步骤只读调查，无生产变更、新APK或发布。
+- 用户提供一个Drive文件夹，连接器成功列出连续15分卷并原样下载；第15卷首次连接器内部错误，单独重取成功。合并371257079bytes，607 ZIP entries，12 JSON entries；只在仓库外私有目录保存输入。无需用户复制15链接，文件夹/文件链接与标识不写入公开仓库。
+- 本会话独立Python只读结构审查：2个会话数组共122会话；7250 mapping节点，文本3216/multimodal892/thoughts1874/recap1148/无message120，和此前统计一致。184条assistant纯文本parts长于4000字符，其中118条在current_node主链、66条在其他分支；134条有content_references。这只是长文本统计，不能据此认定具体Deep Research报告或宣称完整恢复。未观察到已知research/async-task字段亦不能证明报告不存在。
+- 当前代码独立复查：ArchiveModel仅按content_type=thoughts隐藏；ArchiveTree默认跟current_node的parent链；Reader已有“查看全部分支”。不得自动展示thoughts或把不同分支拼成一份完整报告。
+- 下一步：已询问一份缺失报告的会话标题或主题+日期，答复待到达；并行核对现有有界Java parser/display/renderer对普通长正文的保留。只有定位到用户所指正文和具体丢失环节才实施最小修复。真实正文/title/ID/路径/下载链接/二进制不进Git/CI/log。
+
 ## Deep Research — Step T：澄清反馈并确认生成文件恢复缺口（2026-10-07）
 
 - 用户澄清“重装后看不到”指的是 **Deep Research 生成的文档**，不能据此记录成所有普通上传附件恢复失败。当前待明确：缺失完整研究报告正文，还是报告中的 PDF／Word 下载文件；已提出单项澄清，尚未回答。新的工作范围是调查该缺失，不再把真实 AR3–5 清单当成唯一下一步。

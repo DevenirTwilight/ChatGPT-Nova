@@ -1,3 +1,7 @@
+## User confirms missing full report body; regenerated input acquired
+
+用户本会话确认Deep Research缺的是完整报告正文，不是PDF/Word生成文件。已通过其提供的单个Drive文件夹取得连续15分卷并在仓库外合并；独立只读结构审查122会话与既有节点规模一致。长assistant文本184条，主链118/其他分支66；这些统计不是研究报告识别，也不是手机恢复证明。源码复查默认current_node分支且Reader可查看全部分支，thoughts仍隐藏，不猜正文归属。尚缺具体报告定位（会话标题或主题/日期已询问），没有生产修复、新APK或新的Android验收。此前sandbox文件缺口保持记录但不代替正文问题。输入和所有私人标识不入公开仓库。
+
 ## Deep Research investigation supersedes the previous next-step-only boundary
 
 用户最新反馈指 Deep Research 生成文档，尚待区分完整报告正文与 PDF/Word 下载文件。当前生产源码仍 787f18f，最近两 CI success 不证明研究文档恢复。源码确认生成 sandbox 下载链接未接入附件规划，HTML Reader 只留下普通标签；已有 PNG/JPEG/上传 PDF/Office 恢复不能称覆盖 Deep Research 生成文件。
