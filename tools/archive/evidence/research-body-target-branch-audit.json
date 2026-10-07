@@ -1,0 +1,20 @@
+{
+  "sourceBaseline": "787f18f5296e7bbf4148146c21c9c7656e8c7859",
+  "documentationBase": "3f0e0bb828101cc1a29935813b90e03c8c9d76ad",
+  "target": "one exact user-selected title match; title and IDs withheld",
+  "mappingNodes": 606,
+  "currentMessages": 55,
+  "allMessages": 605,
+  "longAssistant": 19,
+  "longCurrent": 1,
+  "longOffCurrent": 18,
+  "over8000Assistant": 5,
+  "over8000OffCurrent": 5,
+  "exactAllMarkdown": 19,
+  "longCharacters": 169289,
+  "execution": "independent current production Java importer/model/tree/renderer; private single-conversation input; -Xmx128m",
+  "privateCurrentAndAllHtml": "generated successfully; source and output remain outside repository",
+  "specificResearchReportIdentified": false,
+  "androidDatabaseValidated": false,
+  "historyCompletenessProven": false
+}

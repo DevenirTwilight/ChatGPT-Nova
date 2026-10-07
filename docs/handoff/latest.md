@@ -1,3 +1,11 @@
+## Deep Research — Step W：用户指定会话精确定位与分支核对（2026-10-07）
+
+- 用户提供一份缺失正文所在的会话标题；在仓库外ZIP中发现唯一精确标题匹配。原始title/ID/内容不写Git，相关近似标题未合并。
+- 分支feature/export-conversation；本步骤文档基点3f0e0bb，生产源码仍787f18f。本会话独立实际Java importer(false单会话JSON)/Tree/Display/Renderer核对：606mapping节点、605messages，current_node链56节点含55messages；“全部分支”605messages。19条>4000字符assistant text正文中1条在主链、18条在其他分支；5条>8000正文全在其他分支。19/19在实际全部分支Markdown逐字完整匹配；正文总169289chars（仅这19条），当前/全部分支HTML均成功生成。
+- 证据tools/archive/evidence/research-body-target-branch-audit.json。仅匿名计数入Git；仓库外生成private target-current.html/target-all.html/target-all.md供本用户核对，不上传真实输出/脚本输入，不把target全部分支串接视为一份报告。未修改production或AndroidDB，也未声称具体报告识别、真实手机恢复或完整历史。
+- 当前已证实默认主链会排除此会话18条长正文，而已有“查看全部分支”可选择这些节点；尚不能仅凭长度将某篇认定为Deep Research。下一步用户在现有Reader查看全部分支，或核对本地全部分支HTML，确认缺失报告是否出现；若仍缺失，请定位报告小标题/日期再查对应内容表示，不猜归属或显示thoughts。
+- 无新APK/CI/版号/Release/main变更。真实内容隐私、Stable/Legacy与既有证据边界保持。
+
 ## Deep Research — Step V：实际Java正文保留检查完成，待具体报告定位（2026-10-07）
 
 - 用户目标仍是完整研究报告正文。文档基点56d9c47；实际生产源码仍787f18f；本步骤只加显式本地工具/脱敏报告，无生产代码、APK、版号或CI变更。
