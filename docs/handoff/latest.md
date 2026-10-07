@@ -1,3 +1,9 @@
+## Deep Research — Step AD：最终源码API26原生19项通过（2026-10-07）
+
+- 生产15651dc，正式37704403878 API26 job113076222839 success；独立下载artifact11518279550匹配digest并核actual instrumentation，foundation2+asset7+Reader3+concurrency2+research5=19全部OK。新增第5项补充平面Unicode重导入超限回滚，旧31份报告仍可读，确已运行通过，不是只编译。
+- 原4项研究SQLite去重/源ZIP删除重开、schema2迁移、坏重导入保留/数量限额/取消回滚、实际Reader入口/重建/离线亦通过，报告research-1565-api26.json。最终包签名/版本/defaultLegacyfalse与JVM101前步已独立通过。
+- API35/36实际三格式与Stable完整回归、Legacy35/36仍运行，最终交付待这些结果；真实手机仍未验证。本步骤仅证据/交接skipci，生产源码保持1565。
+
 ## Deep Research — Step AC：最终源码1565包与JVM验收（2026-10-07）
 
 - 生产源码15651dc5d0ea9289128c753900b6f65aef0de847，正式37704403878 build success；Legacy37704403572 build success。最终API26/35/36和Legacy35/36仍运行，新增Unicode原生用例尚待执行完。

@@ -1,3 +1,7 @@
+## Final source1565 API26 native19 independently passed
+
+Artifact11518279550 digest matches and actual instrumentation logs confirm foundation2/assets7/Reader3/concurrency2/research5 all passed. New supplementary-Unicode budget rollback test actually ran and preserved readable31 reports; original research SQLite/migration/Reader four passed too. Formal35/36 actual exports/Stable and Legacy35/36 remain running, final acceptance pending; no physical-device/private-export SQLite conclusion.
+
 ## Final source1565 signed package/JVM independently verified; native5 pending
 
 Formal37704403878 build passed, artifact11518783109 ZIP digest matches. Independent full apksig v2/original cert/AXML package-code14/Dex revision1565 and defaultLegacy=false verification passed, APK2110961bytes/SHA217bf895…; JVM XML101 with zero failures/errors/skips. Core parser/renderer rebuilt and private four complete bodies97577 chars / exact Markdown4 / HTML passed. New source API26/35/36 native5 and actual documents still pending; old8966 formal35/36 cancelled by replacement source, not passed. Do not deliver as full runtime acceptance yet.

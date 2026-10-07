@@ -1,0 +1,17 @@
+{
+  "sourceCommit": "15651dc5d0ea9289128c753900b6f65aef0de847",
+  "ciRun": 37704403878,
+  "android": 26,
+  "artifactId": 11518279550,
+  "artifactZipSha256": "9269f42ab6a5eb54bd27c17590f572f1142b68cd92c44d077dea959532f5d312",
+  "nativeTests": {
+    "tests.txt": 2,
+    "asset-tests.txt": 7,
+    "asset-reader-tests.txt": 3,
+    "store-concurrency-tests.txt": 2,
+    "research-tests.txt": 5
+  },
+  "totalPassed": 19,
+  "newResearchNativeTestsPassed": 5,
+  "validation": "independent downloaded actual instrumentation logs; synthetic fixtures, not physical device or private export SQLite acceptance"
+}
