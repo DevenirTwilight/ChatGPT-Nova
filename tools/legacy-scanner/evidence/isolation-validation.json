@@ -29,8 +29,15 @@
   "ci": {
     "stable": {
       "runId": 37588638317,
-      "status": "in_progress",
-      "build": "success"
+      "status": "retry_in_progress",
+      "build": "success",
+      "android35": "success",
+      "android36Attempt1": "failure",
+      "android36Retry": "requested",
+      "artifactVerification": [
+        "stable-35-attempt1-verification.json",
+        "stable-36-attempt1-verification.json"
+      ]
     },
     "experimental": {
       "runId": 37588638326,

@@ -1,0 +1,70 @@
+{
+  "sourceCommit": "5d9efe8eee0c24d1ce2b1a48b6e14f74360ae583",
+  "android": 35,
+  "attempt": 1,
+  "artifactId": 11467699020,
+  "zipSha256": "12d6dd3dd0630e9d244591e6e2b663aedd33161d6e193057dfb82fc726a91e0c",
+  "failures": [],
+  "suites": {
+    "legacy-disabled": {
+      "expected": 2,
+      "passed": true
+    },
+    "snapshot": {
+      "expected": 10,
+      "passed": true
+    },
+    "firefox-android": {
+      "expected": 1,
+      "passed": true
+    },
+    "web-regressions": {
+      "expected": 9,
+      "passed": true
+    },
+    "share-regressions": {
+      "expected": 5,
+      "passed": true
+    },
+    "input-regressions": {
+      "expected": 5,
+      "passed": true
+    },
+    "input-imeCommitText": {
+      "expected": 1,
+      "passed": true
+    },
+    "input-imePasteCommand": {
+      "expected": 1,
+      "passed": true
+    },
+    "input-longPressSystemPaste": {
+      "expected": 1,
+      "passed": true
+    },
+    "native-lifecycle": {
+      "expected": 1,
+      "passed": true
+    },
+    "native-restart": {
+      "expected": 1,
+      "passed": true
+    }
+  },
+  "htmlMarkdownMarkersVerified": true,
+  "firefoxPrintSourceIdentical": true,
+  "pdf": {
+    "frozen-page.pdf": {
+      "sha256": "5b8289367d7e81cd5ebce56d920c222b7e906d4d9189bcf709e5c69a4d639ea9",
+      "pages": 31,
+      "markersVerified": true,
+      "lateMutationAbsent": true
+    },
+    "firefox-frozen.pdf": {
+      "sha256": "2771116af5072574204bb56e32af733291adee7dda1f14366c9ef045ce271288",
+      "pages": 31,
+      "markersVerified": true,
+      "lateMutationAbsent": true
+    }
+  }
+}

@@ -1,0 +1,61 @@
+{
+  "sourceCommit": "5d9efe8eee0c24d1ce2b1a48b6e14f74360ae583",
+  "android": 36,
+  "attempt": 1,
+  "artifactId": 11468805144,
+  "zipSha256": "7eb6e60aac240834c25ed3b3481063b509b2f2ba626ca31667866eef01f6da97",
+  "failures": [
+    "snapshot",
+    "pull-frozen-page.pdf",
+    "pdf-content"
+  ],
+  "suites": {
+    "legacy-disabled": {
+      "expected": 2,
+      "passed": true
+    },
+    "snapshot": {
+      "expected": 10,
+      "passed": false
+    },
+    "firefox-android": {
+      "expected": 1,
+      "passed": true
+    },
+    "web-regressions": {
+      "expected": 9,
+      "passed": true
+    },
+    "share-regressions": {
+      "expected": 5,
+      "passed": true
+    },
+    "input-regressions": {
+      "expected": 5,
+      "passed": true
+    },
+    "input-imeCommitText": {
+      "expected": 1,
+      "passed": true
+    },
+    "input-imePasteCommand": {
+      "expected": 1,
+      "passed": true
+    },
+    "input-longPressSystemPaste": {
+      "expected": 1,
+      "passed": true
+    },
+    "native-lifecycle": {
+      "expected": 1,
+      "passed": true
+    },
+    "native-restart": {
+      "expected": 1,
+      "passed": true
+    }
+  },
+  "htmlMarkdownMarkersVerified": true,
+  "firefoxPrintSourceIdentical": true,
+  "failureReason": "System Print stayed in printspooler error/retry screen; native PDF filename timed out, actual Nova PDF absent. Retry same-source failed job without weakening assertions."
+}

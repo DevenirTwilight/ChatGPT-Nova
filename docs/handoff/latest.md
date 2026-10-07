@@ -38,6 +38,10 @@
 
 正式CI37588638317的build已success，两档Android仍进行中，尚不能最终声明正式保存回归完成。下一步核默认关闭合同、HTML/MD/PDF实物及IME/upload/download/share/升级报告，再最终交接。
 
+### Step 4h：正式API35通过，API36打印失败保留并重试
+
+源码5d9efe8正式API35 job112685070124全success，独立下载artifact11467699020核checks无失败、默认关闭2/快照10/全部原web/IME/share/native/升级回归通过；实际HTML/MD首尾/变更排除、同打印源、Nova/Firefox两PDF各31页与文本标记独立通过。API36 job112685070153仅realSystemPrintUiSavesFrozenMultipagePdf等待native PDF filename失败，另9项快照/默认关闭2/其余正式套件与Firefox均通过；截图显示printspooler错误/Retry页，不能称PDF成功。失败原instrumentation/UI文本/截图与JSON保留tools/legacy-scanner/evidence。已只重跑该失败job，源码/断言不改，不擅自归为环境问题。当前HEAD e26d9ad；本步实际结果success/failure混合，下一步读取同源API36重试、核PDF实物再最终交接。
+
 ## 已实现
 
 用户最终要求普通HTML/Markdown/PDF，取消Share/MHTML/新完整历史算法。正式“保存当前网页”→一次evaluateJavascript同步深clone→同clone静态HTML和Markdown→不可变FrozenPageSnapshot。HTML为唯一标准表示；PDF仅同frozenHtml→独立无JS/static WebView→Android System Print。Nova860px阅读/白底print CSS，不复制ChatGPT SPA。无滚动/backend/private reader/React/token/storage读取/ID去重/跨窗口缓存，不重构输入上传下载分享。
