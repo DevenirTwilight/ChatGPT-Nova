@@ -1,3 +1,10 @@
+## Deep Research — Step AC：最终源码1565包与JVM验收（2026-10-07）
+
+- 生产源码15651dc5d0ea9289128c753900b6f65aef0de847，正式37704403878 build success；Legacy37704403572 build success。最终API26/35/36和Legacy35/36仍运行，新增Unicode原生用例尚待执行完。
+- 独立下载正式artifact11518783109匹配ZIP digest，APK2110961bytes/SHA217bf895a5fa285ef15ac38e1df37f99a5091faf6f63f40ece353df928e70923，apksig完整v2/cert原签名、AXML原包/code14/name、DEX static revision1565/defaultLegacyfalse全部核对，无testfixture/.so/签名秘密；证据research-1565-package-verification.json。独立JVM artifact11518114474 XML101/0fail/error/skip。
+- 当前生产核心重新ECJ编译后真实仓库外4份报告/97577字符/MD4逐字/HTML再次成功。分别生成4份私有报告供用户直接阅读，真实正文未入Git/CI/log。
+- 历史8966正式API35/36被此次源码CI取消，不写成功或失败原因；8966 Legacy35/36全success仅历史状态。下一步只以1565实际native5/三格式和原回归作为最终交付依据，用户手机仍待验。
+
 ## Deep Research — Step AB：Unicode持久化预算一致性修正（2026-10-07）
 
 - 当前基点f44d6f3，此前生产8966489的build/API26成功仍有效，但正式35/36与Legacy35/36尚运行；不是最终新源码验收。

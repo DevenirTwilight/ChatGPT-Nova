@@ -1,3 +1,7 @@
+## Final source1565 signed package/JVM independently verified; native5 pending
+
+Formal37704403878 build passed, artifact11518783109 ZIP digest matches. Independent full apksig v2/original cert/AXML package-code14/Dex revision1565 and defaultLegacy=false verification passed, APK2110961bytes/SHA217bf895…; JVM XML101 with zero failures/errors/skips. Core parser/renderer rebuilt and private four complete bodies97577 chars / exact Markdown4 / HTML passed. New source API26/35/36 native5 and actual documents still pending; old8966 formal35/36 cancelled by replacement source, not passed. Do not deliver as full runtime acceptance yet.
+
 ## Unicode report persistence budget fixed; new source runtime pending
 
 SQLite LENGTH counts code points while Reader String.length counts UTF-16 units. Upsert now sums Java lengths using the same 4Mi limit as load. New native fifth research test verifies a readable 31-report set remains readable and unchanged after an emoji-heavy replacement exceeds that budget and rolls back. Local JVM101 passed; API26/35/36 must revalidate the changed production source and native5 before final APK delivery. Earlier8966 API26/build evidence remains historical, not new source acceptance.
