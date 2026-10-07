@@ -61,3 +61,9 @@ ArchiveAssetMap只支持已经核对的object<string,string>，保留原显示me
 这是单个真实binary类型/容器/filename-map验证，**不是Nova DB导入/Reader恢复/跨导入去重/AR3通过**。映射仍无消息引用字段，不能由这个binary推导conversation/message归属。下一步仍需完全虚构但同结构的图片asset_pointer与attachment-only metadata，再接端到端。
 
 9ab3f72新CI：正式37645986505 build/API26 success，API35/36尚在运行；Legacy37645986535各job success（本步核API状态，未独立下载新runtime artifacts，不重复引用旧runtime数量充当新证据）。
+
+## Step H：完整引用结构已独立核对
+
+15份用户授权Drive分卷已下载至repo外并合并，普通non-ZIP64/未加密ZIP607条（含2directory），是手机重打包副本，不称原ZIP字节一致。Nova实际bounded parser128MiB解析122/7250/7130/map326成功。observed parts.asset_pointer=`sediment://file_<32hex>`、metadata.attachments[].id=`file_<32hex>`、map/exported=`file_<32hex>.dat`；265+376refs均精确匹配326physical binaries，265同消息metadata/parts重复。所有326 CRC通过，magic与尺寸统计见attachment-repacked-container-audit.json，真实数据未入repo/CI/fixture。
+
+single32MiB暂定预算被真实63.62MiB PDF证明不足，应独立调整为64MiB，total256MiB/JSONentry64MiB等不扩大；此为已验证必要调整，不是统一取消预算。230images最大2.36Mpixel，16Mpixel预算保持。每会话82asset、全导入326低于256/2048限制。引用结构证据已足，无需用户再手工样例；现在可接schema2/reader/export端到端，再验收AR1/3–5。

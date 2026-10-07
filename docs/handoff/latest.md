@@ -1,3 +1,11 @@
+## Attachment Restoration — Step H：15分卷成功读取，真实结构缺口已解决（2026-10-07）
+
+- 分支feature/export-conversation，当前测试源码9ab3f72585e78e064468917636b75797c0f50861；本步仅本地审计/脱敏证据。用户主动提供15个Drive分卷链接，均≤24MiB、001–015连续；下载并在repo外私有目录按字节合并，371257079bytes的未加密普通non-ZIP64 ZIP。此为手机重打包官方导出内容，607entries含2directories，不宣称与原370566688bytes ZIP逐字节一致。
+- success Nova有界parser -Xmx128m 实际解析122conversations/7250mapping/7130messages/map326，selectedJSON58132014bytes，与先前用户统计一致。公开结构：parts.asset_pointer=sediment://file_<32hex>；metadata.attachments[].id=file_<32hex>；map key/exported basename=file_<32hex>.dat。265 pointers与376 metadata refs均精确命中；265 metadata与parts重复，需同消息去重；unique326、每会话最大82，全部326 mapped entries存在且无歧义。
+- success mapped binary CRC326/failed0，154521964bytes；magic DOCX82/PNG82/JPEG148/XLSX5/PDF5/unknown4，PNG/JPEG230 header均通过、最大2359296pixels，16M预算足够。原文件名扩展名统计不等于检测类型，保持magic优先。单个PDF66707137bytes要求single asset32→64MiB，total256MiB/JSON预算不扩大；unreferenced dat不提取（全ZIP592dat）。
+- AR2真实compatible repack的container/map/refs/binary结构检查通过；AR1仍未接端到端，AR3/4/5未验收。不提交或输出真实内容/文件名/ID/link/path/hash，不把real binary用于synthetic fixtures/CI。
+- **不再需要用户手工提供引用结构**。下一步立即按证据接schema2 assets/refs、精确entry lookup、private恢复与重复导入、shared display/offlineReader/provider/HTMLMDPDF/删除；single64MiB的实证调整与fixtures要一起验证。新完整CI+实际输出核对，之后提供APK让用户本地完成AR3–5。原始frozen/legacy/签名/版号保持。证据tools/archive/evidence/attachment-repacked-container-audit.json。
+
 ## Attachment Restoration — Step G：Drive ZIP元数据可读，整包下载受限（2026-10-07）
 
 - 分支feature/export-conversation，测试源码9ab3f72585e78e064468917636b75797c0f50861，本提交仅交接/脱敏证据。用户最新明确授权读取其提供的Drive真实ZIP链接；这更新此前“真实ZIP仅用户本地”的访问范围，不授权向GitHub/CI上传私有数据。Drive链接/ID/原文件名/私有hash未入库。
