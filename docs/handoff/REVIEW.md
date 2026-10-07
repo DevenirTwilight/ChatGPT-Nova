@@ -1,3 +1,10 @@
+## Attachment Restoration opened; conversation real validation is user-reported
+
+- 分支feature/export-conversation，调查源码e0ecabddfe6bb52a0569d8fc5b0fafee16f71180；默认远端main/e8ffa0c6不是开发基线。当前正式37634607647/Legacy37631515308 success。已读当前AGENTS/handoff/产品docs、Archive实际源码/SAF/SQLite/renderer/print/manifest/provider与tests/CI。
+- success调查：schema1无asset表，binary未恢复；现有占位是Nova限制，不是用户官方ZIP无binary。设计见[附件恢复](../archive-attachment-restoration.md)：schema2 normalized assets/refs、private generated files、精确官方mapping、bounded integrity/MIME、offline handler/FileProvider、shared display与三格式语义。全部仍planned。
+- 用户新任务报告真实会话Level2–4本地通过；记录为user-reported，不冒充开发环境独立验证，旧pending记录保留为历史。本环境无真实ZIP；附件AR1–5未验证。已请求完全虚构等结构mapping/ref样例，不请求私人ZIP。
+- 下一步：先完成不依赖私有schema的ZIP/MIME/有界文件基础及synthetic tests，取得字段结构后接通附件功能；不猜关联，不动Stable/Legacy/版号/签名，不发布Release。
+
 ## Final compatibility development acceptance; real-device validation pending
 
 Source1990cb1ffb7a0832e94c552cc349023e6e5989d9 / CI37634607647 all jobs success. Independently downloaded JVM48/API26 foundation2, API35/36 each Archive20+actual process restart2 and Stable17 suites/43 executions; actual Archive HTML/MD/16-page PDFs verify object text/recap label/Unicode/code/table/first-last and hide thoughts/other branch. Stable four31-page System/Firefox PDFs retain same source/content/images/mutation exclusions. New Legacy37631515308(d36246e) eachAPI19 pass+2 historical ignores; production/scanner/shared deps unchanged through1990. Signature/content digest/cert/revision/default legacy=false/identity/version/assets verified, no synthetic test provider/content in production. Final package artifact11487454505. Two failed fixture rounds preserved, neither required production changes nor removed assertions.
