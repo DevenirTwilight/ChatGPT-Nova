@@ -53,3 +53,11 @@ S01_INVALID_PAGE；S02_SNAPSHOT_FAILED（包括15秒捕获超时）；S03_SNAPSH
 Android标准保存窗口已实测为android:id/title（文件名EditText），保存测试通过真实窗口明确命名后读取实际文件，不把任务label误作文件名。UiAutomation.executeShellCommand在Android15公开源码中使用Runtime.exec，不解析shell引号/重定向；测试使用公开executeShellCommandRw启动sh并通过stdin传入固定fixture命令，非生产能力。Firefox157.0.1首次启动role窗口/首页Continue卡片按明确UI操作处理，正文标记通过递归公开accessibility节点检查（Gecko虚拟节点不一定响应findByText快捷查询）；Save as PDF在公开MoreSettingsSubmenu中，不调用Firefox私有打印API。未有实物之前不能宣称PDF通过。
 
 fixture图像改为320×120可见PNG，不以单像素解码冒充图片打印品质；PDF验收保留打印源HTML/同快照MD，核法语重音、数学、长代码/长表格、首尾和late marker隔离，并检查图片对象。快照浏览器增加隐藏table/list/form及临时图片占位，13场景本地通过；资源总量有界、无附加live读取，超量DOM/payload仍明确失败。
+
+## 实际保存产物检查（2026-10-07，阶段A）
+
+CI37548381063/source462ba8c：Android35与36均通过新快照10项与原18项及全部容器、IME、权限/上传下载分享、native生命周期和原签名v1覆盖升级。实际System Print UI保存并取回PDF，两者均31页、Letter 612×792pt，各2个链接注释及1个320×120图片对象；35为278243字节，36为294594字节。首尾、中法英、长代码/表格、数学及AFTER内容隔离检查通过。独立渲染人工抽查35首页/代码页/表格页/中段/末页与36首页：白底、代码换行、表格/长段落分页可读，无明显重叠。脱敏文件hash/范围见tools/snapshot/evidence/android-system-pdf-A5.json。
+
+从Android35 SAF实际保存的frozen-page-saf.html取回同一文件，以file://在Chromium143.0.7499.4、Firefox144.0.2、Edge154.0.4258.62打开：中法英/emoji、首尾、代码/表格/数学、320×120PNG解码、无脚本/HTTP请求、白底打印CSS通过。结果更新tools/snapshot/evidence/android-saved-html-compatibility.json。
+
+此轮唯一未通过项为Firefox Android PDF菜单自动化，尚无Firefox PDF，不记A/B通过。Gecko仍保留，清理需等对照完成。以上真实文件来自受控模拟器，不等于真实账号/物理设备人工验收。

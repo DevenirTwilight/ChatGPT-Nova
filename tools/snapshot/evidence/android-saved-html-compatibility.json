@@ -1,43 +1,35 @@
-{
-  "sourceCommit": "d2e44a8ecc3cf76e7213038def5060debb0f66c0",
-  "sourceRun": 37542015192,
-  "artifact": 11448984111,
-  "file": "frozen-page-saf.html",
-  "sha256": "9915012edc79775a0c50da1460cdf521185a586458d62b73054df1ccffe410c8",
-  "results": [
-    {
-      "browser": "Chromium",
-      "version": "143.0.7499.4",
-      "opening": "file",
-      "ordinaryHtml": true,
-      "markers": true,
-      "imageDecoded": true,
-      "noNetworkOrScript": true,
-      "printCss": true,
-      "pdf": "desktop-only"
-    },
-    {
-      "browser": "Firefox",
-      "version": "144.0.2",
-      "opening": "file",
-      "ordinaryHtml": true,
-      "markers": true,
-      "imageDecoded": true,
-      "noNetworkOrScript": true,
-      "printCss": true,
-      "pdf": "not-produced"
-    },
-    {
-      "browser": "Edge",
-      "version": "154.0.4258.62",
-      "opening": "file",
-      "ordinaryHtml": true,
-      "markers": true,
-      "imageDecoded": true,
-      "noNetworkOrScript": true,
-      "printCss": true,
-      "pdf": "desktop-only"
-    }
-  ],
-  "scope": "Actual Android SAF HTML from synthetic fixture; desktop browser opening/print CSS; not Android PDF proof"
-}
+[
+  {
+    "browser": "Chromium",
+    "version": "143.0.7499.4",
+    "opening": "file",
+    "ordinaryHtml": true,
+    "markers": true,
+    "imageDecoded": true,
+    "noNetworkOrScript": true,
+    "printCss": true,
+    "pdf": "desktop-only"
+  },
+  {
+    "browser": "Firefox",
+    "version": "144.0.2",
+    "opening": "file",
+    "ordinaryHtml": true,
+    "markers": true,
+    "imageDecoded": true,
+    "noNetworkOrScript": true,
+    "printCss": true,
+    "pdf": "not-produced"
+  },
+  {
+    "browser": "Edge",
+    "version": "154.0.4258.62",
+    "opening": "file",
+    "ordinaryHtml": true,
+    "markers": true,
+    "imageDecoded": true,
+    "noNetworkOrScript": true,
+    "printCss": true,
+    "pdf": "desktop-only"
+  }
+]

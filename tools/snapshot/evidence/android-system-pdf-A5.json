@@ -1,0 +1,49 @@
+{
+  "sourceCommit": "462ba8ccce0f155844946ef9df18866e1c14a82a",
+  "run": 37548381063,
+  "scope": "synthetic fixture; actual Android Print UI saved files; not a real-account or physical-device result",
+  "results": [
+    {
+      "android": 35,
+      "pdfBytes": 278243,
+      "pdfSha256": "95470f72fa0f0cdc09080f0ae131e655ba4038c3553ff66f96161a6e634a1102",
+      "pages": 31,
+      "pagePoints": [
+        0.0,
+        0.0,
+        612.0,
+        792.0
+      ],
+      "linkAnnotations": 2,
+      "rasterImageObjects": 1,
+      "hostContentMarkers": "passed",
+      "lateMutationAbsent": true,
+      "sampledVisually": [
+        1,
+        2,
+        13,
+        16,
+        31
+      ]
+    },
+    {
+      "android": 36,
+      "pdfBytes": 294594,
+      "pdfSha256": "c9ac03d0aa2bb6b0bf91769185a9c2b191be3b57c79a0d3ca761db6cd3c896cd",
+      "pages": 31,
+      "pagePoints": [
+        0.0,
+        0.0,
+        612.0,
+        792.0
+      ],
+      "linkAnnotations": 2,
+      "rasterImageObjects": 1,
+      "hostContentMarkers": "passed",
+      "lateMutationAbsent": true,
+      "sampledVisually": [
+        1
+      ]
+    }
+  ]
+}
