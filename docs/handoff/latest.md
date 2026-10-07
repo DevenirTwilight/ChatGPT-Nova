@@ -1,3 +1,13 @@
+# 当前任务：Nova Archive MVP（Step 1 调查与设计，2026-10-07）
+
+当前分支feature/export-conversation，实际远端/源码基线d48aed0da152025902b83b1027b3a8e8bfc918ad；远端默认HEAD main/e8ffa0c6但不是最新开发线。已读取AGENTS/latest/REVIEW/frozen-page-save/README、Main菜单/manifest/Gradle及现有SAF/静态打印/CI。最新正式37593888527与实验37588638326 success；旧failure/cancel保留，不当当前现状。
+
+用户最新要求新增独立Nova Archive：主动官方兼容ZIP/JSON→安全流式解析→私有SQLite→列表/标题搜索/current_node Reader→HTML/MD/System Print PDF。既有Frozen Snapshot和默认禁用Legacy保留，不删scanner/证据，不新增后台/API/Fiber/DOM完整历史路线。原包名/签名/code14不变，不main/forcepush/Release。
+
+Step1 success（调查/设计），实现与新测试not verified。设计详见../nova-archive.md：schema1 sources/conversations/messages，所有mapping节点及未知metadata保留，身份upsert/保守缺ID/旧时间保护，原子导入回滚；ZIP/JSON/size/depth/token/CRC限制；离线无JS无网络Reader；独立HTML数据经最小静态打印入口复用System Print，不构造FrozenPageSnapshot。MVP标题搜索，非全文。仓库无真实Data Export样本，仅synthetic。
+
+下一步实现pure Java parser/model/tree/merge、SQLite与JVM fixtures，完成后按步更新交接commit/push，再实现UI/export与Android/正式回归。下面是前轮Legacy验收历史，不代表Archive已实现。
+
 # 当前交接：Legacy Scanner 隔离（2026-10-07）
 
 工作分支 `feature/export-conversation`；本轮最新构建源码 `3149507ef3fb88d66428dde610894ccac82cf44b`；实验已测源码 `5d9efe8eee0c24d1ce2b1a48b6e14f74360ae583`（应用/legacy源码和夹具完全一致，仅正式原生测试同步变更）；当前文档基点 `1682ecf`（完整HEAD以git log核对）。最终文档提交可由git log核对，不等于APK源码HEAD。远端默认HEAD仍main/e8ffa0c6，本轮全程以工作分支最新远端为准；开始续接先fetch并读AGENTS/latest/REVIEW/legacy-conversation-scanner/frozen-page-save，不回退旧修复。
