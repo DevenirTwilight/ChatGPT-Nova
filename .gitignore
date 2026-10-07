@@ -11,3 +11,6 @@ signing/*.jks
 signing/*.keystore
 *.jks
 *.keystore
+
+# Optional developer-local private export validation; never used by CI
+/local-private/

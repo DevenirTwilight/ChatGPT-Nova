@@ -1,3 +1,7 @@
+## Real-export compatibility work opened
+
+Remote branch0c154064 and accepted core7854f3ea unchanged; previous full synthetic CI37609817075/Legacy37604491058 success. User supplied audited sample statistics identify container256MiB and conversation1/2Mi char incompatibilities plus object-text/thoughts/recap display loss. Real ZIP is not attached/accessible here: no local old-build runtime failure, Level2/3/4 or manual Level5 claimed. New scope only bounded limit/storage/schema fixes with fabricated equivalents; private data excluded from repo/CI. Plan container512MiB and conversation4Mi chars including Store aggregate; preserve all other limits/raw metadata/branches and stable/legacy boundaries.
+
 ## Nova Archive — final accepted fixture scope (2026-10-07)
 
 **Nova Archive MVP implemented — synthetic / fixture validation passed.** Tested source7854f3ea06309fa20e5e26a7acc4b77750322968, CI37609817075 all jobs success; later commits are evidence/docs only. JVM39/browser13/API26 foundation2; API35/36 each Archive17 plus actual force-stop seed/restart2 and Stable17 suites/43 executions. Independently downloaded actual Archive HTML/MD/16-page PDFs and Stable four31-page PDFs pass content, current branch exclusion, Unicode/code/table/image/mutation checks. Installed APK matches independently verified v2 signature/content digest/original certificate/revision/legacy=false; identity and version unchanged. Reports accepted-runtime-35/36.json and accepted-package-verification.json.

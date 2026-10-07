@@ -1,3 +1,13 @@
+## Real export compatibility — Step A：远端调查与样本边界（2026-10-07）
+
+- 分支feature/export-conversation，远端/本地HEAD `0c154064bfa092bd2ec2025c9f0b01e81b76ae69`；远端默认HEAD main/e8ffa0c6，未作为开发基线。Archive核心与已测7854f3ea一致；当前正式CI37609817075、Legacy37604491058均success。
+- 已读取AGENTS、当前handoff/产品docs/实际Archive源码/tests/workflows。用户新要求仅修已知真实容量/schema问题，不做FTS/附件/Legacy或DOM功能扩展。
+- 用户结构审计提供：370566688 bytes、non-ZIP64、605entries、两拆分JSON约55.44MiB、122会话/7250节点/7130消息；仅用户提供事实，本环境未独立实测真实ZIP。
+- confirmed source failure：旧SAF metadata及流式copy均FILE_LIMIT256MiB，旧parser chars1Mi/serialized2Mi，Store写入/重载同样2Mi。真实样本必超container limit；**real sample / old code runtime not verified**，不倒推成真实运行证据。
+- 本环境目前仅收到任务Markdown，没有真实ZIP；不能完成Level2–4本地真实导入。Level5必须用户本人确认至少5个会话。所有新增fixtures纯虚构；真实文件/输出只能repo外，增加专用/local-private/ignore，不泛化忽略synthetic。
+- 设计：container512MiB，conversation chars与serialized/store aggregate统一4Mi chars；其他entry/selected-total/node/depth/DB限额不变。复制前及复制中私有空间检查；统一display语义支持Map.text/附件占位、隐藏thoughts保留raw、recap独立标签。保持streaming/事务/树/current_node/离线导出。
+- 下一步：实施最小兼容修复及synthetic regression，然后新源码完整CI；有真实文件才能运行本地真实验收，不上传GitHub/CI，不提交正文/ID/title/路径或私有文件hash。
+
 ## Nova Archive — 最终验收与交付（2026-10-07）
 
 - success：**Nova Archive MVP implemented — synthetic / fixture validation passed**。分支 `feature/export-conversation`；实际测试源码 `7854f3ea06309fa20e5e26a7acc4b77750322968`，后续checkpoint/本提交仅文档与证据，不改已验证源码。
