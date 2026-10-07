@@ -44,6 +44,13 @@
         <activity android:name=".ArchiveActivity" android:exported="false" android:windowSoftInputMode="adjustResize" />
         <activity android:name=".ArchiveReaderActivity" android:exported="false" android:configChanges="orientation|screenSize|keyboardHidden" />
         <provider
+            android:name=".ArchiveAssetProvider"
+            android:authorities="${applicationId}.archiveassets"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data android:name="android.support.FILE_PROVIDER_PATHS" android:resource="@xml/archive_asset_paths" />
+        </provider>
+        <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.fileprovider"
             android:exported="false"

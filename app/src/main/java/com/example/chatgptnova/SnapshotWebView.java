@@ -18,7 +18,7 @@ import java.nio.charset.StandardCharsets;
 
 /** Separate non-executable renderer. Never navigates or accesses a chat bridge. */
 final class SnapshotWebView {
-    interface Callback {void ready();void failed(String code);default void openLink(String url){}}
+    interface Callback {void ready();void failed(String code);default void openLink(String url){}default WebResourceResponse localResource(String url){return null;}}
     final WebView web;
     final FrozenPageSnapshot snapshot;
     private final String documentTitle;
@@ -60,7 +60,12 @@ final class SnapshotWebView {
             @Override public WebResourceResponse shouldInterceptRequest(WebView v,WebResourceRequest r) {
                 // Static resources are fetched without the global WebView cookie jar,
                 // auth headers, JS, redirects to non-HTTPS, or backend API requests.
-                if(offline||r.isForMainFrame())return denied();
+                if(r.isForMainFrame())return denied();
+                if(offline) {
+                    if(!"GET".equals(r.getMethod()))return denied();
+                    WebResourceResponse local=callback.localResource(r.getUrl().toString());
+                    return local==null?denied():local;
+                }
                 return resource(r.getUrl().toString());
             }
             @Override public void onPageFinished(WebView v,String url) {

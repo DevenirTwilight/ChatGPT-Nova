@@ -77,3 +77,9 @@ ArchiveDisplay已按实证指针形式解析身份/entry，保留Map.text与inli
 Schema2非破坏增加assets与message_assets，原v1记录保留。资产官方身份唯一，original/sanitized display/private UUID path/MIME/bytes/hash/state/first-latest source；refs节点+ordinal/kind/raw。导入先streaming候选计划+唯一exact basename→实际wrapper ZIP entry，只有新/变更候选按空间预算copy。DB事务内publish文件后记录complete、DB end成功后才保留；失败删本次文件、旧complete不删。重复输入核old size/hash与source CRC/size，复用binary；保留first来源并更新latest。缺失/损坏输入不覆盖旧verified binary。reimport相同node raw仍可为schema1元数据档案建refs。onOpen持锁依据DB complete paths回收orphan/pending；删除Archive包含数据库/私有assets/pending/cache，Cookie与外部SAF输出保留。
 
 新5项native synthetic测试已加入API26/35/36，编译与JVM88通过但实际Android尚未验证。Reader/exports仍未接assets，AR1/3/4/5不能报完成。真实binary/corpus仍仅repo外审计，绝不进入fixtures/CI。
+
+## Step K：离线显示与portable输出接通
+
+Reader/PRINT通过精确origin+UUID资源白名单读取受校验image，保持JS/file/content/network关闭；新的offline callback不改变Stable网络静态资源规则。独立ArchiveAssetProvider scope仅archive_assets目录，MIME取detected metadata、content URI/临时READ permission、无app提示。Reader cards打开，Portable HTML移除所有private links，single image2MiB/total6MiB base64 PNG/JPEG；超限descriptor不读全图，文档card描述。MD descriptor，PRINT localimages+文档cards不appendbinary页。JVM93与nativeAPI编译pass，新native3和现有SAF/Printactual输出需CI验证。
+
+962df47的新persistent5/API35全部通过，但旧Archive20中cancel observer开Store被startup recovery/import lock阻塞超时；修为worker明确database phase后取消，保留A07及DB回滚断言/安全锁。失败证据保留。duplicate source/old binary按SHA+CRC/size校验，ambiguous transaction-end retain files待DB-grounded recovery。当前AR1/3/4/5尚未验收，realAR2结构检查已完成。

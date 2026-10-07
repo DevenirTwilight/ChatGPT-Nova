@@ -1,3 +1,12 @@
+## Attachment Restoration — Step K：offline Reader/provider/三格式接通（2026-10-07）
+
+- 分支feature/export-conversation，实施基线962df47；本提交为完整功能接通源码检查点。success本地JVM93（原48+files25/map7/display8/renderer5）、ECJ Android API编译core/reader/provider/新增native tests、host脚本/XML/diff；只有stub BuildConfig用于本地编译，不冒充Gradle或实际Android。
+- Reader/PRINT共用ordered Display，真实PNG/JPEG经精确app-local origin的UUID白名单流读取，offline仍blockNetworkLoads/JS/file/content关闭，无Cookie/bridge/network。文档cards经独立exportedfalse FileProvider，仅filesDir/nova-archive-assets，detected MIME由私有DB给出，content URI临时READ grant/ClipData、无app明确提示。HTML portable单文件仅bounded PNG/JPEG data URI（single2MiB/total6MiB，超限descriptor），HTML整体16Mi chars/MD2Mi；documents descriptor不输出private路径/identity/hash/无效链接。MD明确不携binary；PRINT同message模型+本地真实images，不合并附件PDF页。
+- 新3项native Reader/provider/recreate tests加入API26/35/36，原actual SAF HTML/MD与SystemPrint PDF test改用虚构PNG/DOCX ZIP，保留object text/recap/hidden thoughts/branch断言；保存真实PRINT-mode source，host必须pdfimages发现image，并核document descriptor。旧snapshot全回归/Legacy保留，共享Snapshot仅offline callback增加精确local resource接口，Stable路径行为不改。
+- failed962df47 CI37657777698/API35：新asset persistence5全部passed，原Archive20中transaction cancel1 timeout，19passed；观察者新开Store被合法onOpen/import lock阻塞，直到transaction结束。改安全Control.phase在worker beginTransaction后database，原cancel/A07/rollback断言保持，不删文件一致性锁；证据attachment-schema2-cancellation-fixture-failure.json保留。API26 source962 foundation2+asset5已job success；Legacy37657777774 success；新reader/实际images尚未验收。
+- 额外完整性：duplicate binary比较source SHA256+CRC/size且old private hash确认，不仅凭CRC跳过；endTransaction不确定异常保留新文件至DB-grounded recovery，避免误删可能已commit的文件。
+- 尚未AR1/3/4/5验收：新完整CI/actualHTMLMDPDF/Stable/Legacy待运行，用户真实DB/离线打开/重启/duplicate/人工内容仍pending。AR2仅真实重打包container/map/refs/binary审计passed。下一步新CI实际产物与签名实核，提供稳定APK/本地清单，用户手机真实AR3–5；不上传私有corpus/outputs，不merge/Release/版号签名变更。
+
 ## Attachment Restoration — Step J：schema2与私有binary恢复接入（2026-10-07）
 
 - 分支feature/export-conversation，实施基线657b436；本提交为源码检查点，CI revision以实际SHA为准。success本地ECJ Android API编译core+新增test、JVM88、python脚本语法/diff检查；**Android实际执行未验证**，不能称AR1/3完成。

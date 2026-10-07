@@ -135,13 +135,43 @@ final class ArchiveAssetStore implements AutoCloseable {
               && intact(old)
               && (entry == null
                   || (old.crc == container.getEntry(entry).getCrc()
-                      && old.bytes == container.getEntry(entry).getSize())))
+                      && old.bytes == container.getEntry(entry).getSize()
+                      && sourceHashMatches(container, container.getEntry(entry), old.hash))))
             prepared.put(identity, old);
           else if (entry != null) toCopy.add(entry);
         }
       }
     if (zip && !toCopy.isEmpty())
       batch = new ArchiveAssetFiles.Batch(input, filesDir, toCopy, control);
+  }
+
+  private boolean sourceHashMatches(ZipFile zip, ZipEntry entry, String expected)
+      throws IOException, ArchiveError {
+    MessageDigest hash;
+    try {
+      hash = MessageDigest.getInstance("SHA-256");
+    } catch (NoSuchAlgorithmException impossible) {
+      throw new AssertionError(impossible);
+    }
+    CRC32 crc = new CRC32();
+    long count = 0;
+    try (InputStream in = zip.getInputStream(entry)) {
+      byte[] buffer = new byte[32768];
+      int n;
+      while ((n = in.read(buffer)) != -1) {
+        control.check();
+        count += n;
+        if (count > ArchiveAssetFiles.SINGLE_LIMIT) throw new ArchiveError("A05_ARCHIVE_TOO_LARGE");
+        hash.update(buffer, 0, n);
+        crc.update(buffer, 0, n);
+      }
+    } catch (ZipException e) {
+      return false;
+    }
+    if (count != entry.getSize() || crc.getValue() != entry.getCrc()) return false;
+    StringBuilder digest = new StringBuilder();
+    for (byte b : hash.digest()) digest.append(String.format(Locale.ROOT, "%02x", b & 255));
+    return digest.toString().equals(expected);
   }
 
   private boolean intact(Row r) throws IOException, ArchiveError {
@@ -275,6 +305,13 @@ final class ArchiveAssetStore implements AutoCloseable {
     if (!r.state.equals("complete")) stats.unavailableAssets++;
     written.put(ref.identity, r);
     return r;
+  }
+
+  /**
+   * If SQLite endTransaction fails ambiguously, retain files until DB-grounded startup recovery.
+   */
+  void preserveOnUncertainCommit() {
+    if (batch != null) batch.committed();
   }
 
   void committed() {

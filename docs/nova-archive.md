@@ -1,3 +1,13 @@
+## Attachment Restoration：当前实现已接通，验收进行中
+
+SQLite schema2非破坏升级新增assets/message_assets；用户导入ZIP中已实证的sediment://file_32hex与metadata file_32hex精确对应file_32hex.dat，保留parts顺序，metadata重复图片去重，attachment-only合法。private UUID文件、streaming copy/CRC/hash/MIME/尺寸、官方身份upsert/first-latest来源、事务取消/失败与启动recovery、删除本地档案含assets/pending。binary不存SQLite BLOB，无DOM/在线Cookie/backend/cloud同步。
+
+图片Reader/PDF离线显示，文档card通过独立窄FileProvider临时content URI只读打开；no app有提示。单HTML PNG/JPEG bounded data URI，单图2MiB/合计6MiB；超限明确descriptor，document仅“Archived locally in Nova”描述不携binary/无private链接。Markdown只descriptor，不携图片/文档binary；PDF会话打印images+cards，不append附件文档页。未知binary不autoembed；缺失/损坏显式不可用，旧已校验资产不被坏输入覆盖。
+
+预算：container512MiB/JSONentry64MiB/JSONtotal256MiB原边界保持；独立asset single64MiB（真实PDF63.62MiB必要）/total256MiB/2048per import/256per conversation、ratio200、图片最大边16384/16Mpixel、nested OOXML2048entries/2MiBcentral/64MiBdeclared展开。恢复前新增候选bytes+DB/WAL128MiB+reserve32MiB剩余空间检查，SAF阶段另计input cache。官方格式未来可能变化，不保证任意export/附件/server完整性。
+
+本地JVM93与编译通过；新Android/实际三格式/签名/Stable/Legacy验收待CI，不称AR1完成。真实手机重打包数据已授权在repo外审计122/7250/7130、mapped326 CRC全部通过，230PNG/JPEG、82DOCX、5PDF、5XLSX、4unknown；此为AR2结构检查，真实Nova DB/Reader/重复/离线/人工AR3–5仍需用户本地验收。私有原文件/正文/ID/name/path/hash不进入repo/CI/fixtures/logs。详情[完整步骤与证据](archive-attachment-restoration.md)。下方历史schema1与metadata-only段落记录当时实现，以上为本轮当前状态。
+
 > 最新用户任务报告：真实会话兼容Level2–4已在用户设备通过（首次/重复导入和统计）。这是user-reported local validation，开发环境未读取该ZIP；下方历史pending保留其当时状态。附件metadata占位属于当前Nova实现限制，用户官方ZIP已报告包含实际binary。本轮Attachment Restoration正在进行，尚未接入Reader/exports，详见[调查/安全基础与待办](archive-attachment-restoration.md)。AR1–5与会话Level独立，未验收。
 
 # Nova Archive

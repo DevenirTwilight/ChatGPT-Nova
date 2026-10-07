@@ -118,4 +118,47 @@ final class ArchiveFixtures {
     }
     return bytes.toByteArray();
   }
+
+  static byte[] assetZip() throws Exception {
+    Map<String, Object> c = conversation("synthetic-0", "Archive 中 café 0", 100, true);
+    Map<String, Object> user =
+        ArchiveModel.object(
+            ArchiveModel.object(ArchiveModel.object(c.get("mapping")).get("u")).get("message"));
+    Map<String, Object> content = new LinkedHashMap<>(ArchiveModel.object(user.get("content")));
+    content.put(
+        "parts",
+        Arrays.asList(
+            "ARCHIVE-FIRST 中文 café 😀",
+            Collections.singletonMap("text", "SCHEMA-OBJECT-TEXT"),
+            Collections.singletonMap("asset_pointer", "sediment://" + ArchiveAssetFixtures.IMAGE)));
+    user.put("content", content);
+    Map<String, Object> image = new LinkedHashMap<>();
+    image.put("id", ArchiveAssetFixtures.IMAGE);
+    image.put("name", "fictional.png");
+    image.put("mime_type", "image/png");
+    Map<String, Object> doc = new LinkedHashMap<>();
+    doc.put("id", ArchiveAssetFixtures.DOC);
+    doc.put("name", "fictional.docx");
+    doc.put("mime_type", com.example.chatgptnova.archive.ArchiveAssetFiles.DOCX);
+    user.put("metadata", Collections.singletonMap("attachments", Arrays.asList(image, doc)));
+    Map<String, String> names = new LinkedHashMap<>();
+    names.put(ArchiveAssetFixtures.IMAGE + ".dat", "fictional.png");
+    names.put(ArchiveAssetFixtures.DOC + ".dat", "fictional.docx");
+    Map<String, byte[]> entries = new LinkedHashMap<>();
+    entries.put(
+        "conversations.json",
+        ArchiveModel.JSON
+            .toJson(Collections.singletonList(c))
+            .getBytes(java.nio.charset.StandardCharsets.UTF_8));
+    entries.put(
+        "conversation_asset_file_names.json",
+        ArchiveModel.JSON.toJson(names).getBytes(java.nio.charset.StandardCharsets.UTF_8));
+    entries.put(ArchiveAssetFixtures.IMAGE + ".dat", ArchiveAssetFixtures.image("png"));
+    Map<String, byte[]> office = new LinkedHashMap<>();
+    office.put("[Content_Types].xml", "<Types/>".getBytes(java.nio.charset.StandardCharsets.UTF_8));
+    office.put(
+        "word/document.xml", "<fictional/>".getBytes(java.nio.charset.StandardCharsets.UTF_8));
+    entries.put(ArchiveAssetFixtures.DOC + ".dat", ArchiveAssetFixtures.zip(office));
+    return ArchiveAssetFixtures.zip(entries);
+  }
 }

@@ -1,0 +1,21 @@
+{
+  "sourceCommit": "962df47c75e46714c92621963eb1a9fce9ca14f4",
+  "run": 37657777698,
+  "api": 35,
+  "assetPersistenceTests": {
+    "tests": 5,
+    "passed": true,
+    "independentlyDownloadedArtifact": 11500500419
+  },
+  "archiveTests": {
+    "tests": 20,
+    "failures": 1,
+    "method": "cancellationDuringDatabaseTransactionRollsBack",
+    "failure": "Timed out: transaction started"
+  },
+  "cause": "Opening an observer ArchiveStore waits for the exclusive startup-recovery/import lock, so polling running source row cannot observe the active transaction",
+  "fix": "Safe volatile phase marker set on the importing thread after beginTransaction; cancel only while phase=database; preserve all rollback assertions",
+  "startupRecoveryLockRemoved": false,
+  "stableSuitesInFailedJob": "not executed",
+  "realDataIncluded": false
+}

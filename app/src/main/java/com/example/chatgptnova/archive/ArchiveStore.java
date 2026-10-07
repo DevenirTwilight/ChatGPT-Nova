@@ -250,12 +250,14 @@ public final class ArchiveStore extends SQLiteOpenHelper {
     boolean transaction = false;
     ArchiveAssetStore assets = null;
     try {
+      control.phase = "planning";
       assets =
           new ArchiveAssetStore(
               db, context.getFilesDir(), file, zip, importId, start, control, stats);
       final ArchiveAssetStore assetSink = assets;
       db.beginTransaction();
       transaction = true;
+      control.phase = "database";
       new ArchiveImporter(control)
           .read(
               file,
@@ -284,8 +286,10 @@ public final class ArchiveStore extends SQLiteOpenHelper {
           db.endTransaction();
           if (failure == null && assets != null) assets.committed();
         } catch (RuntimeException e) {
+          if (assets != null) assets.preserveOnUncertainCommit();
           failure = new ArchiveError("A06_DATABASE_WRITE_FAILED");
         }
+      control.phase = "finished";
     }
     if (assets != null) {
       try {
@@ -454,6 +458,39 @@ public final class ArchiveStore extends SQLiteOpenHelper {
     }
     header.put("mapping", mapping);
     return new Conversation(header);
+  }
+
+  public Map<String, ArchiveAsset> assets(long conversation) throws ArchiveError {
+    Map<String, ArchiveAsset> out = new HashMap<>();
+    try (Cursor q =
+        getReadableDatabase()
+            .rawQuery(
+                "SELECT DISTINCT"
+                    + " a.official_id,a.display_name,a.detected_mime,a.state,a.bytes,a.width,a.height,a.relative_path"
+                    + " FROM assets a JOIN message_assets r ON r.asset=a.row_id WHERE"
+                    + " r.conversation=?",
+                new String[] {Long.toString(conversation)})) {
+      while (q.moveToNext()) {
+        java.io.File file =
+            q.getString(7).isEmpty()
+                ? null
+                : ArchiveAssetFiles.resolve(
+                    new java.io.File(context.getFilesDir(), "nova-archive-assets"), q.getString(7));
+        out.put(
+            q.getString(0),
+            new ArchiveAsset(
+                q.getString(1),
+                q.getString(2),
+                q.getString(3),
+                q.getLong(4),
+                q.getInt(5),
+                q.getInt(6),
+                file));
+      }
+      return Collections.unmodifiableMap(out);
+    } catch (java.io.IOException | RuntimeException e) {
+      throw new ArchiveError("A06_DATABASE_WRITE_FAILED");
+    }
   }
 
   public static String normalize(String s) {

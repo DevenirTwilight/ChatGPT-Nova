@@ -158,4 +158,159 @@ public final class ArchiveRenderer {
     }
     return out.append("</body></html>").toString();
   }
+
+  public enum AssetMode {
+    READER,
+    PORTABLE,
+    PRINT
+  }
+
+  public static final String LOCAL_ORIGIN = "https://nova-archive.invalid";
+  private static final long EMBED_IMAGE_LIMIT = 2L * 1024 * 1024,
+      EMBED_TOTAL_LIMIT = 6L * 1024 * 1024;
+
+  /** Same ordered interpretation for reader, portable HTML and print; documents are descriptors. */
+  public static String html(
+      Conversation c,
+      ArchiveTree.Selection selection,
+      Map<String, ArchiveAsset> assets,
+      AssetMode mode)
+      throws ArchiveError {
+    String base =
+        html(
+            c,
+            new ArchiveTree.Selection(
+                Collections.emptyList(), selection.warnings, selection.scope));
+    base =
+        base.replace(
+            "img-src 'none'",
+            mode == AssetMode.PORTABLE ? "img-src data:" : "img-src https://nova-archive.invalid");
+    base = base.replace("metadata 保存在本地，不下载附件。", "来自导入文件，离线保存在本地；独立文档内容不合并进会话导出。");
+    base =
+        base.replace(
+            "</style>",
+            "figure{margin:12px"
+                + " 0}img{max-width:100%;height:auto}figcaption,.asset{font-size:13px;overflow-wrap:anywhere}.asset{border:1px"
+                + " solid #ccd3dc;padding:10px;margin:8px 0}@media"
+                + " print{img{max-height:240mm;object-fit:contain}figure{break-inside:avoid}a.asset-open{display:none}}</style>");
+    StringBuilder out = new StringBuilder(base.substring(0, base.lastIndexOf("</body>")));
+    long embedded = 0;
+    for (ArchiveModel.Node node : selection.messages) {
+      if (!node.displayable()) continue;
+      out.append("<article><h2>").append(role(node));
+      if (!node.channel.isEmpty()) out.append(" · ").append(escape(node.channel));
+      out.append("</h2>");
+      for (ArchiveDisplay.Block block : ArchiveDisplay.visible(node)) {
+        if (block.asset == null) {
+          out.append(renderMarkdown(block.text));
+          continue;
+        }
+        ArchiveDisplay.Ref ref = block.asset;
+        ArchiveAsset asset = assets.get(ref.identity);
+        String name = asset == null ? ref.displayName : asset.name;
+        String label = (ref.ordinal + 1) + ". " + name;
+        if (asset == null || !asset.available()) {
+          out.append("<div class=\"asset\">")
+              .append(escape(label))
+              .append(" · 附件未包含在导出文件中或无法读取</div>");
+          continue;
+        }
+        String src = null;
+        if (asset.image()) {
+          if (mode != AssetMode.PORTABLE) src = LOCAL_ORIGIN + "/images/" + asset.file.getName();
+          else if (asset.bytes <= EMBED_IMAGE_LIMIT
+              && embedded + asset.bytes <= EMBED_TOTAL_LIMIT) {
+            try (java.io.InputStream in = new java.io.FileInputStream(asset.file);
+                java.io.ByteArrayOutputStream bytes = new java.io.ByteArrayOutputStream()) {
+              byte[] b = new byte[32768];
+              int n;
+              long count = 0;
+              while ((n = in.read(b)) != -1) {
+                count += n;
+                if (count > EMBED_IMAGE_LIMIT) throw new java.io.IOException();
+                bytes.write(b, 0, n);
+              }
+              if (count != asset.bytes) throw new java.io.IOException();
+              src =
+                  "data:"
+                      + asset.mime
+                      + ";base64,"
+                      + java.util.Base64.getEncoder().encodeToString(bytes.toByteArray());
+              embedded += count;
+            } catch (java.io.IOException e) {
+              src = null;
+            }
+          }
+        }
+        if (src != null)
+          out.append("<figure><img src=\"")
+              .append(escape(src))
+              .append("\" alt=\"")
+              .append(escape(name))
+              .append("\" width=\"")
+              .append(asset.width)
+              .append("\" height=\"")
+              .append(asset.height)
+              .append("\"><figcaption>")
+              .append(escape(label))
+              .append("</figcaption></figure>");
+        out.append("<div class=\"asset\">")
+            .append(escape(label))
+            .append(" · ")
+            .append(escape(asset.mime))
+            .append(" · ")
+            .append(asset.bytes)
+            .append(" bytes · Archived locally in Nova");
+        if (asset.image() && src == null) out.append(" · 图片超过单文件内嵌预算，原图仍在Nova本地");
+        if (mode == AssetMode.READER)
+          out.append(" · <a class=\"asset-open\" href=\"")
+              .append(LOCAL_ORIGIN)
+              .append("/attachments/")
+              .append(asset.file.getName())
+              .append("\">打开附件</a>");
+        out.append("</div>");
+      }
+      out.append("</article>");
+      if (out.length() > 16 * 1024 * 1024) throw new ArchiveError("A05_ARCHIVE_TOO_LARGE");
+    }
+    return out.append("</body></html>").toString();
+  }
+
+  public static String markdown(
+      Conversation c, ArchiveTree.Selection selection, Map<String, ArchiveAsset> assets)
+      throws ArchiveError {
+    StringBuilder out =
+        new StringBuilder(
+            markdown(
+                c,
+                new ArchiveTree.Selection(
+                    Collections.emptyList(), selection.warnings, selection.scope)));
+    for (ArchiveModel.Node node : selection.messages) {
+      if (!node.displayable()) continue;
+      out.append("## ").append(role(node)).append("\n\n");
+      for (ArchiveDisplay.Block block : ArchiveDisplay.visible(node)) {
+        if (block.asset == null) out.append(block.text).append("\n\n");
+        else {
+          ArchiveAsset asset = assets.get(block.asset.identity);
+          String name =
+              (asset == null ? block.asset.displayName : asset.name)
+                  .replace("\\", "\\\\")
+                  .replace("[", "\\[")
+                  .replace("]", "\\]");
+          out.append("附件 ").append(block.asset.ordinal + 1).append(": ").append(name);
+          if (asset == null || !asset.available()) out.append(" · 附件未包含在导出文件中或无法读取");
+          else
+            out.append(" · ")
+                .append(asset.mime)
+                .append(" · ")
+                .append(asset.bytes)
+                .append(" bytes · Archived locally in Nova")
+                .append(asset.image() ? " · 图片原件保存在Nova；单Markdown不携带binary" : "");
+          out.append("\n\n");
+        }
+        if (out.length() > 2 * 1024 * 1024) throw new ArchiveError("A05_ARCHIVE_TOO_LARGE");
+      }
+    }
+    return out.toString();
+  }
 }

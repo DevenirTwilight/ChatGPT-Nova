@@ -5,7 +5,6 @@ import android.content.*;
 import android.net.Uri;
 import android.os.*;
 import android.print.*;
-import android.view.*;
 import android.widget.*;
 import com.example.chatgptnova.archive.*;
 import java.io.*;
@@ -21,6 +20,7 @@ public final class ArchiveReaderActivity extends Activity {
   private ArchiveModel.Conversation conversation;
   private ArchiveTree.Selection selection;
   private String html, pendingText, pendingName;
+  private volatile java.util.Map<String, ArchiveAsset> assets = java.util.Collections.emptyMap();
   private boolean all;
   private volatile boolean destroyed;
   private volatile int generation;
@@ -68,15 +68,19 @@ public final class ArchiveReaderActivity extends Activity {
             () -> {
               try {
                 ArchiveModel.Conversation c;
+                java.util.Map<String, ArchiveAsset> capturedAssets;
                 try (ArchiveStore store = new ArchiveStore(getApplicationContext())) {
                   c = store.load(row);
+                  capturedAssets = store.assets(row);
                 }
                 ArchiveTree.Selection s = ArchiveTree.select(c, requestedAll);
-                String rendered = ArchiveRenderer.html(c, s);
+                String rendered =
+                    ArchiveRenderer.html(c, s, capturedAssets, ArchiveRenderer.AssetMode.READER);
                 runOnUiThread(
                     () -> {
                       if (destroyed || generation != current) return;
                       conversation = c;
+                      assets = capturedAssets;
                       selection = s;
                       html = rendered;
                       showReader(current);
@@ -122,7 +126,15 @@ public final class ArchiveReaderActivity extends Activity {
                   if (!destroyed) status.setText("A10_READER_FAILED：本地阅读器无法加载。");
                 }
 
+                public android.webkit.WebResourceResponse localResource(String url) {
+                  return localImage(url);
+                }
+
                 public void openLink(String url) {
+                  if (url.startsWith(ArchiveRenderer.LOCAL_ORIGIN + "/attachments/")) {
+                    openAsset(url);
+                    return;
+                  }
                   Uri u = Uri.parse(url);
                   if (!"https".equalsIgnoreCase(u.getScheme())
                       && !"http".equalsIgnoreCase(u.getScheme())) return;
@@ -160,19 +172,94 @@ public final class ArchiveReaderActivity extends Activity {
   }
 
   private void save(boolean asHtml) {
+    int current = generation;
+    export.setEnabled(false);
+    branch.setEnabled(false);
+    status.setText("正在准备导出…");
+    ArchiveModel.Conversation c = conversation;
+    ArchiveTree.Selection selected = selection;
+    java.util.Map<String, ArchiveAsset> captured = assets;
+    new Thread(
+            () -> {
+              try {
+                String text =
+                    asHtml
+                        ? ArchiveRenderer.html(
+                            c, selected, captured, ArchiveRenderer.AssetMode.PORTABLE)
+                        : ArchiveRenderer.markdown(c, selected, captured);
+                runOnUiThread(
+                    () -> {
+                      if (destroyed || current != generation) return;
+                      export.setEnabled(true);
+                      branch.setEnabled(true);
+                      pendingText = text;
+                      pendingName =
+                          "Nova-archive-"
+                              + PageSnapshotExport.documentName(c.title)
+                              + (asHtml ? ".html" : ".md");
+                      Intent i = new Intent(Intent.ACTION_CREATE_DOCUMENT);
+                      i.addCategory(Intent.CATEGORY_OPENABLE);
+                      i.setType(asHtml ? "text/html" : "text/markdown");
+                      i.putExtra(Intent.EXTRA_TITLE, pendingName);
+                      startActivityForResult(i, SAVE);
+                    });
+              } catch (ArchiveError | RuntimeException e) {
+                runOnUiThread(
+                    () -> {
+                      if (!destroyed && current == generation) {
+                        export.setEnabled(true);
+                        branch.setEnabled(true);
+                        status.setText("A11_EXPORT_FAILED：无法准备本地会话导出。");
+                      }
+                    });
+              }
+            },
+            "NovaArchivePortableExport")
+        .start();
+  }
+
+  private ArchiveAsset urlAsset(String url, String kind) {
+    if (destroyed) return null;
+    String prefix = ArchiveRenderer.LOCAL_ORIGIN + "/" + kind + "/";
+    if (!url.startsWith(prefix)) return null;
+    String filename = url.substring(prefix.length());
+    if (!filename.matches("[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}\\.bin")) return null;
+    for (ArchiveAsset asset : assets.values())
+      if (asset.available() && asset.file.getName().equals(filename)) return asset;
+    return null;
+  }
+
+  private android.webkit.WebResourceResponse localImage(String url) {
+    ArchiveAsset asset = urlAsset(url, "images");
+    if (asset == null || !asset.image()) return null;
     try {
-      pendingText = asHtml ? html : ArchiveRenderer.markdown(conversation, selection);
-      pendingName =
-          "Nova-archive-"
-              + PageSnapshotExport.documentName(conversation.title)
-              + (asHtml ? ".html" : ".md");
-      Intent i = new Intent(Intent.ACTION_CREATE_DOCUMENT);
-      i.addCategory(Intent.CATEGORY_OPENABLE);
-      i.setType(asHtml ? "text/html" : "text/markdown");
-      i.putExtra(Intent.EXTRA_TITLE, pendingName);
-      startActivityForResult(i, SAVE);
-    } catch (ArchiveError e) {
-      status.setText(e.code + "：" + e.explanation());
+      return new android.webkit.WebResourceResponse(
+          asset.mime, null, new FileInputStream(asset.file));
+    } catch (IOException e) {
+      return null;
+    }
+  }
+
+  private void openAsset(String url) {
+    ArchiveAsset asset = urlAsset(url, "attachments");
+    if (asset == null) {
+      Toast.makeText(this, "附件未包含在导出文件中或无法读取", Toast.LENGTH_SHORT).show();
+      return;
+    }
+    try {
+      Uri uri =
+          androidx.core.content.FileProvider.getUriForFile(
+              this, getPackageName() + ".archiveassets", asset.file, asset.name);
+      Intent intent =
+          new Intent(Intent.ACTION_VIEW)
+              .setDataAndType(uri, asset.mime)
+              .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+      intent.setClipData(ClipData.newRawUri("Nova Archive attachment", uri));
+      startActivity(intent);
+    } catch (ActivityNotFoundException e) {
+      Toast.makeText(this, "未找到可打开此类附件的应用", Toast.LENGTH_LONG).show();
+    } catch (RuntimeException e) {
+      Toast.makeText(this, "无法打开本地附件", Toast.LENGTH_SHORT).show();
     }
   }
 
@@ -230,10 +317,15 @@ public final class ArchiveReaderActivity extends Activity {
           new SnapshotWebView(
               this,
               host,
-              html,
+              ArchiveRenderer.html(
+                  conversation, selection, assets, ArchiveRenderer.AssetMode.PRINT),
               "Nova-archive-" + conversation.title,
               false,
               new SnapshotWebView.Callback() {
+                public android.webkit.WebResourceResponse localResource(String url) {
+                  return localImage(url);
+                }
+
                 public void ready() {
                   if (destroyed || printer == null) return;
                   try {
@@ -262,7 +354,7 @@ public final class ArchiveReaderActivity extends Activity {
                   printFailed();
                 }
               });
-    } catch (RuntimeException e) {
+    } catch (ArchiveError | RuntimeException e) {
       printFailed();
     }
   }

@@ -34,6 +34,10 @@ public final class ArchiveImporter {
 
   public static final class Control {
     public final AtomicBoolean cancelled = new AtomicBoolean();
+
+    /** Safe phase marker for UI/tests; no source data or identifiers. */
+    public volatile String phase = "created";
+
     private final long started;
 
     public Control() {

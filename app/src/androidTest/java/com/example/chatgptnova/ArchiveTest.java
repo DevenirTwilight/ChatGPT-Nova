@@ -149,6 +149,16 @@ public final class ArchiveTest extends FixtureActivity {
     }
   }
 
+  private void storeAssets() throws Exception {
+    File f = input(ArchiveFixtures.assetZip());
+    try (ArchiveStore db = new ArchiveStore(instrument.getTargetContext())) {
+      db.importFile(
+          f, true, "fictional.zip", UUID.randomUUID().toString(), new ArchiveImporter.Control());
+    } finally {
+      f.delete();
+    }
+  }
+
   private long firstRow() {
     try (ArchiveStore db = new ArchiveStore(instrument.getTargetContext())) {
       return db.list("", false, 1).get(0).id;
@@ -277,17 +287,7 @@ public final class ArchiveTest extends FixtureActivity {
               }
             });
     worker.start();
-    waitFor(
-        "transaction started",
-        () -> {
-          try (ArchiveStore db = new ArchiveStore(instrument.getTargetContext());
-              android.database.Cursor q =
-                  db.getReadableDatabase()
-                      .rawQuery(
-                          "SELECT status FROM import_sources WHERE id=?", new String[] {source})) {
-            return q.moveToFirst() && q.getString(0).equals("running");
-          }
-        });
+    waitFor("transaction started", () -> "database".equals(control.phase));
     control.cancelled.set(true);
     worker.join(60000);
     assertFalse(worker.isAlive());
@@ -406,7 +406,7 @@ public final class ArchiveTest extends FixtureActivity {
 
   @Test
   public void readerHtmlAndMarkdownSafUseArchiveData() throws Exception {
-    store(ArchiveFixtures.json(1, true));
+    storeAssets();
     openReader();
     assertNull(((SnapshotWebView) field(reader, "reader")).snapshot);
     intercept(Intent.ACTION_CREATE_DOCUMENT, OUTPUT, false);
@@ -421,6 +421,9 @@ public final class ArchiveTest extends FixtureActivity {
     assertFalse(html.contains("SYNTHETIC-HIDDEN-THOUGHT"));
     assertFalse(html.contains("OTHER-BRANCH"));
     assertTrue(html.contains("<table>"));
+    assertTrue(html.contains("data:image/png;base64,"));
+    assertTrue(html.contains("fictional.docx"));
+    assertFalse(html.contains("/attachments/"));
     evidence("archive.html", html.getBytes(StandardCharsets.UTF_8));
     click("导出");
     click("Markdown");
@@ -438,6 +441,8 @@ public final class ArchiveTest extends FixtureActivity {
     assertTrue(md.contains("CODE-TAIL"));
     assertTrue(md.contains("```java"));
     assertTrue(md.contains("current-branch"));
+    assertTrue(md.contains("fictional.png"));
+    assertTrue(md.contains("fictional.docx"));
     evidence("archive.md", md.getBytes(StandardCharsets.UTF_8));
     click("查看全部分支");
     waitFor("all nodes ready", () -> readerStatus().contains("all-nodes"));
@@ -604,11 +609,19 @@ public final class ArchiveTest extends FixtureActivity {
 
   @Test
   public void actualSystemPrintSavesArchivePdf() throws Exception {
-    store(ArchiveFixtures.json(1, true));
+    storeAssets();
     openReader();
-    evidence(
-        "archive-print-source.html",
-        ((String) field(reader, "html")).getBytes(StandardCharsets.UTF_8));
+    try (ArchiveStore db = new ArchiveStore(instrument.getTargetContext())) {
+      ArchiveModel.Conversation c = db.load(firstRow());
+      evidence(
+          "archive-print-source.html",
+          ArchiveRenderer.html(
+                  c,
+                  ArchiveTree.select(c, false),
+                  db.assets(firstRow()),
+                  ArchiveRenderer.AssetMode.PRINT)
+              .getBytes(StandardCharsets.UTF_8));
+    }
     click("导出");
     click("打印 / PDF");
     waitFor(
