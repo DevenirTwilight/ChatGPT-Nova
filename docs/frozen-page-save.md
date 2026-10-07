@@ -56,7 +56,7 @@ Android35/36 x86_64 受控模拟器保存实际 HTML/MD/PDF、标准系统打印
 
 ## 11. Legacy 保留（2026-10-07隔离更新）
 
-默认debug/release的ENABLE_LEGACY_SCANNER=false，不构造旧controller或注入旧脚本。显式-PnovaLegacyScanner=true才有设置→实验功能入口，需警告确认并主动开始；不属于正式保存路径。旧测试转独立workflow，下面历史16项执行描述仍是原验收证据。本轮验收另外记录于[Legacy说明](legacy-conversation-scanner.md)。未来Archive仅规划导入官方Data Export，未实现。
+默认debug/release的ENABLE_LEGACY_SCANNER=false，不构造旧controller或注入旧脚本。显式-PnovaLegacyScanner=true才有设置→实验功能入口，需警告确认并主动开始；不属于正式保存路径。旧测试转独立workflow，下面历史16项执行描述仍是原验收证据。本轮验收另外记录于[Legacy说明](legacy-conversation-scanner.md)。此段原属Legacy隔离轮次；当前Nova Archive已独立实现官方导出兼容ZIP/JSON本地导入MVP，synthetic / fixture验收见[Archive说明](nova-archive.md)，不与Frozen Snapshot数据模型混用。
 
 dom-trial.js、scroll-trial.js、progress-discovery.js、locate-text.js 与旧扫描 controller/相关测试证据保留为 legacy。正式菜单不启动扫描，不扩展 H02/H03/H06、overlap/跨窗口缓存/完整历史推断。旧独立浏览器测试继续执行，不把合成通过当历史完整证明。
 
@@ -76,7 +76,7 @@ DOM100000元素，最终JSON12Mi UTF-16 units；native外层callback24Mi检查�
 
 ## 下载与证据
 
-本轮最新源码 `3149507ef3fb88d66428dde610894ccac82cf44b` 的默认关闭扫描器 APK 在 [正式构建 artifact](https://github.com/DevenirTwilight/ChatGPT-Nova/actions/runs/37593888527/artifacts/11470220775)，沿用原签名/包名/code14；实验包是另一个显式开启构建，不能当默认正式包。当前35/36各43项及实际HTML/MD/四份31页PDF已通过并独立核对；原生打印测试补初态/分页同步，生产冻结/打印代码不改，失败历史留证。当前验证见 [Legacy 隔离报告](../tools/legacy-scanner/evidence/isolation-validation.json)，本节以下ac4776f链接保留为此前Frozen Snapshot验收历史。
+Legacy隔离轮次源码 `3149507ef3fb88d66428dde610894ccac82cf44b` 的默认关闭扫描器 APK 在 [正式构建 artifact](https://github.com/DevenirTwilight/ChatGPT-Nova/actions/runs/37593888527/artifacts/11470220775)，沿用原签名/包名/code14；实验包是另一个显式开启构建，不能当默认正式包。当前35/36各43项及实际HTML/MD/四份31页PDF已通过并独立核对；原生打印测试补初态/分页同步，生产冻结/打印代码不改，失败历史留证。当前验证见 [Legacy 隔离报告](../tools/legacy-scanner/evidence/isolation-validation.json)，本节以下ac4776f链接保留为此前Frozen Snapshot验收历史。
 
 [主 APK artifact（解压后安装 ChatGPT-Nova.apk）](https://github.com/DevenirTwilight/ChatGPT-Nova/actions/runs/37556129018/artifacts/11454731981)仅含主包和校验/签名/大小记录；需要GitHub登录，非公开Release。可同签名覆盖安装，不要求清除账号。版本未频繁递增，诊断buildRevision为ac4776ff31feaed9794dbc434e423ac291fbee83。
 
@@ -87,3 +87,7 @@ DOM100000元素，最终JSON12Mi UTF-16 units；native外层callback24Mi检查�
 - [阶段A原失败与四PDF独立重验](../tools/snapshot/evidence/android-pdf-firefox-A7.json)
 
 最后文档提交不会改变已测APK源码或触发新Release。CI artifact含实际HTML/MD/PDF fixture与测试日志；真实聊天正文未入库。
+
+## Archive接入后的正式回归（2026-10-07）
+
+实际源码 `7854f3ea06309fa20e5e26a7acc4b77750322968`，[CI37609817075](https://github.com/DevenirTwilight/ChatGPT-Nova/actions/runs/37609817075) 全success。API35/36各17套43次Stable执行通过；独立下载核对正式HTML/Markdown及四份31页PDF（System Print与Firefox同静态HTML源），原签名升级、登录/IME/上传下载/share/生命周期保持。Archive新增独立offline静态HTML入口，不改变FrozenPageSnapshot语义；snapshot tests仍10项。证据见[API35](../tools/archive/evidence/accepted-runtime-35.json)、[API36](../tools/archive/evidence/accepted-runtime-36.json)。真实账号/物理设备仍未验证，历史失败证据不删。

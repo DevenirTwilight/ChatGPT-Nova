@@ -1,3 +1,15 @@
+## Nova Archive — 最终验收与交付（2026-10-07）
+
+- success：**Nova Archive MVP implemented — synthetic / fixture validation passed**。分支 `feature/export-conversation`；实际测试源码 `7854f3ea06309fa20e5e26a7acc4b77750322968`，后续checkpoint/本提交仅文档与证据，不改已验证源码。
+- [CI37609817075](https://github.com/DevenirTwilight/ChatGPT-Nova/actions/runs/37609817075) 完成全success：build/Gradle/lint/browser13/JVM39，API26基础2，API35/36各Archive17+独立进程seed/restart2，以及原正式17套43次执行。没有仅依赖旧结果或算法停止推断完整性。
+- 独立下载两份API35/36 Artifact核对实际HTML/Markdown/PDF、已安装APK指标与已验证签名包一致。Archive各16页PDF首尾/code/table/中法英/LaTeX源通过，OTHER-BRANCH不混入主链导出；原Frozen/System与Firefox四份31页PDF Unicode/首尾/长代码/表格/图片/晚变更排除通过，同打印HTML源，Firefox首页必要时独立render/OCR验证。
+- 证据 `tools/archive/evidence/accepted-runtime-35.json`、`accepted-runtime-36.json`、`accepted-package-verification.json`。每份记录源码/CI/artifact ID与SHA256，实际文件统计；此前失败报告保留，不改写红CI历史。
+- 架构：Settings→独立ArchiveActivity/Reader；SAF主动ZIP/JSON→有界streaming parser→私有SQLite schema1事务upsert；current_node主链/全部节点明确安全顺序，保留分支/未知metadata/显式null；标题搜索分页200；Archive模型独立渲染HTML/MD→offline静态WebView System Print。删除本地库/临时cache，不清在线登录。诊断无正文/真实ID，不用Cookie/DOM/backend/cloud。
+- Stable保存当前已加载网页/FrozenPageSnapshot语义不变；Legacy scanner/四JS/测试/失败证据全部保留。独立LegacyCI37604491058源码66172a1d各API19通过+2旧Gecko专项Ignore；legacy调用链/构建依赖/flag/共享SnapshotWebView/MainActivity与最终源码一致，默认false，不称完整会话。
+- 包名/原签名/code14/name不改；APK v2签名/content digest实核。未merge main、force push或发布GitHub Release。README、nova-archive、frozen-page-save、Legacy分层与REVIEW同步。
+- not verified：无真实官方Data Export文件、真实账号/物理设备/OEM WebView/任意未来OpenAI schema验证。ZIP64/多卷/自解压/超安全限额不支持；附件metadata占位、LaTeX源、标题搜索；完整性仅依赖用户导入本身，Nova不证明服务器全部历史。详见 `docs/nova-archive.md`。
+- 下一步：用户本地真实兼容官方导出人工验证（聊天正文不得提交GitHub）；然后按需要单独评估SQLite FTS全文检索。不要恢复DOM完整历史路线，不删除legacy。本轮工作已完成，无进行中的实现步骤。
+
 ## Nova Archive — Step 4m：最新修正源码的安装包核对（2026-10-07）
 
 - 分支 `feature/export-conversation`；实际源码 `7854f3ea06309fa20e5e26a7acc4b77750322968`，CI `37609817075`。
