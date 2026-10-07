@@ -1,3 +1,7 @@
+## A6现场补充
+
+API35 CI37550505533仅Firefox Save as PDF失败，More正常展开但按钮在ScrollView下方。证据11452764196；新测试通过公开菜单ACTION_SCROLL_FORWARD查找，不修改生产保存实现、不滚聊天页。API36尚需读取。未取得Firefox实物，不记A/B通过，不开始B。
+
 # 验证与审查（2026-10-07）
 
 最新状态以实际远端及docs/handoff/latest.md为准。当前路线普通HTML为唯一快照，HTML/MD同clone，PDF打印同HTML；停止Share/MHTML/完整历史workaround。

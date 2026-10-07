@@ -81,6 +81,14 @@ try:
     independent('markdown-content',markdown)
     independent('pdf-content',pdf)
     independent('chromium-open',lambda:subprocess.run(['node','tools/snapshot/open-html.cjs'],check=True))
+    suite('com.example.chatgptnova.FirefoxSnapshotTest#sameFrozenHtmlCanBeSavedAsPdfInFirefoxAndroid','firefox-android',1)
+    for name in ['firefox-source.html','firefox-frozen.pdf']:
+        independent('pull-'+name,lambda name=name:adb('pull','/sdcard/Android/data/com.example.chatgptnova/files/'+name,str(out/name)))
+    for name in ['firefox-ui-failure.txt','firefox-ui-failure.png']:
+        try:adb('pull','/sdcard/Android/data/com.example.chatgptnova/files/'+name,str(out/name))
+        except Exception:pass
+    independent('firefox-pdf-content',lambda:pdf('firefox-frozen.pdf'))
+    (out/'firefox-version.txt').write_text(adb('shell','dumpsys','package','org.mozilla.firefox'))
     for permission in ['CAMERA','RECORD_AUDIO']:adb('shell','pm','grant','com.example.chatgptnova','android.permission.'+permission)
     suite('com.example.chatgptnova.NovaWebViewTest','web-regressions',9)
     suite('com.example.chatgptnova.WebShareTest','share-regressions',5)
@@ -99,14 +107,7 @@ try:
     suite('com.example.chatgptnova.UpgradeTest#testSeedDataPersistedBeforeUpgrade','upgrade-persistence',1)
     assert 'Success' in adb('install','-r','dist/ChatGPT-Nova.apk')
     suite('com.example.chatgptnova.UpgradeTest#testUpgradeDataPreserved','upgrade-current',1)
-    suite('com.example.chatgptnova.FirefoxSnapshotTest#sameFrozenHtmlCanBeSavedAsPdfInFirefoxAndroid','firefox-android',1)
-    for name in ['firefox-source.html','firefox-frozen.pdf']:
-        independent('pull-'+name,lambda name=name:adb('pull','/sdcard/Android/data/com.example.chatgptnova/files/'+name,str(out/name)))
-    for name in ['firefox-ui-failure.txt','firefox-ui-failure.png']:
-        try:adb('pull','/sdcard/Android/data/com.example.chatgptnova/files/'+name,str(out/name))
-        except Exception:pass
-    independent('firefox-pdf-content',lambda:pdf('firefox-frozen.pdf'))
-    (out/'firefox-version.txt').write_text(adb('shell','dumpsys','package','org.mozilla.firefox'))
+
 finally:
     (out/'checks.json').write_text(json.dumps({'failures':failures,'scope':'synthetic-fixtures'},ensure_ascii=False,indent=2))
     (out/'logcat.txt').write_text(adb('logcat','-d','-v','threadtime'))

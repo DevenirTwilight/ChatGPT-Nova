@@ -19,6 +19,14 @@ public final class FirefoxSnapshotTest extends FrozenPageSnapshotTest {
     private static String quote(String s){return "'"+s.replace("'","'\\''")+"'";}
     private Set<String> downloads(){Set<String> paths=new HashSet<>();for(String s:shell("find /sdcard/Download -maxdepth 3 -type f -name '*.pdf'").split("\\r?\\n"))if(s.startsWith("/sdcard/Download/"))paths.add(s);return paths;}
     private boolean press(String text){AccessibilityNodeInfo n=find(instrument.getUiAutomation().getRootInActiveWindow(),text);for(int i=0;n!=null&&i<5;i++,n=n.getParent())if(n.isClickable()&&n.isEnabled())return n.performAction(AccessibilityNodeInfo.ACTION_CLICK);return false;}
+    private boolean scrollMenu(AccessibilityNodeInfo n){
+        if(n==null)return false;
+        // Observed Firefox menu ScrollView, not the underlying webpage.
+        if(n.isVisibleToUser()&&n.isScrollable()&&"android.widget.ScrollView".contentEquals(n.getClassName()))
+            return n.performAction(AccessibilityNodeInfo.ACTION_SCROLL_FORWARD);
+        for(int i=0;i<n.getChildCount();i++)if(scrollMenu(n.getChild(i)))return true;
+        return false;
+    }
     @Test public void sameFrozenHtmlCanBeSavedAsPdfInFirefoxAndroid() throws Exception {
         org.junit.Assume.assumeTrue(activity.getPackageManager().getLaunchIntentForPackage("org.mozilla.firefox")!=null);
         FrozenPageSnapshot snapshot=freeze();mutate();main(()->exporter().cancel());
@@ -57,7 +65,13 @@ public final class FirefoxSnapshotTest extends FrozenPageSnapshotTest {
             waitFor("Firefox Save as PDF",()->{
                 if(press("Save as PDF"))return true;
                 // Firefox 157.0.1 publicly groups this action under MoreSettingsSubmenu.
-                long now=android.os.SystemClock.uptimeMillis();if(now>=nextMenuAction[0]){if(!press("More Collapsed"))press("More");nextMenuAction[0]=now+2000;}
+                long now=android.os.SystemClock.uptimeMillis();if(now>=nextMenuAction[0]){
+                    if(!press("More Collapsed")&&!press("More")){
+                        AccessibilityNodeInfo root=instrument.getUiAutomation().getRootInActiveWindow();
+                        if(find(root,"Close menu")!=null)scrollMenu(root);
+                    }
+                    nextMenuAction[0]=now+2000;
+                }
                 return false;
             });
             final byte[][] result={null};

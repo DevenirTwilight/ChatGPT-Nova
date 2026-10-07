@@ -1,3 +1,7 @@
+## A6失败后的实际菜单修正
+
+CI37550505533 API35新10/旧18及全部容器/输入/生命周期/v1升级/实际NovaPDF继续通过；Firefox仍失败。小产物11452764196已独立取回：More已展开，Save as PDF位于实际android.widget.ScrollView菜单下方，测试未滚动；公开AX树含ACTION_SCROLL_FORWARD，截图显示Translate/Report/Add等项。现测试只在可见Close menu层中滚该ScrollView，不滚主ChatGPT/Firefox网页或使用私有API。Firefox A/B移到完整容器回归之前缩短问题反馈，但所有回归仍独立执行。API36需等实际结果，不能假定通过。Commit B仍暂停；下一步核新CI真实FirefoxPDF，成功才清理Gecko。
+
 # 当前工作交接（2026-10-07）
 
 ## 分支与目标
