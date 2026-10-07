@@ -6,9 +6,9 @@
 
 隔离实现已完成：Stable保存当前网页三格式；Archive官方导入仍未来规划；Experimental只显式flag启用，默认debug/release=false且不构造controller，不注入或自动扫描。实验设置警告确认→用户开始→前台当前会话→可取消/恢复；结果/文件/脱敏diagnostic永远not-proven。ConversationExport类名保留，历史源码/算法/失败证据未删除，不扩数据源/selector，不改包名/签名/code14，不main/forcepush/Release。
 
-验证源码5d9efe8：本地DOM18/scroll32/progress19/locator18/snapshot13通过；实验CI37588638326 build和Android35/36全success，各19项通过（旧16+新3），Gecko2项明确退役。此前正式CI37588638317 API35全success、API36两次实际System Print失败；fbd7130正式CI37592089643两API因新增等待过窄失败，已保留；修正后3149507正式CI37593888527 build/lint/签名success，两API进行中，不放宽PDF断言。实际default/experimental APK DEX false/true、sourceRevision、原签名v2及content digest已独立核对，约1.83MiB。证据tools/legacy-scanner/evidence/isolation-validation.json、package-verification.json。
+验证源码5d9efe8：本地DOM18/scroll32/progress19/locator18/snapshot13通过；实验CI37588638326 build和Android35/36全success，各19项通过（旧16+新3），Gecko2项明确退役。此前正式CI37588638317 API35全success、API36两次实际System Print失败；fbd7130正式CI37592089643两API因新增等待过窄失败，已保留；修正后3149507正式CI37593888527 build/lint/签名及API36全success并独立核实物；API35无障碍查询框架NPE已留证，正在同源重试，不放宽PDF断言。实际default/experimental APK DEX false/true、sourceRevision、原签名v2及content digest已独立核对，约1.83MiB。证据tools/legacy-scanner/evidence/isolation-validation.json、package-verification.json。
 
-下一步核原生测试同步修复后的正式CI和实际PDF，再更新最终结论；之后仅物理设备/真实账号人工验证，不能证明完整历史；不重新投入selector扩张或批量采集。下方保留每步当时状态，ac4776f快照验收属于历史。
+下一步核API35同源重试和实际文件，再更新最终结论；之后仅物理设备/真实账号人工验证，不能证明完整历史；不重新投入selector扩张或批量采集。下方保留每步当时状态，ac4776f快照验收属于历史。
 
 ## 分步历史：最新要求与 Step 4b（2026-10-07）
 
@@ -70,6 +70,12 @@
 ### Step 4m：API35无障碍框架查询失败留证
 
 当前HEADbf54abb；已测源码3149507。API35 job112702223776/artifact11470687017正式job失败，realSystemPrintUiSavesFrozenMultipagePdf在line121等待PDF按钮时Android AccessibilityInteractionClient.checkFindAccessibilityNodeInfoResultIntegrity内部null List抛NPE，不是Nova应用正文/渲染异常。实际截图Save as PDF与1/31、2/31预览正常，无spooler错误，但没有保存Nova PDF，不能标success。原instrumentation/UI/JSON入stable-35-3149507-attempt1-*；其他正式测试继续执行。API36尚进行中，先核其结果，再决定同源重试35；不吞异常/不放宽PDF要求。本步failure，下一步核36并完成必要重试/实物验证。
+
+### Step 4n：正式API36最终实物验收 success，35同源重试
+
+当前HEADc3a4fad，正式源码3149507，run37593888527 API36 job112702223798全success。独立下载artifact11470851615核ZIP digest、checks无失败、17套/43个执行项（默认关闭2、快照10、Firefox1、web9、share5、input5、IME3、native2、两基线升级6）均OK；实际HTML/MD首尾/结构/安全过滤/后续变更排除，同打印源逐字一致；Nova与Firefox两PDF各31页，独立pdftotext/NFKC/长代码/长表格/首尾/320×120图片通过，Firefox粗体首页独立render/OCR确认，不借历史报告。报告stable-36-final-verification.json及默认关闭/快照原instrumentation入库。
+
+只重跑API35失败的无障碍框架NPE job，源码/断言不改；API35原failure不改成success，仍需新实物验证。当前总体正式尚未全绿。实验5d9两API19项已通过且生产/legacy源码不变，真实账号/物理设备未测。下一步核35重试，完成最终文档及推送，不增selector或发布Release。
 
 ## 此前 Frozen Snapshot 实现与验收（历史）
 

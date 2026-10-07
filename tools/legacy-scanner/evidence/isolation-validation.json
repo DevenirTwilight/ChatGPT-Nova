@@ -30,11 +30,14 @@
     "stable": {
       "runId": 37593888527,
       "sourceCommit": "3149507ef3fb88d66428dde610894ccac82cf44b",
-      "status": "in_progress",
+      "status": "retry_in_progress",
       "build": "success",
       "android35Attempt1": "failure-system-accessibility-query-NPE",
-      "android36": "in_progress",
-      "android35Evidence": "stable-35-3149507-attempt1-verification.json"
+      "android36": "success",
+      "android35Evidence": "stable-35-3149507-attempt1-verification.json",
+      "android35Retry": "requested",
+      "android36ArtifactId": 11470851615,
+      "android36IndependentVerification": "stable-36-final-verification.json"
     },
     "experimental": {
       "runId": 37588638326,

@@ -6,7 +6,7 @@
 
 ## 当前隔离结论
 
-已实现默认BuildConfig关闭、无controller初始化/自动注入，显式property才开放实验设置；用户主动警告确认/前台/取消/恢复、固定not-proven/文件前缀/脱敏诊断。保持正式Frozen Snapshot不滚动、未来Archive独立；不新增网站selector或内部数据源，不删除研究证据。5d9efe8实验CI37588638326两API各19通过，正式37588638317 API35通过、API36两次spooler错误实物失败均留证。日志显示额外重选/layout/空范围write；初始目的地判断存在race，仅补测试同步等待，生产PDF路径不改。fbd7130两API失败因新增目的地等待过窄，已保留。修正后的3149507/run37593888527 build与独立包核对通过，35/36 Android待核。原签名及实际APK DEX false/true已独立核对，真实账号/物理设备未验收。不建议此时新增sourceSet。
+已实现默认BuildConfig关闭、无controller初始化/自动注入，显式property才开放实验设置；用户主动警告确认/前台/取消/恢复、固定not-proven/文件前缀/脱敏诊断。保持正式Frozen Snapshot不滚动、未来Archive独立；不新增网站selector或内部数据源，不删除研究证据。5d9efe8实验CI37588638326两API各19通过，正式37588638317 API35通过、API36两次spooler错误实物失败均留证。日志显示额外重选/layout/空范围write；初始目的地判断存在race，仅补测试同步等待，生产PDF路径不改。fbd7130两API失败因新增目的地等待过窄，已保留。修正后的3149507/run37593888527 build与独立包核对通过，API36全success并独立核实物，API35首次系统无障碍NPE留证后同源重试中。原签名及实际APK DEX false/true已独立核对，真实账号/物理设备未验收。不建议此时新增sourceSet。
 
 ## 分步历史：本轮隔离边界（Step 1）
 
@@ -67,6 +67,12 @@ fbd7130默认APK artifact11468968104独立签名crypto/content digest/原证书/
 ### Step 4m：API35无障碍框架查询失败留证
 
 当前HEADbf54abb；已测源码3149507。API35 job112702223776/artifact11470687017正式job失败，realSystemPrintUiSavesFrozenMultipagePdf在line121等待PDF按钮时Android AccessibilityInteractionClient.checkFindAccessibilityNodeInfoResultIntegrity内部null List抛NPE，不是Nova应用正文/渲染异常。实际截图Save as PDF与1/31、2/31预览正常，无spooler错误，但没有保存Nova PDF，不能标success。原instrumentation/UI/JSON入stable-35-3149507-attempt1-*；其他正式测试继续执行。API36尚进行中，先核其结果，再决定同源重试35；不吞异常/不放宽PDF要求。本步failure，下一步核36并完成必要重试/实物验证。
+
+### Step 4n：正式API36最终实物验收 success，35同源重试
+
+当前HEADc3a4fad，正式源码3149507，run37593888527 API36 job112702223798全success。独立下载artifact11470851615核ZIP digest、checks无失败、17套/43个执行项（默认关闭2、快照10、Firefox1、web9、share5、input5、IME3、native2、两基线升级6）均OK；实际HTML/MD首尾/结构/安全过滤/后续变更排除，同打印源逐字一致；Nova与Firefox两PDF各31页，独立pdftotext/NFKC/长代码/长表格/首尾/320×120图片通过，Firefox粗体首页独立render/OCR确认，不借历史报告。报告stable-36-final-verification.json及默认关闭/快照原instrumentation入库。
+
+只重跑API35失败的无障碍框架NPE job，源码/断言不改；API35原failure不改成success，仍需新实物验证。当前总体正式尚未全绿。实验5d9两API19项已通过且生产/legacy源码不变，真实账号/物理设备未测。下一步核35重试，完成最终文档及推送，不增selector或发布Release。
 
 ## 此前 Frozen Snapshot 验收（历史）
 
