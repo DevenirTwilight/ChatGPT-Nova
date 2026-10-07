@@ -83,7 +83,7 @@ Java diagnostic对白名单数字/布尔、受限枚举和结构数组做递归�
 
 ## 当前验证与后续
 
-实现/测试源码 `5d9efe8eee0c24d1ce2b1a48b6e14f74360ae583`。本地DOM18/scroll32/progress19/locator18/snapshot13通过。实验CI [37588638326](https://github.com/DevenirTwilight/ChatGPT-Nova/actions/runs/37588638326) build/lint/browser及Android35/36全通过，各19个执行项、2个明确退役Gecko项。正式CI [37588638317](https://github.com/DevenirTwilight/ChatGPT-Nova/actions/runs/37588638317) API35通过，API36两次真实System Print失败，原生测试已补目的地标题加载同步、待新CI；失败截图及报告保留，不写成成功。
+隔离实现/实验测试源码 `5d9efe8eee0c24d1ce2b1a48b6e14f74360ae583`；最新正式源码 `fbd7130a7656d4839c6a527d1e509dcc7b4193d6` 仅补原生打印测试目的地加载同步，生产/legacy源码及夹具不变。本地DOM18/scroll32/progress19/locator18/snapshot13通过。实验CI [37588638326](https://github.com/DevenirTwilight/ChatGPT-Nova/actions/runs/37588638326) build/lint/browser及Android35/36全通过，各19个执行项、2个明确退役Gecko项。正式CI [37588638317](https://github.com/DevenirTwilight/ChatGPT-Nova/actions/runs/37588638317) API35通过，API36两次真实System Print失败，原生测试已补目的地标题加载同步，新正式CI [37592089643](https://github.com/DevenirTwilight/ChatGPT-Nova/actions/runs/37592089643) build通过、两API Android待核；失败截图及报告保留，不写成成功。
 
 两实际APK独立核原证书/签名content digest、DEX默认flag=false/实验true、源码revision及assets，未改变包名/签名/code14。报告 [isolation-validation.json](../tools/legacy-scanner/evidence/isolation-validation.json) 与 [package-verification.json](../tools/legacy-scanner/evidence/package-verification.json)。通过仅证明受控fixtures，未做真实ChatGPT账号或物理设备验收，永远不能由算法正常结束推断完整服务器历史。不合并main/forcepush/公开Release。
 

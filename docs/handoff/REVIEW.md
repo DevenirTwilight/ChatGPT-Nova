@@ -6,7 +6,7 @@
 
 ## 当前隔离结论
 
-已实现默认BuildConfig关闭、无controller初始化/自动注入，显式property才开放实验设置；用户主动警告确认/前台/取消/恢复、固定not-proven/文件前缀/脱敏诊断。保持正式Frozen Snapshot不滚动、未来Archive独立；不新增网站selector或内部数据源，不删除研究证据。5d9efe8实验CI37588638326两API各19通过，正式37588638317 API35通过、API36两次spooler错误实物失败均留证。日志证实初始目的地未加载时测试错误重选PDF；仅补测试同步等待，生产PDF路径不改，正式回归待新CI。原签名及实际APK DEX false/true已独立核对，真实账号/物理设备未验收。不建议此时新增sourceSet。
+已实现默认BuildConfig关闭、无controller初始化/自动注入，显式property才开放实验设置；用户主动警告确认/前台/取消/恢复、固定not-proven/文件前缀/脱敏诊断。保持正式Frozen Snapshot不滚动、未来Archive独立；不新增网站selector或内部数据源，不删除研究证据。5d9efe8实验CI37588638326两API各19通过，正式37588638317 API35通过、API36两次spooler错误实物失败均留证。日志显示额外重选/layout/空范围write；初始目的地判断存在race，仅补测试同步等待，生产PDF路径不改。新正式fbd7130/run37592089643 build与独立包核对通过，35/36 Android仍待核。原签名及实际APK DEX false/true已独立核对，真实账号/物理设备未验收。不建议此时新增sourceSet。
 
 ## 分步历史：本轮隔离边界（Step 1）
 
@@ -51,6 +51,10 @@ Stable=当前网页Frozen Snapshot三格式；Archive=未来主动导入官方Da
 ## Step 4i 原生打印测试同步
 
 5d9efe8 API36重试仍失败，保留artifact11468372879的原始instrumentation/UI截图。新增先等待目的地标题再判是否选择PDF，避免窗口尚未加载即重选；所有实际PDF/内容检查保留，无生产快照修改，待验证，不继续盲重跑同源。
+
+## Step 4j 修复候选包
+
+fbd7130默认APK artifact11468968104独立签名crypto/content digest/原证书/DEX false及revision/assets/无native so通过，1916145bytes。旧5d9包报告单独保留，实验算法/fixture不变；新正式两API Android仍进行中，包验证不替代PDF验收。
 
 ## 此前 Frozen Snapshot 验收（历史）
 

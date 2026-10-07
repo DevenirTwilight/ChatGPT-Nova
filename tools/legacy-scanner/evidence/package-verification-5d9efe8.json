@@ -1,15 +1,11 @@
 {
   "stable": {
-    "artifactId": 11468968104,
-    "artifactZipSha256": "c438edb11de99087c79ec948e51aaeae5e49c0f0136e23f0101680e204312923",
-    "apkBytes": 1916145,
-    "apkSha256": "44a337745c9a5c5c3e26bda1dc95f6807f847451600f186c8bc9a8460095046a",
+    "artifactZipSha256": "d2708833f174ae96132114ea2290f4b9d745675abfc26d22ed4037b25a70fef2",
+    "apkBytes": 1916153,
+    "apkSha256": "4f9212d7dca36cb1563b88acce17051c89afe03ae9cb3d692a03cc19eb469ea5",
     "certificateSha256": "f93221ee0d2be2b806233a0b3427ec9c14766100c1bab3208841e6203e2b4289",
     "apkV2Signature": "verified",
     "apkV2ContentDigest": "verified",
-    "enableLegacyScannerDexValue": false,
-    "sourceCommit": "fbd7130a7656d4839c6a527d1e509dcc7b4193d6",
-    "applicationId": "com.example.chatgptnova",
     "assetsMatchSource": [
       "export/dom-trial.js",
       "export/scroll-trial.js",
@@ -17,7 +13,10 @@
       "export/locate-text.js",
       "snapshot/freeze.js"
     ],
-    "nativeLibraries": []
+    "nativeLibraries": [],
+    "enableLegacyScannerDexValue": false,
+    "sourceCommit": "5d9efe8eee0c24d1ce2b1a48b6e14f74360ae583",
+    "applicationId": "com.example.chatgptnova"
   },
   "experimental": {
     "artifactZipSha256": "f53879b820e340696de1e51aef8acd3d06c008d08e7d833f4dfbb1855dabcb98",

@@ -1,12 +1,12 @@
 # 当前交接：Legacy Scanner 隔离（2026-10-07）
 
-工作分支 `feature/export-conversation`；本轮应用/测试源码 `5d9efe8eee0c24d1ce2b1a48b6e14f74360ae583`；当前文档基点 `610fb8708fac93d7334ca9d44292805d67673165`。最终文档提交可由git log核对，不等于APK源码HEAD。远端默认HEAD仍main/e8ffa0c6，本轮全程以工作分支最新远端为准；开始续接先fetch并读AGENTS/latest/REVIEW/legacy-conversation-scanner/frozen-page-save，不回退旧修复。
+工作分支 `feature/export-conversation`；本轮最新构建源码 `fbd7130a7656d4839c6a527d1e509dcc7b4193d6`；实验已测源码 `5d9efe8eee0c24d1ce2b1a48b6e14f74360ae583`（应用/legacy源码和夹具完全一致，仅正式原生测试同步变更）；当前文档基点 `fbd7130a7656d4839c6a527d1e509dcc7b4193d6`。最终文档提交可由git log核对，不等于APK源码HEAD。远端默认HEAD仍main/e8ffa0c6，本轮全程以工作分支最新远端为准；开始续接先fetch并读AGENTS/latest/REVIEW/legacy-conversation-scanner/frozen-page-save，不回退旧修复。
 
 ## 当前结论（优先于下方分步历史）
 
 隔离实现已完成：Stable保存当前网页三格式；Archive官方导入仍未来规划；Experimental只显式flag启用，默认debug/release=false且不构造controller，不注入或自动扫描。实验设置警告确认→用户开始→前台当前会话→可取消/恢复；结果/文件/脱敏diagnostic永远not-proven。ConversationExport类名保留，历史源码/算法/失败证据未删除，不扩数据源/selector，不改包名/签名/code14，不main/forcepush/Release。
 
-验证源码5d9efe8：本地DOM18/scroll32/progress19/locator18/snapshot13通过；实验CI37588638326 build和Android35/36全success，各19项通过（旧16+新3），Gecko2项明确退役。正式CI37588638317 API35全success，API36第一轮实际System Print失败，同源重试亦失败，已修复原生测试等待目的地标题的同步，等待新CI，不放宽PDF断言。实际default/experimental APK DEX false/true、sourceRevision、原签名v2及content digest已独立核对，约1.83MiB。证据tools/legacy-scanner/evidence/isolation-validation.json、package-verification.json。
+验证源码5d9efe8：本地DOM18/scroll32/progress19/locator18/snapshot13通过；实验CI37588638326 build和Android35/36全success，各19项通过（旧16+新3），Gecko2项明确退役。此前正式CI37588638317 API35全success、API36两次实际System Print失败；修复原生测试同步后的fbd7130正式CI37592089643 build/lint/签名success，Android35/36进行中，不放宽PDF断言。实际default/experimental APK DEX false/true、sourceRevision、原签名v2及content digest已独立核对，约1.83MiB。证据tools/legacy-scanner/evidence/isolation-validation.json、package-verification.json。
 
 下一步核原生测试同步修复后的正式CI和实际PDF，再更新最终结论；之后仅物理设备/真实账号人工验证，不能证明完整历史；不重新投入selector扩张或批量采集。下方保留每步当时状态，ac4776f快照验收属于历史。
 
@@ -54,6 +54,10 @@
 ### Step 4i：正式API36同源重试失败，修复原生打印测试同步
 
 当前文档基点610fb8708fac93d7334ca9d44292805d67673165；已测源码5d9efe8。API36 job112689954042/artifact11468372879第二次仍native PDF filename超时，failure已保留原测试/UI和摘要，正式整体failure不能验收。日志在07:59:20首轮write(1 range)后测试打开destination并重选默认PDF，07:59:23第二次layout、write(0 ranges)后spooler错误。原测试只等窗口包名就判断Save as PDF缺席，窗口存在不代表目的地标题已加载。新增等待spinner标题非空后才判断是否切换目的地，避免加载时误操作；不改生产SnapshotWebView/PageSnapshotExport，不跳过实际保存/31页/首尾/变更排除/Firefox断言。本步修复待新CI验证，尚非成功结论。下一步核新正式CI与实际文件；legacy应用/fixture不变，其19项结论仍属于5d9efe8。
+
+### Step 4j：修复候选包独立核对 success
+
+当前HEAD/新构建源码fbd7130a7656d4839c6a527d1e509dcc7b4193d6，正式CI37592089643 build/lint/browser/unit/原签名success；两档Android进行中。已独立下载默认artifact11468968104，ZIP digest匹配、APK v2 RSA签名与content digest验证、原证书/5份assets/无native so/DEX flag=false及revision=fbd7130/applicationId通过。1916145bytes/SHA44a337745c9a5c5c3e26bda1dc95f6807f847451600f186c8bc9a8460095046a。旧5d9两包报告另存package-verification-5d9efe8.json，实验包仍5d9（生产/legacy源码无变化）。本步仅包核对success，正式Android仍not verified；下一步核实际PDF和全部回归。
 
 ## 此前 Frozen Snapshot 实现与验收（历史）
 

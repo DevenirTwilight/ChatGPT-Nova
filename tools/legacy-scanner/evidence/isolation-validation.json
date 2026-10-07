@@ -1,5 +1,5 @@
 {
-  "sourceCommit": "5d9efe8eee0c24d1ce2b1a48b6e14f74360ae583",
+  "sourceCommit": "fbd7130a7656d4839c6a527d1e509dcc7b4193d6",
   "baseline": "da4176c5731ee07ea3c8815d56169abf1b143b25",
   "branch": "feature/export-conversation",
   "scope": "controlled fixtures, no live account or physical-device proof",
@@ -28,31 +28,10 @@
   },
   "ci": {
     "stable": {
-      "runId": 37588638317,
-      "status": "completed",
-      "build": "success",
-      "android35": "success",
-      "android36Attempt1": "failure",
-      "android36Retry": "failure",
-      "artifactVerification": [
-        "stable-35-attempt1-verification.json",
-        "stable-36-attempt1-verification.json"
-      ],
-      "conclusion": "failure",
-      "android36Attempts": [
-        {
-          "attempt": 1,
-          "jobId": 112685070153,
-          "result": "failure",
-          "evidence": "stable-36-attempt1-verification.json"
-        },
-        {
-          "attempt": 2,
-          "jobId": 112689954042,
-          "result": "failure",
-          "evidence": "stable-36-attempt2-verification.json"
-        }
-      ]
+      "runId": 37592089643,
+      "sourceCommit": "fbd7130a7656d4839c6a527d1e509dcc7b4193d6",
+      "status": "in_progress",
+      "build": "success"
     },
     "experimental": {
       "runId": 37588638326,
@@ -122,7 +101,9 @@
           ],
           "result": "success"
         }
-      }
+      },
+      "sourceCommit": "5d9efe8eee0c24d1ce2b1a48b6e14f74360ae583",
+      "legacyCodeAndFixturesUnchangedAt": "fbd7130a7656d4839c6a527d1e509dcc7b4193d6"
     }
   },
   "deviceAcceptance": "not_verified",
@@ -153,6 +134,37 @@
         }
       },
       "reason": "obsolete file notice assertion; preserved content/count/restore checks, replaced with experimental metadata assertions in 5d9efe8"
+    },
+    {
+      "stable": {
+        "runId": 37588638317,
+        "status": "completed",
+        "build": "success",
+        "android35": "success",
+        "android36Attempt1": "failure",
+        "android36Retry": "failure",
+        "artifactVerification": [
+          "stable-35-attempt1-verification.json",
+          "stable-36-attempt1-verification.json"
+        ],
+        "conclusion": "failure",
+        "android36Attempts": [
+          {
+            "attempt": 1,
+            "jobId": 112685070153,
+            "result": "failure",
+            "evidence": "stable-36-attempt1-verification.json"
+          },
+          {
+            "attempt": 2,
+            "jobId": 112689954042,
+            "result": "failure",
+            "evidence": "stable-36-attempt2-verification.json"
+          }
+        ],
+        "sourceCommit": "5d9efe8eee0c24d1ce2b1a48b6e14f74360ae583"
+      },
+      "reason": "Two API36 real System Print failures retained; fbd7130 changes only native print test destination readiness, no production/legacy code change."
     }
   ],
   "packageVerification": "package-verification.json"
