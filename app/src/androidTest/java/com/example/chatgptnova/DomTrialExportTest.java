@@ -149,7 +149,7 @@ public final class DomTrialExportTest extends FixtureActivity {
         for(int i=0;i<40;i++) if(i!=12 && i!=14) assertTrue("missing ROW-"+i,html.contains("ROW-"+i+"</p>"));
         assertEquals(40,html.split("<article>",-1).length-1);
         assertEquals(2,html.split("REPEATED-TEXT",-1).length-1);
-        assertTrue(html.contains("未做折返核对"));assertTrue(html.contains("滚动收集并缓存可见历史"));assertTrue(html.contains("完整历史未确认"));assertTrue(html.contains("无独立基准"));
+        assertTrue(html.contains("未做折返核对"));assertTrue(html.contains("Experimental captured message set"));assertTrue(html.contains("legacy-scroll-experimental"));assertTrue(html.contains("historyCompleteness"));assertTrue(html.contains("完整历史未确认"));assertTrue(html.contains("无独立基准"));
         assertEquals("7",js("document.querySelectorAll('[data-message-author-role]').length"));
         assertEquals(original,js("document.getElementById('history').scrollTop"));assertEquals("undefined",js("typeof window.__novaHistoryScrollTrial"));
     }
@@ -160,7 +160,7 @@ public final class DomTrialExportTest extends FixtureActivity {
         main(()->{android.content.ClipboardManager c=activity.getSystemService(android.content.ClipboardManager.class);detail.set(c.getPrimaryClip().getItemAt(0).getText().toString());});
         org.json.JSONObject diag=new org.json.JSONObject(detail.get()),coverage=diag.getJSONObject("coverage");
         assertEquals("H00_READY",diag.getString("code"));assertEquals(40,coverage.getInt("count"));assertEquals(1,coverage.getInt("leg"));
-        assertEquals("down",coverage.getString("direction"));assertFalse(coverage.getBoolean("secondPass"));assertEquals("not-proven",coverage.getString("history"));
+        assertEquals("down",coverage.getString("direction"));assertFalse(coverage.getBoolean("secondPass"));assertEquals("not-proven",coverage.getString("history"));assertEquals("not-proven",coverage.getString("historyCompleteness"));assertEquals(20,coverage.getInt("users"));assertEquals(20,coverage.getInt("assistants"));
         assertEquals("0",js("document.getElementById('history').scrollTop"));assertEquals("undefined",js("typeof window.__novaHistoryScrollTrial"));
     }
     @Test public void standardHistoryBacktracksToKeepNarrowWindowOverlap() throws Exception {

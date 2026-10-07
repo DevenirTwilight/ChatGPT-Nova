@@ -389,7 +389,7 @@ final class ConversationExport {
         "domIndex","role","hasId","markdownRoots","turns","visible","visibleWithoutSupportedAuthor","withOutsideAuthorText","outsideAuthorTextNodes","outsideAuthorChars",
         "turnSamples","outsideAuthorSamples","declaredRole","supportedAuthors","authorNodes","visibleTextNodes","visibleTextChars","bodyIncluded","idsIncluded","truncated","progressDiscovery","error",
         "failedMessage","index","authorChars","selectedChars","markdownCandidates","selectedBlocks","display","visibility","contentVisibility","hasOwnBox","fallbackTried","canvas","media","details","reason",
-        "steps","leg","traversal","direction","plannedLegs","startObserved","overlapRetries","overlapFailures","topObserved","bottomObserved","secondPass","cacheBytes","settling",
+        "users","assistants","steps","leg","traversal","direction","plannedLegs","startObserved","overlapRetries","overlapFailures","topObserved","bottomObserved","secondPass","cacheBytes","settling",
         "readyAgeMs","windowLimitMs","scanLimitMs","stepLimit","contentStable","windowAgeMs","totalListChanges","totalBodyChanges","totalPositionChanges","totalExtentChanges",
         "polls","loadingSignals","loadingPolls","loadingObserved","listChanges","bodyChanges","positionChanges","extentChanges","mountedCount","scrollTopPx","scrollMaxPx","viewportPx","positionDeltaPx","extentDeltaPx",
         "order","text","attachmentMetadata","attachmentFiles","imageFiles","windowCount","capturedMessageCount","unstableWindowCount","fallbackCount","unknownCount","cancelled","startDirection",
