@@ -22,7 +22,7 @@ public final class ArchiveModel {
         public final Map<String,Object> data;
         public Node(String key,Map<String,Object> data) {
             this.key=key;this.data=data;raw=JSON.toJson(data);
-            parent=string(data.get("parent"));Map<String,Object> m=object(data.get("message"));hasMessage=!m.isEmpty();
+            parent=string(data.get("parent"));Map<String,Object> m=object(data.get("message"));hasMessage=data.get("message") instanceof Map;
             id=string(m.get("id"));role=string(object(m.get("author")).get("role"));channel=string(m.get("channel"));
             contentType=string(object(m.get("content")).get("content_type"));status=string(m.get("status"));created=number(m.get("create_time"));
         }

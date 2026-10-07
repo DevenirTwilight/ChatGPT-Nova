@@ -23,7 +23,7 @@ public final class ArchiveImporter {
             if(System.nanoTime()-started>300_000_000_000L)throw new ArchiveError("A05_ARCHIVE_TOO_LARGE");
         }
     }
-    private final Control control;private long total;private int conversations;
+    private final Control control;private long total;private int conversations,nodes;
     public ArchiveImporter(Control control){this.control=control;}
     public int read(File file,boolean zip,Sink sink) throws ArchiveError {
         if(file.length()>FILE_LIMIT)throw new ArchiveError("A05_ARCHIVE_TOO_LARGE");
@@ -55,7 +55,7 @@ public final class ArchiveImporter {
                 long size=e.getSize(),compressed=e.getCompressedSize();
                 if(size<0||compressed<0)throw new ArchiveError("A02_INVALID_ZIP");
                 declared+=size;if(declared>512L*1024*1024)throw new ArchiveError("A05_ARCHIVE_TOO_LARGE");
-                if(size>1024*1024&&size/Math.max(1,compressed)>200)throw new ArchiveError("A05_ARCHIVE_TOO_LARGE");
+                if(size>1024*1024&&size>Math.max(1,compressed)*200)throw new ArchiveError("A05_ARCHIVE_TOO_LARGE");
                 String leaf=name.substring(name.lastIndexOf('/')+1);
                 if(!e.isDirectory()&&leaf.matches("(?i)conversations(?:[-_]?\\d+)?\\.json")){
                     if(size>ENTRY_LIMIT)throw new ArchiveError("A05_ARCHIVE_TOO_LARGE");selected.add(e);
@@ -93,9 +93,12 @@ public final class ArchiveImporter {
         }json.endArray();
     }
     private void accept(Map<String,Object> data,Sink sink)throws ArchiveError {
-        if(++conversations>100000)throw new ArchiveError("A05_ARCHIVE_TOO_LARGE");
+        if(++conversations>10000)throw new ArchiveError("A05_ARCHIVE_TOO_LARGE");
         ArchiveModel.Conversation c=new ArchiveModel.Conversation(data);
         if(ArchiveModel.JSON.toJson(data).length()>2*1024*1024)throw new ArchiveError("A05_ARCHIVE_TOO_LARGE");
+        nodes+=c.nodes.size();if(nodes>200000)throw new ArchiveError("A05_ARCHIVE_TOO_LARGE");
+        if(c.header.getBytes(StandardCharsets.UTF_8).length>1024*1024)throw new ArchiveError("A05_ARCHIVE_TOO_LARGE");
+        for(ArchiveModel.Node n:c.nodes.values())if(n.raw.getBytes(StandardCharsets.UTF_8).length>1024*1024)throw new ArchiveError("A05_ARCHIVE_TOO_LARGE");
         sink.accept(c);
     }
     private static final class Budget {int values,chars;}

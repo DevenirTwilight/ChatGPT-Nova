@@ -50,6 +50,10 @@ Nova 是非官方第三方客户端，不由 OpenAI 发布、维护或背书。N
 
 这**不等于“使用非官方客户端一定会封号”**；本项目不作这种保证或判断。用户如果不愿承担第三方客户端带来的这项不确定性，应使用官方 ChatGPT Android App 或浏览器完成登录和使用。
 
+## Nova Archive
+
+设置 → Nova Archive：主动导入 ChatGPT 官方 Data Export 兼容 ZIP/JSON，在本地浏览、按标题搜索、阅读并导出单会话 HTML / Markdown / PDF。完整性取决于导入文件；Nova 不自动读取完整在线历史。数据保存在应用私有 SQLite，可在 Archive 页删除。详见 [Nova Archive](docs/nova-archive.md)。
+
 ## 构建与签名
 
 - compileSdk / targetSdk: 35；Build Tools: 35.0.0
@@ -69,7 +73,7 @@ Android 13 / 14 / 15 的模拟器均检查：原 v1 `install -r` 覆盖安装及
 
 ## 开发者研究资料
 
-Legacy experimental scanner retained for research，默认构建禁用；启用方法、失败边界和独立fixture验证见[Legacy Conversation Scanner](docs/legacy-conversation-scanner.md)。未来 Nova Archive 规划用户主动导入官方 OpenAI Data Export，尚未实现。二者与正式“保存当前网页”分开。
+Legacy experimental scanner retained for research，默认构建禁用；启用方法、失败边界和独立fixture验证见[Legacy Conversation Scanner](docs/legacy-conversation-scanner.md)。Nova Archive 从用户主动选择的官方导出兼容 ZIP/JSON 建立本地档案，参见 [Archive 使用与限制](docs/nova-archive.md)。二者与正式“保存当前网页”分开。
 
 ## 品牌资源
 

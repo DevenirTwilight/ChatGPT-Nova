@@ -1,3 +1,7 @@
+## Nova Archive UI/export checkpoint
+
+Implemented independent native Activities and Archive-model HTML/Markdown/System Print pipelines. Shared SnapshotWebView has a separate offline overload: no Archive-to-FrozenPageSnapshot coupling, no CookieManager calls on Archive path. 30 JVM synthetic tests passed; Android acceptance and shared print regression remain not verified. README now separates Archive import from current-page snapshot and legacy research.
+
 ## Nova Archive core checkpoint
 
 Core fixture validation passed (28 JVM tests, 128 MiB heap). Android database adapter is implemented but not yet emulator verified. No real OpenAI export verified; UI/export still pending. Legacy code and formal snapshot behavior retained.

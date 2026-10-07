@@ -9,6 +9,7 @@ import com.example.chatgptnova.archive.ArchiveModel.*;
 
 /** Private SQLite schema v1. No WebView/session access and no external storage. */
 public final class ArchiveStore extends SQLiteOpenHelper {
+    public static final Object LOCK=new Object();
     public static final String DATABASE="nova-archive.db";
     public ArchiveStore(Context context){super(context.getApplicationContext(),DATABASE,null,1);setWriteAheadLoggingEnabled(true);}
     @Override public void onConfigure(SQLiteDatabase db){db.setForeignKeyConstraintsEnabled(true);}
@@ -23,9 +24,13 @@ public final class ArchiveStore extends SQLiteOpenHelper {
     public static final class Stats {
         public int newConversations,updatedConversations,newMessages,updatedMessages,skipped,parsed,failed;
         public long bytes,duration;
+        private final Set<Long> newRows=new HashSet<>(),updatedRows=new HashSet<>();
         public String diagnostic(){return "schema=1\nnewConversations="+newConversations+"\nupdatedConversations="+updatedConversations+"\nnewMessages="+newMessages+"\nupdatedMessages="+updatedMessages+"\nskipped="+skipped+"\nparsed="+parsed+"\nfailed="+failed+"\nbytes="+bytes+"\ndurationMs="+duration;}
     }
     public Stats importFile(java.io.File file,boolean zip,String filename,String importId,ArchiveImporter.Control control)throws ArchiveError {
+        synchronized(LOCK){return importLocked(file,zip,filename,importId,control);}
+    }
+    private Stats importLocked(java.io.File file,boolean zip,String filename,String importId,ArchiveImporter.Control control)throws ArchiveError {
         long start=System.currentTimeMillis();Stats stats=new Stats();stats.bytes=file.length();SQLiteDatabase db;
         try{db=getWritableDatabase();db.execSQL("PRAGMA max_page_count=131072");ContentValues source=new ContentValues();source.put("id",importId);source.put("filename",filename);source.put("started",start);source.put("status","running");db.insertOrThrow("import_sources",null,source);}
         catch(RuntimeException e){throw new ArchiveError("A06_DATABASE_WRITE_FAILED");}
@@ -50,8 +55,8 @@ public final class ArchiveStore extends SQLiteOpenHelper {
         ContentValues cv=new ContentValues();Conversation c=plan.merged;
         if(!c.id.isEmpty())cv.put("official_id",c.id);cv.put("title",c.title);cv.put("search_title",normalize(c.title));
         putNumber(cv,"created",c.created);putNumber(cv,"updated",c.updated);cv.put("current_node",c.currentNode);cv.put("header",c.header);cv.put("latest_import",time);cv.put("latest_source",source);
-        if(row==0){cv.put("first_import",time);cv.put("first_source",source);row=db.insertOrThrow("conversations",null,cv);stats.newConversations++;}
-        else{db.update("conversations",cv,"row_id=?",new String[]{Long.toString(row)});if(plan.headerChanged||!plan.writes.isEmpty())stats.updatedConversations++;}
+        if(row==0){cv.put("first_import",time);cv.put("first_source",source);row=db.insertOrThrow("conversations",null,cv);stats.newRows.add(row);stats.newConversations=stats.newRows.size();}
+        else{db.update("conversations",cv,"row_id=?",new String[]{Long.toString(row)});if(!stats.newRows.contains(row)&&(plan.headerChanged||!plan.writes.isEmpty())){stats.updatedRows.add(row);stats.updatedConversations=stats.updatedRows.size();}}
         long payload=c.header.length();for(Node n:c.nodes.values())payload+=n.raw.length();
         if(payload>2*1024*1024)throw new ArchiveError("A05_ARCHIVE_TOO_LARGE");
         for(Node n:plan.writes) {
@@ -60,7 +65,7 @@ public final class ArchiveStore extends SQLiteOpenHelper {
             if(exists)db.update("messages",v,"conversation=? AND node_key=?",new String[]{Long.toString(row),n.key});
             else{v.put("first_source",source);db.insertOrThrow("messages",null,v);}
         }
-        stats.newMessages+=plan.added;stats.updatedMessages+=plan.changed;stats.skipped+=plan.skipped;
+        for(Node n:plan.writes)if(n.hasMessage){if(old==null||!old.nodes.containsKey(n.key))stats.newMessages++;else stats.updatedMessages++;}stats.skipped+=plan.skipped;
     }
     private static void putNumber(ContentValues v,String k,Double n){if(n==null)v.putNull(k);else v.put(k,n);}
     public Conversation load(long row)throws ArchiveError {try{return load(getReadableDatabase(),row);}catch(RuntimeException e){throw new ArchiveError("A06_DATABASE_WRITE_FAILED");}}

@@ -18,18 +18,29 @@ import java.nio.charset.StandardCharsets;
 
 /** Separate non-executable renderer. Never navigates or accesses a chat bridge. */
 final class SnapshotWebView {
-    interface Callback {void ready();void failed(String code);}
+    interface Callback {void ready();void failed(String code);default void openLink(String url){}}
     final WebView web;
     final FrozenPageSnapshot snapshot;
+    private final String documentTitle;
     private volatile boolean closed;
     private boolean ready;
     private final java.util.concurrent.atomic.AtomicInteger resourceRequests=new java.util.concurrent.atomic.AtomicInteger();
     private final java.util.concurrent.atomic.AtomicLong resourceBytes=new java.util.concurrent.atomic.AtomicLong();
     private final Runnable timeout;
     SnapshotWebView(Activity activity,WebView live,FrozenPageSnapshot snapshot,Callback callback) {
-        this.snapshot=snapshot;
+        this(activity,attachedParent(live),snapshot,snapshot.title,snapshot.baseUrl,snapshot.frozenHtml,false,false,callback);
+    }
+    /** Local Archive documents: no cookies, script, bridges or remote resource fetches. */
+    SnapshotWebView(Activity activity,ViewGroup host,String html,String title,boolean readable,Callback callback) {
+        this(activity,host,null,title,"https://nova-archive.invalid/",html,true,readable,callback);
+    }
+    private static ViewGroup attachedParent(WebView live) {
         if(!(live.getParent() instanceof ViewGroup))throw new IllegalStateException("Renderer requires attached host");
-        ViewGroup parent=(ViewGroup)live.getParent();
+        return (ViewGroup)live.getParent();
+    }
+    private SnapshotWebView(Activity activity,ViewGroup parent,FrozenPageSnapshot snapshot,String title,
+            String base,String html,boolean offline,boolean readable,Callback callback) {
+        this.snapshot=snapshot;this.documentTitle=title;
         web=new WebView(activity);
         web.getSettings().setJavaScriptEnabled(false);
         web.getSettings().setDomStorageEnabled(false);
@@ -38,17 +49,18 @@ final class SnapshotWebView {
         web.getSettings().setJavaScriptCanOpenWindowsAutomatically(false);
         web.getSettings().setSupportMultipleWindows(false);
         web.getSettings().setMixedContentMode(android.webkit.WebSettings.MIXED_CONTENT_NEVER_ALLOW);
-        web.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS);
-        web.setFocusable(false);
-        android.webkit.CookieManager.getInstance().setAcceptThirdPartyCookies(web,false);
+        web.setImportantForAccessibility(readable?View.IMPORTANT_FOR_ACCESSIBILITY_YES:View.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS);
+        web.setFocusable(readable);
+        if(offline)web.getSettings().setBlockNetworkLoads(true);
+        else android.webkit.CookieManager.getInstance().setAcceptThirdPartyCookies(web,false);
         timeout=()->{if(!closed&&!ready)callback.failed("S06_STATIC_WEBVIEW_FAILED");};
         web.setWebViewClient(new WebViewClient() {
-            @Override public boolean shouldOverrideUrlLoading(WebView v,WebResourceRequest r){return true;}
-            @Override public boolean shouldOverrideUrlLoading(WebView v,String url){return true;}
+            @Override public boolean shouldOverrideUrlLoading(WebView v,WebResourceRequest r){if(offline&&readable&&r.isForMainFrame())callback.openLink(r.getUrl().toString());return true;}
+            @Override public boolean shouldOverrideUrlLoading(WebView v,String url){if(offline&&readable)callback.openLink(url);return true;}
             @Override public WebResourceResponse shouldInterceptRequest(WebView v,WebResourceRequest r) {
                 // Static resources are fetched without the global WebView cookie jar,
                 // auth headers, JS, redirects to non-HTTPS, or backend API requests.
-                if(r.isForMainFrame())return denied();
+                if(offline||r.isForMainFrame())return denied();
                 return resource(r.getUrl().toString());
             }
             @Override public void onPageFinished(WebView v,String url) {
@@ -64,7 +76,7 @@ final class SnapshotWebView {
         });
         parent.addView(web,0,new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,ViewGroup.LayoutParams.MATCH_PARENT));
         web.postDelayed(timeout,30000);
-        try{web.loadDataWithBaseURL(snapshot.baseUrl,snapshot.frozenHtml,"text/html","UTF-8",null);}
+        try{web.loadDataWithBaseURL(base,html,"text/html","UTF-8",null);}
         catch(RuntimeException e){close();throw e;}
     }
     static boolean staticUrl(String address) {
@@ -99,7 +111,7 @@ final class SnapshotWebView {
     }
     PrintDocumentAdapter printAdapter(Runnable finished) {
         if(closed||!ready)throw new IllegalStateException("Renderer not ready");
-        PrintDocumentAdapter delegate=web.createPrintDocumentAdapter(PageSnapshotExport.documentName(snapshot.title));
+        PrintDocumentAdapter delegate=web.createPrintDocumentAdapter(PageSnapshotExport.documentName(documentTitle));
         return new PrintDocumentAdapter() {
             @Override public void onStart(){if(!closed)delegate.onStart();}
             @Override public void onLayout(android.print.PrintAttributes old,android.print.PrintAttributes next,

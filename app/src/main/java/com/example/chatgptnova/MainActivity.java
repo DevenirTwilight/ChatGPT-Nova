@@ -932,6 +932,7 @@ public class MainActivity extends Activity {
             items.add("清除登录与网站数据");
             items.add("登录帮助");
             items.add("关于 ChatGPT Nova");
+            items.add("Nova Archive");
             if (BuildConfig.ENABLE_LEGACY_SCANNER) items.add("实验功能");
             if (settingsDialog != null) settingsDialog.dismiss();
             settingsDialog = new AlertDialog.Builder(this).setTitle("设置")
@@ -940,6 +941,7 @@ public class MainActivity extends Activity {
                         if ("退出当前账号".equals(selected)) confirmClear(true);
                         else if ("清除登录与网站数据".equals(selected)) confirmClear();
                         else if ("登录帮助".equals(selected)) showLoginHelp(false);
+                        else if ("Nova Archive".equals(selected)) startActivity(new Intent(this, ArchiveActivity.class));
                         else if ("实验功能".equals(selected)) showLegacyExperiments();
                         else showAbout();
                     }).setNegativeButton("关闭", null).create();

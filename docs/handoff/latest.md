@@ -1,3 +1,12 @@
+## Nova Archive — Step 3：原生 UI 与独立导出（2026-10-07）
+
+- 分支 `feature/export-conversation`；源码基线 `80e31dd`，本提交实现 Archive 菜单/原生首页/SAF 导入、标题搜索/排序/分页、离线 Reader、主链/全部分支、HTML/Markdown SAF 保存与 System Print PDF。
+- success：30 项 JVM 合成测试；Java Markdown code/list/quote/table、安全 HTML/URL、LaTeX 源文；本地 Android API 参考编译检查通过（不是 Gradle/lint 或模拟器验收）。CommonMark/Gson 许可证随包。
+- 架构：Archive 不创建 FrozenPageSnapshot，不读在线 WebView/bridge/cookies。SnapshotWebView 新增静态离线输入，旧构造路径保持；Archive 全部资源请求阻止，JS/file/content/storage 关闭。正式快照回归必须通过。
+- 限额补充：10000 会话/200000 mapping 节点；单 node/header 1MiB UTF-8 避免 CursorWindow 大对象。消息统计排除 null roots；分片重复会话统计按本地 row 去重。
+- not verified：Android SAF/数据库/生命周期/真正 PDF 输出及正式回归等待下阶段 fixture instrumentation。没有 real OpenAI export verified。核心步骤 CI `37601570418` 正在运行，不将进行中写成 success。
+- 下一步：Android instrumentation 与实际 PDF 文件内容检查、CI、失败修正和最终验收。
+
 ## Nova Archive — Step 2：核心与存储实现（2026-10-07）
 
 - 分支 `feature/export-conversation`；步骤基线源码 `d9ddca7`，本提交包含核心实现。
