@@ -1,3 +1,12 @@
+## Nova Archive — Step 4c：最低 Android 版本与 Markdown 边界（2026-10-07）
+
+- 分支 `feature/export-conversation`；基线源码 `0eab4e3`。
+- success：36 JVM synthetic tests；Markdown AST 先迭代限制深度/节点数，再递归 HTML 渲染，新增极深 quote 明确 A05 测试。
+- 为保持 minSdk26 与包规模，改用 Java8 兼容 CommonMark/GFM 0.21.0，功能/安全测试同样通过；撤回不必要的 coreLibraryDesugaring。Gson2.11 保持。许可证随包。
+- 新增 API26 独立 2 项基础 instrumentation / CI job，验证 SQLite重复持久化、Java Markdown/GFM、离线 WebView与打印adapter清理；API35/36仍负责实际PDF与全部正式回归。
+- not verified：API26/35/36 新 CI 尚未返回。前一轮 `37603606423` 正在检查修正，不写成完整验收；没有 real OpenAI export verified。
+- 下一步：读取 CI 运行证据，修正并完成 MVP 验收。
+
 ## Nova Archive — Step 4b：安全复查与首轮构建失败修正（2026-10-07）
 
 - 分支 `feature/export-conversation`；基线源码 `fd42862`。

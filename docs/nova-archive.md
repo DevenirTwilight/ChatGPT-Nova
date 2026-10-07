@@ -33,7 +33,7 @@ JSON支持会话数组、conversations数组wrapper和单会话mapping对象；�
 
 UTF-8严格解码；JsonReader流式逐会话，预读取guard限制单字符串512Ki chars和嵌套64，避免nextString先分配巨大token；单会话总字符串1Mi chars、最多100000 JSON values/10000 nodes；最多 10000 conversations / 200000 nodes 每次导入。数据库512MiB、单存储会话 payload 2Mi chars（最多约 8MiB UTF-8），单 header/node 1MiB UTF-8，避免 CursorWindow 超限、HTML4Mi chars/Markdown2Mi chars，超限明确失败不截断。输入和解析过程检查取消/5分钟耗时；provider自身阻塞只能尽力关闭/中断，不保证任意SAF provider立即响应。
 
-Reader/print静态HTML：JS/storage/file/content/混合内容/bridge关闭，所有请求阻止，无远程图片/字体/脚本；仅用户点击HTTP(S)链接时交系统浏览器，不转发Cookie/header。Raw HTML转义；不执行Markdown HTML或data/javascript链接。图片/附件保留文字metadata占位，LaTeX保留可读源，不新增MathJax/网络/OCR。
+Reader/print静态HTML：JS/storage/file/content/混合内容/bridge关闭，所有请求阻止，无远程图片/字体/脚本；仅用户点击HTTP(S)链接时交系统浏览器，不转发Cookie/header。Markdown AST 节点数/深度有界检查，防 HTML renderer 递归过深。Raw HTML转义；不执行Markdown HTML或data/javascript链接。图片/附件保留文字metadata占位，LaTeX保留可读源，不新增MathJax/网络/OCR。
 
 ## UI 与生命周期
 
@@ -45,7 +45,7 @@ Reader/print静态HTML：JS/storage/file/content/混合内容/bridge关闭，所
 
 复用：现有PrintManager/createPrintDocumentAdapter/visual state/cleanup，PageSnapshotExport文件名安全规则、SAF流式写入wt与generation保护的方式，freeze.js阅读/打印CSS的布局原则。SnapshotWebView最小新增独立HTML/offline入口，旧snapshot入口行为保持；必须跑正式回归。
 
-不复用：FrozenPageSnapshot数据结构、DOM clone/role selector、legacy扫描/后台接口、ChatGPT session桥、JS marked（Reader默认无JS）。新增小型Gson streaming与Java CommonMark/GFM tables依赖，许可证随包；不引入搜索引擎。MVP仅标题搜索，不做全文FTS/标签/摘要。
+不复用：FrozenPageSnapshot数据结构、DOM clone/role selector、legacy扫描/后台接口、ChatGPT session桥、JS marked（Reader默认无JS）。新增小型Gson streaming与Java 8 兼容的 CommonMark/GFM tables 0.21.0 与 Gson 2.11.0 依赖，许可证随包；不引入搜索引擎。MVP仅标题搜索，不做全文FTS/标签/摘要。
 
 ## 错误与验证
 

@@ -454,6 +454,20 @@ public class ArchiveCoreTest {
   }
 
   @Test
+  public void deeplyNestedMarkdownRejectedBeforeHtmlRecursion() throws Exception {
+    Map<String, Object> d = data("deep");
+    ArchiveModel.object(d.get("mapping"))
+        .put("a", node("a", "u", "assistant", List.of("> ".repeat(100) + "nested")));
+    Conversation c = new Conversation(d);
+    try {
+      ArchiveRenderer.html(c, ArchiveTree.select(c, false));
+      fail();
+    } catch (ArchiveError e) {
+      assertEquals("A05_ARCHIVE_TOO_LARGE", e.code);
+    }
+  }
+
+  @Test
   public void generatedScaleAndLongCode() throws Exception {
     for (int count : new int[] {1, 100, 1000}) {
       List<Object> d = new ArrayList<>();

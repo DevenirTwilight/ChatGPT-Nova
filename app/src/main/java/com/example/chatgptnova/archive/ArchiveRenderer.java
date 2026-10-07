@@ -92,6 +92,28 @@ public final class ArchiveRenderer {
     return out.toString();
   }
 
+  private static String renderMarkdown(String text) throws ArchiveError {
+    // CommonMark parses its tree iteratively; reject extreme nesting before recursive HTML
+    // rendering.
+    Node document = MARKDOWN.parse(text);
+    Node cursor = document;
+    int depth = 0, count = 0;
+    while (cursor != null) {
+      if (++count > 100000 || depth > 64) throw new ArchiveError("A05_ARCHIVE_TOO_LARGE");
+      if (cursor.getFirstChild() != null) {
+        cursor = cursor.getFirstChild();
+        depth++;
+        continue;
+      }
+      while (cursor != null && cursor.getNext() == null) {
+        cursor = cursor.getParent();
+        depth--;
+      }
+      if (cursor != null) cursor = cursor.getNext();
+    }
+    return HTML.render(document);
+  }
+
   public static String html(Conversation c, ArchiveTree.Selection selection) throws ArchiveError {
     StringBuilder out =
         new StringBuilder(
@@ -123,7 +145,7 @@ public final class ArchiveRenderer {
     for (ArchiveModel.Node n : selection.messages) {
       out.append("<article><h2>").append(role(n));
       if (!n.channel.isEmpty()) out.append(" · ").append(escape(n.channel));
-      out.append("</h2>").append(HTML.render(MARKDOWN.parse(n.text()))).append("</article>");
+      out.append("</h2>").append(renderMarkdown(n.text())).append("</article>");
       if (out.length() > 4 * 1024 * 1024) throw new ArchiveError("A05_ARCHIVE_TOO_LARGE");
     }
     return out.append("</body></html>").toString();

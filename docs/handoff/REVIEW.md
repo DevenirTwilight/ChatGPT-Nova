@@ -1,3 +1,7 @@
+## Archive minimum Android compatibility checkpoint
+
+Java8-compatible CommonMark/GFM 0.21.0 replaces 0.24.0; unnecessary coreLibraryDesugaring removed. 36 JVM fixtures pass including pre-render Markdown depth cap. Separate API26 fixture job added; API35/36 actual PDF and formal regression remain required. These runtime results are pending, not success.
+
 ## Archive first CI failure and bounded-directory review
 
 Run 37603056935 failed at instrumentation compilation (test helper read(Uri) access conflict), fixed with separate name; Android runtime was not executed. 35 JVM fixtures pass including CRC, excessive directory entries, early directory scan, key budgets and parsed 5000-node chains. Bounded title list and retained raw metadata are distinct. Revised source still awaits full CI; no real export verified.

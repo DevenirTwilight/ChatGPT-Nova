@@ -58,17 +58,15 @@ android {
     }
 
     compileOptions {
-        coreLibraryDesugaringEnabled true
         sourceCompatibility JavaVersion.VERSION_17
         targetCompatibility JavaVersion.VERSION_17
     }
 }
 
 dependencies {
-    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.1.5'
     implementation 'com.google.code.gson:gson:2.11.0'
-    implementation 'org.commonmark:commonmark:0.24.0'
-    implementation 'org.commonmark:commonmark-ext-gfm-tables:0.24.0'
+    implementation 'org.commonmark:commonmark:0.21.0'
+    implementation 'org.commonmark:commonmark-ext-gfm-tables:0.21.0'
     testImplementation 'junit:junit:4.13.2'
     implementation 'androidx.core:core:1.15.0'
     implementation 'androidx.core:core-splashscreen:1.0.1'
