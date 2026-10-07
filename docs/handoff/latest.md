@@ -1,3 +1,9 @@
+## 当前正在验证的A7
+
+最新应用/测试源544f6f0d902b8224a46028d6032208c886af5981，CI37552313716构建/lint/签名通过，Android35/36执行中。A6/37550505533两API均已独立取回证据（35:11452764196，36:11453221932），仅Firefox菜单未滚至Save as PDF；其余全部通过。现Firefox测试只滚已展开的官方菜单，不滚聊天正文；已提前该A/B以缩短反馈，所有回归保留。未取得FirefoxPDF，不提前通过、不启动B。下一步看37552313716实际结果和文件。
+
+B清单已核：正式UIHTML/MD/SystemPrint、删除唯一Gecko旧PDF/依赖/仓库/lint/资产/大包交付，16旧例继续/2Gecko明确退役，A→B及v1覆盖升级、真实APK/installedBaseAPK测量；单独小型主APK artifact（不混测试APK），无Release。必要时/tmp/nova-stage-b.py为本环境准备的待审补丁脚本，尚未应用；跨环境应按源码和本清单重新核对，禁止A未通过就执行。
+
 ## A6失败后的实际菜单修正
 
 CI37550505533 API35新10/旧18及全部容器/输入/生命周期/v1升级/实际NovaPDF继续通过；Firefox仍失败。小产物11452764196已独立取回：More已展开，Save as PDF位于实际android.widget.ScrollView菜单下方，测试未滚动；公开AX树含ACTION_SCROLL_FORWARD，截图显示Translate/Report/Add等项。现测试只在可见Close menu层中滚该ScrollView，不滚主ChatGPT/Firefox网页或使用私有API。Firefox A/B移到完整容器回归之前缩短问题反馈，但所有回归仍独立执行。API36需等实际结果，不能假定通过。Commit B仍暂停；下一步核新CI真实FirefoxPDF，成功才清理Gecko。

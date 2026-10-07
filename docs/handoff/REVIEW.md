@@ -1,3 +1,9 @@
+## 当前正在验证的A7
+
+最新应用/测试源544f6f0d902b8224a46028d6032208c886af5981，CI37552313716构建/lint/签名通过，Android35/36执行中。A6/37550505533两API均已独立取回证据（35:11452764196，36:11453221932），仅Firefox菜单未滚至Save as PDF；其余全部通过。现Firefox测试只滚已展开的官方菜单，不滚聊天正文；已提前该A/B以缩短反馈，所有回归保留。未取得FirefoxPDF，不提前通过、不启动B。下一步看37552313716实际结果和文件。
+
+B清单已核：正式UIHTML/MD/SystemPrint、删除唯一Gecko旧PDF/依赖/仓库/lint/资产/大包交付，16旧例继续/2Gecko明确退役，A→B及v1覆盖升级、真实APK/installedBaseAPK测量；单独小型主APK artifact（不混测试APK），无Release。必要时/tmp/nova-stage-b.py为本环境准备的待审补丁脚本，尚未应用；跨环境应按源码和本清单重新核对，禁止A未通过就执行。
+
 ## A6现场补充
 
 API35 CI37550505533仅Firefox Save as PDF失败，More正常展开但按钮在ScrollView下方。证据11452764196；新测试通过公开菜单ACTION_SCROLL_FORWARD查找，不修改生产保存实现、不滚聊天页。API36尚需读取。未取得Firefox实物，不记A/B通过，不开始B。
