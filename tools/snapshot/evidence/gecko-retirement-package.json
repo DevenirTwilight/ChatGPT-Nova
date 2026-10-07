@@ -1,0 +1,26 @@
+{
+  "sourceCommit": "435ebaeeec4734c1ff31b646b13ad5d8d80bc800",
+  "run": 37554538538,
+  "before": {
+    "sourceCommit": "544f6f0d902b8224a46028d6032208c886af5981",
+    "universalApkBytes": 681117497,
+    "nativeAbis": [
+      "arm64-v8a",
+      "armeabi-v7a",
+      "x86",
+      "x86_64"
+    ]
+  },
+  "after": {
+    "universalApkBytes": 1910725,
+    "arm64CompatibleApkBytes": 1910725,
+    "sameArtifactForAllAbis": true,
+    "nativeAbis": [],
+    "sha256": "ee7347401aae9bd21b22ffabba13e9258a338142952da0abb59777fc0488f7eb",
+    "originalSignatureRecordMatched": true,
+    "geckoAbsentFromDexAndRuntimeDependency": true,
+    "snapshotAssetMatched": true,
+    "productionFixtureAbsent": true
+  },
+  "installedCodeMetrics": "pending Android result; never infer total install size from APK"
+}

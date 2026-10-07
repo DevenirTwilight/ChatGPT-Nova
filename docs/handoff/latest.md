@@ -1,3 +1,11 @@
+## 最新实际源码/CI/包体检查点
+
+应用/测试source435ebaeeec4734c1ff31b646b13ad5d8d80bc800，CI37554538538构建/lint/签名/浏览器通过，Android35/36执行中。前B9d/37554349621因后续严格A/B测试提交取消，不记回归完成；生产Gecko清理未回退。
+
+已独立下载新主APK artifact11454327481和完整build11453859775：APK1910725字节(1.8222MiB)，SHA256 ee7347401aae9bd21b22ffabba13e9258a338142952da0abb59777fc0488f7eb；匹配原签名记录、完整435 buildRevision、freeze.js源字节，无native so/Gecko DEX与依赖/测试夹具/密钥。比A7实际universal681117497字节小，但B Android与覆盖升级待结果，尚不交付稳定认证。无JNI，同一个实测APK适用于ARM64及其他原支持架构，不另造虚假分包；安装总量不能据APK推断。包体/依赖证据见tools/snapshot/evidence/gecko-retirement-package.json、release-runtime-dependencies.txt。
+
+下一步等37554538538全部检查及实际文件，核严格同份HTML的FirefoxA/B/新clip与覆盖目标/16旧例+2明确退役/A→B及v1保留，然后更新最终报告/交接并交付已取小APK。先看CI失败现场，不按下方旧“待推”状态重新执行/tmp清理脚本。
+
 ## 阶段B最新源码与严格A/B修正
 
 阶段B源9d74db8540ec1fae64eb468ab7eb74562d22bbca已推，CI37554349621尚在运行；Gecko生产清理已实现，不回退。新增对照修正：此前A7两个测试分别freeze同fixture，正文一致但timestamp不同；现Firefox直接读取System Print测试保留的唯一frozen-page-print-source.html，host逐字节比较firefox-source.html，强制完全同源。同clone的生产架构本来不分格式重读live；此次只加强A/B测试，不改聊天模块。后续核本修正新CI，不将被后续提交取消的旧B检查记为通过；大小待实际构建。A7文件重核通过与原验收误判均保留。
