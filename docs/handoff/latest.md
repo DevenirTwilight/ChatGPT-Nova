@@ -1,3 +1,9 @@
+## 当前检查点：B2完整回归
+
+最新应用/测试source ac4776ff31feaed9794dbc434e423ac291fbee83；CI https://github.com/DevenirTwilight/ChatGPT-Nova/actions/runs/37556129018 构建/lint/unit/浏览器/原签名通过，Android35/36执行中。B1 API36仅旧菜单断言失败，其他全部新旧快照/实际文件/严格同HTML Firefox/输入/覆盖升级通过；已修4个预期，账号状态/设置/清理断言保留。B1 API35被后续推送取消，不能说已通过。
+
+下一步必须等B2两API结果，下载新主APK及证据，复核实际PDF/HTML/MD、同源Firefox、三个桌面浏览器、APK hash/cert/Dex/asset/deps及最终大小，更新最终报告/交接并交付主APK+GitHub artifact。不沿用B1 hash。B1实际1910725字节(1.8222MiB)，A7基线681117497字节；总安装占用未知。无Release/版号修改。旧准备脚本已应用，不再执行。下方是阶段记录，不能据旧待办回退已完成Gecko生产清理。
+
 ## B1实际回归与待修测试预期
 
 source435/CI37554538538 API36已取artifact11453609820：旧16通过/2Geo显式退役，新snapshot10、实际PDF及严格同一HTML的Firefox1/host OCR首尾/内容图像/所有输入native/A→B及v1覆盖升级通过；唯一失败是NovaWebViewTest菜单列表仍写“原型/旧扫描/旧诊断”，实际列表正是用户要求的正式保存菜单。现只同步4个菜单预期，保留账号状态/设置/清理Cookie断言，不改生产行为、不忽略此用例。API35仍等结果，不伪称B1整体绿；后续必须核本修正新CI。
