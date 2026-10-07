@@ -1,0 +1,47 @@
+{
+  "sourceCommit": "3e2d39f4be08ce333f6b77a128abf212fb62dd66",
+  "ciRun": 37633057743,
+  "apis": {
+    "35": {
+      "artifactId": 11486858867,
+      "archiveTests": 20,
+      "result": "instrumentation passed; post-output fixture check failed",
+      "actualPdfPages": 16,
+      "actualPdfSchemaMarkersVerified": [
+        "SCHEMA-OBJECT-TEXT",
+        "SCHEMA-RECAP",
+        "推理摘要",
+        "ARCHIVE-FIRST",
+        "ARCHIVE-LAST",
+        "CODE-TAIL",
+        "TABLE-TAIL",
+        "中文",
+        "café"
+      ],
+      "hiddenThoughtAndOtherBranchAbsent": true
+    },
+    "36": {
+      "artifactId": 11487113850,
+      "archiveTests": 20,
+      "result": "instrumentation passed; post-output fixture check failed",
+      "actualPdfPages": 16,
+      "actualPdfSchemaMarkersVerified": [
+        "SCHEMA-OBJECT-TEXT",
+        "SCHEMA-RECAP",
+        "推理摘要",
+        "ARCHIVE-FIRST",
+        "ARCHIVE-LAST",
+        "CODE-TAIL",
+        "TABLE-TAIL",
+        "中文",
+        "café"
+      ],
+      "hiddenThoughtAndOtherBranchAbsent": true
+    }
+  },
+  "cause": "Archive instrumentation20 all passed, but actual SAF HTML/MD still generated old short fixture while CI now requires schema markers; print source uses correct long/schema fixture",
+  "fix": "actual SAF HTML/MD uses long/schema fixture and explicit object-text/recap/hidden-thought assertions; keep strict CI marker checks",
+  "productionChangesRequired": false,
+  "stableSuitesExecuted": false,
+  "realPrivateDataUsed": false
+}

@@ -406,7 +406,7 @@ public final class ArchiveTest extends FixtureActivity {
 
   @Test
   public void readerHtmlAndMarkdownSafUseArchiveData() throws Exception {
-    store(ArchiveFixtures.json(1, false));
+    store(ArchiveFixtures.json(1, true));
     openReader();
     assertNull(((SnapshotWebView) field(reader, "reader")).snapshot);
     intercept(Intent.ACTION_CREATE_DOCUMENT, OUTPUT, false);
@@ -416,6 +416,9 @@ public final class ArchiveTest extends FixtureActivity {
     String html = new String(readFixtureDocument(OUTPUT), StandardCharsets.UTF_8);
     assertTrue(html.startsWith("<!doctype html>"));
     assertTrue(html.contains("ARCHIVE-FIRST"));
+    assertTrue(html.contains("SCHEMA-OBJECT-TEXT"));
+    assertTrue(html.contains("SCHEMA-RECAP"));
+    assertFalse(html.contains("SYNTHETIC-HIDDEN-THOUGHT"));
     assertFalse(html.contains("OTHER-BRANCH"));
     assertTrue(html.contains("<table>"));
     evidence("archive.html", html.getBytes(StandardCharsets.UTF_8));

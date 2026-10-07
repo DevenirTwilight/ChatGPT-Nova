@@ -1,3 +1,7 @@
+## Actual-output fixture mismatch retained
+
+37633057743(3e2d39f) Archive20 perAPI passed. Post-output checks failed because actual SAF HTML/MD test still used old short fixture without new schema markers; print source/PDF uses proper schema fixture. Independently downloaded both PDFs verify object text/recap label/first-last/code/table/Unicode and hidden thoughts/other-branch exclusion. Fix actual SAF test input and strengthen its assertions; retain strict CI checks. No production change; restart/Stable not yet run, new complete CI required. No real sample used.
+
 ## Final fixture-corrected package checked
 
 3e2d39f / CI37633057743 build/lint/browser/JVM48 and API26 foundation2 pass; independently downloaded reports/APK verify original v2 signed content/cert/revision/default legacy=false and unchanged package/version/assets, test provider/synthetic content excluded. Android35/36 Archive20+restart/Stable43 actual output still pending. Prior failed dcd report retained. Production/legacy source remains identical to successful independent Legacy d36246e. Real-file Levels2–4 and manual Level5 remain pending on user's device.

@@ -1,3 +1,12 @@
+## Real export compatibility — Step F：20项通过，实物检查夹具接线修正（2026-10-07）
+
+- 分支feature/export-conversation；源码3e2d39f4be08ce333f6b77a128abf212fb62dd66，CI37633057743两API各Archive20全部success。
+- failed后置实物检查：HTML/MD SAF test仍使用旧short fixture，不含新schema，但脚本要求object text/recap；print source/实际PDF已使用long/schema正确夹具。更改SAF test输入为同schema夹具并添加显式文字/摘要/hidden-thought断言，不删/放宽CI内容检查；失败消息固定化，避免空assert错误。
+- success独立下载当前实际两PDF，pdftotext核object text/recap/中文标签/首尾/code/table/多语言，hidden thoughts/OTHER-BRANCH排除；仍不能说Stable通过，后置失败阻止Stable与restart suites。
+- 证据 `tools/archive/evidence/compatibility-output-fixture-failure.json`，前一不可变Map失败保留。生产代码不变，新源码须重新跑完整CI。
+- not verified：最终完整Archive/Stable/实际HTML/MD待下一CI；真实用户设备Level2–5pending。Legacy生产/依赖仍与已成功d36246e一致。
+- 下一步：完整新CI实际产物验收后交付APK与本地清单，无新功能扩展。
+
 ## Real export compatibility — Step E：最终修正源码的基础验收（2026-10-07）
 
 - 分支feature/export-conversation，实际源码3e2d39f4be08ce333f6b77a128abf212fb62dd66，CI37633057743。

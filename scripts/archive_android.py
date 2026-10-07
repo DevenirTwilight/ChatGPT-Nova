@@ -20,7 +20,7 @@ try:
     assert 'current-branch' in html and 'OTHER-BRANCH' not in html
     assert '```java' in md and 'OTHER-BRANCH' not in md
     for document in [html,md,(out/'archive-print-source.html').read_text()]:
-        assert 'SCHEMA-OBJECT-TEXT' in document and 'SCHEMA-RECAP' in document and '推理摘要' in document
+        assert 'SCHEMA-OBJECT-TEXT' in document and 'SCHEMA-RECAP' in document and '推理摘要' in document, 'ARCHIVE_SCHEMA_OUTPUT_MARKERS_MISSING'
         assert 'SYNTHETIC-HIDDEN-THOUGHT' not in document
     subprocess.run(['pdftotext','-layout',str(out/'archive.pdf'),str(out/'archive-pdf.txt')],check=True)
     text=re.sub(r'\s+','',unicodedata.normalize('NFKC',(out/'archive-pdf.txt').read_text()))
