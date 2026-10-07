@@ -1,3 +1,7 @@
+## Real bounded binary copy passed on host; Android/manual acceptance still pending
+
+源码ea26e180：真实compatible repack用actual bounded Batch复制326/326、154521964bytes/2495ms，CRC/hash/type/私有UUID publish后未commit rollback剩余0。82PNG/148JPEG/5PDF/82DOCX/5XLSX/4unknown。只repo外临时binary，无真实ID/name/hash/内容进Git或CI。证据attachment-real-bounded-copy.json，通用工具ArchiveBinaryAudit.java。host JVM128MiB cap，不等于Android heap测量；不是手机SQLite/assets已恢复、第三方打开或AR3–5成功。fd3 Legacy success，新ea26与正式完整runtime仍待核。
+
 ## Five-type persistence and real process restart coverage added; runtime acceptance pending
 
 Step L基线fd3f4fc：新native persistence7含五类型私有bytes/provider detected MIME与native reject保留旧binary；原shell force-stop重启保留100会话并加5asset独立会话，input ZIP已删除后重启验证。PDF/OOXML是synthetic signature/container fixture，不能宣称外部Office/PDF app完整文档成功。fd3 API26独立2+5+3通过，APK original v2 cert/content digest/defaultlegacyfalse确认；35/36/Legacy待核，新源码须重新CI。用户真实恢复/duplicate/offline/人工AR3–5尚未执行。清单更新，不以真实ZIP结构CRC代替Android恢复。

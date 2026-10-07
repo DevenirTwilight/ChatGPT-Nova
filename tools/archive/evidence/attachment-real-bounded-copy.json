@@ -1,0 +1,26 @@
+{
+  "sourceCommit": "ea26e180d6f466d9f283123b3ec7c5db93a38e33",
+  "input": "user-authorized phone-repacked compatible OpenAI export, private and outside repository",
+  "environment": "host JVM -Xmx128m; no Android SQLite/reader",
+  "validation": "real compatible repack bounded attachment copy/CRC/hash/type and rollback only",
+  "candidateAssets": 326,
+  "matchedAssets": 326,
+  "copiedComplete": 326,
+  "unavailable": 0,
+  "copiedBytes": 154521964,
+  "durationMs": 2495,
+  "mimeCounts": {
+    "image/png": 82,
+    "image/jpeg": 148,
+    "application/pdf": 5,
+    "DOCX": 82,
+    "XLSX": 5,
+    "unknown": 4
+  },
+  "rollbackRemainingFiles": 0,
+  "pendingRemainingDirectories": 0,
+  "androidRealAssetImport": "not verified",
+  "androidRealOfflineRestart": "not verified",
+  "manualValidation": "pending",
+  "privacy": "No private contents, filenames, identities, hashes or links included"
+}

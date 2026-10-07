@@ -1,3 +1,10 @@
+## Attachment Restoration — Step M：真实binary有界复制与回滚独立通过（2026-10-07）
+
+- 分支feature/export-conversation，测试源码ea26e180d6f466d9f283123b3ec7c5db93a38e33；本步仅host审计/工具/脱敏证据，非Android SQLite验收。success JVM -Xmx128m 实際ArchiveDisplay引用集合→ArchiveAssetFiles.Batch preflight→326必要entry stream copy/CRC/SHA/magic→private随机文件→未commit close rollback；326/326complete，154521964bytes，2495ms，82PNG/148JPEG/5PDF/82DOCX/5XLSX/4unknown，回滚文件0/pending0。只计数/固定类型，所有真实binary输出仅repo外并已回滚。
+- 提交通用ArchiveBinaryAudit.java（仅本地显式输入、自动临时目录、脱敏统计、无私人身份/路径/内容输出）与attachment-real-bounded-copy.json；未将真实ZIP/图片/文档加入GitHub/CI。host复制耗时不是手机导入duration；128MiB heap cap不是已测Android peak。
+- fd3f4fc Legacy37660442048已workflow success；正式37660442058尚进行中，ea26新正式37661640199 pending/Legacy37661640158运行，未手动取消，不提前报全套成功。
+- AR2增加真实compatible repack binary复制/回滚证据；AR1新Android end-to-end/三格式待CI，AR3/4/5真实手机仍pending。下一步完成新源码CI和产物独立核对、同签名APK交付、用户本地人工验收。
+
 ## Attachment Restoration — Step L：五类型与进程重启回归补齐（2026-10-07）
 
 - 分支feature/export-conversation，实施基线fd3f4fc4bdace96e675b25dd6839b12beb51313e；本提交实际SHA由git log/新CI确认。success本地JVM93、ECJ Android API编译新的fixture/persistence/store、脚本语法与diff检查；本地完整ProcessTest依赖既有FixtureActivity由Gradle CI编译，不冒称本地执行。
