@@ -1,35 +1,11 @@
-## 当前检查点：B2完整回归
+# 最终审查（2026-10-07）
 
-最新应用/测试source ac4776ff31feaed9794dbc434e423ac291fbee83；CI https://github.com/DevenirTwilight/ChatGPT-Nova/actions/runs/37556129018 构建/lint/unit/浏览器/原签名通过，Android35/36执行中。B1 API36仅旧菜单断言失败，其他全部新旧快照/实际文件/严格同HTML Firefox/输入/覆盖升级通过；已修4个预期，账号状态/设置/清理断言保留。B1 API35被后续推送取消，不能说已通过。
+已测source ac4776ff31feaed9794dbc434e423ac291fbee83；CI37556129018 build、Android35/36全success。两API实际HTML/MD/PDF下载独立核Unicode/结构/首尾/后续mutation排除，两份打印源与Firefox逐字节相同，四PDF均31页，抽查长代码/表格/尾页可读。最终SAF HTML在Chromium/Firefox/Edge以普通file打开通过。完整13项报告及限制见../frozen-page-save.md，来源与原失败保留tools/snapshot/evidence。
 
-下一步必须等B2两API结果，下载新主APK及证据，复核实际PDF/HTML/MD、同源Firefox、三个桌面浏览器、APK hash/cert/Dex/asset/deps及最终大小，更新最终报告/交接并交付主APK+GitHub artifact。不沿用B1 hash。B1实际1910725字节(1.8222MiB)，A7基线681117497字节；总安装占用未知。无Release/版号修改。旧准备脚本已应用，不再执行。下方是阶段记录，不能据旧待办回退已完成Gecko生产清理。
+Gecko生产路径/依赖/仅Mozilla仓库/引擎资产/ABI大包workflow均移除；实际APK1910773字节，原包名/签名/版号，Dex/deps/ZIP无Gecko或native so。同APK适用ARM64等原架构；两API installedBaseAPK相同字节，总安装占用du无权限未知。测试Firefox/OCR不进主包。A→B/v1覆盖升级、全部旧容器/分享/输入/IME/native回归通过，16旧Android继续、2Gecko专用明确退役，不冒称18全执行。
 
-## B1实际回归与待修测试预期
+单clone生成HTML/MD、PDF同唯一HTML；无Share/MHTML/history算法/private API/认证读取。保留旧扫描源码和证据，不进入正式菜单。全部真实文件来自受控模拟器/fixture，不是物理设备/登录账号人工成功；硬件体验/厂商WebView仍需用户真机测试。无公开Release/版本递增/main合并。
 
-source435/CI37554538538 API36已取artifact11453609820：旧16通过/2Geo显式退役，新snapshot10、实际PDF及严格同一HTML的Firefox1/host OCR首尾/内容图像/所有输入native/A→B及v1覆盖升级通过；唯一失败是NovaWebViewTest菜单列表仍写“原型/旧扫描/旧诊断”，实际列表正是用户要求的正式保存菜单。现只同步4个菜单预期，保留账号状态/设置/清理Cookie断言，不改生产行为、不忽略此用例。API35仍等结果，不伪称B1整体绿；后续必须核本修正新CI。
-
-API36实测installedBaseApk1910725字节，A原基线681117497，du总量未知；A→B与v1三个seed/persist/preserve各通过。主APK已取但未作全部稳定交付。下一步等待新完整CI，取两API证据、复核浏览器/文件/包体，写最终报告和交接并提供主APK/CI链接。
-
-## 最新实际源码/CI/包体检查点
-
-应用/测试source435ebaeeec4734c1ff31b646b13ad5d8d80bc800，CI37554538538构建/lint/签名/浏览器通过，Android35/36执行中。前B9d/37554349621因后续严格A/B测试提交取消，不记回归完成；生产Gecko清理未回退。
-
-已独立下载新主APK artifact11454327481和完整build11453859775：APK1910725字节(1.8222MiB)，SHA256 ee7347401aae9bd21b22ffabba13e9258a338142952da0abb59777fc0488f7eb；匹配原签名记录、完整435 buildRevision、freeze.js源字节，无native so/Gecko DEX与依赖/测试夹具/密钥。比A7实际universal681117497字节小，但B Android与覆盖升级待结果，尚不交付稳定认证。无JNI，同一个实测APK适用于ARM64及其他原支持架构，不另造虚假分包；安装总量不能据APK推断。包体/依赖证据见tools/snapshot/evidence/gecko-retirement-package.json、release-runtime-dependencies.txt。
-
-下一步等37554538538全部检查及实际文件，核严格同份HTML的FirefoxA/B/新clip与覆盖目标/16旧例+2明确退役/A→B及v1保留，然后更新最终报告/交接并交付已取小APK。先看CI失败现场，不按下方旧“待推”状态重新执行/tmp清理脚本。
-
-## 阶段B最新源码与严格A/B修正
-
-阶段B源9d74db8540ec1fae64eb468ab7eb74562d22bbca已推，CI37554349621尚在运行；Gecko生产清理已实现，不回退。新增对照修正：此前A7两个测试分别freeze同fixture，正文一致但timestamp不同；现Firefox直接读取System Print测试保留的唯一frozen-page-print-source.html，host逐字节比较firefox-source.html，强制完全同源。同clone的生产架构本来不分格式重读live；此次只加强A/B测试，不改聊天模块。后续核本修正新CI，不将被后续提交取消的旧B检查记为通过；大小待实际构建。A7文件重核通过与原验收误判均保留。
-
-# 实际审查状态（2026-10-07）
-
-最新任务与源码以远端及latest.md为准。阶段A source544/CI37552313716所有Android instrumentation与实际文件保存通过，但CI原host first-marker text提取错误仍红。独立四份实际PDF经NFKC+仅Firefox首标题必要的144DPI离线OCR、正文/首尾/中法英/长代码/表格/数学/图片/AFTER排除和人工抽查已通过。粗体标题视觉存在，不删首标记断言；tools/snapshot/evidence/android-pdf-firefox-A7.json明确原失败与重验证。不能把原CI说绿，不用预览代文件，不冒充物理/真实账号。
-
-基于实际受控A验证完成实施B：正式HTML/MD/SystemPrint，Gecko生产用户唯一旧PDF已删除，依赖/仓库/资产/lint/ABI交付移除。旧扫描源码和16可继续Android测试保留，2Geo明确退役有历史证据。新CI全部检查及覆盖升级/大小待结果；未通过前不交付、不预报大小。
-
-A实际universal681117497字节；installedBaseApk同值，du未授权总占用未知。旧历史ARM64178491277来自source190113f，不假装是544的arm64测量。B无JNI预期单包兼容所有ABI，但必须实际ZIP/Dex/依赖证明及测APK，不能先声称具体小包数。
-
-单同步clone→HTML/MD→同HTML无JS打印。无私有接口/Storage/token/Cookie读取、自动滚动/Share/MHTML；诊断无正文/真实ID/query，资源无Auth/Cookie、有上限，Activity释放，核心输入/上传下载分享不重构。SAF显式wt及长旧目标回归，CSS裁剪hidden样例已证实并修，完整性不靠消息计数。所有测试夹具/OCR/Firefox只CI或测试APK，不入生产。
+历史A7原CI因Firefox粗体首标题text提取仍红，实际四PDF独立NFKC/仅必要首页离线OCR+视觉重核通过后才清理Gecko；B1旧菜单预期失败及API35取消留历史，不改称成功。最终B2断言保留并完整绿。
 
 三种格式严格对应同一次当前网页冻结快照，但无法证明ChatGPT服务器端完整会话历史；如果网页虚拟化未挂载较早内容，保存结果也不会包含那些内容。

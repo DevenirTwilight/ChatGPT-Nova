@@ -1,35 +1,43 @@
-[
-  {
-    "browser": "Chromium",
-    "version": "143.0.7499.4",
-    "opening": "file",
-    "ordinaryHtml": true,
-    "markers": true,
-    "imageDecoded": true,
-    "noNetworkOrScript": true,
-    "printCss": true,
-    "pdf": "desktop-only"
-  },
-  {
-    "browser": "Firefox",
-    "version": "144.0.2",
-    "opening": "file",
-    "ordinaryHtml": true,
-    "markers": true,
-    "imageDecoded": true,
-    "noNetworkOrScript": true,
-    "printCss": true,
-    "pdf": "not-produced"
-  },
-  {
-    "browser": "Edge",
-    "version": "154.0.4258.62",
-    "opening": "file",
-    "ordinaryHtml": true,
-    "markers": true,
-    "imageDecoded": true,
-    "noNetworkOrScript": true,
-    "printCss": true,
-    "pdf": "desktop-only"
-  }
-]
+{
+  "sourceCommit": "ac4776ff31feaed9794dbc434e423ac291fbee83",
+  "run": 37556129018,
+  "android": 36,
+  "file": "actual SAF frozen-page-saf.html",
+  "sha256": "62180cf9df4e076f8f00b7f2e8f4f48d7b43c301a2f3c4c68fb0ad13a3fa210a",
+  "scope": "actual emulator-saved ordinary HTML; file:// opening; desktop printing is not Android PDF proof",
+  "browsers": [
+    {
+      "browser": "Chromium",
+      "version": "143.0.7499.4",
+      "opening": "file",
+      "ordinaryHtml": true,
+      "markers": true,
+      "imageDecoded": true,
+      "noNetworkOrScript": true,
+      "printCss": true,
+      "pdf": "desktop-only"
+    },
+    {
+      "browser": "Firefox",
+      "version": "144.0.2",
+      "opening": "file",
+      "ordinaryHtml": true,
+      "markers": true,
+      "imageDecoded": true,
+      "noNetworkOrScript": true,
+      "printCss": true,
+      "pdf": "not-produced"
+    },
+    {
+      "browser": "Edge",
+      "version": "154.0.4258.62",
+      "opening": "file",
+      "ordinaryHtml": true,
+      "markers": true,
+      "imageDecoded": true,
+      "noNetworkOrScript": true,
+      "printCss": true,
+      "pdf": "desktop-only"
+    }
+  ]
+}

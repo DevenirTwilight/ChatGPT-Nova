@@ -1,71 +1,85 @@
-# 当前网页：普通 HTML 冻结快照
+# 当前网页冻结保存：HTML / Markdown / PDF
 
-当前阶段B已实现：唯一快照表示为普通UTF-8 HTML，HTML/Markdown同一次clone，PDF使用Android System WebView Print。A的Android35/36与Firefox实际PDF文件已经独立验证；Gecko唯一旧生产路径、依赖和大包ABI交付已移除，B完整CI及包体待验证。版号仍1.4.0/code14，不发布Release。下方A历史验证保留，勿把旧“待Firefox”当当前结论。
+源码 `ac4776ff31feaed9794dbc434e423ac291fbee83`；[验收 CI](https://github.com/DevenirTwilight/ChatGPT-Nova/actions/runs/37556129018)。**最终 CI 全绿：build 与 Android35/36 均 success，包含 Gradle build/lint/unit、现有与新增 instrumentation、实际文件及升级检查。** 本轮取消 MHTML、Share 快照与新的完整历史扫描。正式入口是“保存当前网页”。包名/原签名/版本保持原样，没有公开 Release。
 
-## 数据流
+## 1. 唯一快照与源码
 
-保存当前网页→确认冻结此刻→一次evaluateJavascript同步记录公开呈现状态与URL/title/time→深clone一次→同clone派生静态阅读HTML及Markdown→不可变FrozenPageSnapshot。
+`FrozenPageSnapshot` 的字符串和长度字段均为 final；诊断 metadata 保存为字符串，读取时返回副本。`PageSnapshotExport` 先核可信 HTTPS chatgpt.com 页面，然后仅一次 evaluateJavascript：记录 URL/title/time，同步采样公开呈现状态，深 clone 一次；后续 HTML 和 Markdown 转换只访问 clone，一次返回完整 payload。URL/title 变化报 S08，超限明确失败，不截断。
 
-- HTML：frozenHtml原字符串→后台UTF-8缓存.html→SAF流式复制/非空校验。不是WebArchive，不含MIME封装。
-- Markdown：同clone转换的markdown原字符串→后台UTF-8缓存.md→SAF。不是从HTML文件/PDF再解析。
-- PDF：相同frozenHtml→独立SnapshotWebView（无JS、无storage、无桥）→静态加载完成及visual state→createPrintDocumentAdapter→PrintManager→系统Save as PDF。Nova不要求取得最终文件路径；onFinish包括取消，不报告已保存成功。
+源码：`app/src/main/java/com/example/chatgptnova/{FrozenPageSnapshot,PageSnapshotExport,SnapshotWebView}.java`、`app/src/main/assets/snapshot/freeze.js`、`MainActivity.java`。配套 `FrozenPageSnapshotTest`、`FirefoxSnapshotTest`、`NovaWebViewTest`、`NativeUiTest`，`tools/snapshot/` fixtures/浏览器测试、`scripts/snapshot_android.py` 与 CI。未重构 ComposerWebView、上传、下载或分享。
 
-选格式后不再读取live正文补内容。冻结期间URL/title变化明确拒绝；完成后不跟随live mutation。没有滚动、账号存储/认证读取、fetch/XHR hook、observer、backend/private reader/React Fiber、消息ID要求、正文去重或跨窗口合并。
+## 2. HTML 是唯一标准表示
 
-## HTML阅读和打印
+输出真正普通 UTF-8 `.html`，不是 MHTML/WebArchive。HTML 直接保存 snapshot.frozenHtml；PDF 直接加载同一字符串，没有另一个 PDF HTML renderer。采用 Nova 自有内联 reading stylesheet：860px 正文、长 URL 换行、屏幕代码/表格横向滚动、图片限宽。打印白底黑字、16mm 页边距、标题避免孤行、代码换行、表格行尽量不拆；长 article/pre/table 可以跨页，不强制整条消息不可分页。
 
-只保留clone的main（或公开role=main/body兜底）阅读正文。移除脚本、事件、按钮/菜单/导航/输入/反馈、隐藏控制、应用样式和属性。公开data-message-author-role及无普通作者的显式assistant/user conversation-turn可提供角色标签；不猜角色。内联Nova stylesheet，无ChatGPT CSS依赖；860px正文宽度、代码/表格屏幕横向滚动、图片max-width。打印白底黑字、16mm页边距、标题避免孤行、代码换行、表格单行尽量避免切割；长消息/pre/table允许跨页，不强制整条不可分页。
+移除 scripts、inline handlers、导航/菜单/按钮/输入/反馈、隐藏（含 CSS clip）控制、ChatGPT SPA CSS 与执行依赖。角色只取可靠公开 DOM 标记，无法确认按正文顺序，不猜角色、不要求 stable ID。保留代码/表格/引用/列表/链接/可读数学/图片表示。CSP 禁止脚本、网络连接、frame/form；相对 URL 在冻结事务中绝对化。正文可脱离登录阅读，外链图片可能仍需网络。
 
-相对链接/图片在同一事务中解析成绝对HTTPS URL，currentSrc在同步呈现状态采样中记录。data图片保留；blob图片无法离线复用，以可读占位说明。HTML外链图片可能需要网络、失效或改变；不下载原附件，不保证完全离线。静态打印资源请求限HTTPS、4次重定向、5秒、8MiB/资源、64资源及总32MiB下载，无Cookie/Authorization，并拒绝backend/API路径。保存HTML CSP拒绝脚本/连接/框架/表单；图片允许HTTPS/data，不允许应用再次启动。
+## 3. 普通浏览器实际打开
 
-canvas bitmap、shadow DOM、运行时JS状态不序列化。数学优先公开LaTeX annotation，保留当前可读文字，不保证原排版。Markdown支持标题/段落/强调/链接/列表/引用/代码fence/表格/数学/图片；保留公开pre-wrap换行。
+对实际 Android SAF 保存文件以 file:// 打开 Chromium143.0.7499.4、Firefox144.0.2、Edge154.0.4258.62，核 UTF-8 中法英/emoji、首尾、代码、表格、数学、320×120 PNG、无脚本/HTTP 请求依赖及白底打印 CSS。不是将 Chromium 冒充 Edge，也不是将桌面 PDF 冒充 Android PDF。证据 `tools/snapshot/evidence/android-saved-html-compatibility.json`。
 
-## 限额、生命周期、诊断
+## 4. Markdown
 
-同步DOM最多100000元素、最终JSON payload最多12Mi UTF-16 code units，超过明确失败，不静默截断。Android回调再核限额；文本UTF-8编码/写盘与64KiB流式复制在后台，取消/销毁检查代次。临时文件和WebView在结束/取消/Activity销毁释放；不修改主聊天输入/导航/上传/下载模块。
+Markdown 在同一次同步事务中从相同 clone 生成，不解析保存的 HTML/PDF，不再读 live。支持 heading/paragraph/bold/italic/link/list/blockquote/inline code/fenced code/table/hr/公开 LaTeX 与 image alt/URL；带保存时间、当前冻结快照来源和已加载内容限制。实际 UTF-8 `.md` 验证中法英/emoji、fence/table/blockquote/lists/links、首尾、排除按钮/脚本/后续 mutation。
 
-S01_INVALID_PAGE；S02_SNAPSHOT_FAILED（包括15秒捕获超时）；S03_SNAPSHOT_TOO_LARGE；S04_HTML_WRITE_FAILED；S05_MARKDOWN_WRITE_FAILED；S06_STATIC_WEBVIEW_FAILED（包括30秒渲染超时）；S07_PRINT_FAILED；S08_PAGE_CHANGED_BEFORE_SNAPSHOT；S09_SAVE_PICKER_FAILED；S10_SAVE_FAILED。新路径不使用H02/H03/H06。
+## 5. PDF 正式路径
 
-诊断只含app/buildRevision/Android/WebView、随机snapshotId、origin、格式、字符数、阶段与耗时，不含正文/真实消息ID/Cookie/token/完整URL query。打印onLayout/onWrite仅记生命周期与页范围个数；不伪造回调成功。
+frozenHtml → 独立 `SnapshotWebView` → loadDataWithBaseURL → visual state callback → createPrintDocumentAdapter → Android PrintManager → 系统 Save as PDF。JavaScript/storage/文件访问/桥/新窗口关闭，导航阻止，媒体上传能力未暴露。Nova 不要求最终 PDF 路径，打印取消不报告成功；完成、取消、Activity destroy 释放临时 WebView。
 
-## 自动及人工验收
+静态 HTTPS 图片请求不带 Cookie/Authorization，不读账号 Cookie 内容；拒绝 backend/API 路径及非必要协议，4 次重定向、5 秒、单资源8MiB、64资源/总32MiB。外部资源字节不属于 DOM 不可变保证，网络图片可能变化。
 
-`tools/snapshot/browser.test.cjs`：同clone、live不变、mutation隔离、脚本/SVG/控件剥离、UTF-8富文本、可信URL/title保护、过量拒绝、公开角色与pre-wrap、100+屏长fixture。
+## 6. Firefox Android 实际 A/B
 
-`FrozenPageSnapshotTest`：实际SAF .html/.md字节、同对象打印源、系统打印界面保存实际多页PDF、取消/重复、Activity重建/renderer恢复、Cookie/诊断。`scripts/snapshot_android.py`取回文件，核对UTF-8/首尾/code/table/math及late marker不存在，pdftotext/pdfinfo；实际打开HTML，继续原WebView/上传/权限/下载/清理/分享/全IME/native/原签名v1升级检查。
+官方 Firefox157.0.1（仅 CI 测试 app）通过公开菜单 Save as PDF 保存实际文件。它读取 System Print 测试留下的原始 frozen-page-print-source.html；host 要求 firefox-source.html 与之逐字节相同，包括时间。Android35：Nova278245字节/Firefox355824字节；Android36：Nova294175字节/Firefox355727字节，四份均31页Letter(612×792pt)。Nova各2个链接，Firefox各4个（包含浏览器页眉链接）；检查首尾/中法英/长代码/表格/数学/链接/PNG 与后续内容隔离，抽样渲染检查阅读/分页。Firefox附日期/URL/页码，Nova没有该浏览器额外页眉页脚；字体、边距和分页存在合理差异，不保证逐字节相同。
 
-人工在Android35/36保存并打开PDF，检查中英法/emoji/长代码/表格/链接/图片/分页、首尾、返回聊天与取消/重复打印；同一保存HTML在Firefox Android打印做A/B，记录页数/边距/字体/分页差异，不能用桌面Firefox代替。桌面Chrome/Chromium、Firefox和Edge实际打开保存的HTML；禁止把Chromium结果冒充Edge测试。真实账号短会话/长会话也应检查当前挂载内容。
+Firefox粗体首标题在真实 PDF 可见，却缺少可提取文字；正文按 NFKC 验证兼容汉字，只有该首标题必要时用实际首页144DPI离线 OCR。其他14个内容标记仍要求 PDF 文本，图片对象仍断言320×120，没有删首尾检查。OCR不进入生产。
 
-当前验证进度以handoff/latest及CI实际结果为准，未运行项明确待验证。此前MHTML实验和失败记录留在Git历史，不继续开发。
+## 7. 同快照一致性
 
-三种格式严格对应同一次当前网页冻结快照，但无法证明ChatGPT服务器端完整会话历史；如果网页虚拟化未挂载较早内容，保存结果也不会包含那些内容。
+fixture snapshot 前含 Before snapshot marker，后续立即变更 live 标题/正文/表格及新增 After snapshot marker。实际 HTML、Markdown、唯一打印源和 PDF 保留 BEFORE、排除 AFTER。另测公开角色、隐藏控制、过量 payload、URL/title 变化、100+屏与超长消息。跨格式选项不会再读取 live；下次主动保存则创建新的快照。
 
-## 本轮已执行桌面验证（2026-10-06）
+## 8. Android 验证范围
 
-同一实际保存HTML fixture以file://在独立测试Chromium143.0.7499.4、Firefox144.0.2、Edge154.0.4258.62打开，UTF8中文/法语/emoji/代码/表格/数学/首尾和data图片解码、无脚本/HTTP请求、白底打印CSS通过。截图人工查看中文及emoji显示正常。初始基础fixture的Chromium桌面PDF18页；扩展长代码/表格后31页，pdftotext检出中文/café/首尾/code/table；不是Android PDF/Firefox Android A/B。浏览器版本及结果见tools/snapshot/evidence/desktop-compatibility.json。
+Android35/36 x86_64 受控模拟器保存实际 HTML/MD/PDF、标准系统打印/取消/多次/返回/Activity 生命周期，继续 WebView 导航/Cookie/清理/上传多文件/下载与 blob/Web Share/媒体权限/长文本/Clipboard/三种 IME/native/renderer 恢复测试，并验证原签名 A Gecko大包→B 及 v1→B 覆盖升级的数据保留。
 
-最初沿用的1px图片存在IDAT CRC错误，已替换为有正确校验的实际PNG并保留图片解码断言（没有放宽测试）。系统托管Chromium的file策略限制不代表HTML错误；最终结果用独立测试版Chromium及真实Firefox/Edge，三者均file直接打开，无更改既有浏览器策略。`compatibility.cjs`明确区分file与可能的localhost降级，不冒充结果。
+这是受控 fixture 与实际文件验收，不是登录真实账号/物理设备人工成功；拍照/麦克风硬件体验与各厂商 WebView 还需真机核对。旧16 Android例继续，2个 Gecko 专项明确 Ignore 保留历史证据，不声称旧18全执行。
 
-已新增FirefoxSnapshotTest受控Android A/B：官方Firefox157.0.1 x86_64仅在CI安装，不加入生产依赖；同一个frozenHtml通过临时loopback fixture服务交给Firefox，以正常菜单Save as PDF保存并拉回实物。此测试不使用私有浏览器打印API、不包含真实会话、不发送正文给第三方，结果待CI，不宣称通过。真机人工对照仍应执行。
+## 9. 实测包体
 
-## 受控验收采样修正
+移除前 A7 universal APK：681,117,497字节；最终 universal APK：1,910,773字节（1.8223MiB）。移除 native 引擎后，同一 APK 适用 ARM64 与其他原支持架构，没有虚构独立 split；历史 ARM64 178,491,277字节来自旧190113f，不能冒充本轮A7 ARM64实测。两API installedBaseApk实测均1,910,773字节；总安装占用无法从APK推断，设备 du 权限限制的未知项如实保留。
 
-Android标准保存窗口已实测为android:id/title（文件名EditText），保存测试通过真实窗口明确命名后读取实际文件，不把任务label误作文件名。UiAutomation.executeShellCommand在Android15公开源码中使用Runtime.exec，不解析shell引号/重定向；测试使用公开executeShellCommandRw启动sh并通过stdin传入固定fixture命令，非生产能力。Firefox157.0.1首次启动role窗口/首页Continue卡片按明确UI操作处理，正文标记通过递归公开accessibility节点检查（Gecko虚拟节点不一定响应findByText快捷查询）；Save as PDF在公开MoreSettingsSubmenu中，不调用Firefox私有打印API。未有实物之前不能宣称PDF通过。
+最终 APK SHA256：`fa96b8714047ae707bbb013be8473be98a51db92cd826c4652f7ebe0d008e5c5`。保留 com.example.chatgptnova / code14 / 1.4.0-scroll-trial，原证书 SHA256 `f93221ee0d2be2b806233a0b3427ec9c14766100c1bab3208841e6203e2b4289`。依赖/包体证据见 gecko-retirement-package.json、release-runtime-dependencies.txt。
 
-fixture图像改为320×120可见PNG，不以单像素解码冒充图片打印品质；PDF验收保留打印源HTML/同快照MD，核法语重音、数学、长代码/长表格、首尾和late marker隔离，并检查图片对象。快照浏览器增加隐藏table/list/form及临时图片占位，13场景本地通过；资源总量有界、无附加live读取，超量DOM/payload仍明确失败。
+## 10. Gecko 已退出生产
 
-## 实际保存产物检查（2026-10-07，阶段A）
+删除 GeckoPdfExporter.java、唯一旧 PDF 引用、GeckoView dependency、仅 Mozilla Maven、Gecko许可资产/lint例外与专属 ABI/650MiB 交付 workflow。实际依赖树无 Gecko，APK Dex无引擎与 exporter，无任何 native .so。Firefox仅对照测试安装，没有打入APK；保留Git历史。Composer输入设计注释中的 Gecko 名称不是生产依赖。
 
-CI37548381063/source462ba8c：Android35与36均通过新快照10项与原18项及全部容器、IME、权限/上传下载分享、native生命周期和原签名v1覆盖升级。实际System Print UI保存并取回PDF，两者均31页、Letter 612×792pt，各2个链接注释及1个320×120图片对象；35为278243字节，36为294594字节。首尾、中法英、长代码/表格、数学及AFTER内容隔离检查通过。独立渲染人工抽查35首页/代码页/表格页/中段/末页与36首页：白底、代码换行、表格/长段落分页可读，无明显重叠。脱敏文件hash/范围见tools/snapshot/evidence/android-system-pdf-A5.json。
+## 11. Legacy 保留
 
-从Android35 SAF实际保存的frozen-page-saf.html取回同一文件，以file://在Chromium143.0.7499.4、Firefox144.0.2、Edge154.0.4258.62打开：中法英/emoji、首尾、代码/表格/数学、320×120PNG解码、无脚本/HTTP请求、白底打印CSS通过。结果更新tools/snapshot/evidence/android-saved-html-compatibility.json。
+dom-trial.js、scroll-trial.js、progress-discovery.js、locate-text.js 与旧扫描 controller/相关测试证据保留为 legacy。正式菜单不启动扫描，不扩展 H02/H03/H06、overlap/跨窗口缓存/完整历史推断。旧独立浏览器测试继续执行，不把合成通过当历史完整证明。
 
-此轮唯一未通过项为Firefox Android PDF菜单自动化，尚无Firefox PDF，不记A/B通过。Gecko仍保留，清理需等对照完成。以上真实文件来自受控模拟器，不等于真实账号/物理设备人工验收。
+## 12. 上限、安全与仍存限制
 
-## 阶段A实物完成、阶段B提交待验证
+DOM100000元素，最终JSON12Mi UTF-16 units；native外层callback24Mi检查。后台UTF8缓存→SAF64KiB流式复制，用wt截断较长旧目标并核非空/长度；取消/销毁任务代次失效与临时文件清理。错误 S01–S10，不混旧H代码；诊断只版本/随机snapshotId/origin/格式/字符数/耗时/阶段，不记正文、真实ID、私密query或凭据。全部本地，不上传。
 
-source544/CI37552313716所有Android instrumentation实际通过，Nova/Firefox×35/36的四份PDF已取回；原CI仅host PDF检验误判仍标failure。Firefox粗体标题视觉正常却不在提取文本、中文为兼容字形，现正文按NFKC等价核对，首标记仅Firefox必要时实际第一页渲染+离线OCR验证，没有删除断言。四份全部正文/首尾/长代码/表格/数学/法语/320×120图像/AFTER排除独立重验通过；均31页Letter，Firefox356099/355771字节，附网页页眉页脚和日期；Nova无该额外页眉页脚，分页面积有轻微差异，代码表格及文本均可读。证据android-pdf-firefox-A7.json保留失败来源及重核方法。
+不序列化 canvas、shadow DOM、运行时JS状态，移除 inline SVG；数学优先可读文字/公开LaTeX，非像素级原排版。data图片保留，HTTPS外链可变/可能失效，blob仅占位，附件原文件未备份。字符上限内仍有设备内存/字体差异，无法承诺任何体量/任何浏览器版本；不是完全离线附件备份。
 
-B正式入口退役旧扫描UI并移除生产Gecko。16旧Android例继续，2Gecko专用Ignore保留历史；完整新测试/正常容器回归、A大包及v1覆盖升级、APK/依赖校验待CI。SAF使用wt并测覆盖较长旧目标；CSS clip零面积/clip-path50%辅助隐藏控制不进入两格式，样例已证明旧行为误包含。OCR/Firefox仅CI测试，主APK无新增OCR依赖。
+## 13. 不声明完整历史
 
-Firefox A/B进一步严格使用System Print测试记录的原始frozen-page-print-source.html，而不是另一次freeze同fixture；host要求firefox-source.html逐字节相同，连capture时间也不允许不同。生产三格式本来就是一个FrozenPageSnapshot，此修正仅加强浏览器对照来源。最终结果待新CI。
+正式入口、快照文件头/页脚与诊断都描述当前已加载内容，不声称完整服务器历史。旧实验文档留在Git与legacy范围，不作为新功能承诺。
+
+**三种格式严格对应同一次当前网页冻结快照，但无法证明 ChatGPT 服务器端完整会话历史；如果网页虚拟化未挂载较早内容，保存结果也不会包含那些内容。**
+
+阶段历史：A7原CI仍failure（Firefox粗体首标题text提取误判），四份实际文件独立重验及人工抽查通过才实施B。B1 API36唯一旧菜单断言失败，保持断言语义同步后重跑B2。保留证据，不将被取消/失败的历史CI改称成功。
+
+## 下载与证据
+
+[主 APK artifact（解压后安装 ChatGPT-Nova.apk）](https://github.com/DevenirTwilight/ChatGPT-Nova/actions/runs/37556129018/artifacts/11454731981)仅含主包和校验/签名/大小记录；需要GitHub登录，非公开Release。可同签名覆盖安装，不要求清除账号。版本未频繁递增，诊断buildRevision为ac4776ff31feaed9794dbc434e423ac291fbee83。
+
+- [最终两API实际文件与验证证据](../tools/snapshot/evidence/android-frozen-save-final.json)
+- [普通浏览器打开实际HTML](../tools/snapshot/evidence/android-saved-html-compatibility.json)
+- [包体/安装代码大小/依赖清理](../tools/snapshot/evidence/gecko-retirement-package.json)
+- [最终release runtime依赖树](../tools/snapshot/evidence/release-runtime-dependencies.txt)
+- [阶段A原失败与四PDF独立重验](../tools/snapshot/evidence/android-pdf-firefox-A7.json)
+
+最后文档提交不会改变已测APK源码或触发新Release。CI artifact含实际HTML/MD/PDF fixture与测试日志；真实聊天正文未入库。

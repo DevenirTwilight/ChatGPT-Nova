@@ -1,0 +1,152 @@
+{
+  "sourceCommit": "ac4776ff31feaed9794dbc434e423ac291fbee83",
+  "run": 37556129018,
+  "ciConclusion": "success",
+  "scope": "actual emulator fixture files, independent downloaded-file verification and sampled visual review; not physical device or logged-in account",
+  "results": [
+    {
+      "android": 35,
+      "allHostChecksPassed": true,
+      "samePrintHtmlBytes": true,
+      "package": {
+        "sourceCommit": "ac4776ff31feaed9794dbc434e423ac291fbee83",
+        "android": "35",
+        "apkBytes": 1910773,
+        "scope": "installed code directory; excludes app data/cache and shared system WebView",
+        "apkSha256": "fa96b8714047ae707bbb013be8473be98a51db92cd826c4652f7ebe0d008e5c5",
+        "nativeAbis": [],
+        "installedBaseApkBytes": 1910773,
+        "installedCodeAllocatedBytes": null
+      },
+      "baselinePackage": {
+        "sourceCommit": "544f6f0d902b8224a46028d6032208c886af5981",
+        "android": "35",
+        "apkBytes": 681117497,
+        "scope": "installed code directory; excludes app data/cache and shared system WebView",
+        "apkSha256": "663b877fd591a4e423668c27f51f2b0f52c875275ae6f1ee9459a14de7545ff5",
+        "nativeAbis": [
+          "arm64-v8a",
+          "armeabi-v7a",
+          "x86",
+          "x86_64"
+        ],
+        "installedBaseApkBytes": 681117497,
+        "installedCodeAllocatedBytes": null
+      },
+      "files": [
+        {
+          "file": "frozen-page.pdf",
+          "bytes": 278245,
+          "sha256": "34b26139e3185ec58248c5c9c588d2bf9e9781875fac8ba1032569cd24465d47",
+          "pages": 31,
+          "pagePoints": [
+            0.0,
+            0.0,
+            612.0,
+            792.0
+          ],
+          "links": 2,
+          "verification": {
+            "beforeMarker": "pdf-text",
+            "otherMarkers": "pdf-text",
+            "unicodeNormalization": "NFKC",
+            "lateMarkersAbsent": true,
+            "fixtureImage": "320x120"
+          }
+        },
+        {
+          "file": "firefox-frozen.pdf",
+          "bytes": 355824,
+          "sha256": "2ee0c9a1d11925396b1def3d0ab29f2fe79fb29384d1eeb482470ef35c82dd13",
+          "pages": 31,
+          "pagePoints": [
+            0.0,
+            0.0,
+            612.0,
+            792.0
+          ],
+          "links": 4,
+          "verification": {
+            "beforeMarker": "first-page-render-ocr",
+            "otherMarkers": "pdf-text",
+            "unicodeNormalization": "NFKC",
+            "lateMarkersAbsent": true,
+            "fixtureImage": "320x120"
+          }
+        }
+      ]
+    },
+    {
+      "android": 36,
+      "allHostChecksPassed": true,
+      "samePrintHtmlBytes": true,
+      "package": {
+        "sourceCommit": "ac4776ff31feaed9794dbc434e423ac291fbee83",
+        "android": "36",
+        "apkBytes": 1910773,
+        "scope": "installed code directory; excludes app data/cache and shared system WebView",
+        "apkSha256": "fa96b8714047ae707bbb013be8473be98a51db92cd826c4652f7ebe0d008e5c5",
+        "nativeAbis": [],
+        "installedBaseApkBytes": 1910773,
+        "installedCodeAllocatedBytes": null
+      },
+      "baselinePackage": {
+        "sourceCommit": "544f6f0d902b8224a46028d6032208c886af5981",
+        "android": "36",
+        "apkBytes": 681117497,
+        "scope": "installed code directory; excludes app data/cache and shared system WebView",
+        "apkSha256": "663b877fd591a4e423668c27f51f2b0f52c875275ae6f1ee9459a14de7545ff5",
+        "nativeAbis": [
+          "arm64-v8a",
+          "armeabi-v7a",
+          "x86",
+          "x86_64"
+        ],
+        "installedBaseApkBytes": 681117497,
+        "installedCodeAllocatedBytes": null
+      },
+      "files": [
+        {
+          "file": "frozen-page.pdf",
+          "bytes": 294175,
+          "sha256": "a3284f4af433b4e69d2b5d324905ea242c4fe46e615a23246affcb8c56353cd3",
+          "pages": 31,
+          "pagePoints": [
+            0.0,
+            0.0,
+            612.0,
+            792.0
+          ],
+          "links": 2,
+          "verification": {
+            "beforeMarker": "pdf-text",
+            "otherMarkers": "pdf-text",
+            "unicodeNormalization": "NFKC",
+            "lateMarkersAbsent": true,
+            "fixtureImage": "320x120"
+          }
+        },
+        {
+          "file": "firefox-frozen.pdf",
+          "bytes": 355727,
+          "sha256": "a66da3b0d797d48589cd71ac5e519b44a33f8dba4d13dcaba79a8c6fa5b29fd4",
+          "pages": 31,
+          "pagePoints": [
+            0.0,
+            0.0,
+            612.0,
+            792.0
+          ],
+          "links": 4,
+          "verification": {
+            "beforeMarker": "first-page-render-ocr",
+            "otherMarkers": "pdf-text",
+            "unicodeNormalization": "NFKC",
+            "lateMarkersAbsent": true,
+            "fixtureImage": "320x120"
+          }
+        }
+      ]
+    }
+  ]
+}

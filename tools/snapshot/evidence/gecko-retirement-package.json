@@ -1,6 +1,6 @@
 {
-  "sourceCommit": "435ebaeeec4734c1ff31b646b13ad5d8d80bc800",
-  "run": 37554538538,
+  "sourceCommit": "ac4776ff31feaed9794dbc434e423ac291fbee83",
+  "run": 37556129018,
   "before": {
     "sourceCommit": "544f6f0d902b8224a46028d6032208c886af5981",
     "universalApkBytes": 681117497,
@@ -12,15 +12,37 @@
     ]
   },
   "after": {
-    "universalApkBytes": 1910725,
-    "arm64CompatibleApkBytes": 1910725,
+    "universalApkBytes": 1910773,
+    "arm64CompatibleApkBytes": 1910773,
     "sameArtifactForAllAbis": true,
     "nativeAbis": [],
-    "sha256": "ee7347401aae9bd21b22ffabba13e9258a338142952da0abb59777fc0488f7eb",
+    "sha256": "fa96b8714047ae707bbb013be8473be98a51db92cd826c4652f7ebe0d008e5c5",
     "originalSignatureRecordMatched": true,
     "geckoAbsentFromDexAndRuntimeDependency": true,
     "snapshotAssetMatched": true,
     "productionFixtureAbsent": true
   },
-  "installedCodeMetrics": "pending Android result; never infer total install size from APK"
+  "installedCodeMetrics": [
+    {
+      "sourceCommit": "ac4776ff31feaed9794dbc434e423ac291fbee83",
+      "android": "35",
+      "apkBytes": 1910773,
+      "scope": "installed code directory; excludes app data/cache and shared system WebView",
+      "apkSha256": "fa96b8714047ae707bbb013be8473be98a51db92cd826c4652f7ebe0d008e5c5",
+      "nativeAbis": [],
+      "installedBaseApkBytes": 1910773,
+      "installedCodeAllocatedBytes": null
+    },
+    {
+      "sourceCommit": "ac4776ff31feaed9794dbc434e423ac291fbee83",
+      "android": "36",
+      "apkBytes": 1910773,
+      "scope": "installed code directory; excludes app data/cache and shared system WebView",
+      "apkSha256": "fa96b8714047ae707bbb013be8473be98a51db92cd826c4652f7ebe0d008e5c5",
+      "nativeAbis": [],
+      "installedBaseApkBytes": 1910773,
+      "installedCodeAllocatedBytes": null
+    }
+  ],
+  "ciConclusion": "success"
 }
