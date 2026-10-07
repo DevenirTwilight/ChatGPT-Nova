@@ -20,6 +20,7 @@ try:
     suite('com.example.chatgptnova.ArchiveAssetPersistenceTest','archive-asset-persistence',7)
     suite('com.example.chatgptnova.ArchiveAssetReaderTest','archive-asset-reader',3)
     suite('com.example.chatgptnova.ArchiveTest','archive-instrumentation',20)
+    suite('com.example.chatgptnova.ArchiveStoreConcurrencyTest','archive-store-concurrency',2)
     for name in ['archive.html','archive.md','archive-print-source.html','archive.pdf']:
         adb('pull','/sdcard/Android/data/com.example.chatgptnova/files/'+name,str(out/name))
     html=(out/'archive.html').read_text();md=(out/'archive.md').read_text()

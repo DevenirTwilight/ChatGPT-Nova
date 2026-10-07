@@ -1,3 +1,11 @@
+## Attachment Restoration — Step Q：诊断基线实物通过，修正可见的数据库锁顺序风险（2026-10-07）
+
+- 分支feature/export-conversation，已测基线ad30d7f3301ddab63120791d4519de5cbc22e25e（生产行为仍3c6c0f7）。正式37672756518全success；独立artifact核对JVM93、API26 2+7+3、35/36各Archive32+Stable43、实际16页Archive PDF/12×8图片与portableHTML/MD/描述、31页Stable/System及Firefox PDF/Unicode/code/table/升级；v2签名/content digest/原证书/defaultlegacyfalse/source/package/code14通过。证据attachment-ad30-foundation/runtime-35/runtime-36/package-verification.json。35/36没有生成超时线程文件，本次绿色不能证明此前两次阻塞的根因或修复。
+- 源码静态确认独立风险：importFile先LOCK→SQLiteOpenHelper monitor；onOpen在helper monitor中取LOCK。统一getReadableDatabase/getWritableDatabase/close为LOCK→super helper monitor，保持reentrant recovery/transaction/文件一致性锁，不删除防错或加timeout。close也不得在导入持有LOCK期间关闭同helper。没有把此风险未经证据认定为此前API36根因。
+- 新native ArchiveStoreConcurrencyTest两项：public ContextWrapper数据库路径/打开钩子协调同helper reader与LOCK owner，有限latch/join验证reader不能先占helper反向锁；close必须等一致性锁释放。无hidden fields、真实数据或改旧断言。API26与35/36均接入；新完整native CI仍pending。
+- success本地JVM93、ECJ Android API编译Store/新Rule/concurrency类，脚本语法/diff；不是本地emulator实际测试。Stable生产/Legacy源码与fixtures保持，签名包名版号未改。AR1此前ad30 synthetic已通过，新锁顺序源码待完整CI；AR2真实repack326有界copy/rollback通过；真实AR3/4/5 pending。
+- 下一步核对新源码CI/原断言/锁顺序两项/实际三格式/签名与安装产物；最终37项报告和phone清单。保留3c两次失败，不反复重跑掩盖、不承诺任意官方数据或外部Office真实成功。
+
 ## Attachment Restoration — Step P：API36第二次阻塞，增加合成线程证据采集（2026-10-07）
 
 - 分支feature/export-conversation，生产源码仍3c6c0f78，文档基点df0ccf7。failed同源码重试API36 job112955254761/artifact11504958263，37665103092 attempt2 overall failure。新asset7/Reader3仍全部pass；原Archive20前10方法完成，事务取消测试started后无finished/断言，host900s timeout；与第一次malformed JSON方法阻塞位置不同，不能宣称环境偶发或已修复。证据attachment-3c6c-api36-attempt2-failure.json。

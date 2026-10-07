@@ -1,3 +1,9 @@
+## Diagnostic baseline passes; explicit helper/file lock order hardened independently
+
+ad30d7f3正式37672756518全success，独立JVM93/API26 12/35-36各Archive32+Stable43及实际HTML/MD/Archive16页PDF图与Stable31页PDF、签名原cert/flagfalse核对，见attachment-ad30证据。无超时stack文件；两次3c阻塞根因仍未确认，不能以test-only watchdog改变调度后的绿色宣称根因修复。
+
+静态有明确LOCK→helper vs helper→onOpen→LOCK反序可能，现统一Readable/Writable/close先LOCK再super，保持文件恢复锁。新公开ContextWrapper钩子native两项测同helper争用及close等候，API26/35/36接入且保留全部旧断言；本地编译/JVM93pass，新源码Android完整验收pending。此独立修正不能冒称已证明历史stall来源。AR2真实host已pass，真实AR3–5pending。无Stable/Legacy产品边界扩张、无版本/签名变更。
+
 ## API36 second attempt also stalled; collect synthetic stacks before assigning a cause
 
 3c6c0f78同源重试job112955254761 failed：asset7/Reader3 pass，ArchiveTest到transaction cancellation开始后无结束，900s host timeout。第一次malformed JSON error/teardown timeout仍保留；不同位置的重复阻塞不能归为环境或已修复，根因未捕获。新增test-only bounded90s watchdog记录phase/done/numeric thread state/frames，不记录thread names/arguments/data、不改变断言/timeout；host保留TimeoutExpired partial stdout并拉线程文件。生产行为未改，新CI需捕获证据后修根因。完整验收pending，用户AR3–5未执行。

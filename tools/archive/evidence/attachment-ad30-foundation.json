@@ -1,0 +1,12 @@
+{
+  "sourceCommit": "ad30d7f3301ddab63120791d4519de5cbc22e25e",
+  "ciRun": 37672756518,
+  "jvmTests": 93,
+  "android26": {
+    "foundation": 2,
+    "assetPersistence": 7,
+    "assetReader": 3
+  },
+  "syntheticOnly": true,
+  "stalledThreadEvidence": "No timeout file generated on API35 or API36; prior stall cause remains unproven."
+}

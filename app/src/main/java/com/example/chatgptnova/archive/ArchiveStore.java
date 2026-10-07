@@ -19,6 +19,31 @@ public final class ArchiveStore extends SQLiteOpenHelper {
     setWriteAheadLoggingEnabled(true);
   }
 
+  // SQLiteOpenHelper holds its own monitor while invoking onOpen. Always acquire
+  // the archive/file-consistency lock first, including callers outside importFile.
+  // Otherwise a reader opening this helper can wait for LOCK while an importer
+  // holding LOCK waits for the helper. Closing must also wait for an active import.
+  @Override
+  public SQLiteDatabase getReadableDatabase() {
+    synchronized (LOCK) {
+      return super.getReadableDatabase();
+    }
+  }
+
+  @Override
+  public SQLiteDatabase getWritableDatabase() {
+    synchronized (LOCK) {
+      return super.getWritableDatabase();
+    }
+  }
+
+  @Override
+  public void close() {
+    synchronized (LOCK) {
+      super.close();
+    }
+  }
+
   @Override
   public void onConfigure(SQLiteDatabase db) {
     db.setForeignKeyConstraintsEnabled(true);
