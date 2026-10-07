@@ -1,3 +1,12 @@
+## Nova Archive — Step 4h：最低版本与安装包独立验证完成（2026-10-07）
+
+- 分支 `feature/export-conversation`；验证实际源码 `4a79a97`，当前后续提交仅证据/文档。CI `37605668339`。
+- success：API26两项基础测试均通过，独立下载 Artifact 确认 `OK (2 tests)`；API容量接口修正已验证。
+- success：下载同一源码 JVM XML，tests38/failures0/errors0/skipped0；不是仅引用历史报告。
+- success：独立下载签名APK，验证APK v2签名及内容digest、原证书指纹、公开SHA256、DEX源码revision、包名、versionCode14/versionName不变、ENABLE_LEGACY_SCANNER=false、无native .so、旧4个实验assets与源码一致、Markdown/Gson许可证存在。证据 `tools/archive/evidence/package-minsdk-verification.json`。
+- not verified：API35/36 Archive17项+真实PDF+process restart及Stable全部回归仍运行中；没有真实官方导出/物理设备证明。
+- 下一步：检查实际输出与所有正式回归结果，完成最终MVP报告。
+
 ## Nova Archive — Step 4g：Legacy 回归独立完成（2026-10-07）
 
 - 分支 `feature/export-conversation`；Archive当前源码 `4a79a97`（数据库接口修正），Legacy验证源码 `66172a1d`。两者的 legacy scanner、MainActivity、BuildConfig依赖、共享SnapshotWebView没有源码差异；后续差异仅Archive适配/测试及文档。

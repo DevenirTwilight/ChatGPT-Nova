@@ -1,3 +1,7 @@
+## Minimum Android and signed artifact independently verified
+
+4a79a97 API26 foundation tests2 pass; downloaded JVM XML confirms38 passed/no failures/errors. Actual signed APK2.08MB verifies v2 signature/content digest, original cert, unchanged identity/version, DEX legacy=false and source revision, retained legacy assets and no native.so. API35/36 full Archive/Stable/PDF still pending. No real OpenAI export verified.
+
 ## Legacy research regression retained during Archive implementation
 
 37604491058 succeeded on build/API35/API36. Downloaded artifacts independently show19 instrumentation tests passed each; historical Gecko-only ignores retained. Scanner remains not-proven and disabled by default. Archive4a79a97 build succeeds in37605668339; Archive runtime/Stable regression still pending.
