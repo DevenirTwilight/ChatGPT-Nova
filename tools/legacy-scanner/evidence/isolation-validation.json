@@ -34,8 +34,73 @@
     },
     "experimental": {
       "runId": 37588638326,
-      "status": "in_progress",
-      "build": "success"
+      "status": "completed",
+      "build": "success",
+      "conclusion": "success",
+      "android": {
+        "35": {
+          "artifactId": 11467947062,
+          "zipSha256": "8fff3fb913287358701cf66d32191be34f7f4b2bd8a6d1ba56a6873b908ef1cb",
+          "executed": 19,
+          "passedTests": [
+            "diagnosticRejectsArbitraryPageStringsIdsAndBodyHashes",
+            "htmlSavedThroughSafHasDomBodyAndScopeNotice",
+            "explicitProgressTurnSavesInOrderWithRedactedDiscovery",
+            "locatorCopiesOnlyStructureForVisibleAuthorSibling",
+            "delayedHistorySpinnerWaitsThenSavesAllCachedMessages",
+            "boxlessBodyWrappersStillSaveTextAndCode",
+            "historyScrollCachesUnmountedMessagesThroughSaf",
+            "historyScrollCancellationReleasesCacheAndAllowsRetry",
+            "streamingErrorHasCopyableRedactedDiagnostic",
+            "topStartMakesOneDownwardPassAndReportsNoSecondPass",
+            "markdownCanCancelThenShareReadableFile",
+            "historyMissingIdStopsWithRedactedDiagnostic",
+            "leavingForegroundCancelsRestoresAndDoesNotRestart",
+            "layoutOnlyJitterStillSavesAllCachedMessages",
+            "standardHistoryBacktracksToKeepNarrowWindowOverlap",
+            "changingBodyStillFailsWithTypedRedactedSettlingDiagnostic",
+            "experimentalSettingsRequiresExplicitStartAndCancelDoesNotScan",
+            "genuineEmptyBodyFailsWithRedactedMessagePosition",
+            "authorlessAssistantSectionWithoutIdSavesInOrder"
+          ],
+          "explicitlyRetiredTests": [
+            "geckoPdfDirectSaveCanCancelAndRetry",
+            "geckoPdfSavedDirectlyOpensWithMultiplePages"
+          ],
+          "result": "success"
+        },
+        "36": {
+          "artifactId": 11467608903,
+          "zipSha256": "54db8116715af74a3184aa9e8dd32b2e5d2d78860e475415cf62eaee98d586b8",
+          "executed": 19,
+          "passedTests": [
+            "diagnosticRejectsArbitraryPageStringsIdsAndBodyHashes",
+            "htmlSavedThroughSafHasDomBodyAndScopeNotice",
+            "explicitProgressTurnSavesInOrderWithRedactedDiscovery",
+            "locatorCopiesOnlyStructureForVisibleAuthorSibling",
+            "delayedHistorySpinnerWaitsThenSavesAllCachedMessages",
+            "boxlessBodyWrappersStillSaveTextAndCode",
+            "historyScrollCachesUnmountedMessagesThroughSaf",
+            "historyScrollCancellationReleasesCacheAndAllowsRetry",
+            "streamingErrorHasCopyableRedactedDiagnostic",
+            "topStartMakesOneDownwardPassAndReportsNoSecondPass",
+            "markdownCanCancelThenShareReadableFile",
+            "historyMissingIdStopsWithRedactedDiagnostic",
+            "leavingForegroundCancelsRestoresAndDoesNotRestart",
+            "layoutOnlyJitterStillSavesAllCachedMessages",
+            "standardHistoryBacktracksToKeepNarrowWindowOverlap",
+            "changingBodyStillFailsWithTypedRedactedSettlingDiagnostic",
+            "experimentalSettingsRequiresExplicitStartAndCancelDoesNotScan",
+            "genuineEmptyBodyFailsWithRedactedMessagePosition",
+            "authorlessAssistantSectionWithoutIdSavesInOrder"
+          ],
+          "explicitlyRetiredTests": [
+            "geckoPdfDirectSaveCanCancelAndRetry",
+            "geckoPdfSavedDirectlyOpensWithMultiplePages"
+          ],
+          "result": "success"
+        }
+      }
     }
   },
   "deviceAcceptance": "not_verified",

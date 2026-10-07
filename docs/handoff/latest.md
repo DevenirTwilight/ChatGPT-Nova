@@ -32,6 +32,12 @@
 
 正式1916153bytes/SHA4f9212d7dca36cb1563b88acce17051c89afe03ae9cb3d692a03cc19eb469ea5；实验1917377bytes/SHA423270eda1b8811372867a5fbc0ed7c466e1241a36d60b08b2af75d305e66204。两套build/lint/签名success，四Android jobs尚进行中；本步仅包核对、未完成最终Android验收。下一步等待19项legacy/default2/正式保存与回归，核实际文件，更新最终交接。
 
+### Step 4g：Legacy两档最终验收 success
+
+最新源码5d9efe8的实验CI37588638326全success：legacy-scanner-tests/build/lint/browser/原签名及Android35/36。已独立下载两档artifact11467947062/11467608903，核instrumentation各OK(19 tests)，19个成功方法与2个Gecko明确退役项；文本证据和摘要入tools/legacy-scanner/evidence。旧16个+新确认/前台取消/脱敏3个全部通过，恢复滚动/缺ID/overlap/不稳定/progress/SAF仍通过。仅受控夹具，真实账号未证明完整。
+
+正式CI37588638317的build已success，两档Android仍进行中，尚不能最终声明正式保存回归完成。下一步核默认关闭合同、HTML/MD/PDF实物及IME/upload/download/share/升级报告，再最终交接。
+
 ## 已实现
 
 用户最终要求普通HTML/Markdown/PDF，取消Share/MHTML/新完整历史算法。正式“保存当前网页”→一次evaluateJavascript同步深clone→同clone静态HTML和Markdown→不可变FrozenPageSnapshot。HTML为唯一标准表示；PDF仅同frozenHtml→独立无JS/static WebView→Android System Print。Nova860px阅读/白底print CSS，不复制ChatGPT SPA。无滚动/backend/private reader/React/token/storage读取/ID去重/跨窗口缓存，不重构输入上传下载分享。
