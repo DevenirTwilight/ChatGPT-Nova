@@ -1,3 +1,10 @@
+## Attachment Restoration — 当前等待消息引用结构（2026-10-07）
+
+- 实际分支feature/export-conversation，当前源码9ab3f72585e78e064468917636b75797c0f50861；本提交仅交接，不改代码。独立本地JVM80 passed；实际上传map新parser326条成功（只读map，无真实ZIP/binary/消息输入）。
+- 新[正式CI37645986505](https://github.com/DevenirTwilight/ChatGPT-Nova/actions/runs/37645986505) queued，[Legacy37645986535](https://github.com/DevenirTwilight/ChatGPT-Nova/actions/runs/37645986535) in_progress，尚未完成build/API26/35/36/实际输出回归。dfb7ec8的37645538332由后继源码workflow concurrency自动cancelled；非手工取消，不能报通过。55830d1 AWT test编译失败证据保留。
+- **Attachment Restoration未完成**：已完成独立ZIP/MIME/private file安全基础和verified string-map parser；未接schema2/ref upsert/offlineReader/FileProvider/exports/delete/persistence端到端。AR1未完成，AR2仅实际map结构/解析部分，AR3–5未验证。Legacy保留/defaultfalse，Stable与原包签名/版号不变。
+- 必需输入：完全虚构等结构图片asset_pointer和attachment-only metadata，假ID与一条map key对应。已请求；当前map只是entry→display name，没有message linkage。不能凭file_与file-service prefix猜变换，不要求上传ZIP、conversationsJSON或正文。收到结构后继续实施并核对新CI；真实binary/manual仅用户本地验收。
+
 ## Attachment Restoration — Step E：实际map解析成功，message linkage等待结构证据（2026-10-07）
 
 - 分支feature/export-conversation，实施基线dfb7ec87ac5426886c8dae20ab36bd6030ac4d34；本提交为bounded map源码检查点，最终CI sourceRevision以实际SHA为准。success本地JVM80（原48+file25+map7，128MiB heap）。
