@@ -1,3 +1,12 @@
+## Nova Archive — Step 4b：安全复查与首轮构建失败修正（2026-10-07）
+
+- 分支 `feature/export-conversation`；基线源码 `fd42862`。
+- failed：CI `37603056935` AndroidTest 编译中 ArchiveTest 私有 read(Uri) 与 FixtureActivity 同名包级方法冲突，Android jobs 未执行。保留此失败，不当作运行结果；已改为独立 readFixtureDocument。
+- success：35 JVM synthetic tests，128MiB heap；新增 CRC 损坏、10001 entries、中央目录提前限额、对象键总字符预算、5000 节点实际解析。ZIP 中央目录先有界检查条目再创建 ZipFile，避免恶意目录索引提前分配。单 JSON token/depth 与对象键同样有预算。
+- UI 列表 SQL 仅取 512 字符标题（完整原文仍私有存储），搜索输入256字符，避免200个巨型标题常驻列表；已有消息重复导入也更新最近来源。新 Archive 文件按统一 Java 格式整理，未重构其他在线功能。
+- not verified：修正后的 Gradle/lint/emulator/实际PDF及正式回归等待新 CI。没有真实官方导出文件。
+- 下一步：继续 CI 验收，依据失败证据修正直到满足 MVP 标准。
+
 ## Nova Archive — Step 4a：Android 验收夹具与 CI 接入（2026-10-07）
 
 - 分支 `feature/export-conversation`；基线源码 `2531aad`，本提交包含 Android tests 与 CI 调度。

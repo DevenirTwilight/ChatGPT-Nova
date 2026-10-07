@@ -1,3 +1,7 @@
+## Archive first CI failure and bounded-directory review
+
+Run 37603056935 failed at instrumentation compilation (test helper read(Uri) access conflict), fixed with separate name; Android runtime was not executed. 35 JVM fixtures pass including CRC, excessive directory entries, early directory scan, key budgets and parsed 5000-node chains. Bounded title list and retained raw metadata are distinct. Revised source still awaits full CI; no real export verified.
+
 ## Archive validation checkpoint
 
 30 JVM synthetic tests passed. Android fixtures now cover 15 adapter/UI/lifecycle/print cases plus two separate process-restart instrumentations. CI checks actual Archive System Print PDF text, not only callbacks. Android runtime results pending; no real OpenAI export verified. Legacy retained and formal regressions still mandatory.

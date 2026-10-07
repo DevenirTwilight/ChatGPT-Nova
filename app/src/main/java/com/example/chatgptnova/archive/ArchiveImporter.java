@@ -11,141 +11,374 @@ import java.util.zip.*;
 
 /** Bounded streaming ZIP/JSON parser. Never extracts a ZIP path or logs source data. */
 public final class ArchiveImporter {
-    public static final long FILE_LIMIT=256L*1024*1024,ENTRY_LIMIT=64L*1024*1024,TOTAL_LIMIT=256L*1024*1024;
-    public interface Sink { void accept(ArchiveModel.Conversation c) throws ArchiveError; }
-    public static final class Control {
-        public final AtomicBoolean cancelled=new AtomicBoolean();
-        private final long started;
-        public Control(){this(System.nanoTime());}
-        Control(long started){this.started=started;}
-        public void check() throws ArchiveError {
-            if(cancelled.get()||Thread.currentThread().isInterrupted())throw new ArchiveError("A07_IMPORT_CANCELLED");
-            if(System.nanoTime()-started>300_000_000_000L)throw new ArchiveError("A05_ARCHIVE_TOO_LARGE");
+  public static final long FILE_LIMIT = 256L * 1024 * 1024,
+      ENTRY_LIMIT = 64L * 1024 * 1024,
+      TOTAL_LIMIT = 256L * 1024 * 1024;
+
+  public interface Sink {
+    void accept(ArchiveModel.Conversation c) throws ArchiveError;
+  }
+
+  public static final class Control {
+    public final AtomicBoolean cancelled = new AtomicBoolean();
+    private final long started;
+
+    public Control() {
+      this(System.nanoTime());
+    }
+
+    Control(long started) {
+      this.started = started;
+    }
+
+    public void check() throws ArchiveError {
+      if (cancelled.get() || Thread.currentThread().isInterrupted())
+        throw new ArchiveError("A07_IMPORT_CANCELLED");
+      if (System.nanoTime() - started > 300_000_000_000L)
+        throw new ArchiveError("A05_ARCHIVE_TOO_LARGE");
+    }
+  }
+
+  private final Control control;
+  private long total;
+  private int conversations, nodes;
+
+  public ArchiveImporter(Control control) {
+    this.control = control;
+  }
+
+  public int read(File file, boolean zip, Sink sink) throws ArchiveError {
+    if (file.length() > FILE_LIMIT) throw new ArchiveError("A05_ARCHIVE_TOO_LARGE");
+    try {
+      if (zip) readZip(file, sink);
+      else
+        try (InputStream in = new FileInputStream(file)) {
+          parse(in, sink, null);
+        }
+      if (conversations == 0) throw new ArchiveError("A03_NO_CONVERSATIONS_DATA");
+      return conversations;
+    } catch (ArchiveError e) {
+      throw e;
+    } catch (ControlIOException e) {
+      throw new ArchiveError(e.code);
+    } catch (LimitIOException e) {
+      throw new ArchiveError("A05_ARCHIVE_TOO_LARGE");
+    } catch (ZipException e) {
+      throw new ArchiveError("A02_INVALID_ZIP");
+    } catch (IOException | IllegalStateException | NumberFormatException e) {
+      throw new ArchiveError(zip ? "A04_JSON_PARSE_FAILED" : "A04_JSON_PARSE_FAILED");
+    }
+  }
+
+  static String safeName(String name) throws ArchiveError {
+    if (name.length() > 1024
+        || name.indexOf('\0') >= 0
+        || name.indexOf('\\') >= 0
+        || name.startsWith("/")
+        || name.matches("^[A-Za-z]:.*")) throw new ArchiveError("A02_INVALID_ZIP");
+    StringBuilder out = new StringBuilder();
+    for (String p : name.split("/")) {
+      if (p.equals("..")) throw new ArchiveError("A02_INVALID_ZIP");
+      if (p.isEmpty() || p.equals(".")) continue;
+      if (out.length() > 0) out.append('/');
+      out.append(p);
+    }
+    return out.toString();
+  }
+
+  /** Inspect central records before ZipFile eagerly allocates its directory index. */
+  private void preflightZip(File file) throws IOException, ArchiveError {
+    try (RandomAccessFile in = new RandomAccessFile(file, "r")) {
+      int tailSize = (int) Math.min(65557, in.length());
+      if (tailSize < 22) throw new ArchiveError("A02_INVALID_ZIP");
+      byte[] tail = new byte[tailSize];
+      in.seek(in.length() - tailSize);
+      in.readFully(tail);
+      int end = -1;
+      for (int i = tail.length - 22; i >= 0; i--)
+        if (u32(tail, i) == 0x06054b50L && i + 22 + u16(tail, i + 20) == tail.length) {
+          end = i;
+          break;
+        }
+      if (end < 0
+          || u16(tail, end + 4) != 0
+          || u16(tail, end + 6) != 0
+          || u16(tail, end + 8) != u16(tail, end + 10)) throw new ArchiveError("A02_INVALID_ZIP");
+      int count = u16(tail, end + 10);
+      long size = u32(tail, end + 12), offset = u32(tail, end + 16);
+      if (count > 10000 || size > 16L * 1024 * 1024 || offset == 0xffffffffL)
+        throw new ArchiveError("A05_ARCHIVE_TOO_LARGE");
+      long directoryEnd = offset + size, actualEnd = in.length() - tailSize + end;
+      if (directoryEnd != actualEnd || offset < 0) throw new ArchiveError("A02_INVALID_ZIP");
+      in.seek(offset);
+      byte[] header = new byte[46];
+      int records = 0;
+      while (in.getFilePointer() < directoryEnd) {
+        control.check();
+        if (++records > 10000) throw new ArchiveError("A05_ARCHIVE_TOO_LARGE");
+        if (directoryEnd - in.getFilePointer() < 46) throw new ArchiveError("A02_INVALID_ZIP");
+        in.readFully(header);
+        if (u32(header, 0) != 0x02014b50L) throw new ArchiveError("A02_INVALID_ZIP");
+        long next = in.getFilePointer() + u16(header, 28) + u16(header, 30) + u16(header, 32);
+        if (next > directoryEnd || u16(header, 28) > 4096)
+          throw new ArchiveError("A02_INVALID_ZIP");
+        in.seek(next);
+      }
+      if (records != count) throw new ArchiveError("A02_INVALID_ZIP");
+    }
+  }
+
+  private static int u16(byte[] b, int p) {
+    return (b[p] & 255) | ((b[p + 1] & 255) << 8);
+  }
+
+  private static long u32(byte[] b, int p) {
+    return (long) u16(b, p) | ((long) u16(b, p + 2) << 16);
+  }
+
+  private void readZip(File file, Sink sink) throws IOException, ArchiveError {
+    preflightZip(file);
+    try (ZipFile zip = new ZipFile(file)) {
+      Enumeration<? extends ZipEntry> entries = zip.entries();
+      Set<String> names = new HashSet<>();
+      List<ZipEntry> selected = new ArrayList<>();
+      long declared = 0;
+      int count = 0;
+      while (entries.hasMoreElements()) {
+        control.check();
+        ZipEntry e = entries.nextElement();
+        if (++count > 10000) throw new ArchiveError("A05_ARCHIVE_TOO_LARGE");
+        String name = safeName(e.getName());
+        if (!names.add(name)) throw new ArchiveError("A02_INVALID_ZIP");
+        long size = e.getSize(), compressed = e.getCompressedSize();
+        if (size < 0 || compressed < 0) throw new ArchiveError("A02_INVALID_ZIP");
+        declared += size;
+        if (declared > 512L * 1024 * 1024) throw new ArchiveError("A05_ARCHIVE_TOO_LARGE");
+        if (size > 1024 * 1024 && size > Math.max(1, compressed) * 200)
+          throw new ArchiveError("A05_ARCHIVE_TOO_LARGE");
+        String leaf = name.substring(name.lastIndexOf('/') + 1);
+        if (!e.isDirectory() && leaf.matches("(?i)conversations(?:[-_]?\\d+)?\\.json")) {
+          if (size > ENTRY_LIMIT) throw new ArchiveError("A05_ARCHIVE_TOO_LARGE");
+          selected.add(e);
+        }
+      }
+      selected.sort(Comparator.comparing(ZipEntry::getName));
+      for (ZipEntry e : selected)
+        try (InputStream in = zip.getInputStream(e)) {
+          parse(in, sink, e);
         }
     }
-    private final Control control;private long total;private int conversations,nodes;
-    public ArchiveImporter(Control control){this.control=control;}
-    public int read(File file,boolean zip,Sink sink) throws ArchiveError {
-        if(file.length()>FILE_LIMIT)throw new ArchiveError("A05_ARCHIVE_TOO_LARGE");
-        try {
-            if(zip)readZip(file,sink);
-            else try(InputStream in=new FileInputStream(file)){parse(in,sink,null);}
-            if(conversations==0)throw new ArchiveError("A03_NO_CONVERSATIONS_DATA");
-            return conversations;
-        } catch(ArchiveError e){throw e;}
-        catch(ControlIOException e){throw new ArchiveError(e.code);}
-        catch(LimitIOException e){throw new ArchiveError("A05_ARCHIVE_TOO_LARGE");}
-        catch(ZipException e){throw new ArchiveError("A02_INVALID_ZIP");}
-        catch(IOException|IllegalStateException|NumberFormatException e){throw new ArchiveError(zip?"A04_JSON_PARSE_FAILED":"A04_JSON_PARSE_FAILED");}
-    }
-    static String safeName(String name) throws ArchiveError {
-        if(name.length()>1024||name.indexOf('\0')>=0||name.indexOf('\\')>=0||name.startsWith("/")||name.matches("^[A-Za-z]:.*"))throw new ArchiveError("A02_INVALID_ZIP");
-        StringBuilder out=new StringBuilder();for(String p:name.split("/")) {
-            if(p.equals(".."))throw new ArchiveError("A02_INVALID_ZIP");
-            if(p.isEmpty()||p.equals("."))continue;if(out.length()>0)out.append('/');out.append(p);
-        }return out.toString();
-    }
-    private void readZip(File file,Sink sink) throws IOException,ArchiveError {
-        try(ZipFile zip=new ZipFile(file)) {
-            Enumeration<? extends ZipEntry> entries=zip.entries();Set<String> names=new HashSet<>();List<ZipEntry> selected=new ArrayList<>();
-            long declared=0;int count=0;
-            while(entries.hasMoreElements()) {
-                control.check();ZipEntry e=entries.nextElement();if(++count>10000)throw new ArchiveError("A05_ARCHIVE_TOO_LARGE");
-                String name=safeName(e.getName());if(!names.add(name))throw new ArchiveError("A02_INVALID_ZIP");
-                long size=e.getSize(),compressed=e.getCompressedSize();
-                if(size<0||compressed<0)throw new ArchiveError("A02_INVALID_ZIP");
-                declared+=size;if(declared>512L*1024*1024)throw new ArchiveError("A05_ARCHIVE_TOO_LARGE");
-                if(size>1024*1024&&size>Math.max(1,compressed)*200)throw new ArchiveError("A05_ARCHIVE_TOO_LARGE");
-                String leaf=name.substring(name.lastIndexOf('/')+1);
-                if(!e.isDirectory()&&leaf.matches("(?i)conversations(?:[-_]?\\d+)?\\.json")){
-                    if(size>ENTRY_LIMIT)throw new ArchiveError("A05_ARCHIVE_TOO_LARGE");selected.add(e);
-                }
-            }
-            selected.sort(Comparator.comparing(ZipEntry::getName));
-            for(ZipEntry e:selected)try(InputStream in=zip.getInputStream(e)){parse(in,sink,e);}
+  }
+
+  private void parse(InputStream source, Sink sink, ZipEntry entry)
+      throws IOException, ArchiveError {
+    BoundedInput in = new BoundedInput(source);
+    GuardReader guard =
+        new GuardReader(
+            new InputStreamReader(
+                in,
+                StandardCharsets.UTF_8
+                    .newDecoder()
+                    .onMalformedInput(CodingErrorAction.REPORT)
+                    .onUnmappableCharacter(CodingErrorAction.REPORT)));
+    try (JsonReader json = new JsonReader(guard)) {
+      json.setStrictness(Strictness.STRICT);
+      if (json.peek() == JsonToken.BEGIN_ARRAY) array(json, sink);
+      else if (json.peek() == JsonToken.BEGIN_OBJECT) {
+        json.beginObject();
+        Map<String, Object> single = new LinkedHashMap<>();
+        boolean wrapper = false;
+        Set<String> keys = new HashSet<>();
+        Budget budget = new Budget();
+        while (json.hasNext()) {
+          String key = json.nextName();
+          budget.chars += key.length();
+          if (budget.chars > 1024 * 1024 || keys.size() > 100000)
+            throw new ArchiveError("A05_ARCHIVE_TOO_LARGE");
+          if (!keys.add(key)) throw new ArchiveError("A04_JSON_PARSE_FAILED");
+          if (key.equals("conversations")) {
+            if (json.peek() != JsonToken.BEGIN_ARRAY)
+              throw new ArchiveError("A08_SCHEMA_UNSUPPORTED");
+            wrapper = true;
+            array(json, sink);
+          } else single.put(key, value(json, 0, budget));
         }
+        json.endObject();
+        if (!wrapper) accept(single, sink);
+      } else throw new ArchiveError("A08_SCHEMA_UNSUPPORTED");
+      if (json.peek() != JsonToken.END_DOCUMENT) throw new ArchiveError("A04_JSON_PARSE_FAILED");
+      control.check();
+      if (entry != null && (in.count != entry.getSize() || in.crc.getValue() != entry.getCrc()))
+        throw new ArchiveError("A02_INVALID_ZIP");
+    } catch (LimitIOException e) {
+      throw new ArchiveError("A05_ARCHIVE_TOO_LARGE");
+    } catch (MalformedJsonException | EOFException e) {
+      throw new ArchiveError("A04_JSON_PARSE_FAILED");
     }
-    private void parse(InputStream source,Sink sink,ZipEntry entry) throws IOException,ArchiveError {
-        BoundedInput in=new BoundedInput(source);GuardReader guard=new GuardReader(new InputStreamReader(in,
-            StandardCharsets.UTF_8.newDecoder().onMalformedInput(CodingErrorAction.REPORT).onUnmappableCharacter(CodingErrorAction.REPORT)));
-        JsonReader json=new JsonReader(guard);json.setStrictness(Strictness.STRICT);
-        try {
-            if(json.peek()==JsonToken.BEGIN_ARRAY)array(json,sink);
-            else if(json.peek()==JsonToken.BEGIN_OBJECT) {
-                json.beginObject();Map<String,Object> single=new LinkedHashMap<>();boolean wrapper=false;Set<String> keys=new HashSet<>();Budget budget=new Budget();
-                while(json.hasNext()) {
-                    String key=json.nextName();if(!keys.add(key))throw new ArchiveError("A04_JSON_PARSE_FAILED");
-                    if(key.equals("conversations")) {if(json.peek()!=JsonToken.BEGIN_ARRAY)throw new ArchiveError("A08_SCHEMA_UNSUPPORTED");wrapper=true;array(json,sink);}
-                    else single.put(key,value(json,0,budget));
-                }
-                json.endObject();if(!wrapper)accept(single,sink);
-            }else throw new ArchiveError("A08_SCHEMA_UNSUPPORTED");
-            if(json.peek()!=JsonToken.END_DOCUMENT)throw new ArchiveError("A04_JSON_PARSE_FAILED");
-            control.check();
-            if(entry!=null&&(in.count!=entry.getSize()||in.crc.getValue()!=entry.getCrc()))throw new ArchiveError("A02_INVALID_ZIP");
-        }catch(LimitIOException e){throw new ArchiveError("A05_ARCHIVE_TOO_LARGE");}
-        catch(MalformedJsonException|EOFException e){throw new ArchiveError("A04_JSON_PARSE_FAILED");}
+  }
+
+  private void array(JsonReader json, Sink sink) throws IOException, ArchiveError {
+    json.beginArray();
+    while (json.hasNext()) {
+      control.check();
+      Object data = value(json, 0, new Budget());
+      if (!(data instanceof Map)) throw new ArchiveError("A08_SCHEMA_UNSUPPORTED");
+      accept(ArchiveModel.object(data), sink);
     }
-    private void array(JsonReader json,Sink sink) throws IOException,ArchiveError {
-        json.beginArray();while(json.hasNext()) {
-            control.check();Object data=value(json,0,new Budget());
-            if(!(data instanceof Map))throw new ArchiveError("A08_SCHEMA_UNSUPPORTED");accept(ArchiveModel.object(data),sink);
-        }json.endArray();
-    }
-    private void accept(Map<String,Object> data,Sink sink)throws ArchiveError {
-        if(++conversations>10000)throw new ArchiveError("A05_ARCHIVE_TOO_LARGE");
-        ArchiveModel.Conversation c=new ArchiveModel.Conversation(data);
-        if(ArchiveModel.JSON.toJson(data).length()>2*1024*1024)throw new ArchiveError("A05_ARCHIVE_TOO_LARGE");
-        nodes+=c.nodes.size();if(nodes>200000)throw new ArchiveError("A05_ARCHIVE_TOO_LARGE");
-        if(c.header.getBytes(StandardCharsets.UTF_8).length>1024*1024)throw new ArchiveError("A05_ARCHIVE_TOO_LARGE");
-        for(ArchiveModel.Node n:c.nodes.values())if(n.raw.getBytes(StandardCharsets.UTF_8).length>1024*1024)throw new ArchiveError("A05_ARCHIVE_TOO_LARGE");
-        sink.accept(c);
-    }
-    private static final class Budget {int values,chars;}
-    private Object value(JsonReader json,int depth,Budget b)throws IOException,ArchiveError {
-        control.check();if(depth>64||++b.values>100000)throw new ArchiveError("A05_ARCHIVE_TOO_LARGE");
-        switch(json.peek()) {
-            case BEGIN_OBJECT: {
-                Map<String,Object> map=new LinkedHashMap<>();json.beginObject();while(json.hasNext()) {
-                    String k=json.nextName();b.chars+=k.length();if(map.containsKey(k))throw new ArchiveError("A04_JSON_PARSE_FAILED");
-                    map.put(k,value(json,depth+1,b));
-                }json.endObject();return map;
-            }
-            case BEGIN_ARRAY: {
-                List<Object> list=new ArrayList<>();json.beginArray();while(json.hasNext())list.add(value(json,depth+1,b));json.endArray();return list;
-            }
-            case STRING: {String s=json.nextString();b.chars+=s.length();if(b.chars>1024*1024)throw new ArchiveError("A05_ARCHIVE_TOO_LARGE");return s;}
-            case NUMBER: {String s=json.nextString();if(s.length()>128)throw new ArchiveError("A05_ARCHIVE_TOO_LARGE");BigDecimal n=new BigDecimal(s);if(Math.abs((long)n.scale())>10000)throw new ArchiveError("A05_ARCHIVE_TOO_LARGE");return n;}
-            case BOOLEAN:return json.nextBoolean();
-            case NULL:json.nextNull();return null;
-            default:throw new ArchiveError("A04_JSON_PARSE_FAILED");
+    json.endArray();
+  }
+
+  private void accept(Map<String, Object> data, Sink sink) throws ArchiveError {
+    if (++conversations > 10000) throw new ArchiveError("A05_ARCHIVE_TOO_LARGE");
+    ArchiveModel.Conversation c = new ArchiveModel.Conversation(data);
+    if (ArchiveModel.JSON.toJson(data).length() > 2 * 1024 * 1024)
+      throw new ArchiveError("A05_ARCHIVE_TOO_LARGE");
+    nodes += c.nodes.size();
+    if (nodes > 200000) throw new ArchiveError("A05_ARCHIVE_TOO_LARGE");
+    if (c.header.getBytes(StandardCharsets.UTF_8).length > 1024 * 1024)
+      throw new ArchiveError("A05_ARCHIVE_TOO_LARGE");
+    for (ArchiveModel.Node n : c.nodes.values())
+      if (n.raw.getBytes(StandardCharsets.UTF_8).length > 1024 * 1024)
+        throw new ArchiveError("A05_ARCHIVE_TOO_LARGE");
+    sink.accept(c);
+  }
+
+  private static final class Budget {
+    int values, chars;
+  }
+
+  private Object value(JsonReader json, int depth, Budget b) throws IOException, ArchiveError {
+    control.check();
+    if (depth > 64 || ++b.values > 100000 || b.chars > 1024 * 1024)
+      throw new ArchiveError("A05_ARCHIVE_TOO_LARGE");
+    switch (json.peek()) {
+      case BEGIN_OBJECT:
+        {
+          Map<String, Object> map = new LinkedHashMap<>();
+          json.beginObject();
+          while (json.hasNext()) {
+            String k = json.nextName();
+            b.chars += k.length();
+            if (map.containsKey(k)) throw new ArchiveError("A04_JSON_PARSE_FAILED");
+            map.put(k, value(json, depth + 1, b));
+          }
+          json.endObject();
+          return map;
         }
-    }
-    private final class BoundedInput extends FilterInputStream {
-        long count;final CRC32 crc=new CRC32();BoundedInput(InputStream in){super(in);}
-        @Override public int read()throws IOException{byte[] b=new byte[1];int n=read(b,0,1);return n<0?-1:b[0]&255;}
-        @Override public int read(byte[] b,int off,int len)throws IOException {
-            try{control.check();}catch(ArchiveError e){throw new ControlIOException(e.code);}
-            int n=in.read(b,off,Math.min(len,32768));if(n>0){count+=n;total+=n;crc.update(b,off,n);if(count>ENTRY_LIMIT||total>TOTAL_LIMIT)throw new LimitIOException();}return n;
+      case BEGIN_ARRAY:
+        {
+          List<Object> list = new ArrayList<>();
+          json.beginArray();
+          while (json.hasNext()) list.add(value(json, depth + 1, b));
+          json.endArray();
+          return list;
         }
-    }
-    private static final class LimitIOException extends IOException {private static final long serialVersionUID=1;}
-    private static final class ControlIOException extends IOException {private static final long serialVersionUID=1;final String code;ControlIOException(String code){this.code=code;}}
-    /** Reject oversized lexical strings/nesting BEFORE Gson allocates a complete token. */
-    private static final class GuardReader extends FilterReader {
-        boolean quoted,escape;int depth,stringLength,tokenLength;
-        GuardReader(Reader r){super(r);}
-        @Override public int read(char[] b,int off,int len)throws IOException {
-            int n=super.read(b,off,Math.min(len,4096));for(int i=off;i<off+Math.max(0,n);i++) {
-                char c=b[i];if(quoted) {
-                    if(++stringLength>512*1024)throw new LimitIOException();
-                    if(escape)escape=false;else if(c=='\\')escape=true;else if(c=='"'){quoted=false;stringLength=0;}
-                }else if(c=='"'){quoted=true;tokenLength=0;}
-                else if(c=='{'||c=='['){if(++depth>64)throw new LimitIOException();tokenLength=0;}
-                else if(c=='}'||c==']'){depth--;tokenLength=0;}
-                else if(c==','||c==':'||Character.isWhitespace(c))tokenLength=0;
-                else if(++tokenLength>128)throw new LimitIOException();
-            }return n;
+      case STRING:
+        {
+          String s = json.nextString();
+          b.chars += s.length();
+          if (b.chars > 1024 * 1024) throw new ArchiveError("A05_ARCHIVE_TOO_LARGE");
+          return s;
         }
+      case NUMBER:
+        {
+          String s = json.nextString();
+          if (s.length() > 128) throw new ArchiveError("A05_ARCHIVE_TOO_LARGE");
+          BigDecimal n = new BigDecimal(s);
+          if (Math.abs((long) n.scale()) > 10000) throw new ArchiveError("A05_ARCHIVE_TOO_LARGE");
+          return n;
+        }
+      case BOOLEAN:
+        return json.nextBoolean();
+      case NULL:
+        json.nextNull();
+        return null;
+      default:
+        throw new ArchiveError("A04_JSON_PARSE_FAILED");
     }
+  }
+
+  private final class BoundedInput extends FilterInputStream {
+    long count;
+    final CRC32 crc = new CRC32();
+
+    BoundedInput(InputStream in) {
+      super(in);
+    }
+
+    @Override
+    public int read() throws IOException {
+      byte[] b = new byte[1];
+      int n = read(b, 0, 1);
+      return n < 0 ? -1 : b[0] & 255;
+    }
+
+    @Override
+    public int read(byte[] b, int off, int len) throws IOException {
+      try {
+        control.check();
+      } catch (ArchiveError e) {
+        throw new ControlIOException(e.code);
+      }
+      int n = in.read(b, off, Math.min(len, 32768));
+      if (n > 0) {
+        count += n;
+        total += n;
+        crc.update(b, off, n);
+        if (count > ENTRY_LIMIT || total > TOTAL_LIMIT) throw new LimitIOException();
+      }
+      return n;
+    }
+  }
+
+  private static final class LimitIOException extends IOException {
+    private static final long serialVersionUID = 1;
+  }
+
+  private static final class ControlIOException extends IOException {
+    private static final long serialVersionUID = 1;
+    final String code;
+
+    ControlIOException(String code) {
+      this.code = code;
+    }
+  }
+
+  /** Reject oversized lexical strings/nesting BEFORE Gson allocates a complete token. */
+  private static final class GuardReader extends FilterReader {
+    boolean quoted, escape;
+    int depth, stringLength, tokenLength;
+
+    GuardReader(Reader r) {
+      super(r);
+    }
+
+    @Override
+    public int read(char[] b, int off, int len) throws IOException {
+      int n = super.read(b, off, Math.min(len, 4096));
+      for (int i = off; i < off + Math.max(0, n); i++) {
+        char c = b[i];
+        if (quoted) {
+          if (++stringLength > 512 * 1024) throw new LimitIOException();
+          if (escape) escape = false;
+          else if (c == '\\') escape = true;
+          else if (c == '"') {
+            quoted = false;
+            stringLength = 0;
+          }
+        } else if (c == '"') {
+          quoted = true;
+          tokenLength = 0;
+        } else if (c == '{' || c == '[') {
+          if (++depth > 64) throw new LimitIOException();
+          tokenLength = 0;
+        } else if (c == '}' || c == ']') {
+          depth--;
+          tokenLength = 0;
+        } else if (c == ',' || c == ':' || Character.isWhitespace(c)) tokenLength = 0;
+        else if (++tokenLength > 128) throw new LimitIOException();
+      }
+      return n;
+    }
+  }
 }

@@ -17,7 +17,7 @@ Nova Archive是用户主动导入OpenAI官方Data Export兼容ZIP/JSON后，本�
 - messages：本地conversation外键、node_key（mapping身份）、官方message id、parent、is_message、role/channel/content type/status/time、原 node JSON、first/latest来源。保留null根节点、空消息、tool/developer/unknown、非文本和附件metadata；mapping对象顺序不作为消息顺序。
 - raw JSON保存受限单会话/节点metadata，不把所有会话合成一个巨型JSON。ID只存在私有DB/用户导出，不进入diagnostic/logcat。
 
-官方ID用于upsert；mapping node key用于保留树身份，message id同时保存。相同内容不同ID不合并。重复相同输入按保留数字精度的 canonical JSON 对比跳过；新导出合并节点并保留旧分支，较旧update_time不覆盖较新节点/标题/current_node。日期缺失或相同且不同内容时采用明确的最后用户导入策略。失败/取消全部会话变更回滚，单独保留失败导入统计，committed counts为0。
+官方ID用于upsert；mapping node key用于保留树身份，message id同时保存。相同内容不同ID不合并。重复相同输入按保留数字精度的 JSON 对比跳过；新导出合并节点并保留旧分支，较旧update_time不覆盖较新节点/标题/current_node。日期缺失或相同且不同内容时采用明确的最后用户导入策略。失败/取消全部会话变更回滚，单独保留失败导入统计，committed counts为0。
 
 ## 导入 pipeline 与支持的 schema
 
@@ -29,7 +29,7 @@ JSON支持会话数组、conversations数组wrapper和单会话mapping对象；�
 
 ## 安全上限
 
-输入256MiB；ZIP最多10000 entries、单entry64MiB、声明总解压512MiB、所选JSON实际累计256MiB、压缩比最多200；拒绝absolute/drive/backslash/traversal/重复canonical entry。任何entry都不写入用户路径，无Zip Slip解压面，忽略无关文件正文但校验目录大小/路径。CRC/实际长度检查用于所选entry。
+输入256MiB；ZIP 中央目录先有界逐条检查（最多 16MiB，拒绝 ZIP64/多卷/自解压封装），之后 ZipFile；最多10000 entries、单entry64MiB、声明总解压512MiB、所选JSON实际累计256MiB、压缩比最多200；拒绝absolute/drive/backslash/traversal/重复canonical entry。任何entry都不写入用户路径，无Zip Slip解压面，忽略无关文件正文但校验目录大小/路径。CRC/实际长度检查用于所选entry。
 
 UTF-8严格解码；JsonReader流式逐会话，预读取guard限制单字符串512Ki chars和嵌套64，避免nextString先分配巨大token；单会话总字符串1Mi chars、最多100000 JSON values/10000 nodes；最多 10000 conversations / 200000 nodes 每次导入。数据库512MiB、单存储会话 payload 2Mi chars（最多约 8MiB UTF-8），单 header/node 1MiB UTF-8，避免 CursorWindow 超限、HTML4Mi chars/Markdown2Mi chars，超限明确失败不截断。输入和解析过程检查取消/5分钟耗时；provider自身阻塞只能尽力关闭/中断，不保证任意SAF provider立即响应。
 
@@ -37,7 +37,7 @@ Reader/print静态HTML：JS/storage/file/content/混合内容/bridge关闭，所
 
 ## UI 与生命周期
 
-设置 → Nova Archive（无需ChatGPT登录）→ 导入ChatGPT数据、标题搜索、最近更新/最早时间排序、分页会话列表；行显示标题/日期/消息数。独立Reader区分角色/channel，主链或明确全部节点安全顺序；导出HTML/Markdown/打印PDF。
+设置 → Nova Archive（无需ChatGPT登录）→ 导入ChatGPT数据、标题搜索、最近更新/最早时间排序、分页会话列表；行显示标题/日期/消息数；超长标题展示前 512 字符，原始标题保留，搜索输入最多 256 字符。独立Reader区分角色/channel，主链或明确全部节点安全顺序；导出HTML/Markdown/打印PDF。
 
 导入使用application context worker，不持有已销毁Activity；旋转可保留任务/重绑定回调，取消/真正销毁回滚，重启只读取已提交SQLite。UI不自动重开URI/继续导入。Reader导出基于已载入Archive模型，SAF保存用wt；printing按现有静态WebView可见状态→PrintManager，finish/cancel/destroy释放renderer，不把onFinish视为成功。诊断仅随机import id、schema/version、阶段、数量、字节、耗时、固定错误码，可复制。
 
