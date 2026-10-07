@@ -68,6 +68,9 @@ const source=fs.readFileSync('app/src/main/assets/export/dom-trial.js','utf8');
     for(const privateValue of ['private-id','FIRST-BODY','PRIVATE-CONTROL-LABEL','PRIVATE-HIDDEN-TEXT']) assert(!JSON.stringify(empty).includes(privateValue));checks++;
     await page.goto('https://chatgpt.com/');assert.equal((await read()).error,'D02_ROUTE');checks++;
     await page.goto('https://example.org/c/fixture');assert.equal((await read()).error,'D01_ORIGIN');checks++;
+    await page.goto('https://chatgpt.com/c/fixture');await page.evaluate(()=>{document.body.innerHTML='<article data-turn="assistant" data-message-id="FALLBACK-ID"><p>REAL-BODY</p><nav>NAV-SECRET</nav><div role="toolbar">TOOLBAR-SECRET</div><div role="button">BUTTON-SECRET</div><p aria-hidden="true">HIDDEN-SECRET</p></article>';});
+    const boundedFallback=await read();assert(!boundedFallback.error,JSON.stringify(boundedFallback));assert.equal(boundedFallback.messages.length,1);assert(boundedFallback.messages[0].captureFallback);assert(boundedFallback.messages[0].markdown.includes('REAL-BODY'));
+    for(const marker of ['NAV-SECRET','TOOLBAR-SECRET','BUTTON-SECRET','HIDDEN-SECRET'])assert(!boundedFallback.messages[0].markdown.includes(marker));checks++;
     console.log(`PASS: ${checks} DOM trial browser scenarios; synthetic only, no Android/account proof`);
   } finally {await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});

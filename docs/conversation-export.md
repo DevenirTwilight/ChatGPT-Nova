@@ -1,5 +1,7 @@
 # 当前会话导出：实现与验证记录
 
+> 历史研究记录，下面的阶段菜单/内部接口/PDF/发布描述不代表当前产品能力。当前正式功能是[保存当前网页](frozen-page-save.md)；旧滚动方案仅为默认禁用的[Legacy Conversation Scanner](legacy-conversation-scanner.md)，完整历史永远未证明。保留原失败、旧证据和阶段结论，不改写为成功。
+
 ## 基线与修改范围
 
 唯一产品基线是 `fix/native-share-1.3.7` 的 `200b7898b51cdac9e342e49e7e7a7059067d944f`。旧 workspace 已不可恢复，经用户授权重新 clone，在该 commit 建立 `feature/export-conversation`。不存在可恢复的上一轮 export 文件；本轮后续中断留下的文件已保留并继续完成。本次继续时 `feature/export-conversation` 已存在，checkpoint `50ab7dd` 已有数据提取、HTML/Markdown/PDF、Android 文件流程及测试；保留这些文件，补齐 Markdown 围栏、反斜线公式及 DOM 公式核对，并修复 Android 打印生命周期/测试诊断，没有重新 clone。

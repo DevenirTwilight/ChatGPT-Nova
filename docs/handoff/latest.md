@@ -2,13 +2,15 @@
 
 工作分支 feature/export-conversation；已验收应用/测试源码 ac4776ff31feaed9794dbc434e423ac291fbee83。文档提交不是APK源码HEAD，开始续接先fetch核远端，读AGENTS/latest/REVIEW/docs/frozen-page-save.md、实际源码和CI，不回退旧修复。
 
-## 最新要求与 Step 2（2026-10-07）
+## 最新要求与 Step 3（2026-10-07）
 
-分支 feature/export-conversation，Step1审查提交29ea76d；本步源码基于该提交。用户要求的Experimental隔离已实施：BuildConfig.ENABLE_LEGACY_SCANNER默认false（debug也false），仅-PnovaLegacyScanner=true启用；默认MainActivity不创建controller，移除空pageFinished/resume hook，实验设置→警告→主动“开始扫描”。onPause取消当前采集，不自动恢复。保留类名/四JS/算法/历史，未扩selector或数据源。
+分支feature/export-conversation。审查29ea76d、隔离源码3d7f051；本步分类测试/CI与文档，新增default-build合同2项、实验确认/暂停取消/diagnostic白名单3项，保留旧16项Android/四browser与2个Gecko退役案例。实验测试显式要求flag=true，正式合同显式要求false，不能通过skip假绿。
 
-实验文件Nova-legacy-scan，HTML/Markdown及结果metadata not-proven；增加窗口/不稳定/overlap/fallback统计和摘要，Java diagnostic白名单去除任意字符串/真实ID/正文/signature，复制诊断保留。H02/H03/H06原码不变，文案解释身份/重叠/稳定失败。实验PDF未恢复（Gecko已退役）；正式Frozen HTML/MD/System Print不改。
+正式dom-trial.yml移除legacy浏览器/Android执行，保留snapshot13和既有完整正式回归/原证书/升级；legacy-scanner.yml独立相关路径触发+manual，显式flag、19项Android35/36，不作为正式依赖。历史export-validation仍固定旧revision手动执行。无Release，不增code14，不改签名/包名。
 
-验证success：本地Chromium单窗口17场景、正式snapshot13场景、diff检查；scroll suite进行中。Android构建/实验UI/旧Android fixtures暂未验证。本步用[skip ci]检查点提交（现有旧CI尚需显式flag与分离测试），下一步分类legacy测试、添加默认关闭/确认/暂停断言、拆CI，完善docs再跑完整回归。原已验收ac4776f APK证据仍属历史，不代表本步APK。
+已完善docs/legacy-conversation-scanner.md（架构/事实/启用/错误/统计/未来Archive/测试分类），README开发者资料仅一段；旧文档加历史标识不删除证据。通用NAV/ARIA控件过滤修复防止UI文本进入fallback；不增网站selector/不大改parser。结果captureMode分清DOM研究 vs scroll，historyCompleteness永远not-proven。
+
+验证：旧本地DOM17/scroll32/snapshot13成功；新增断言/Android19与default-build及正式回归待CI（not verified），Python编译和diff检查通过。当前步骤commit+push后开始CI验证，下一步读取两套CI结果并处理实际失败，再保存证据和更新REVIEW。新APK不借用旧ac4776f验收结论；真实账号与物理设备仍未验证。
 
 ## 已实现
 

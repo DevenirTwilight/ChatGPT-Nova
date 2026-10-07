@@ -15,10 +15,11 @@ import org.junit.Before;
 import org.junit.Test;
 import static org.junit.Assert.*;
 
-/** DOM trial on Android fixtures; no real account or completeness proof. */
+/** Legacy scanner fixtures: opt-in build only; never real-account completeness proof. */
 public final class DomTrialExportTest extends FixtureActivity {
     private Instrumentation.ActivityMonitor monitor;
     @Before public void before() {
+        assertTrue("Legacy suite requires -PnovaLegacyScanner=true", BuildConfig.ENABLE_LEGACY_SCANNER);
         start();
         android.accessibilityservice.AccessibilityServiceInfo info=instrument.getUiAutomation().getServiceInfo();
         info.flags |= android.accessibilityservice.AccessibilityServiceInfo.FLAG_REPORT_VIEW_IDS;
@@ -87,7 +88,7 @@ public final class DomTrialExportTest extends FixtureActivity {
             })()
             """);
     }
-    private void export(String format) { main(()->exporter().start());click("快速导出已加载消息");click(format); }
+    private void export(String format) { main(()->exporter().capture());click(format); }
     private void external(java.util.function.Function<Intent,Instrumentation.ActivityResult> action) {
         monitor=new Instrumentation.ActivityMonitor() {
             @Override public Instrumentation.ActivityResult onStartActivity(Intent intent) {return action.apply(intent);}
@@ -100,11 +101,49 @@ public final class DomTrialExportTest extends FixtureActivity {
             js("document.getElementById('history').style.scrollBehavior='smooth';true");
         }
     }
+    @Test public void experimentalSettingsRequiresExplicitStartAndCancelDoesNotScan() throws Exception {
+        virtualHistory();String original=js("document.getElementById('history').scrollTop");
+        main(()->{try {java.lang.reflect.Method m=MainActivity.class.getDeclaredMethod("showSettings");m.setAccessible(true);m.invoke(activity);}catch(Exception e){throw new AssertionError(e);}});
+        click("实验功能");click("实验：扫描当前会话");
+        assertNotNull(findControl(instrument.getUiAutomation().getRootInActiveWindow(),"开始扫描"));
+        assertEquals("undefined",js("typeof window.__novaHistoryScrollTrial"));
+        assertEquals(original,js("document.getElementById('history').scrollTop"));
+        click("取消");assertFalse(busy());
+        assertEquals("undefined",js("typeof window.__novaHistoryScrollTrial"));
+        main(()->exporter().start());click("开始扫描");click("取消采集");
+        waitFor("manual cancellation",()->!busy());
+        assertEquals(original,js("document.getElementById('history').scrollTop"));
+    }
+    @Test public void leavingForegroundCancelsRestoresAndDoesNotRestart() throws Exception {
+        virtualHistory();String original=js("document.getElementById('history').scrollTop");
+        js("document.getElementById('history').setAttribute('aria-busy','true');true");
+        main(()->exporter().start());click("开始扫描");
+        waitFor("scanner session",()->!"undefined".equals(js("typeof window.__novaHistoryScrollTrial")));
+        scenario.moveToState(androidx.lifecycle.Lifecycle.State.CREATED);
+        scenario.moveToState(androidx.lifecycle.Lifecycle.State.RESUMED);
+        waitFor("foreground cancel cleanup",()->!busy() && "undefined".equals(js("typeof window.__novaHistoryScrollTrial")));
+        assertEquals(original,js("document.getElementById('history').scrollTop"));
+        assertNull(output());
+        main(()->exporter().showDiagnostic());click("复制诊断");
+        AtomicReference<String> detail=new AtomicReference<>();main(()->detail.set(activity.getSystemService(android.content.ClipboardManager.class).getPrimaryClip().getItemAt(0).getText().toString()));
+        org.json.JSONObject d=new org.json.JSONObject(detail.get());
+        assertTrue(d.getBoolean("cancelled"));assertEquals("not-proven",d.getString("historyCompleteness"));
+        assertEquals("legacy-scroll-experimental",d.getString("captureMode"));
+    }
+    @Test public void diagnosticRejectsArbitraryPageStringsIdsAndBodyHashes() throws Exception {
+        org.json.JSONObject hostile=new org.json.JSONObject()
+            .put("count",29).put("historyCompleteness","not-proven")
+            .put("signature","PRIVATE-BODY-HASH").put("title","SECRET-TITLE").put("id","SECRET-ID")
+            .put("source","SECRET-URL").put("failedMessage",new org.json.JSONObject().put("role","assistant").put("display","SECRET-CSS"))
+            .put("progressDiscovery",new org.json.JSONObject().put("authorSamples",new org.json.JSONArray().put(new org.json.JSONObject().put("hasId",true).put("html","SECRET-HTML"))));
+        String safe=ConversationExport.redacted(hostile).toString();assertFalse(safe.contains("PRIVATE"));assertFalse(safe.contains("SECRET"));
+        assertEquals(29,new org.json.JSONObject(safe).getInt("count"));assertTrue(safe.contains("not-proven"));
+    }
     @Test public void historyScrollCachesUnmountedMessagesThroughSaf() throws Exception {
         virtualHistory();String original=js("document.getElementById('history').scrollTop");
         AtomicReference<Intent> saved=new AtomicReference<>();
         external(intent->{if(!Intent.ACTION_CREATE_DOCUMENT.equals(intent.getAction())) return null;saved.set(intent);return new Instrumentation.ActivityResult(Activity.RESULT_OK,new Intent().setData(OUTPUT));});
-        main(()->exporter().start());click("单向扫描历史");click("选择导出格式");click("HTML 阅读版（推荐）");click("保存到本地…");
+        main(()->exporter().start());click("开始扫描");click("选择导出格式");click("HTML 阅读版（推荐）");click("保存到本地…");
         waitFor("cached virtual history saved",()->saved.get()!=null && !busy());
         String html=new String(read(OUTPUT),StandardCharsets.UTF_8);
         for(int i=0;i<40;i++) if(i!=12 && i!=14) assertTrue("missing ROW-"+i,html.contains("ROW-"+i+"</p>"));
@@ -116,7 +155,7 @@ public final class DomTrialExportTest extends FixtureActivity {
     }
     @Test public void topStartMakesOneDownwardPassAndReportsNoSecondPass() throws Exception {
         virtualHistory();js("document.getElementById('history').scrollTo({top:0,behavior:'instant'});true");
-        main(()->exporter().start());click("单向扫描历史");click("复制诊断");
+        main(()->exporter().start());click("开始扫描");click("复制诊断");
         AtomicReference<String> detail=new AtomicReference<>();
         main(()->{android.content.ClipboardManager c=activity.getSystemService(android.content.ClipboardManager.class);detail.set(c.getPrimaryClip().getItemAt(0).getText().toString());});
         org.json.JSONObject diag=new org.json.JSONObject(detail.get()),coverage=diag.getJSONObject("coverage");
@@ -128,7 +167,7 @@ public final class DomTrialExportTest extends FixtureActivity {
         virtualHistory(true);
         AtomicReference<Intent> saved=new AtomicReference<>();
         external(intent->{if(!Intent.ACTION_CREATE_DOCUMENT.equals(intent.getAction())) return null;saved.set(intent);return new Instrumentation.ActivityResult(Activity.RESULT_OK,new Intent().setData(OUTPUT));});
-        main(()->exporter().start());click("单向扫描历史");click("选择导出格式");click("HTML 阅读版（推荐）");click("保存到本地…");
+        main(()->exporter().start());click("开始扫描");click("选择导出格式");click("HTML 阅读版（推荐）");click("保存到本地…");
         waitFor("narrow window history saved",()->saved.get()!=null && !busy());
         String html=new String(read(OUTPUT),StandardCharsets.UTF_8);assertEquals(40,html.split("<article>",-1).length-1);
         assertTrue(html.contains("ROW-0</p>"));assertTrue(html.contains("ROW-39</p>"));assertTrue(html.contains("未做折返核对"));assertTrue(html.contains("完整历史未确认"));
@@ -137,7 +176,7 @@ public final class DomTrialExportTest extends FixtureActivity {
         virtualHistory();js("document.getElementById('history').scrollTo({top:640,behavior:'instant'});let jitterTick=0;window.fixtureJitter=setInterval(()=>{document.getElementById('space').style.height=(2560+(++jitterTick%2)*2)+'px';},70);true");
         AtomicReference<Intent> saved=new AtomicReference<>();
         external(intent->{if(!Intent.ACTION_CREATE_DOCUMENT.equals(intent.getAction())) return null;saved.set(intent);return new Instrumentation.ActivityResult(Activity.RESULT_OK,new Intent().setData(OUTPUT));});
-        main(()->exporter().start());click("单向扫描历史");click("选择导出格式");click("HTML 阅读版（推荐）");click("保存到本地…");
+        main(()->exporter().start());click("开始扫描");click("选择导出格式");click("HTML 阅读版（推荐）");click("保存到本地…");
         waitFor("layout jitter cached history saved",()->saved.get()!=null && !busy());
         String html=new String(read(OUTPUT),StandardCharsets.UTF_8);assertEquals(40,html.split("<article>",-1).length-1);
         assertTrue(html.contains("ROW-0</p>"));assertTrue(html.contains("ROW-39</p>"));assertTrue(html.contains("完整历史未确认"));
@@ -149,7 +188,7 @@ public final class DomTrialExportTest extends FixtureActivity {
         js("const loader=document.createElement('div');loader.id='fixture-loader';loader.setAttribute('role','progressbar');loader.style='position:sticky;bottom:0;height:10px;width:20px';document.getElementById('history').append(loader);setTimeout(()=>loader.remove(),8000);true");
         AtomicReference<Intent> saved=new AtomicReference<>();
         external(intent->{if(!Intent.ACTION_CREATE_DOCUMENT.equals(intent.getAction())) return null;saved.set(intent);return new Instrumentation.ActivityResult(Activity.RESULT_OK,new Intent().setData(OUTPUT));});
-        main(()->exporter().start());click("单向扫描历史");
+        main(()->exporter().start());click("开始扫描");
         android.os.SystemClock.sleep(5500);assertTrue("must keep waiting for history",busy());assertNull(output());
         assertEquals("0",js("window.__novaHistoryScrollTrial.messages.size"));
         assertEquals("0",js("window.__novaHistoryScrollTrial.steps"));
@@ -160,7 +199,7 @@ public final class DomTrialExportTest extends FixtureActivity {
     }
     @Test public void changingBodyStillFailsWithTypedRedactedSettlingDiagnostic() throws Exception {
         virtualHistory();js("let bodyTick=0;window.fixtureBodyChange=setInterval(()=>{document.querySelector('.markdown p').textContent='SECRET-JITTER-'+(++bodyTick);},60);true");
-        main(()->exporter().start());click("单向扫描历史");click("复制诊断");assertFalse(busy());assertNull(output());
+        main(()->exporter().start());click("开始扫描");click("复制诊断");assertFalse(busy());assertNull(output());
         AtomicReference<String> detail=new AtomicReference<>();
         main(()->{android.content.ClipboardManager c=activity.getSystemService(android.content.ClipboardManager.class);detail.set(c.getPrimaryClip().getItemAt(0).getText().toString());});
         org.json.JSONObject diag=new org.json.JSONObject(detail.get());assertEquals("H06_UNSETTLED",diag.getString("code"));
@@ -171,13 +210,13 @@ public final class DomTrialExportTest extends FixtureActivity {
     }
     @Test public void historyScrollCancellationReleasesCacheAndAllowsRetry() throws Exception {
         virtualHistory();String original=js("document.getElementById('history').scrollTop");
-        main(()->exporter().start());click("单向扫描历史");click("取消采集");waitFor("scan cancelled",()->!busy());
+        main(()->exporter().start());click("开始扫描");click("取消采集");waitFor("scan cancelled",()->!busy());
         assertNull(output());assertEquals("undefined",js("typeof window.__novaHistoryScrollTrial"));assertEquals(original,js("document.getElementById('history').scrollTop"));
-        main(()->exporter().start());click("单向扫描历史");click("取消采集");waitFor("retry cancelled",()->!busy());
+        main(()->exporter().start());click("开始扫描");click("取消采集");waitFor("retry cancelled",()->!busy());
     }
     @Test public void historyMissingIdStopsWithRedactedDiagnostic() throws Exception {
         virtualHistory();js("document.querySelector('[data-message-id]').removeAttribute('data-message-id');true");
-        main(()->exporter().start());click("单向扫描历史");click("复制诊断");assertFalse(busy());assertNull(output());
+        main(()->exporter().start());click("开始扫描");click("复制诊断");assertFalse(busy());assertNull(output());
         AtomicReference<String> detail=new AtomicReference<>();
         main(()->{android.content.ClipboardManager c=activity.getSystemService(android.content.ClipboardManager.class);detail.set(c.getPrimaryClip().getItemAt(0).getText().toString());});
         assertTrue(detail.get().contains("H02_MISSING_ID"));
@@ -197,7 +236,9 @@ public final class DomTrialExportTest extends FixtureActivity {
         String saved=new String(read(OUTPUT),StandardCharsets.UTF_8);
         assertTrue(saved.contains("USER-FIRST"));assertTrue(saved.contains("ASSISTANT-LAST"));
         assertTrue(saved.contains("CODE-LAST"));assertTrue(saved.contains("TABLE-LAST"));
-        assertTrue(saved.contains("完整历史未确认"));assertFalse(saved.contains("prompt-textarea"));
+        assertTrue(saved.contains("完整历史未确认"));
+        assertTrue(saved.contains("historyCompleteness"));
+        assertTrue(captured.get().getStringExtra(Intent.EXTRA_TITLE).startsWith("Nova-legacy-scan-"));assertFalse(saved.contains("prompt-textarea"));
         assertEquals("text/html",captured.get().getType());
     }
     @Test public void explicitProgressTurnSavesInOrderWithRedactedDiscovery() throws Exception {
@@ -276,8 +317,8 @@ public final class DomTrialExportTest extends FixtureActivity {
     @Test public void genuineEmptyBodyFailsWithRedactedMessagePosition() throws Exception {
         conversation("");
         js("document.body.insertAdjacentHTML('beforeend','<article data-message-id=\"private-node-id\"><div data-message-author-role=\"assistant\"><div class=\"markdown\"><button>PRIVATE-BUTTON</button><p hidden>PRIVATE-HIDDEN</p></div></div></article>');true");
-        main(()->exporter().start());click("快速导出已加载消息");
-        waitFor("empty-body failure",()->findControl(instrument.getUiAutomation().getRootInActiveWindow(),"试用导出失败")!=null);
+        main(()->exporter().capture());
+        waitFor("empty-body failure",()->findControl(instrument.getUiAutomation().getRootInActiveWindow(),"实验采集已停止")!=null);
         assertFalse(busy());assertNull(output());click("复制诊断");
         AtomicReference<String> detail=new AtomicReference<>();
         main(()->{android.content.ClipboardManager c=activity.getSystemService(android.content.ClipboardManager.class);detail.set(c.getPrimaryClip().getItemAt(0).getText().toString());});
@@ -304,8 +345,8 @@ public final class DomTrialExportTest extends FixtureActivity {
     }
     @Test public void streamingErrorHasCopyableRedactedDiagnostic() throws Exception {
         conversation("");js("document.body.insertAdjacentHTML('beforeend','<button data-testid=\"stop-button\">stop</button>');true");
-        main(()->exporter().start());click("快速导出已加载消息");
-        waitFor("failure dialog",()->findControl(instrument.getUiAutomation().getRootInActiveWindow(),"试用导出失败")!=null);
+        main(()->exporter().capture());
+        waitFor("failure dialog",()->findControl(instrument.getUiAutomation().getRootInActiveWindow(),"实验采集已停止")!=null);
         assertFalse(busy());assertNull(output());click("复制诊断");
         AtomicReference<String> detail=new AtomicReference<>();
         main(()->{android.content.ClipboardManager c=activity.getSystemService(android.content.ClipboardManager.class);detail.set(c.getPrimaryClip().getItemAt(0).getText().toString());});

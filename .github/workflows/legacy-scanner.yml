@@ -1,21 +1,30 @@
-name: Frozen page save validation
+name: Legacy scanner experimental validation
 on:
   push:
     branches: [feature/export-conversation]
     paths:
-      - 'app/**'
-      - 'tools/snapshot/**'
-      - 'scripts/snapshot_android.py'
-      - '.github/workflows/dom-trial.yml'
+      - 'app/src/main/assets/export/dom-trial.js'
+      - 'app/src/main/assets/export/scroll-trial.js'
+      - 'app/src/main/assets/export/progress-discovery.js'
+      - 'app/src/main/assets/export/locate-text.js'
+      - 'app/src/main/java/com/example/chatgptnova/ConversationExport.java'
+      - 'app/src/main/java/com/example/chatgptnova/MainActivity.java'
+      - 'app/build.gradle'
+      - 'app/src/androidTest/java/com/example/chatgptnova/DomTrialExportTest.java'
+      - 'app/src/androidTest/java/com/example/chatgptnova/FixtureActivity.java'
+      - 'app/src/androidTest/assets/**'
+      - 'tools/dom-trial/**'
+      - 'scripts/dom_trial_android.py'
+      - '.github/workflows/legacy-scanner.yml'
   workflow_dispatch:
 concurrency:
-  group: nova-dom-trial-${{ github.ref }}
+  group: nova-legacy-scanner-${{ github.ref }}
   cancel-in-progress: true
 permissions:
   contents: read
   actions: read
 jobs:
-  build:
+  legacy-scanner-tests:
     runs-on: ubuntu-latest
     timeout-minutes: 35
     steps:
@@ -46,7 +55,10 @@ jobs:
           NOVA_PLAYWRIGHT_MODULE: /tmp/nova-dom-deps/node_modules/playwright-core
         run: |
           npm install --prefix /tmp/nova-dom-deps playwright-core@1.57.0 --no-audit --no-fund
-          node tools/snapshot/browser.test.cjs
+          node tools/dom-trial/browser.test.cjs
+          node tools/dom-trial/scroll.test.cjs
+          node tools/dom-trial/progress.test.cjs
+          node tools/dom-trial/locator.test.cjs
       - name: Restore signing key
         env:
           NOVA_KEYSTORE_B64: ${{ secrets.NOVA_KEYSTORE_B64 }}
@@ -73,8 +85,8 @@ jobs:
           props.chmod(0o600)
           PY
 
-      - name: Build and lint trial
-        run: ./gradlew :app:assembleRelease :app:assembleReleaseAndroidTest :app:lintRelease :app:testReleaseUnitTest --stacktrace --no-daemon
+      - name: Build and lint explicit experimental APK
+        run: ./gradlew -PnovaLegacyScanner=true :app:assembleRelease :app:assembleReleaseAndroidTest :app:lintRelease :app:testReleaseUnitTest --stacktrace --no-daemon
       - name: Verify original signature and trial identity
         run: |
           mkdir -p dist
@@ -120,13 +132,13 @@ jobs:
           (cd dist && sha256sum ChatGPT-Nova.apk > ChatGPT-Nova.apk.sha256)
       - uses: actions/upload-artifact@v4
         with:
-          name: nova-dom-trial-build
+          name: nova-legacy-scanner-build
           path: dist/
           if-no-files-found: error
       - name: APK for device testing (no public Release)
         uses: actions/upload-artifact@v4
         with:
-          name: nova-frozen-page-apk
+          name: nova-legacy-scanner-apk
           path: |
             dist/ChatGPT-Nova.apk
             dist/ChatGPT-Nova.apk.sha256
@@ -141,7 +153,7 @@ jobs:
       fail-fast: false
       matrix:
         api: [35, 36]
-    needs: build
+    needs: legacy-scanner-tests
     runs-on: ubuntu-latest
     timeout-minutes: 35
     steps:
@@ -150,30 +162,12 @@ jobs:
           persist-credentials: false
       - uses: actions/download-artifact@v4
         with:
-          name: nova-dom-trial-build
+          name: nova-legacy-scanner-build
           path: dist
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
       - run: npm install --prefix /tmp/nova-dom-deps playwright-core@1.57.0 --no-audit --no-fund
-      - name: Validated signed Gecko baseline before retirement
-        uses: actions/download-artifact@v4
-        with:
-          name: nova-dom-trial-build
-          run-id: 37552313716
-          github-token: ${{ github.token }}
-          path: gecko-baseline
-      - name: Original signed v1 upgrade baseline
-        uses: actions/download-artifact@v4
-        with:
-          name: ChatGPT-Nova-release
-          run-id: 36923256012
-          github-token: ${{ github.token }}
-          path: baseline
-      - run: sudo apt-get update && sudo apt-get install -y poppler-utils tesseract-ocr
-      - name: Official Firefox Android A/B fixture dependency
-        timeout-minutes: 3
-        run: curl -fL --retry 2 https://archive.mozilla.org/pub/fenix/releases/157.0.1/android/fenix-157.0.1-android-x86_64/fenix-157.0.1.multi.android-x86_64.apk -o /tmp/nova-firefox.apk
       - name: Enable KVM
         run: |
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
@@ -191,16 +185,11 @@ jobs:
           heap-size: 512M
           disable-animations: true
           emulator-options: -no-window -gpu swiftshader -feature -Vulkan -no-snapshot -noaudio -no-boot-anim -camera-back emulated -dns-server 8.8.8.8,1.1.1.1
-          script: |
-            adb install -r dist/ChatGPT-Nova.apk
-            adb install -r dist/ChatGPT-Nova-tests.apk
-            adb install /tmp/nova-firefox.apk
-            python3 scripts/snapshot_android.py
+          script: python3 scripts/dom_trial_android.py
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: nova-dom-trial-android-${{ matrix.api }}
+          name: nova-legacy-scanner-android-${{ matrix.api }}
           path: |
             dom-trial-results/
-            snapshot-results/
           if-no-files-found: warn

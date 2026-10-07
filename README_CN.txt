@@ -4,6 +4,18 @@
 
 安装 Release 构建的 `ChatGPT-Nova.apk` 后，它使用自己的应用包 `com.example.chatgptnova` 和 WebView 数据目录，可与官方 ChatGPT App 同时安装。Android 8.0（API 26）及以上可以安装。
 
+## 保存当前网页：HTML / Markdown / PDF
+
+菜单“保存当前网页”一次冻结此刻已加载内容。HTML是真正普通UTF-8静态网页，采用Nova内联阅读/打印样式；HTML与Markdown从同一次DOM clone同步派生。PDF只打印同一份frozenHtml，在独立无JS WebView中使用Android系统打印界面，可选择Save as PDF、纸张和方向。
+
+HTML/Markdown由系统文件选择器保存；“网页保存诊断”仅记录版本、格式、字符数与失败阶段，不含正文/账号凭据。MHTML和Share快照路线已终止，旧滚动源码与测试仅作legacy对照，不进入正式保存菜单。PDF不再依赖Gecko，生产引擎与大包专属交付工作流已移除；实际验证/包体见[架构与验收说明](docs/frozen-page-save.md)。
+
+三种格式严格对应同一次当前网页冻结快照，但无法证明ChatGPT服务器端完整会话历史；如果网页虚拟化未挂载较早内容，保存结果也不会包含那些内容。外部图片可能需要网络/变化，blob/附件原文件、canvas/shadow/runtime状态不备份。版号仍1.4.0-scroll-trial/code14，修正以buildRevision区分，不发布公开Release。
+
+## 功能与实现审查
+
+完整功能、源码实现、包体成本、验证边界及供其他 ChatGPT 使用的改善审查任务见 [功能与实现审查资料](docs/APP-FUNCTIONS-IMPLEMENTATION-REVIEW.md)。
+
 ## 使用
 
 启动后进入官网，顶部显示 ChatGPT Nova 和当前域名。右上角菜单提供刷新、ChatGPT 首页、用浏览器打开和设置；页面明确显示未登录时增加“登录”。设置集中放置退出当前账号（明确已登录时）、清除登录与网站数据、登录帮助和关于 ChatGPT Nova。退出与数据清除都有确认，不影响官方 App 或浏览器。文件上传支持系统文件 / 图片选择器以及拍照；相机和麦克风只为 HTTPS 的 chatgpt.com 及其子域请求 Android 权限。Cookie 在页面完成和应用暂停时写入本地；清除时等待 Cookie 删除完成再加载首页。
@@ -28,7 +40,7 @@ HTTPS 下载与 blob 下载均通过系统保存对话框写入用户选择的�
 
 菜单“用浏览器打开”用于外部查看当前页面。“浏览器登录”专门开启新的官网登录流程。二者都使用浏览器自己的数据；应用没有自行实现或逆向官方 OAuth 回调，也没有将浏览器 Cookie 搬回 Nova。
 
-应用不读取或记录账号密码，不含 AI 后端、OpenAI API Key、JavaScript 原生接口、第三方登录代理或密码存储逻辑。下载 blob 时执行的网页脚本只读取用户点击的那个 blob，不读取登录字段或 Cookie。Android 和官方网页自己的认证 Cookie 保存在应用独立数据目录中。
+应用不读取或记录账号密码，不含 AI 后端、OpenAI API Key、通用 JavaScript 原生接口、第三方登录代理或密码存储逻辑。为兼容网页 `navigator.share()`，1.3.7 使用仅允许 `https://chatgpt.com` 主 frame 的 WebMessageListener，将网页提供的内容交给 Android Sharesheet；不创建公共分享链接、不把私人 `/c/...` 地址伪装成 `/share/...`。网页 Share 的真实 ChatGPT 调用链仍需实机验收，原生菜单“分享当前页面”是独立辅助入口。安装时序、Promise 与验证边界见 [分享设计](docs/DESIGN-SHARE.md)。下载 blob 时执行的网页脚本只读取用户点击的那个 blob，不读取登录字段或 Cookie。Android 和官方网页自己的认证 Cookie 保存在应用独立数据目录中。
 
 公开 OAuth 能力与 Nova 网页会话的区别、近期官方 Android 回调观察，以及尚未确认的后台限制，见 [浏览器登录回调研究](docs/LOGIN-CALLBACK-RESEARCH.md)（2026-10-02）。
 
@@ -52,6 +64,12 @@ Nova 是非官方第三方客户端，不由 OpenAI 发布、维护或背书。N
 Artifact `ChatGPT-Nova-release` 包含签名 APK、SHA-256 和静态验证报告，`ChatGPT-Nova-source` 包含完整工程。独立的 `ChatGPT-Nova-ci-inputs` 仅用于模拟器检查，里面的测试 APK 不是用户安装包。
 
 Android 13 / 14 / 15 的模拟器均检查：原 v1 `install -r` 覆盖安装及合成 Cookie / localStorage 保留；受控网页的多文件输入、拍照结果生命周期、blob 字节完整性、HTTPS 下载重定向 Cookie 隔离与降级拒绝、权限范围、网络错误恢复和清除数据；原生菜单、旋转、返回与重启（原生自动化由测试 APK 提供受控页面，并使用持续的系统无障碍连接；公开网页检查脚本 scripts/smoke_apk.py 用于手动设备检查）。新增原始 WebView 剪贴板诊断：真实长按菜单粘贴、IME 粘贴命令与 IME commitText，逐字比较 1/10/50 KB、多段换行、Markdown、中英文与 emoji，分别覆盖 textarea 和 contenteditable，并记录 WebView 版本。网页与外部文件/相机结果是合成测试夹具，不代表真实账号上传或硬件拍摄已实测。测试夹具及其 ContentProvider 只存在于单独的测试 APK，未打包进 Release。原始 v1 Artifact 过期后，CI 从固定的 v1 提交和原签名重建兼容性基线。 如果模拟器日志明确显示 Google 系统字体提供者重启并连带终止 Nova，CI 只重跑一次完整原生检查并保留初次失败证据；Nova 自身崩溃及其他检查失败不会被此机制跳过。
+
+长文本粘贴优先使用网页编辑器自己的粘贴处理和撤销历史。键盘剪贴板通常调用 Android `commitText`，不会经过网页 `paste` 事件；1.3.7 为这条路径补充了整段文本事务，并保持随后输入、删除及选区操作的顺序。普通打字、正在组合的文字、特殊光标位置及非聊天输入框保留原生输入连接。系统粘贴与原生菜单仍使用各自入口。CI 必测全部 IME 多行用例，并检查约 248 KiB 文本的选区替换、一次撤销和绘制耗时；真实 ChatGPT 编辑器的速度仍以手机验收为准。Firefox 源码对照与边界见 [粘贴设计](docs/DESIGN-PASTE.md)。
+
+## 开发者研究资料
+
+Legacy experimental scanner retained for research，默认构建禁用；启用方法、失败边界和独立fixture验证见[Legacy Conversation Scanner](docs/legacy-conversation-scanner.md)。未来 Nova Archive 规划用户主动导入官方 OpenAI Data Export，尚未实现。二者与正式“保存当前网页”分开。
 
 ## 品牌资源
 

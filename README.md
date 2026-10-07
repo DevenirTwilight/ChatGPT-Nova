@@ -67,6 +67,10 @@ Android 13 / 14 / 15 的模拟器均检查：原 v1 `install -r` 覆盖安装及
 
 长文本粘贴优先使用网页编辑器自己的粘贴处理和撤销历史。键盘剪贴板通常调用 Android `commitText`，不会经过网页 `paste` 事件；1.3.7 为这条路径补充了整段文本事务，并保持随后输入、删除及选区操作的顺序。普通打字、正在组合的文字、特殊光标位置及非聊天输入框保留原生输入连接。系统粘贴与原生菜单仍使用各自入口。CI 必测全部 IME 多行用例，并检查约 248 KiB 文本的选区替换、一次撤销和绘制耗时；真实 ChatGPT 编辑器的速度仍以手机验收为准。Firefox 源码对照与边界见 [粘贴设计](docs/DESIGN-PASTE.md)。
 
+## 开发者研究资料
+
+Legacy experimental scanner retained for research，默认构建禁用；启用方法、失败边界和独立fixture验证见[Legacy Conversation Scanner](docs/legacy-conversation-scanner.md)。未来 Nova Archive 规划用户主动导入官方 OpenAI Data Export，尚未实现。二者与正式“保存当前网页”分开。
+
 ## 品牌资源
 
 1.3.1 的原创图标使用两层聊天气泡和镂空 Nova 星核，采用深蓝、薄荷绿与浅蓝。彩色 adaptive icon、Android 13+ 主题图标、安装页图标、标准启动页和关于页保持一致。完整矢量源图、512px 导出和图标预览位于 `docs/branding/`。启动页由 AndroidX SplashScreen 管理，应用准备好即可进入，不添加人为延迟。

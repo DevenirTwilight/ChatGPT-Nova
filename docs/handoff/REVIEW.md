@@ -8,6 +8,10 @@
 
 Stable=当前网页Frozen Snapshot三格式；Archive=未来主动导入官方Data Export（未实现）；Experimental=仅显式开启的Legacy Conversation Scanner，当前公开DOM滚屏累计，historyCompleteness永远not-proven。已完成静态调用链审查，Step2已实施默认关闭与实验确认/前台取消/diagnostic白名单；浏览器DOM17与snapshot13通过，Android构建/UI暂未验证。旧错误/29或39条/虚拟化/progress/Share和历史CI证据保留，详见../legacy-conversation-scanner.md。
 
+## Step 3测试分离
+
+正式保存CI不再依赖legacy执行；新legacy-scanner-tests workflow显式flag只在相关路径运行，19项（16旧+3新），Gecko2项明确退役。default-build新合同2项不许skip。当前源码尚待两套Android CI；旧ac4776f结果仅历史。已加通用NAV/ARIA控件过滤及其fixture，不新增网站selector。架构详情见../legacy-conversation-scanner.md。
+
 ## 现有验收结果
 
 已测source ac4776ff31feaed9794dbc434e423ac291fbee83；CI37556129018 build、Android35/36全success。两API实际HTML/MD/PDF下载独立核Unicode/结构/首尾/后续mutation排除，两份打印源与Firefox逐字节相同，四PDF均31页，抽查长代码/表格/尾页可读。最终SAF HTML在Chromium/Firefox/Edge以普通file打开通过。完整13项报告及限制见../frozen-page-save.md，来源与原失败保留tools/snapshot/evidence。

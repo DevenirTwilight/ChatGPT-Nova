@@ -54,7 +54,9 @@ Android35/36 x86_64 受控模拟器保存实际 HTML/MD/PDF、标准系统打印
 
 删除 GeckoPdfExporter.java、唯一旧 PDF 引用、GeckoView dependency、仅 Mozilla Maven、Gecko许可资产/lint例外与专属 ABI/650MiB 交付 workflow。实际依赖树无 Gecko，APK Dex无引擎与 exporter，无任何 native .so。Firefox仅对照测试安装，没有打入APK；保留Git历史。Composer输入设计注释中的 Gecko 名称不是生产依赖。
 
-## 11. Legacy 保留
+## 11. Legacy 保留（2026-10-07隔离更新）
+
+默认debug/release的ENABLE_LEGACY_SCANNER=false，不构造旧controller或注入旧脚本。显式-PnovaLegacyScanner=true才有设置→实验功能入口，需警告确认并主动开始；不属于正式保存路径。旧测试转独立workflow，下面历史16项执行描述仍是原验收证据。本轮验收另外记录于[Legacy说明](legacy-conversation-scanner.md)。未来Archive仅规划导入官方Data Export，未实现。
 
 dom-trial.js、scroll-trial.js、progress-discovery.js、locate-text.js 与旧扫描 controller/相关测试证据保留为 legacy。正式菜单不启动扫描，不扩展 H02/H03/H06、overlap/跨窗口缓存/完整历史推断。旧独立浏览器测试继续执行，不把合成通过当历史完整证明。
 

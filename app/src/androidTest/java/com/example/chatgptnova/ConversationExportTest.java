@@ -16,6 +16,7 @@ import org.junit.Test;
 import static org.junit.Assert.*;
 
 /** Synthetic current-origin data through the production exporter; no account access. */
+// Historical backend-reader fixtures; run only at the pinned revision in export-validation.yml.
 public final class ConversationExportTest extends FixtureActivity {
     private Instrumentation.ActivityMonitor monitor;
     @Before public void before() {

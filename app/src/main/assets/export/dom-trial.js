@@ -39,7 +39,7 @@
     if (node.nodeType === Node.TEXT_NODE) return {html:esc(node.textContent),markdown:md(node.textContent)};
     if (node.nodeType !== Node.ELEMENT_NODE) return {html:'',markdown:''};
     const tag = node.tagName;
-    if (['BUTTON','SCRIPT','STYLE','SVG','INPUT','TEXTAREA','SELECT','IFRAME','NOSCRIPT'].includes(tag)) {diagnostic.filtered.controls++;return {html:'',markdown:''};}
+    if (['BUTTON','SCRIPT','STYLE','SVG','INPUT','TEXTAREA','SELECT','IFRAME','NOSCRIPT','NAV'].includes(tag) || node.matches('[role="button"],[role="navigation"],[role="toolbar"]')) {diagnostic.filtered.controls++;return {html:'',markdown:''};}
     const reason=hiddenReason(node);
     if (reason) {diagnostic.filtered[reason]++;return {html:'',markdown:''};}
     if (tag === 'IMG') { diagnostic.images++; warnings.add('图片仅保留占位说明，未下载原始图片。');

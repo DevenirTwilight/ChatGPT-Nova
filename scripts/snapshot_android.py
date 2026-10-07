@@ -84,6 +84,7 @@ def installed_metrics(apk_path='dist/ChatGPT-Nova.apk',name='package-metrics.jso
 
 try:
     independent('installed-package-metrics',installed_metrics)
+    suite('com.example.chatgptnova.LegacyScannerDisabledTest','legacy-disabled',2)
     suite('com.example.chatgptnova.FrozenPageSnapshotTest','snapshot',10)
     for name in ['frozen-page.md','frozen-page.html','frozen-page-saf.html','frozen-page-print-source.html','frozen-page-print-source.md','frozen-page.pdf']:
         independent('pull-'+name,lambda name=name:adb('pull','/sdcard/Android/data/com.example.chatgptnova/files/'+name,str(out/name)))

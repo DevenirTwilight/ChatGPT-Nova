@@ -21,7 +21,7 @@ const fixture=fs.readFileSync('tools/dom-trial/virtual-fixture.js','utf8');
   await setup();const original=await page.locator('#history').evaluate(e=>e.scrollTop);await step('start');
   const all=await finish();assert(all.done,JSON.stringify(all));assert.equal(all.messages.length,40);assert.deepEqual(all.messages.map(m=>m.id),Array.from({length:40},(_,i)=>'m'+i));
   assert.equal(all.messages.filter(m=>m.markdown.includes('REPEATED-TEXT')).length,2);
-  assert(all.coverage.topObserved && all.coverage.bottomObserved && !all.coverage.secondPass);assert.equal(all.coverage.history,'not-proven');
+  assert(all.coverage.topObserved && all.coverage.bottomObserved && !all.coverage.secondPass);assert.equal(all.coverage.history,'not-proven');assert.equal(all.historyCompleteness,'not-proven');assert.equal(all.captureMode,'legacy-scroll-experimental');assert.equal(all.coverage.capturedMessageCount,40);assert(all.coverage.windowCount>1);assert.equal(all.coverage.cancelled,false);
   assert.equal(await page.locator('[data-message-author-role]').count(),7);assert.equal(await page.locator('#history').evaluate(e=>e.scrollTop),original);
   assert.equal(await page.evaluate(()=>typeof window.__novaHistoryScrollTrial),'undefined');checks++;
   await setup();await page.evaluate(()=>document.getElementById('history').style.scrollBehavior='smooth');await step('start');const smooth=await finish();assert(smooth.done,JSON.stringify(smooth));assert.equal(smooth.messages.length,40);checks++;
@@ -33,7 +33,7 @@ const fixture=fs.readFileSync('tools/dom-trial/virtual-fixture.js','utf8');
     e.insertAdjacentHTML('beforeend','<span class="animate-spin" style="display:block;width:10px;height:10px"></span>');
   });await step('start');const progressTurn=await finish();assert(progressTurn.done,JSON.stringify(progressTurn));
   assert.equal(progressTurn.messages.length,7);assert.deepEqual(progressTurn.messages.map(m=>m.id),Array.from({length:7},(_,i)=>'m'+i));
-  assert.equal(progressTurn.messages[3].messageType,'assistant-progress');assert(progressTurn.messages[3].markdown.includes('ROW-3'));checks++;
+  assert.equal(progressTurn.messages[3].messageType,'assistant-progress');assert(progressTurn.messages[3].markdown.includes('ROW-3'));assert.equal(progressTurn.coverage.fallbackCount,1);checks++;
   await setup(7);await page.evaluate(()=>{
     const e=document.querySelector('[data-message-id="m3"]'), section=document.createElement('section');
     section.dataset.turn='assistant';section.dataset.testid='conversation-turn-3';section.dataset.messageId=e.dataset.messageId;
@@ -78,7 +78,7 @@ const fixture=fs.readFileSync('tools/dom-trial/virtual-fixture.js','utf8');
   await setup(7);await step('start');await step();await page.evaluate(()=>{document.getElementById('space').style.height='2000px';window.__novaHistoryScrollTrial.stepStarted-=30001;});
   const initialLayout=await step();assert.equal(initialLayout.error,'H06_UNSETTLED');assert.equal(initialLayout.coverage.settling.reason,'start-layout-changing');checks++;
   // Cancellation releases cached bodies, observers and the session and restores position.
-  await setup();await collectFirst();await step('cancel');assert.equal(await page.evaluate(()=>typeof window.__novaHistoryScrollTrial),'undefined');checks++;
+  await setup();await collectFirst();const cancelled=await step('cancel');assert.equal(cancelled.historyCompleteness,'not-proven');assert.equal(cancelled.coverage.cancelled,true);assert.equal(await page.evaluate(()=>typeof window.__novaHistoryScrollTrial),'undefined');checks++;
   await setup();await page.evaluate(()=>document.querySelector('[data-message-id]').removeAttribute('data-message-id'));
   assert.equal((await step('start')).error,'H02_MISSING_ID');checks++;
   await setup(7);await collectFirst();await page.evaluate(()=>document.querySelector('.markdown p').textContent='EDITED');
@@ -104,6 +104,6 @@ const fixture=fs.readFileSync('tools/dom-trial/virtual-fixture.js','utf8');
   await step('start');const disconnected=await finish();assert(['H03_ORDER','H04_SECOND_PASS','H04_CHANGED'].includes(disconnected.error),JSON.stringify(disconnected));checks++;
   await page.goto('https://chatgpt.com/g/g-p-fixture/c/fixture');await page.evaluate(()=>{document.body.style.overflow='hidden';document.body.innerHTML='<main style="height:20px;overflow:hidden"><article data-message-id="x"><div data-message-author-role="user" style="height:2000px">OFFSCREEN</div></article></main>';});
   assert.equal((await step('start')).error,'H01_SCROLL_CONTAINER');checks++;
-  console.log(`PASS: ${checks} scroll history browser scenarios; virtualized 40-message fixture only, no real-history proof`);
+  console.log(`PASS: ${checks} legacy scanner browser scenarios; virtualized 40-message fixture only, no real-history proof`);
  } finally {await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});
