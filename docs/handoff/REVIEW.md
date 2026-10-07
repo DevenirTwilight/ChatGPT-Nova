@@ -12,6 +12,10 @@ Stable=当前网页Frozen Snapshot三格式；Archive=未来主动导入官方Da
 
 正式保存CI不再依赖legacy执行；新legacy-scanner-tests workflow显式flag只在相关路径运行，19项（16旧+3新），Gecko2项明确退役。default-build新合同2项不许skip。当前源码尚待两套Android CI；旧ac4776f结果仅历史。已加通用NAV/ARIA控件过滤及其fixture，不新增网站selector。架构详情见../legacy-conversation-scanner.md。
 
+## Step 4a兼容与隐私边界
+
+对minSdk26避免Set.of新平台API；网页返回error字符串也通过固定错误码枚举，不只过滤nested diagnostic。两套755d727 CI尚未完成，不记录为通过，下一提交需重跑。无版号/签名/包名/正式快照更改。
+
 ## 现有验收结果
 
 已测source ac4776ff31feaed9794dbc434e423ac291fbee83；CI37556129018 build、Android35/36全success。两API实际HTML/MD/PDF下载独立核Unicode/结构/首尾/后续mutation排除，两份打印源与Firefox逐字节相同，四PDF均31页，抽查长代码/表格/尾页可读。最终SAF HTML在Chromium/Firefox/Edge以普通file打开通过。完整13项报告及限制见../frozen-page-save.md，来源与原失败保留tools/snapshot/evidence。

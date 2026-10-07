@@ -75,7 +75,9 @@ final class ConversationExport {
             .setMessage("这是实验性的滚动采集工具。它会自动滚动当前 ChatGPT 会话并尝试跨虚拟化窗口累计消息。结果可能漏消息、顺序异常或缺少部分进度内容，不代表完整服务器历史。\n\n请勿把扫描成功理解为已完整备份会话。\n\n仅在前台运行，可取消；结束后恢复滚动位置。请等待回复结束，采集时不要操作页面。图片与附件原文件不会打包。")
             .setPositiveButton("开始扫描",(d,w)->{promptDialog=null;startScroll();})
             .setNegativeButton("取消",(d,w)->busy=false).setOnCancelListener(d->busy=false).create();
-        promptDialog.show();
+        AlertDialog shown=promptDialog;
+        shown.setOnDismissListener(d->{if(promptDialog==shown)promptDialog=null;});
+        shown.show();
     }
     // Retained single-window fixture/research path; not a product menu or snapshot exporter.
     void capture() {
@@ -365,7 +367,22 @@ final class ConversationExport {
         }
         return safe;
     }
-    private static final java.util.Set<String> DIAGNOSTIC_KEYS=java.util.Set.of(
+    private static java.util.Set<String> immutableSet(String... values) {
+        // Android 8-compatible; Java Set.of requires newer platform library APIs.
+        return java.util.Collections.unmodifiableSet(new java.util.HashSet<>(java.util.Arrays.asList(values)));
+    }
+    private static String safeCode(String code) {
+        switch(code) {
+            case "H00_SCAN":case "H00_READY":case "H01_SCROLL_CONTAINER":case "H02_MISSING_ID":case "H03_ORDER":
+            case "H04_BUSY":case "H04_CHANGED":case "H04_SECOND_PASS":case "H04_SESSION":case "H05_LIMIT":case "H06_UNSETTLED":case "H07_CANCELLED":case "H99_SCAN":
+            case "D01_ORIGIN":case "D02_ROUTE":case "D03_LOADING":case "D04_STREAMING":case "D05_NO_MESSAGES":case "D06_LIMIT":case "D07_NESTED":case "D08_DUPLICATE_ID":case "D09_EMPTY_BODY":case "D10_CHANGED":case "D99_EXTRACT":
+            case "N00_IDLE":case "N00_CAPTURE":case "N00_VERIFY":case "N00_RENDER":case "N00_READY":case "N00_FILE":case "N00_FILE_READY":case "N00_SAVE_PICKER":case "N00_SAVE_WRITE":case "N01_PAGE":case "N02_TIMEOUT":case "N03_DECODE":case "N03_EVALUATE":case "N04_RENDER":
+            case "S00_SAVED":case "S01_CACHE":case "S02_APP":case "S03_CANCELLED":case "S04_URI":case "S05_WRITE":
+            case "L00_LOCATE":case "L00_MATCH":case "L01_NOT_FOUND":case "L02_ORIGIN":case "L02_ROUTE":case "L02_LOADING":case "L02_QUERY":case "L03_LIMIT":case "L04_TIMEOUT":case "L99_LOCATOR":return code;
+            default:return "N03_DECODE";
+        }
+    }
+    private static final java.util.Set<String> DIAGNOSTIC_KEYS=immutableSet(
         "source","history","historyCompleteness","captureMode","count","chars","processed","authorFallbacks","turnFallbacks","explicitProgressBlocks",
         "missingIds","duplicateIds","codeBlocks","tables","math","images","elapsedMs","filtered","hidden","ariaHidden","displayNone","visibilityHidden","contentVisibilityHidden","controls",
         "authors","raw","supported","visibleSupported","user","assistant","other","missingId","outsideMarkdownTextNodes","outsideMarkdownChars","authorSamples",
@@ -378,14 +395,14 @@ final class ConversationExport {
         "order","text","attachmentMetadata","attachmentFiles","imageFiles","windowCount","capturedMessageCount","unstableWindowCount","fallbackCount","unknownCount","cancelled","startDirection",
         "code","matches","authorIndex","authorRole","authorSelected","ariaHiddenFlag","visibilityFlags","cssHidden","hiddenAttribute","insideMarkdown","chain","tag","turn","channel","hasMessageId","hasTestId","conversationTurnTestId","markdown",
         "visitedTextNodes","scannedChars","capture","matchingMessageIndexes","exportSourceHasId","capturedHere");
-    private static final java.util.Set<String> DIAGNOSTIC_ENUMS=java.util.Set.of(
+    private static final java.util.Set<String> DIAGNOSTIC_ENUMS=immutableSet(
         "not-proven","legacy-scroll-experimental","scroll-dom-trial","read-only-dom-v3","read-only-progress-discovery-v2","read-only-text-locator",
         "user","assistant","tool","absent","other","up","down","single-direction","consistent","not-audited","none","block","contents","visible","hidden","auto","collapse","unknown",
         "awaiting-content","history-loading","page-not-ready","message-list-changing","body-or-structure-changing","content-stable","edge-layout-changing","start-layout-changing","positioning-start","retrying-overlap",
         "no-dom-text","no-readable-content-after-filtering","commentary","final","D00_CAPTURED","D09_EMPTY_BODY","D04_STREAMING","D05_NO_MESSAGES","D06_LIMIT","D07_NESTED","D08_DUPLICATE_ID",
         "Q01_ORIGIN","Q02_ROUTE","Q03_LIMIT","Q04_LOADING","Q99_PROBE","L00_MATCH","L01_NOT_FOUND","L02_ORIGIN","L02_ROUTE","L02_LOADING","L02_QUERY","L03_LIMIT","L99_LOCATOR",
         "HTML","BODY","MAIN","DIV","SPAN","P","SECTION","ARTICLE","LI","UL","OL","PRE","CODE","BLOCKQUOTE","A","STRONG","EM","B","I","DETAILS","SUMMARY","TABLE","TR","TD","TH","H1","H2","H3","H4","H5","H6","OTHER");
-    private void stage(String code,String phase) {put("code",code);put("phase",phase);put("elapsedMs",android.os.SystemClock.elapsedRealtime()-started);android.util.Log.i("NovaLegacyScanner",diagnostic.toString());}
+    private void stage(String code,String phase) {put("code",safeCode(code));put("phase",phase);put("elapsedMs",android.os.SystemClock.elapsedRealtime()-started);android.util.Log.i("NovaLegacyScanner",diagnostic.toString());}
     void showDiagnostic() {
         if(destroyed) return;
         new AlertDialog.Builder(activity).setTitle("Legacy Scanner 实验诊断 · 完整性未证明").setMessage(diagnostic.toString())
@@ -430,6 +447,7 @@ final class ConversationExport {
         if(clipboard!=null) {clipboard.setPrimaryClip(ClipData.newPlainText("Nova Legacy Scanner 脱敏诊断",diagnostic.toString()));toast("已复制诊断（不含聊天正文和登录凭据）。");}
     }
     private void fail(String code,String message,Exception error) {
+        code=safeCode(code);
         stopDeadline();stopScan(true);generation++;collecting=false;busy=false;
         stage(code,"failed");if(error!=null) put("exceptionType",error.getClass().getSimpleName());
         if(!destroyed && !activity.isFinishing() && !activity.isDestroyed())

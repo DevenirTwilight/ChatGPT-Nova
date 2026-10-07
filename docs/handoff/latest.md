@@ -12,6 +12,10 @@
 
 验证：旧本地DOM17/scroll32/snapshot13成功；新增断言/Android19与default-build及正式回归待CI（not verified），Python编译和diff检查通过。当前步骤commit+push后开始CI验证，下一步读取两套CI结果并处理实际失败，再保存证据和更新REVIEW。新APK不借用旧ac4776f验收结论；真实账号与物理设备仍未验证。
 
+### Step 4a：兼容/诊断边界预检查
+
+Step3提交755d727已触发正式37587740638和legacy37587740673（进行中，未完成）。本地新增后DOM18/progress19/locator18成功，scroll32重跑中。静态复查发现Set.of不适合minSdk26，改为Android8兼容不可变HashSet；并将网页返回的顶层错误码严格枚举化，防止任意字符串绕过nested diagnostic白名单写日志，修复warning dialog引用清理。以上小修无selector变更。下一步对新提交运行两套CI，旧进行中由concurrency自动取消并如实保留。
+
 ## 已实现
 
 用户最终要求普通HTML/Markdown/PDF，取消Share/MHTML/新完整历史算法。正式“保存当前网页”→一次evaluateJavascript同步深clone→同clone静态HTML和Markdown→不可变FrozenPageSnapshot。HTML为唯一标准表示；PDF仅同frozenHtml→独立无JS/static WebView→Android System Print。Nova860px阅读/白底print CSS，不复制ChatGPT SPA。无滚动/backend/private reader/React/token/storage读取/ID去重/跨窗口缓存，不重构输入上传下载分享。
