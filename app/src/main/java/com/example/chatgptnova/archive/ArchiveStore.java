@@ -301,6 +301,10 @@ public final class ArchiveStore extends SQLiteOpenHelper {
   }
 
   public List<Row> list(String search, boolean earliest, int limit) {
+    return list(search, earliest, limit, 0);
+  }
+
+  public List<Row> list(String search, boolean earliest, int limit, int offset) {
     String pattern =
         "%" + normalize(search).replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_") + "%";
     String order =
@@ -316,8 +320,12 @@ public final class ArchiveStore extends SQLiteOpenHelper {
                     + " m.conversation=c.row_id AND m.is_message=1) FROM conversations c WHERE"
                     + " c.search_title LIKE ? ESCAPE '\\' ORDER BY "
                     + order
-                    + " LIMIT ?",
-                new String[] {pattern, Integer.toString(Math.max(1, Math.min(limit, 100000)))})) {
+                    + " LIMIT ? OFFSET ?",
+                new String[] {
+                  pattern,
+                  Integer.toString(Math.max(1, Math.min(limit, 100000))),
+                  Integer.toString(Math.max(0, offset))
+                })) {
       while (q.moveToNext()) {
         Row r = new Row();
         r.id = q.getLong(0);

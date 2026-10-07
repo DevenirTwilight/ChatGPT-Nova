@@ -21,8 +21,9 @@ public final class ArchiveReaderActivity extends Activity {
   private ArchiveModel.Conversation conversation;
   private ArchiveTree.Selection selection;
   private String html, pendingText, pendingName;
-  private boolean all, destroyed;
-  private int generation;
+  private boolean all;
+  private volatile boolean destroyed;
+  private volatile int generation;
   private long row;
 
   @Override

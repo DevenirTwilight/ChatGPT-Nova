@@ -1,3 +1,12 @@
+## Nova Archive — Step 4e：有界列表分页与导出销毁可见性（2026-10-07）
+
+- 分支 `feature/export-conversation`；基线源码 `66172a1`，CI build 正在运行，运行验收未完成。
+- 修正：首页真正 SQL LIMIT/OFFSET 分页，每页最多200条；上一页/下一页替换列表，而非不断累积至100000条常驻内存。搜索/排序重置分页，旋转保留页号。1000会话 instrumentation 核对页首799/999及200条上限。
+- 修正：Reader 导出 generation/destroyed 设为 volatile，后台写入能观察 Activity 销毁/切换，避免仅依赖线程间未定义的字段可见性。
+- success：JVM38 fixture结果未改变（本步只改Android adapter）；源码 diff/脚本语法检查通过。
+- not verified：本提交 Android/实际PDF/正式回归待新CI。没有真实官方ZIP或物理设备验证。
+- 下一步：冻结功能范围，完成 CI 验收，只根据实际失败修正。
+
 ## Nova Archive — Step 4d：运行前最终边界与 UI 检查（2026-10-07）
 
 - 分支 `feature/export-conversation`；基线源码 `174ad7e`。

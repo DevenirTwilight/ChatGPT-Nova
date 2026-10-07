@@ -22,9 +22,9 @@ public final class ArchiveActivity extends Activity {
   private EditText search;
   private TextView status;
   private ListView list;
-  private Button cancel, more, sort;
+  private Button cancel, more, previous, sort;
   private boolean earliest;
-  private int limit = 200;
+  private int offset;
   private String diagnostic = "schema=1\nstage=idle";
   private Task task;
   private List<ArchiveStore.Row> rows = new ArrayList<>();
@@ -70,7 +70,7 @@ public final class ArchiveActivity extends Activity {
         v -> {
           earliest = !earliest;
           sort.setText(earliest ? "排序：最早时间" : "排序：最近更新时间");
-          limit = 200;
+          offset = 0;
           refresh();
         });
     list = new ListView(this);
@@ -81,10 +81,22 @@ public final class ArchiveActivity extends Activity {
           i.putExtra("row", rows.get(pos).id);
           startActivity(i);
         });
-    more = button("加载更多");
+    LinearLayout pages = new LinearLayout(this);
+    root.addView(pages);
+    previous = new Button(this);
+    previous.setText("上一页");
+    pages.addView(previous, new LinearLayout.LayoutParams(0, -2, 1));
+    previous.setOnClickListener(
+        v -> {
+          offset = Math.max(0, offset - 200);
+          refresh();
+        });
+    more = new Button(this);
+    more.setText("下一页");
+    pages.addView(more, new LinearLayout.LayoutParams(0, -2, 1));
     more.setOnClickListener(
         v -> {
-          limit = Math.min(100000, limit + 200);
+          offset += 200;
           refresh();
         });
     LinearLayout actions = new LinearLayout(this);
@@ -104,6 +116,7 @@ public final class ArchiveActivity extends Activity {
     delete.setOnClickListener(v -> confirmDelete());
     if (state != null) {
       earliest = state.getBoolean("earliest");
+      offset = state.getInt("offset");
       search.setText(state.getString("search", ""));
       diagnostic = state.getString("diagnostic", diagnostic);
       sort.setText(earliest ? "排序：最早时间" : "排序：最近更新时间");
@@ -113,7 +126,7 @@ public final class ArchiveActivity extends Activity {
           public void beforeTextChanged(CharSequence s, int a, int c, int f) {}
 
           public void onTextChanged(CharSequence s, int a, int b, int c) {
-            limit = 200;
+            offset = 0;
             refresh();
           }
 
@@ -195,12 +208,13 @@ public final class ArchiveActivity extends Activity {
     final int generation = ++listGeneration;
     String query = search.getText().toString();
     boolean order = earliest;
-    int cap = limit;
+    int cap = 200;
+    int pageOffset = offset;
     listWorker.submit(
         () -> {
           List<ArchiveStore.Row> result;
           try (ArchiveStore db = new ArchiveStore(getApplicationContext())) {
-            result = db.list(query, order, cap + 1);
+            result = db.list(query, order, cap + 1, pageOffset);
           } catch (RuntimeException e) {
             runOnUiThread(
                 () -> {
@@ -231,7 +245,8 @@ public final class ArchiveActivity extends Activity {
                 }
                 list.setAdapter(
                     new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, labels));
-                more.setVisibility(hasMore ? View.VISIBLE : View.GONE);
+                more.setVisibility(hasMore ? View.VISIBLE : View.INVISIBLE);
+                previous.setVisibility(pageOffset > 0 ? View.VISIBLE : View.INVISIBLE);
               });
         });
   }
@@ -284,6 +299,7 @@ public final class ArchiveActivity extends Activity {
     super.onSaveInstanceState(out);
     out.putString("search", search.getText().toString());
     out.putBoolean("earliest", earliest);
+    out.putInt("offset", offset);
     out.putString("diagnostic", diagnostic);
   }
 

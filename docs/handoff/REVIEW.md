@@ -1,3 +1,7 @@
+## Archive bounded list checkpoint
+
+UI now holds at most200 conversation rows via LIMIT/OFFSET previous/next pages, including bounded displayed titles. Reader lifecycle generation/destroyed are volatile for background export cancellation visibility. Fixture pagination assertions verify actual page contents. Runtime results remain pending; no new feature scope added.
+
 ## Archive pre-runtime boundary review
 
 Baseline 174ad7e build/lint/signature/JVM36 passed in 37603996077; updated source now has JVM38 fixtures and awaits fresh CI. Missing/non-string parent is explicitly unsafe-order fallback, duplicate message identities retained with warnings, keys bounded to prevent combined CursorWindow overflow. Native Insets apply only to Archive. Actual orientation change, SAF JSON errors and transaction cancellation are part of instrumentation17. No runtime acceptance claimed yet.

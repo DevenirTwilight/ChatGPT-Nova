@@ -349,8 +349,30 @@ public final class ArchiveTest extends FixtureActivity {
     }
     main(() -> archive.refresh());
     waitFor("pagination", () -> visibleRows() == 200);
-    click("加载更多");
-    waitFor("next page", () -> visibleRows() == 400);
+    click("下一页");
+    waitFor(
+        "next page",
+        () -> {
+          AtomicBoolean expected = new AtomicBoolean();
+          main(
+              () -> {
+                List<ArchiveStore.Row> rows = (List<ArchiveStore.Row>) field(archive, "rows");
+                expected.set(rows.size() == 200 && rows.get(0).title.endsWith(" 799"));
+              });
+          return expected.get();
+        });
+    click("上一页");
+    waitFor(
+        "previous page",
+        () -> {
+          AtomicBoolean expected = new AtomicBoolean();
+          main(
+              () -> {
+                List<ArchiveStore.Row> rows = (List<ArchiveStore.Row>) field(archive, "rows");
+                expected.set(rows.size() == 200 && rows.get(0).title.endsWith(" 999"));
+              });
+          return expected.get();
+        });
     main(() -> ((EditText) field(archive, "search")).setText("café 999"));
     waitFor("UI title search", () -> visibleRows() == 1);
   }
