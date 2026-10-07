@@ -7,14 +7,14 @@ import com.example.chatgptnova.archive.ArchiveModel.*;
 import java.text.Normalizer;
 import java.util.*;
 
-/** Private SQLite schema v2. No WebView/session access and no external storage. */
+/** Private SQLite schema v3. No WebView/session access and no external storage. */
 public final class ArchiveStore extends SQLiteOpenHelper {
   public static final Object LOCK = new Object();
   private final Context context;
   public static final String DATABASE = "nova-archive.db";
 
   public ArchiveStore(Context context) {
-    super(context.getApplicationContext(), DATABASE, null, 2);
+    super(context.getApplicationContext(), DATABASE, null, 3);
     this.context = context.getApplicationContext();
     setWriteAheadLoggingEnabled(true);
   }
@@ -71,12 +71,23 @@ public final class ArchiveStore extends SQLiteOpenHelper {
     db.execSQL("CREATE INDEX message_identity ON messages(conversation,message_id)");
     db.execSQL("CREATE INDEX conversation_dates ON conversations(updated,created)");
     ArchiveAssetStore.create(db);
+    createReports(db);
   }
 
   @Override
   public void onUpgrade(SQLiteDatabase db, int old, int next) {
-    if (old == 1 && next == 2) ArchiveAssetStore.create(db);
-    else throw new SQLiteException("A08_SCHEMA_UNSUPPORTED");
+    if (old < 1 || old > 2 || next != 3) throw new SQLiteException("A08_SCHEMA_UNSUPPORTED");
+    if (old == 1) ArchiveAssetStore.create(db);
+    createReports(db);
+  }
+
+  private static void createReports(SQLiteDatabase db) {
+    db.execSQL(
+        "CREATE TABLE research_reports (conversation INTEGER NOT NULL REFERENCES"
+            + " conversations(row_id) ON DELETE CASCADE, official_id TEXT NOT NULL, title TEXT NOT"
+            + " NULL, state TEXT NOT NULL, message TEXT NOT NULL, created REAL, first_source TEXT"
+            + " NOT NULL REFERENCES import_sources(id), latest_source TEXT NOT NULL REFERENCES"
+            + " import_sources(id), PRIMARY KEY(conversation,official_id))");
   }
 
   @Override
@@ -113,6 +124,7 @@ public final class ArchiveStore extends SQLiteOpenHelper {
   }
 
   public static final class Stats {
+    public int newReports, updatedReports, skippedReports, unavailableReports;
     public int newAssets,
         updatedAssets,
         skippedAssets,
@@ -170,7 +182,15 @@ public final class ArchiveStore extends SQLiteOpenHelper {
     private final Set<Long> newRows = new HashSet<>(), updatedRows = new HashSet<>();
 
     public String diagnostic() {
-      return "schema=2\nnewAssets="
+      return "schema=3\nnewReports="
+          + newReports
+          + "\nupdatedReports="
+          + updatedReports
+          + "\nskippedReports="
+          + skippedReports
+          + "\nunavailableReports="
+          + unavailableReports
+          + "\nnewAssets="
           + newAssets
           + "\nupdatedAssets="
           + updatedAssets
@@ -266,7 +286,7 @@ public final class ArchiveStore extends SQLiteOpenHelper {
       source.put("filename", filename);
       source.put("started", start);
       source.put("status", "running");
-      source.put("schema_version", 2);
+      source.put("schema_version", 3);
       db.insertOrThrow("import_sources", null, source);
     } catch (RuntimeException e) {
       throw new ArchiveError("A06_DATABASE_WRITE_FAILED");
@@ -283,6 +303,7 @@ public final class ArchiveStore extends SQLiteOpenHelper {
       db.beginTransaction();
       transaction = true;
       control.phase = "database";
+      Set<String> importedIds = new HashSet<>();
       new ArchiveImporter(control)
           .read(
               file,
@@ -294,7 +315,11 @@ public final class ArchiveStore extends SQLiteOpenHelper {
                 upsert(db, c, importId, start, stats, assetSink);
                 stats.parsed++;
                 stats.observe(c, db);
+                if (!c.id.isEmpty()) importedIds.add(c.id);
               });
+      if (zip)
+        ArchiveResearch.readZip(
+            file, importedIds, control, r -> upsertReport(db, r, importId, stats));
       control.check();
       db.setTransactionSuccessful();
     } catch (ArchiveError e) {
@@ -330,6 +355,7 @@ public final class ArchiveStore extends SQLiteOpenHelper {
       stats.newConversations =
           stats.updatedConversations = stats.newMessages = stats.updatedMessages = 0;
       stats.newAssets = stats.updatedAssets = 0;
+      stats.newReports = stats.updatedReports = stats.skippedReports = stats.unavailableReports = 0;
       stats.assetBytes = 0;
       stats.failed = 1;
     }
@@ -444,6 +470,75 @@ public final class ArchiveStore extends SQLiteOpenHelper {
     }
   }
 
+  private static void upsertReport(
+      SQLiteDatabase db, ArchiveResearch.Report r, String source, Stats stats) throws ArchiveError {
+    long row;
+    try (Cursor q =
+        db.rawQuery(
+            "SELECT row_id FROM conversations WHERE official_id=?",
+            new String[] {r.conversation})) {
+      if (!q.moveToFirst()) return;
+      row = q.getLong(0);
+    }
+    boolean exists = false;
+    String oldState = "", oldMessage = "", oldTitle = "";
+    Double oldCreated = null;
+    try (Cursor q =
+        db.rawQuery(
+            "SELECT state,message,title,created FROM research_reports WHERE conversation=? AND"
+                + " official_id=?",
+            new String[] {Long.toString(row), r.identity})) {
+      if (q.moveToFirst()) {
+        exists = true;
+        oldState = q.getString(0);
+        oldMessage = q.getString(1);
+        oldTitle = q.getString(2);
+        oldCreated = q.isNull(3) ? null : q.getDouble(3);
+      }
+    }
+    if (!r.state.equals("complete")) stats.unavailableReports++;
+    boolean preserve =
+        exists
+            && oldState.equals("complete")
+            && (!r.state.equals("complete")
+                || (oldCreated != null && r.created != null && r.created < oldCreated));
+    ContentValues v = new ContentValues();
+    v.put("latest_source", source);
+    if (!preserve) {
+      v.put("title", r.title);
+      v.put("state", r.state);
+      v.put("message", r.message);
+      putNumber(v, "created", r.created);
+    }
+    if (exists) {
+      db.update(
+          "research_reports",
+          v,
+          "conversation=? AND official_id=?",
+          new String[] {Long.toString(row), r.identity});
+      if (preserve
+          || (oldState.equals(r.state) && oldMessage.equals(r.message) && oldTitle.equals(r.title)))
+        stats.skippedReports++;
+      else stats.updatedReports++;
+    } else {
+      v.put("conversation", row);
+      v.put("official_id", r.identity);
+      v.put("first_source", source);
+      db.insertOrThrow("research_reports", null, v);
+      stats.newReports++;
+    }
+    try (Cursor q =
+        db.rawQuery(
+            "SELECT COUNT(*),COALESCE(SUM(LENGTH(message)),0) FROM research_reports WHERE"
+                + " conversation=?",
+            new String[] {Long.toString(row)})) {
+      q.moveToFirst();
+      if (q.getInt(0) > ArchiveResearch.PER_CONVERSATION_LIMIT
+          || q.getLong(1) > ArchiveImporter.CONVERSATION_CHAR_LIMIT)
+        throw new ArchiveError("A05_ARCHIVE_TOO_LARGE");
+    }
+  }
+
   private static void putNumber(ContentValues v, String k, Double n) {
     if (n == null) v.putNull(k);
     else v.put(k, n);
@@ -482,7 +577,29 @@ public final class ArchiveStore extends SQLiteOpenHelper {
       }
     }
     header.put("mapping", mapping);
-    return new Conversation(header);
+    Conversation conversation = new Conversation(header);
+    long reportChars = 0;
+    try (Cursor q =
+        db.rawQuery(
+            "SELECT official_id,title,state,message,created FROM research_reports WHERE"
+                + " conversation=? ORDER BY created,official_id",
+            new String[] {Long.toString(row)})) {
+      while (q.moveToNext()) {
+        reportChars += q.getString(3).length();
+        if (conversation.reports.size() >= ArchiveResearch.PER_CONVERSATION_LIMIT
+            || reportChars > ArchiveImporter.CONVERSATION_CHAR_LIMIT)
+          throw new ArchiveError("A05_ARCHIVE_TOO_LARGE");
+        conversation.reports.add(
+            new ArchiveResearch.Report(
+                q.getString(0),
+                conversation.id,
+                q.getString(1),
+                q.getString(2),
+                q.getString(3),
+                q.isNull(4) ? null : q.getDouble(4)));
+      }
+    }
+    return conversation;
   }
 
   public Map<String, ArchiveAsset> assets(long conversation) throws ArchiveError {

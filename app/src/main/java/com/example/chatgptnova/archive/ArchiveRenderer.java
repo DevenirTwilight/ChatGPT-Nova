@@ -273,6 +273,7 @@ public final class ArchiveRenderer {
       out.append("</article>");
       if (out.length() > 16 * 1024 * 1024) throw new ArchiveError("A05_ARCHIVE_TOO_LARGE");
     }
+    appendResearchHtml(out, c);
     return out.append("</body></html>").toString();
   }
 
@@ -311,6 +312,38 @@ public final class ArchiveRenderer {
         if (out.length() > 2 * 1024 * 1024) throw new ArchiveError("A05_ARCHIVE_TOO_LARGE");
       }
     }
+    appendResearchMarkdown(out, c);
     return out.toString();
+  }
+
+  private static String reportState(ArchiveResearch.Report r) {
+    return r.state.equals("pending") ? "研究尚未完成，导出中没有完成正文。" : "报告文件未包含、格式尚不支持或无法读取。";
+  }
+
+  private static void appendResearchHtml(StringBuilder out, Conversation c) throws ArchiveError {
+    if (c.reports.isEmpty()) return;
+    out.append("<section class=\"research-reports\"><h2>研究报告</h2><p>以下报告来自本次导入，与聊天分支独立保存。</p>");
+    for (ArchiveResearch.Report r : c.reports) {
+      out.append("<article><h3>").append(escape(r.title)).append("</h3>");
+      if (r.state.equals("complete")) out.append(renderMarkdown(r.node().text()));
+      else out.append("<p>").append(reportState(r)).append("</p>");
+      out.append("</article>");
+      if (out.length() > 16 * 1024 * 1024) throw new ArchiveError("A05_ARCHIVE_TOO_LARGE");
+    }
+    out.append("</section>");
+  }
+
+  private static void appendResearchMarkdown(StringBuilder out, Conversation c)
+      throws ArchiveError {
+    if (c.reports.isEmpty()) return;
+    out.append("\n# 研究报告\n\n以下报告来自本次导入，与聊天分支独立保存。\n\n");
+    for (ArchiveResearch.Report r : c.reports) {
+      out.append("## ")
+          .append(r.title.replace('\n', ' '))
+          .append("\n\n")
+          .append(r.state.equals("complete") ? r.node().text() : reportState(r))
+          .append("\n\n");
+      if (out.length() > 2 * 1024 * 1024) throw new ArchiveError("A05_ARCHIVE_TOO_LARGE");
+    }
   }
 }

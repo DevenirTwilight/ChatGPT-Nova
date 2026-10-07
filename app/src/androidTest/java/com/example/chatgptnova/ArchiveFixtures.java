@@ -159,6 +159,7 @@ final class ArchiveFixtures {
     office.put(
         "word/document.xml", "<fictional/>".getBytes(java.nio.charset.StandardCharsets.UTF_8));
     entries.put(ArchiveAssetFixtures.DOC + ".dat", ArchiveAssetFixtures.zip(office));
+    ArchiveResearchFixtures.add(entries, "synthetic-0");
     return ArchiveAssetFixtures.zip(entries);
   }
 }

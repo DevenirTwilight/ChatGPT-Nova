@@ -210,11 +210,11 @@ public final class ArchiveImporter {
     sink.accept(c);
   }
 
-  private static final class Budget {
+  static final class Budget {
     int values, chars;
   }
 
-  private Object value(JsonReader json, int depth, Budget b) throws IOException, ArchiveError {
+  Object value(JsonReader json, int depth, Budget b) throws IOException, ArchiveError {
     control.check();
     if (depth > 64 || ++b.values > 100000 || b.chars > CONVERSATION_CHAR_LIMIT)
       throw new ArchiveError("A05_ARCHIVE_TOO_LARGE");
@@ -306,7 +306,7 @@ public final class ArchiveImporter {
     private static final long serialVersionUID = 1;
   }
 
-  private static final class ControlIOException extends IOException {
+  static final class ControlIOException extends IOException {
     private static final long serialVersionUID = 1;
     final String code;
 

@@ -17,6 +17,10 @@ public final class ArchiveTree {
     }
   }
 
+  public static Selection reportsOnly() {
+    return new Selection(Collections.emptyList(), Collections.emptyList(), "research-reports");
+  }
+
   public static Selection select(Conversation c, boolean all) {
     List<String> w = new ArrayList<>();
     boolean cycle = false, orphan = false, malformed = false;

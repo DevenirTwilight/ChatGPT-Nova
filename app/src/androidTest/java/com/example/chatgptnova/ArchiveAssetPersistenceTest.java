@@ -80,7 +80,7 @@ public final class ArchiveAssetPersistenceTest {
       }
       assertTrue(input.delete());
       try (ArchiveStore reopened = new ArchiveStore(context)) {
-        assertEquals(2, reopened.getReadableDatabase().getVersion());
+        assertEquals(3, reopened.getReadableDatabase().getVersion());
         assertEquals(4, count(reopened, "message_assets"));
         try (Cursor q =
             reopened
@@ -282,12 +282,13 @@ public final class ArchiveAssetPersistenceTest {
             "fictional.zip",
             UUID.randomUUID().toString(),
             new ArchiveImporter.Control());
+        store.getWritableDatabase().execSQL("DROP TABLE research_reports");
         store.getWritableDatabase().execSQL("DROP TABLE message_assets");
         store.getWritableDatabase().execSQL("DROP TABLE assets");
         store.getWritableDatabase().setVersion(1);
       }
       try (ArchiveStore upgraded = new ArchiveStore(context)) {
-        assertEquals(2, upgraded.getReadableDatabase().getVersion());
+        assertEquals(3, upgraded.getReadableDatabase().getVersion());
         assertEquals(1, count(upgraded, "conversations"));
         assertEquals(0, count(upgraded, "assets"));
         ArchiveStore.Stats restored =

@@ -15,13 +15,13 @@ public final class ArchiveReaderActivity extends Activity {
   static final int SAVE = 7102;
   private android.widget.FrameLayout host;
   private TextView status;
-  private Button export, branch;
+  private Button export, branch, reports;
   private SnapshotWebView reader, printer;
   private ArchiveModel.Conversation conversation;
   private ArchiveTree.Selection selection;
   private String html, pendingText, pendingName;
   private volatile java.util.Map<String, ArchiveAsset> assets = java.util.Collections.emptyMap();
-  private boolean all;
+  private boolean all, researchOnly;
   private volatile boolean destroyed;
   private volatile int generation;
   private long row;
@@ -30,7 +30,10 @@ public final class ArchiveReaderActivity extends Activity {
   public void onCreate(Bundle state) {
     super.onCreate(state);
     row = getIntent().getLongExtra("row", 0);
-    if (state != null) all = state.getBoolean("all");
+    if (state != null) {
+      all = state.getBoolean("all");
+      researchOnly = state.getBoolean("researchOnly");
+    }
     LinearLayout root = new LinearLayout(this);
     root.setOrientation(LinearLayout.VERTICAL);
     setContentView(root);
@@ -43,6 +46,15 @@ public final class ArchiveReaderActivity extends Activity {
     branch.setOnClickListener(
         v -> {
           all = !all;
+          load();
+        });
+    reports = new Button(this);
+    reports.setText("研究报告");
+    reports.setEnabled(false);
+    actions.addView(reports);
+    reports.setOnClickListener(
+        v -> {
+          researchOnly = !researchOnly;
           load();
         });
     export = new Button(this);
@@ -64,6 +76,8 @@ public final class ArchiveReaderActivity extends Activity {
     status.setText("正在读取本地会话…");
     branch.setText(all ? "查看主链" : "查看全部分支");
     boolean requestedAll = all;
+    boolean requestedReports = researchOnly;
+    reports.setEnabled(false);
     new Thread(
             () -> {
               try {
@@ -73,7 +87,10 @@ public final class ArchiveReaderActivity extends Activity {
                   c = store.load(row);
                   capturedAssets = store.assets(row);
                 }
-                ArchiveTree.Selection s = ArchiveTree.select(c, requestedAll);
+                ArchiveTree.Selection s =
+                    requestedReports
+                        ? ArchiveTree.reportsOnly()
+                        : ArchiveTree.select(c, requestedAll);
                 String rendered =
                     ArchiveRenderer.html(c, s, capturedAssets, ArchiveRenderer.AssetMode.READER);
                 runOnUiThread(
@@ -83,6 +100,9 @@ public final class ArchiveReaderActivity extends Activity {
                       assets = capturedAssets;
                       selection = s;
                       html = rendered;
+                      reports.setText(researchOnly ? "返回聊天" : "研究报告 (" + c.reports.size() + ")");
+                      branch.setEnabled(!researchOnly);
+                      reports.setEnabled(conversation != null && !conversation.reports.isEmpty());
                       showReader(current);
                     });
               } catch (ArchiveError | RuntimeException e) {
@@ -116,6 +136,9 @@ public final class ArchiveReaderActivity extends Activity {
                   status.setText(
                       displayCount()
                           + " 条可见记录 · "
+                          + (conversation.reports.isEmpty()
+                              ? ""
+                              : conversation.reports.size() + " 份研究报告 · ")
                           + selection.scope
                           + (selection.warnings.isEmpty() ? "" : " · 有顺序警告")
                           + " · 完整性取决于导入文件");
@@ -175,6 +198,7 @@ public final class ArchiveReaderActivity extends Activity {
     int current = generation;
     export.setEnabled(false);
     branch.setEnabled(false);
+    reports.setEnabled(false);
     status.setText("正在准备导出…");
     ArchiveModel.Conversation c = conversation;
     ArchiveTree.Selection selected = selection;
@@ -191,7 +215,8 @@ public final class ArchiveReaderActivity extends Activity {
                     () -> {
                       if (destroyed || current != generation) return;
                       export.setEnabled(true);
-                      branch.setEnabled(true);
+                      branch.setEnabled(!researchOnly);
+                      reports.setEnabled(conversation != null && !conversation.reports.isEmpty());
                       pendingText = text;
                       pendingName =
                           "Nova-archive-"
@@ -208,7 +233,8 @@ public final class ArchiveReaderActivity extends Activity {
                     () -> {
                       if (!destroyed && current == generation) {
                         export.setEnabled(true);
-                        branch.setEnabled(true);
+                        branch.setEnabled(!researchOnly);
+                        reports.setEnabled(conversation != null && !conversation.reports.isEmpty());
                         status.setText("A11_EXPORT_FAILED：无法准备本地会话导出。");
                       }
                     });
@@ -311,6 +337,7 @@ public final class ArchiveReaderActivity extends Activity {
     if (printer != null) return;
     export.setEnabled(false);
     branch.setEnabled(false);
+    reports.setEnabled(false);
     status.setText("正在准备本地 PDF…");
     try {
       printer =
@@ -337,7 +364,9 @@ public final class ArchiveReaderActivity extends Activity {
                               printer = null;
                               if (!destroyed) {
                                 export.setEnabled(true);
-                                branch.setEnabled(true);
+                                branch.setEnabled(!researchOnly);
+                                reports.setEnabled(
+                                    conversation != null && !conversation.reports.isEmpty());
                                 status.setText("打印窗口已关闭；保存结果请在目标文件中核对。");
                               }
                             }),
@@ -366,7 +395,8 @@ public final class ArchiveReaderActivity extends Activity {
     }
     if (!destroyed) {
       export.setEnabled(true);
-      branch.setEnabled(true);
+      branch.setEnabled(!researchOnly);
+      reports.setEnabled(conversation != null && !conversation.reports.isEmpty());
       status.setText("A12_PRINT_FAILED：无法启动 System Print。");
     }
   }
@@ -375,6 +405,7 @@ public final class ArchiveReaderActivity extends Activity {
   protected void onSaveInstanceState(Bundle state) {
     super.onSaveInstanceState(state);
     state.putBoolean("all", all);
+    state.putBoolean("researchOnly", researchOnly);
   }
 
   @Override

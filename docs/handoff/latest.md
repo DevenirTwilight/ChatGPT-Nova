@@ -1,3 +1,11 @@
+## Deep Research — Step Y：恢复实现与本地验收，Android待验（2026-10-07）
+
+- 基点55a34ce；本步骤将实际源码提交至feature/export-conversation，不改包名/签名/code14、不main/公开Release。实现ArchiveResearch标准inventory→exact thread/file→version1 completed report_message，只取明确最终正文，无activity/thoughts/在线访问；不猜两段聊天之间的插入位置。
+- schema3非破坏reports表与1/2→3迁移，导入事务去重/保留旧已完成正文/限额/取消；Reader独立“研究报告”入口与HTML/MD/SystemPrint同离线正文模型。重复导入缺失/损坏/未完成不覆盖旧完成正文；升级需用户手动重导入，不自行重读旧ZIP。详docs/deep-research-restoration.md。
+- success本地101 JVM（原93+新8）、脚本语法/diff检查；真实仓库外当前parser/renderer 4reports complete、Markdown4/4逐字、97577chars、HTML成功生成并仅在私有目录保存。新增native4/API26/35/36及原实际HTML/MD/PDF研究首尾/代码/表格断言已接入，尚未运行完，不称Android成功/手机恢复。
+- 初次测试2failure（坏report JSON未转为明确不可用；空ZIP取消漏检）已修正，101全部通过，历史失败保留。初次工具ECJ classpath错误属此前V，未改写。
+- 下一步核当前源码CI build/lint/JVM、API26/35/36原回归和新native4、实际三格式、原签名与DEX默认开关。只有完成实际验收才交同签名稳定测试APK；修复CI不改版号、不公开Release。真实标题/标识/正文/附件/路径不进Git/CI/log。
+
 ## Deep Research — Step X：独立报告源与精确会话归属已确认（2026-10-07）
 
 - 用户提供研究范围更新前后的两段原文，明确“查看全部分支”仍无报告。已在仓库外唯一指定会话定位两段原文；它们是研究任务启动/更新确认，不是研究报告正文。前一步分支差异真实但不能解释此缺失。

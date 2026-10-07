@@ -120,7 +120,7 @@ public final class ArchiveStoreConcurrencyTest {
       assertNull(error.get());
       assertNotNull(ownerDb.get());
       assertSame(ownerDb.get(), readerDb.get());
-      assertEquals(2, ownerDb.get().getVersion());
+      assertEquals(3, ownerDb.get().getVersion());
       assertEquals("Reader must wait before entering the helper", 1, readerInHelper.getCount());
     } finally {
       store.close();

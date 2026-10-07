@@ -262,6 +262,9 @@ jobs:
             adb shell am instrument -w -r -e class com.example.chatgptnova.ArchiveStoreConcurrencyTest com.example.chatgptnova.test/androidx.test.runner.AndroidJUnitRunner > archive-min-results/store-concurrency-tests.txt
             cat archive-min-results/store-concurrency-tests.txt
             grep -F 'OK (2 tests)' archive-min-results/store-concurrency-tests.txt
+            adb shell am instrument -w -r -e class com.example.chatgptnova.ArchiveResearchTest com.example.chatgptnova.test/androidx.test.runner.AndroidJUnitRunner > archive-min-results/research-tests.txt
+            cat archive-min-results/research-tests.txt
+            grep -F 'OK (4 tests)' archive-min-results/research-tests.txt
             adb logcat -d > archive-min-results/logcat.txt
       - uses: actions/upload-artifact@v4
         if: always()

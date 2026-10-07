@@ -1,3 +1,7 @@
+## Deep Research restoration implemented; local source/body evidence passed, Android pending
+
+新增精确library_files deep_research_report→origination_thread_id→canonical file_id唯一.dat→version1 completed明确report_message恢复，schema3独立持久化、Reader独立报告入口、HTML/MD/Print共享安全正文；不猜聊天位置、不导入activity/thoughts。当前真实仓库外4完成正文97577chars与MD4/4逐字通过，HTML生成成功。101 JVM通过（初次新增2边界失败已修，保留历史）；native4/API26/35/36和原实际三格式新报告断言仅已接入，CI/Android尚未验收。升级需要手动重导入补报告，坏重导入不覆盖旧完成正文。不得宣称真实手机恢复成功或提前交付修复APK；生产源码由本步骤提交SHA/CI绑定，787为之前基线。
+
 ## Independent Deep Research artifact explains missing body; branch hypothesis superseded
 
 用户确认全部分支仍缺失并提供启动/范围更新确认原文。精确会话的报告源位于library_files.json的deep_research_report inventory及file_id对应.dat，不在聊天mapping。4条record以origination_thread_id精确关联指定外层会话；version1 completed widget_state.report_message assistant/text且is_complete=true，四份正文20797/24339/25569/26872字符。report与origination message id未在mapping，不能推断精确气泡位置；backing_conversation_id也非外层thread。现在有可靠本地源和归属，可最小实现独立报告展示/持久化/导出，只取report_message，不展示activity thoughts。前步长文本分支统计保留但不能解释此报告缺失。未实现/未Android验证/未交付修复包，禁止提前称成功。

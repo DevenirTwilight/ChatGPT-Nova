@@ -17,6 +17,7 @@ def suite(selection,label,count):
     assert re.search(r'OK \('+str(count)+r' tests?\)',text),text
     assert 'FAILURES!!!' not in text and 'INSTRUMENTATION_FAILED' not in text,text
 try:
+    suite('com.example.chatgptnova.ArchiveResearchTest','archive-research',4)
     suite('com.example.chatgptnova.ArchiveAssetPersistenceTest','archive-asset-persistence',7)
     suite('com.example.chatgptnova.ArchiveAssetReaderTest','archive-asset-reader',3)
     suite('com.example.chatgptnova.ArchiveTest','archive-instrumentation',20)
@@ -36,9 +37,11 @@ try:
     for document in [html,md,(out/'archive-print-source.html').read_text()]:
         assert 'SCHEMA-OBJECT-TEXT' in document and 'SCHEMA-RECAP' in document and '推理摘要' in document, 'ARCHIVE_SCHEMA_OUTPUT_MARKERS_MISSING'
         assert 'SYNTHETIC-HIDDEN-THOUGHT' not in document
+        assert 'RESEARCH-FIRST' in document and 'RESEARCH-LAST' in document
+        assert 'RESEARCH-HIDDEN-ACTIVITY' not in document
     subprocess.run(['pdftotext','-layout',str(out/'archive.pdf'),str(out/'archive-pdf.txt')],check=True)
     text=re.sub(r'\s+','',unicodedata.normalize('NFKC',(out/'archive-pdf.txt').read_text()))
-    for marker in ['ARCHIVE-FIRST','ARCHIVE-LAST','CODE-TAIL','TABLE-TAIL','中文','café','LongArchiveparagraph','Noël','E=mc^2','SCHEMA-OBJECT-TEXT','SCHEMA-RECAP','推理摘要','fictional.docx']:
+    for marker in ['ARCHIVE-FIRST','ARCHIVE-LAST','CODE-TAIL','TABLE-TAIL','中文','café','LongArchiveparagraph','Noël','E=mc^2','SCHEMA-OBJECT-TEXT','SCHEMA-RECAP','推理摘要','fictional.docx','RESEARCH-FIRST','RESEARCH-LAST','RESEARCH-CODE-TAIL','RESEARCH-TABLE-TAIL']:
         assert marker in text,('PDF marker',marker)
     assert 'OTHER-BRANCH' not in text and 'SYNTHETIC-HIDDEN-THOUGHT' not in text
     suite('com.example.chatgptnova.ArchiveProcessTest#seedPrivateArchiveForProcessRestart','archive-seed',1)

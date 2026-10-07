@@ -93,6 +93,7 @@ public final class ArchiveModel {
     public final String id, title, currentNode, header;
     public final Double created, updated;
     public final LinkedHashMap<String, Node> nodes;
+    public final List<ArchiveResearch.Report> reports = new ArrayList<>();
 
     public Conversation(Map<String, Object> data) throws ArchiveError {
       id =
