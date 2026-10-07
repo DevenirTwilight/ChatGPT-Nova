@@ -22,6 +22,10 @@
 
 复查Android旧fixture发现一项仍断言旧“滚动收集并缓存可见历史”文案；本轮已更名实验记录，改断言Experimental captured message set/captureMode/historyCompleteness，保留40条逐字/同文不同ID/恢复/不完整性检查，没有删除或放宽。补白名单users/assistants数值，使复制diagnostic保留分角色计数，并在旧方向测试要求20/20与not-proven。4ca3c04 Android仍进行中，本小修需新CI，不据静态发现宣称旧运行实际失败。下一步读取最新两套CI。
 
+### Step 4e：前次实际Android失败已核
+
+读取4ca3c04实际job logs：Android35 job112682669293、36 job112682669294均执行19项、1项失败，均为historyScrollCachesUnmountedMessagesThroughSaf第152行旧文件文案断言；其余18项（含新确认/前台取消/脱敏）通过。两套run最终被新提交取消，不能标overall success。失败摘要入isolation-validation.json previousRuns，不删除证据。最新源码5d9efe8eee0c24d1ce2b1a48b6e14f74360ae583正式37588638317/实验37588638326正在重跑，尚未最终验收。下一步等待新Android结果并独立核对最终文件与APK。
+
 ## 已实现
 
 用户最终要求普通HTML/Markdown/PDF，取消Share/MHTML/新完整历史算法。正式“保存当前网页”→一次evaluateJavascript同步深clone→同clone静态HTML和Markdown→不可变FrozenPageSnapshot。HTML为唯一标准表示；PDF仅同frozenHtml→独立无JS/static WebView→Android System Print。Nova860px阅读/白底print CSS，不复制ChatGPT SPA。无滚动/backend/private reader/React/token/storage读取/ID去重/跨窗口缓存，不重构输入上传下载分享。

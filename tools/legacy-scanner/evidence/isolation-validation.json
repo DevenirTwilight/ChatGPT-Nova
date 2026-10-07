@@ -37,5 +37,34 @@
       "status": "in_progress"
     }
   },
-  "deviceAcceptance": "not_verified"
+  "deviceAcceptance": "not_verified",
+  "previousRuns": [
+    {
+      "sourceCommit": "755d7271ec448f2d7a68fd08c0730a4519866fed",
+      "stableRunId": 37587740638,
+      "experimentalRunId": 37587740673,
+      "conclusion": "cancelled-by-new-source"
+    },
+    {
+      "sourceCommit": "4ca3c0428f46a646fc6c95a476349e35942888d8",
+      "stableRunId": 37587862891,
+      "experimentalRunId": 37587862825,
+      "conclusion": "cancelled-by-new-source",
+      "experimentalAndroid": {
+        "35": {
+          "executed": 19,
+          "failures": 1,
+          "failedTest": "historyScrollCachesUnmountedMessagesThroughSaf",
+          "line": 152
+        },
+        "36": {
+          "executed": 19,
+          "failures": 1,
+          "failedTest": "historyScrollCachesUnmountedMessagesThroughSaf",
+          "line": 152
+        }
+      },
+      "reason": "obsolete file notice assertion; preserved content/count/restore checks, replaced with experimental metadata assertions in 5d9efe8"
+    }
+  ]
 }

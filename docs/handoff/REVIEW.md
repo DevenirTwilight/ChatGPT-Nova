@@ -28,6 +28,10 @@ Stable=当前网页Frozen Snapshot三格式；Archive=未来主动导入官方Da
 
 旧文件文案断言同步为实验记录语义，保留原40条/恢复检查并增加captureMode/not-proven；脱敏白名单补数值users/assistants并强断言20/20。新源码需重跑CI；前次APK签名/DEX核对仍仅属于4ca3c04。
 
+## Step 4e实际前次失败
+
+4ca3c04两档legacy各19项仅旧文案断言1失败，新增三项与其他旧项通过。两套run最终cancelled；实际failures如实入JSON，不改写。最新5d9efe8两套CI仍进行中，不能宣称安全隔离已全部验收。
+
 ## 现有验收结果
 
 已测source ac4776ff31feaed9794dbc434e423ac291fbee83；CI37556129018 build、Android35/36全success。两API实际HTML/MD/PDF下载独立核Unicode/结构/首尾/后续mutation排除，两份打印源与Firefox逐字节相同，四PDF均31页，抽查长代码/表格/尾页可读。最终SAF HTML在Chromium/Firefox/Edge以普通file打开通过。完整13项报告及限制见../frozen-page-save.md，来源与原失败保留tools/snapshot/evidence。
