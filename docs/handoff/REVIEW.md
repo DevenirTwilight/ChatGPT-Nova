@@ -1,3 +1,7 @@
+## Archive880c8fb minimum version revalidated
+
+37607311483 build/JVM39/API26 foundation2 pass after explicit-null fix. Legacy tier docs now point to actual Archive implementation/validation state instead of stale future-only wording. API35/36 full Archive, actual PDF, restart and Stable suites still running; acceptance pending.
+
 ## Archive null-root persistence runtime failure
 
 37605668339 API35/36 exposed omitted null metadata on database serialization: root parent/message disappeared and main-chain selection fell back to all nodes. serializeNulls plus JVM storage-round-trip fixture fixes this production issue; JVM39 pass. Teardown NPE was separate (Scenario Reader clears previous task) and now respects real destroyed state. Native header scrolling fixes landscape list reachability. Actual new runtime and full Stable regressions pending.

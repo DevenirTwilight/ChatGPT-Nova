@@ -17,7 +17,7 @@
 | 层级 | 数据源与用途 | 完整性 |
 |---|---|---|
 | Stable | 保存当前网页：FrozenPageSnapshot → 普通 HTML / Markdown / System Print PDF | 仅当前已加载 DOM，不证明服务器历史 |
-| Archive（未来，未实现） | 用户主动导入官方 OpenAI Data Export → 本地搜索/阅读/重新导出 | 独立模块；本轮不实现，也不自动导入 |
+| Archive | 用户主动导入官方 OpenAI Data Export 兼容 ZIP/JSON → 本地搜索/阅读/重新导出 | 独立模块；实现与验证状态见 [Nova Archive](nova-archive.md)，不自动导入 |
 | Experimental | Legacy Conversation Scanner：手动扫描当前打开的会话，累计公开 DOM 窗口 | 永远 `historyCompleteness = not-proven` |
 
 ## 它是什么、为什么保留
@@ -94,6 +94,6 @@ Java diagnostic对白名单数字/布尔、受限枚举和结构数组做递归�
 
 通过仅证明受控fixtures，未做真实ChatGPT账号或物理设备验收；算法正常结束不能推断完整服务器历史。不合并main/forcepush/公开Release。
 
-未来Archive可把用户主动导入的官方记录作为独立人工基准（例如官方40 vs scanner39），但scanner不自动访问官方导出，不与Archive共用完整性承诺。不描述为官方导出替代、完整备份或绝对安全/法律结论。
+Archive 日后可把用户主动导入的官方记录作为独立人工基准（例如官方40 vs scanner39），但scanner不自动访问官方导出，不与Archive共用完整性承诺。不描述为官方导出替代、完整备份或绝对安全/法律结论。
 
 暂不建议sourceSet：少量禁用assets和无初始化controller不值得多variant系统。若以后研究依赖或攻击面明显扩大，再独立模块/sourceSet；不复活Gecko或旧backend来扩覆盖。

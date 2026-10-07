@@ -1,3 +1,11 @@
+## Nova Archive — Step 4j：修正后最低版本再次通过（2026-10-07）
+
+- 分支 `feature/export-conversation`；实际源码 `880c8fb`；CI `37607311483`。
+- success：该源码 build/Gradle/lint/签名/browser/JVM39，以及API26基础2项再次通过。显式null修正后最低版本仍可导入/存储/读取/渲染/清理打印adapter。
+- docs：Legacy产品分层表不再把Archive写为永久“未来未实现”，改为引用独立Archive当前实现/验证文档；仍保留旧隔离轮次、失败证据与实验完整性not-proven。
+- not verified：API35/36完整Archive/实际PDF/重启/Stable回归仍在同一CI执行，不能将已有部分success当作完整MVP验收。真实官方导出文件未验证。
+- 下一步：下载API35/36结果，核对实际输出并完成最终交接。
+
 ## Nova Archive — Step 4i：数据库 null 根节点往返与测试生命周期修正（2026-10-07）
 
 - 分支 `feature/export-conversation`；实际失败源码 `4a79a97`，CI `37605668339`，API35/36各执行17方法，8条failure entries（包含同一方法的测试与teardown重复错误）。未运行后续Stable suites，不能说已回归通过。
