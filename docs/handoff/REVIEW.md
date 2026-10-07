@@ -1,3 +1,7 @@
+## API36 second attempt also stalled; collect synthetic stacks before assigning a cause
+
+3c6c0f78同源重试job112955254761 failed：asset7/Reader3 pass，ArchiveTest到transaction cancellation开始后无结束，900s host timeout。第一次malformed JSON error/teardown timeout仍保留；不同位置的重复阻塞不能归为环境或已修复，根因未捕获。新增test-only bounded90s watchdog记录phase/done/numeric thread state/frames，不记录thread names/arguments/data、不改变断言/timeout；host保留TimeoutExpired partial stdout并拉线程文件。生产行为未改，新CI需捕获证据后修根因。完整验收pending，用户AR3–5未执行。
+
 ## API36 first attempt failed during old malformed JSON import; root cause unknown
 
 新源码3c6c0f78：正式37665103092 API26/35成功并独立实物核对；36job112943290944 failed。附件7+Reader3含actual privacy Intent已pass，原Archive malformed JSON error等待/worker teardown超时，套件900s被host终止；没有打印/Stable后续产物。不能归因为测试或生产具体组件，worker位置未捕获，不能报整体成功。证据attachment-3c6c-api36-attempt1-failure.json。先只同源码重跑失败36一次；重复则抓线程阻塞并修根因，不放宽断言。旧ea26全success仍历史，不替代新36。真实AR3–5 pending。

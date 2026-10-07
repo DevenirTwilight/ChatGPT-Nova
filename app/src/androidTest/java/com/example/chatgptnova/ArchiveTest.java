@@ -18,6 +18,7 @@ import org.junit.*;
 
 /** Compatible synthetic export + real Android adapters. Never real OpenAI history proof. */
 public final class ArchiveTest extends FixtureActivity {
+  @Rule public final ArchiveThreadEvidence stalledThreadEvidence = new ArchiveThreadEvidence();
   private ActivityScenario<ArchiveActivity> archiveScenario;
   private ActivityScenario<ArchiveReaderActivity> readerScenario;
   private ArchiveActivity archive;
@@ -29,6 +30,14 @@ public final class ArchiveTest extends FixtureActivity {
 
   @Before
   public void before() throws Exception {
+    stalledThreadEvidence.phase =
+        () -> {
+          ArchiveActivity.Task active =
+              archive == null ? null : (ArchiveActivity.Task) field(archive, "task");
+          return active == null
+              ? "no-activity-task"
+              : active.control.phase + ":done=" + active.done;
+        };
     start();
     instrument.getTargetContext().deleteDatabase(ArchiveStore.DATABASE);
     archiveScenario =
@@ -83,6 +92,7 @@ public final class ArchiveTest extends FixtureActivity {
       if (c.ready()) return;
       SystemClock.sleep(100);
     } while (SystemClock.uptimeMillis() < end);
+    ArchiveThreadEvidence.capture("condition-timeout");
     fail("Timed out: " + n);
   }
 

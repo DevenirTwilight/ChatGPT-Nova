@@ -7,7 +7,12 @@ failures=[]
 def adb(*args):
     return subprocess.check_output(['adb',*args],stderr=subprocess.STDOUT,timeout=900).decode(errors='replace')
 def suite(selection,label,count):
-    text=adb('shell','am','instrument','-w','-r','-e','class',selection,'com.example.chatgptnova.test/androidx.test.runner.AndroidJUnitRunner')
+    try:
+        text=adb('shell','am','instrument','-w','-r','-e','class',selection,'com.example.chatgptnova.test/androidx.test.runner.AndroidJUnitRunner')
+    except subprocess.TimeoutExpired as error:
+        partial=error.output or b''
+        (out/(label+'.txt')).write_text(partial.decode(errors='replace') if isinstance(partial,bytes) else partial)
+        raise
     (out/(label+'.txt')).write_text(text)
     assert re.search(r'OK \('+str(count)+r' tests?\)',text),text
     assert 'FAILURES!!!' not in text and 'INSTRUMENTATION_FAILED' not in text,text
@@ -46,6 +51,8 @@ finally:
         if not (out/name).exists():
             try:adb('pull','/sdcard/Android/data/com.example.chatgptnova/files/'+name,str(out/name))
             except subprocess.CalledProcessError:pass
+    try:adb('pull','/sdcard/Android/data/com.example.chatgptnova/files/archive-test-threads.txt',str(out/'archive-test-threads.txt'))
+    except subprocess.CalledProcessError:pass
     (out/'logcat.txt').write_text(adb('logcat','-d','-v','threadtime'))
     (out/'summary.json').write_text(json.dumps({'sourceCommit':os.environ.get('GITHUB_SHA'),'api':adb('shell','getprop','ro.build.version.sdk').strip(),'validation':'synthetic / fixture only; no real OpenAI export verified','failures':failures},indent=2))
 if failures:raise SystemExit(1)

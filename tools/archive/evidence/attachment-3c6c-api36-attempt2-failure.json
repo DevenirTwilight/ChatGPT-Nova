@@ -1,0 +1,16 @@
+{
+  "sourceCommit": "3c6c0f78baac317f344f73e088bc48595c348221",
+  "ciRun": 37665103092,
+  "attempt": 2,
+  "jobId": 112955254761,
+  "artifactId": 11504958263,
+  "api": 36,
+  "result": "failure",
+  "passedBeforeFailure": {
+    "ArchiveAssetPersistenceTest": 7,
+    "ArchiveAssetReaderTest": 3
+  },
+  "observedStall": "cancellationDuringDatabaseTransactionRollsBack started, no finish; ArchiveTest timeout after 900 seconds",
+  "rootCause": "unknown; second stall differs from first malformed JSON case",
+  "next": "test-only bounded watchdog thread/phase capture and host partial instrumentation preservation; no production changes/assertion weakening/timeout extension"
+}

@@ -1,3 +1,11 @@
+## Attachment Restoration — Step P：API36第二次阻塞，增加合成线程证据采集（2026-10-07）
+
+- 分支feature/export-conversation，生产源码仍3c6c0f78，文档基点df0ccf7。failed同源码重试API36 job112955254761/artifact11504958263，37665103092 attempt2 overall failure。新asset7/Reader3仍全部pass；原Archive20前10方法完成，事务取消测试started后无finished/断言，host900s timeout；与第一次malformed JSON方法阻塞位置不同，不能宣称环境偶发或已修复。证据attachment-3c6c-api36-attempt2-failure.json。
+- 下一源码检查点只新增test-only ArchiveThreadEvidence Rule：每个原ArchiveTest超过90s时记录稳定phase/done+numeric thread identity/state/有界frame，无thread name或参数/正文/ID，128threads×48frames、2MiB文件预算；完成即interrupt watchdog，不改变test verdict/原断言/900s timeout，不进入生产APK。条件失败也采集。只synthetic instrumentation使用。
+- host suite若TimeoutExpired，保存原partial stdout到对应instrumentation文件；finally拉取synthetic thread evidence，避免只有900s文字无法定位。不存在真实ZIP/用户数据进入CI。
+- success本地ECJ编译新增Rule、脚本语法/diff；生产源码未变，不重复本地93；新CI在原fixture上捕获阻塞与位置后再修根因。当前new partial fullTest依赖FixtureActivity由Gradle编译，不能称已运行。旧3c API35实物/签名及ea26全success保留，但不替代两次36失败。
+- AR1全套当前不能验收，AR2真实repack326copy/rollback passed；真实AR3–5 pending。暂停最终APK验收称谓，继续定位数据库/列表/导入锁与线程关系，不放宽安全边界或跳过malformed/cancel/print测试，不加FTS/DOM/backend，不递增版号/发布Release。
+
 ## Attachment Restoration — Step O：新provider API35通过，API36旧JSON测试阻塞失败留证（2026-10-07）
 
 - 分支feature/export-conversation，测试源码3c6c0f78baac317f344f73e088bc48595c348221。success build/lint/JVM93/API26 2+7+3；最新API26独立actual Reader ACTION_VIEW无query/original name、READ-only/ClipData与provider name/size/MIME通过；API35各Archive32+Stable43、实际16/31页/图片/HTMLMD/Unicode/升级独立通过，attachment-3c6c-runtime-35.json。
