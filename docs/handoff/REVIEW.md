@@ -1,3 +1,7 @@
+## Archive actual files pass; formal fixture failures identified
+
+37607311483 API35/36 Archive17+restart2 pass. Independently downloaded actual HTML/MD/PDF verify current-branch scope, markers, no other branch and16 PDF pages each. Stable total remains failed: old menu expectations lacked authorized Archive entry; API35 PDF filename loop mistook existing file tile for editable title. Fix fixtures with accurate menu list and visible EditText selection, retain actual PDF assertions. API36 Snapshot10/31page output passed. No production print rewrite needed; new source still requires full-green regression.
+
 ## Final source package artifact checked independently
 
 880c8fb actual signed APK verifies original cert/v2 digest/SHA256, identity and version unchanged, DEX source revision/legacy=false, retained assets and no native.so. Downloaded XML confirms39 JVM tests, API26 foundation2 passed. Final API35/36 Archive/Stable/actualPDF results still pending; no real official export verified.

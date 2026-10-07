@@ -260,7 +260,7 @@ public final class NovaWebViewTest extends FixtureActivity {
         assertEquals(Arrays.asList("刷新","ChatGPT 首页","登录","用浏览器打开","保存当前网页","网页保存诊断","设置"),openMenuLabels());
         main(() -> overflow().getMenu().performIdentifierAction(5,0));
         waitFor("signed-out settings", () -> settingsFixture()!=null);
-        assertEquals(Arrays.asList("清除登录与网站数据","登录帮助","关于 ChatGPT Nova"), settingsLabels());
+        assertEquals(Arrays.asList("清除登录与网站数据","登录帮助","关于 ChatGPT Nova","Nova Archive"), settingsLabels());
         main(() -> settingsFixture().dismiss());
         instrument.waitForIdleSync();
 
@@ -268,7 +268,7 @@ public final class NovaWebViewTest extends FixtureActivity {
         assertEquals(Arrays.asList("刷新","ChatGPT 首页","用浏览器打开","保存当前网页","网页保存诊断","设置"),openMenuLabels());
         main(() -> overflow().getMenu().performIdentifierAction(5,0));
         waitFor("signed-in settings", () -> settingsFixture()!=null);
-        assertEquals(Arrays.asList("退出当前账号","清除登录与网站数据","登录帮助","关于 ChatGPT Nova"),settingsLabels());
+        assertEquals(Arrays.asList("退出当前账号","清除登录与网站数据","登录帮助","关于 ChatGPT Nova","Nova Archive"),settingsLabels());
         main(() -> settingsFixture().getListView().performItemClick(null,0,0));
         waitFor("logout confirmation", () -> clearFixture()!=null);
         main(() -> {

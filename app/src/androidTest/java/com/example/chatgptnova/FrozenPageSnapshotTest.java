@@ -126,8 +126,9 @@ public class FrozenPageSnapshotTest extends FixtureActivity {
             AccessibilityNodeInfo root=instrument.getUiAutomation().getRootInActiveWindow();if(root==null)return false;
             for(String id:new String[]{"android:id/title","com.google.android.documentsui:id/filename","com.android.documentsui:id/filename"})
                 for(AccessibilityNodeInfo node:root.findAccessibilityNodeInfosByViewId(id)) {
+                    if(!node.isVisibleToUser()||!node.isEnabled()||!"android.widget.EditText".contentEquals(node.getClassName()))continue;
                     android.os.Bundle args=new android.os.Bundle();args.putCharSequence(AccessibilityNodeInfo.ACTION_ARGUMENT_SET_TEXT_CHARSEQUENCE,filename);
-                    return node.performAction(AccessibilityNodeInfo.ACTION_SET_TEXT,args);
+                    if(node.performAction(AccessibilityNodeInfo.ACTION_SET_TEXT,args))return true;
                 }
             return false;
         });

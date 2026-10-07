@@ -1,0 +1,63 @@
+{
+  "sourceCommit": "880c8fbab3393c7a10084a3bc08266e29a093482",
+  "ciRun": 37607311483,
+  "validation": "synthetic / fixture validation passed for Archive; full Stable suite not yet all green",
+  "apis": {
+    "35": {
+      "instrumentation": {
+        "archive-instrumentation.txt": 17,
+        "archive-seed.txt": 1,
+        "archive-restart.txt": 1
+      },
+      "summaryFailures": [],
+      "pdfPages": 16,
+      "pdfBytes": 145410,
+      "pdfMarkers": [
+        "ARCHIVE-FIRST",
+        "ARCHIVE-LAST",
+        "CODE-TAIL",
+        "TABLE-TAIL",
+        "中文",
+        "café",
+        "LongArchiveparagraph",
+        "Noël",
+        "E=mc^2"
+      ],
+      "otherBranchAbsent": true,
+      "sha256": {
+        "archive.html": "104c1a57f552c07d032507ec0c4b7289b677848d002bf3728c4dd950062bec32",
+        "archive.md": "5723ac8246c3ff311fe5af9e3734ddd01518ba327af564aba2b46ee32812b6f1",
+        "archive-print-source.html": "578acbb4889f848c88e2326044ed1d1b36b3febb9e6b5febd793898682f2991e",
+        "archive.pdf": "01f4dc79ef6b771aaea71132b528d5eab2aa84ba85b2cac5ad55ab3f604c7d6d"
+      }
+    },
+    "36": {
+      "instrumentation": {
+        "archive-instrumentation.txt": 17,
+        "archive-seed.txt": 1,
+        "archive-restart.txt": 1
+      },
+      "summaryFailures": [],
+      "pdfPages": 16,
+      "pdfBytes": 162823,
+      "pdfMarkers": [
+        "ARCHIVE-FIRST",
+        "ARCHIVE-LAST",
+        "CODE-TAIL",
+        "TABLE-TAIL",
+        "中文",
+        "café",
+        "LongArchiveparagraph",
+        "Noël",
+        "E=mc^2"
+      ],
+      "otherBranchAbsent": true,
+      "sha256": {
+        "archive.html": "104c1a57f552c07d032507ec0c4b7289b677848d002bf3728c4dd950062bec32",
+        "archive.md": "5723ac8246c3ff311fe5af9e3734ddd01518ba327af564aba2b46ee32812b6f1",
+        "archive-print-source.html": "578acbb4889f848c88e2326044ed1d1b36b3febb9e6b5febd793898682f2991e",
+        "archive.pdf": "76863ab6ad4aadc232bf79f7cc36e1bff11995f897cb6c4f95a14249d39a1ad6"
+      }
+    }
+  }
+}

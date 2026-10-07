@@ -1,0 +1,26 @@
+{
+  "sourceCommit": "880c8fbab3393c7a10084a3bc08266e29a093482",
+  "ciRun": 37607311483,
+  "archive": {
+    "apis": [
+      35,
+      36
+    ],
+    "instrumentationPerApi": 17,
+    "processRestartPerApi": 2,
+    "pdfPagesPerApi": 16,
+    "pdfMarkersPassed": true
+  },
+  "stableFailures": {
+    "bothApis": "menu assertion still expected old Settings without user-requested Nova Archive",
+    "api35": "DocumentsUI android:id/title first matched existing Archive PDF tile; test tried SET_TEXT on non-editable TextView and returned false before filename EditText"
+  },
+  "api36FrozenSnapshot": {
+    "tests": 10,
+    "pdfPages": 31,
+    "markersPassed": true
+  },
+  "fix": "update authorized Settings expectations; require visible enabled EditText and continue on failed SET_TEXT; do not weaken PDF output/content assertions",
+  "productionPrintChangesRequired": false,
+  "validation": "synthetic fixtures only"
+}

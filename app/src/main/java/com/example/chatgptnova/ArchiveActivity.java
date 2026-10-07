@@ -278,6 +278,7 @@ public final class ArchiveActivity extends Activity {
                     runOnUiThread(
                         () -> {
                           if (destroyed) return;
+                          if (ok) task = null;
                           status.setText(ok ? "本地档案已删除" : "A09_STORAGE_FAILED：无法删除本地档案。");
                           diagnostic = "schema=1\nstage=deleted";
                           refresh();

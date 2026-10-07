@@ -1,3 +1,12 @@
+## Nova Archive — Step 4l：Archive 实際输出通过；正式回归夹具修正（2026-10-07）
+
+- 分支 `feature/export-conversation`；验证源码 `880c8fb`，CI `37607311483`。完整下载两份API35/36 Artifact，Archive summaries failures=[]，各 instrumentation17 + 独立 seed/restart2 通过。真实 System Print PDF 各16页，独立pdftotext核对首尾/code/table/中法英/LaTeX标记，非当前分支不混入HTML/MD/PDF。
+- success证据 `tools/archive/evidence/archive-runtime-verification.json`，包含实际输出SHA256/页数/断言；仅synthetic / fixture validation，不是real OpenAI export verified。
+- failed正式回归：NovaWebViewTest预期Settings仍只有旧3/4项，未包括用户授权新增Nova Archive；已更新准确预期，原有账号/清理行为断言保留。
+- failed API35 Frozen PDF夹具：DocumentsUI已有Archive PDF后，android:id/title首先匹配文件卡片TextView。旧循环立即return false，不继续找可编辑文件名框。已依据保存UI截图/树，只接受可见启用EditText，SET_TEXT失败继续；没有增加网页selector，也不删/放宽实际PDF/内容检查。API36原Snapshot10项与31页PDF已success，生产打印管线不改。
+- 生命周期小修：删除Archive成功后清掉已完成Task，旋转不会重播旧导入成功状态；已有删除隔离test现覆盖SAF导入→删除→重建，Cookie保留。
+- 下一步：新源码重新跑Archive/Stable全部CI，直到正式回归全绿再宣称MVP验收完成。
+
 ## Nova Archive — Step 4k：最终源码签名包与 JVM Artifact 独立核对（2026-10-07）
 
 - 分支 `feature/export-conversation`；当前实际源码 `880c8fbab3393c7a10084a3bc08266e29a093482`；后续提交只有文档/证据；CI `37607311483`。

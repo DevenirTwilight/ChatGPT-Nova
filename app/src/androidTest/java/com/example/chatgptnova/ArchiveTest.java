@@ -552,7 +552,10 @@ public final class ArchiveTest extends FixtureActivity {
 
   @Test
   public void deleteArchiveKeepsOnlineSession() throws Exception {
-    store(ArchiveFixtures.json(1, false));
+    write(INPUT, ArchiveFixtures.zip(false));
+    intercept(Intent.ACTION_OPEN_DOCUMENT, INPUT, false);
+    click("导入 ChatGPT 数据");
+    waitFor("import before delete", () -> status().startsWith("导入完成"));
     main(
         () ->
             android.webkit.CookieManager.getInstance()
@@ -563,6 +566,11 @@ public final class ArchiveTest extends FixtureActivity {
     try (ArchiveStore db = new ArchiveStore(instrument.getTargetContext())) {
       assertTrue(db.list("", false, 10).isEmpty());
     }
+    assertNull(field(archive, "task"));
+    archiveScenario.recreate();
+    archiveScenario.onActivity(a -> archive = a);
+    assertFalse(status().startsWith("导入完成"));
+    waitFor("empty after delete and recreation", () -> visibleRows() == 0);
     assertTrue(
         android.webkit.CookieManager.getInstance()
             .getCookie(PAGE)
@@ -675,9 +683,12 @@ public final class ArchiveTest extends FixtureActivity {
                   "com.google.android.documentsui:id/filename",
                   "com.android.documentsui:id/filename"))
             for (AccessibilityNodeInfo n : r.findAccessibilityNodeInfosByViewId(id)) {
+              if (!n.isVisibleToUser()
+                  || !n.isEnabled()
+                  || !"android.widget.EditText".contentEquals(n.getClassName())) continue;
               Bundle a = new Bundle();
               a.putCharSequence(AccessibilityNodeInfo.ACTION_ARGUMENT_SET_TEXT_CHARSEQUENCE, name);
-              return n.performAction(AccessibilityNodeInfo.ACTION_SET_TEXT, a);
+              if (n.performAction(AccessibilityNodeInfo.ACTION_SET_TEXT, a)) return true;
             }
           return false;
         });
