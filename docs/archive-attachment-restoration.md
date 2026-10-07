@@ -1,4 +1,4 @@
-> 当前实现为schema2私有附件恢复、精确引用、离线Reader/窄FileProvider、bounded portable HTML/Markdown/System Print图片。下方调查/schema1段落为历史，不能用作当前调用链。最新验证以[handoff](handoff/latest.md)和[REVIEW](handoff/REVIEW.md)为准；AR3–5真实设备与人工验收仍pending。
+> 当前schema2附件恢复的synthetic / fixture验收已通过，实际源码787f18f、正式37677076099与Legacy37677076223全success；最新[37项报告/APK](archive-attachment-validation.md)和[手机验收](archive-local-validation.md)。AR1通过，AR2真实compatible repack容器/map/host验证通过；真实Android首次恢复、duplicate与人工AR3–5仍pending。下方设计/schema1和未接通记录是历史，不是现状。旧3c两次API36stall仍未确定根因，失败证据保留。
 
 # Archive Attachment Restoration — 调查与设计
 

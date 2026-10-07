@@ -1,3 +1,13 @@
+## Final attachment implementation/fixture acceptance complete; real device AR3–5 remain pending
+
+实际源码787f18f5296e7bbf4148146c21c9c7656e8c7859，正式37677076099与Legacy37677076223全部job success、同head。独立JVM93/API26 native14/API35-36各Archive34+Stable43/Legacy各19+原Gecko2ignore；Archive actual HTML/MD/16页PDF的12×8RGB24/108/150图片及文档描述/正文/Unicode，Stable31页System/Firefox PDF/same source/OCR/图/升级全部核对，installed APK SHA与signed artifact一致。原签名正式APK11507044105/2106973bytes/source787/defaultflagfalse/版本14保持，无.so/test-only诊断，另显式实验flagtrue也核对。
+
+AR1 synthetic / fixture validation passed。AR2授权compatible repack容器/map/refs/326binary CRC-copy-rollback以及230PNG/JPEG host完整decode通过，parser/tree仍122/7250/7130/4267（3065visible、1202thoughts隐藏）fallback0。host成功不是AndroidDB恢复，副本不是原始ZIP逐字节验证；真实Android import AR3、duplicate AR4及各类型/≥5会话/offline/restart/source loss/exports/人工AR5尚未完成。不得使用“Attachment restoration manually validated on this real OpenAI Data Export sample”。只有本轮repo外aggregate证据进Git，真实数据未进CI/Git/fixtures/logs。
+
+新Store统一LOCK→helper open/close，保留onOpen文件recovery，两项native竞争用例通过；此前3c API36两次stall仍未捕获root stack，ad30和新787绿色不改写失败或推断确定根因。新正式35/36均没有超时线程文件。SAF阻塞/monitor等待取消只能协作、heap/WAL采样非精确peak、未知格式/完整codec/外部应用/手机性能仍有边界，见[37项最终报告](../archive-attachment-validation.md)。
+
+产品层级仍Stable当前DOM快照／Archive官方文件主动本地导入／Experimental Legacy公开DOM窗口累计not-proven；没有backend/Fiber/账号crawler/Cloud/FTS/selector扩张。覆盖安装保留v1→2数据库，手动重导入补binary。唯一下一步为用户按[手机清单](../archive-local-validation.md)验收真实AR3–5，只回传匿名统计/固定码；不发布Release/merge main/forcepush/改版号签名。
+
 ## New source API26 and Legacy accepted; final formal API35/36 still pending
 
 787f18f5296e7bbf4148146c21c9c7656e8c7859，正式37677076099 JVM93/API26原生14独立through actual artifacts，含concurrency2。Legacy37677076223全success、35/36各实际19+原2ignored；原签名普通APK/defaultflagfalse与实验APK/flagtrue独立核对。真实host新parser计数122/7250/7130/4267/3065displayable/fallback0只aggregate，不是AndroidDB。证据attachment-787f-foundation/package/legacy-runtime/legacy-package及current-content-counts。

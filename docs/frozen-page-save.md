@@ -91,3 +91,7 @@ Legacy隔离轮次源码 `3149507ef3fb88d66428dde610894ccac82cf44b` 的默认关
 ## Archive接入后的正式回归（2026-10-07）
 
 实际源码 `7854f3ea06309fa20e5e26a7acc4b77750322968`，[CI37609817075](https://github.com/DevenirTwilight/ChatGPT-Nova/actions/runs/37609817075) 全success。API35/36各17套43次Stable执行通过；独立下载核对正式HTML/Markdown及四份31页PDF（System Print与Firefox同静态HTML源），原签名升级、登录/IME/上传下载/share/生命周期保持。Archive新增独立offline静态HTML入口，不改变FrozenPageSnapshot语义；snapshot tests仍10项。证据见[API35](../tools/archive/evidence/accepted-runtime-35.json)、[API36](../tools/archive/evidence/accepted-runtime-36.json)。真实账号/物理设备仍未验证，历史失败证据不删。
+
+## Archive附件恢复后的独立Stable回归（2026-10-07）
+
+源码787f18f，[正式37677076099](https://github.com/DevenirTwilight/ChatGPT-Nova/actions/runs/37677076099)全success，35/36各Stable43实际执行与原签名升级通过；10项snapshot保留，HTML/Markdown同静态源，System及Firefox实际31页PDF/320×120图片/首尾长代码表格Unicode/后续变更排除独立核对。Archive使用独立模型/私有附件和offline callback，不改变当前网页快照的数据来源或完整性措辞。证据attachment-787f-runtime-35/36；真实账号/手机与附件人工AR3–5不由fixtures替代。

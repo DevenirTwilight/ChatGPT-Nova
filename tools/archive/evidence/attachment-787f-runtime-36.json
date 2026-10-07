@@ -1,0 +1,137 @@
+{
+  "sourceCommit": "787f18f5296e7bbf4148146c21c9c7656e8c7859",
+  "ciRun": 37677076099,
+  "android": 36,
+  "artifactId": 11508877009,
+  "artifactSha256": "6eea421ea258280de3f3e57ac03204152b19cd9d436f544639e5561222a986c3",
+  "validation": "synthetic / fixture validation passed; no real OpenAI export verified",
+  "archive": {
+    "archive-asset-persistence": 7,
+    "archive-asset-reader": 3,
+    "archive-instrumentation": 20,
+    "archive-seed": 1,
+    "archive-restart": 1,
+    "archive-store-concurrency": 2,
+    "pdf": {
+      "sha256": "78314d92264d75f740e217a18eef14abb4a4347f950971eb6533c4e885fe55fd",
+      "pages": 16,
+      "bytes": 204099,
+      "markersVerified": [
+        "ARCHIVE-FIRST",
+        "ARCHIVE-LAST",
+        "CODE-TAIL",
+        "TABLE-TAIL",
+        "中文",
+        "café",
+        "LongArchiveparagraph",
+        "Noël",
+        "E=mc^2",
+        "SCHEMA-OBJECT-TEXT",
+        "SCHEMA-RECAP",
+        "推理摘要"
+      ],
+      "excludedMarkers": [
+        "OTHER-BRANCH",
+        "SYNTHETIC-HIDDEN-THOUGHT"
+      ],
+      "firstSnapshotMarkerMethod": "pdf-text"
+    },
+    "sha256": {
+      "archive.html": "aa9c6890551c8f4acdbf915aaff67733c053ab620f1c20c121586a950a48a889",
+      "archive.md": "367ce477eac8ebd207e1179bb41caca3202928063254fc43e8180679669b5683",
+      "archive-print-source.html": "f6e0c10c5844f51a4029a5f0138dc0ce57d0ed51f219c0273a48f03aa4799f2e"
+    },
+    "actualPdfImagePixelsVerifiedRGB": [
+      24,
+      108,
+      150
+    ],
+    "assetHtmlPngDecoded": "12x8",
+    "assetPrintImageVerified": "12x8",
+    "attachmentDescriptorsVerified": true
+  },
+  "stable": {
+    "legacy-disabled": 2,
+    "snapshot": 10,
+    "firefox-android": 1,
+    "web-regressions": 9,
+    "share-regressions": 5,
+    "input-regressions": 5,
+    "input-imeCommitText": 1,
+    "input-imePasteCommand": 1,
+    "input-longPressSystemPaste": 1,
+    "native-lifecycle": 1,
+    "native-restart": 1,
+    "gecko-upgrade-current": 1,
+    "gecko-upgrade-persistence": 1,
+    "gecko-upgrade-seed": 1,
+    "upgrade-current": 1,
+    "upgrade-persistence": 1,
+    "upgrade-seed": 1
+  },
+  "installedPackageMatchesVerifiedApk": true,
+  "stableHtmlMarkdownMarkersVerified": true,
+  "firefoxPrintSourceIdentical": true,
+  "stablePdf": {
+    "frozen-page.pdf": {
+      "sha256": "d88fded1901ad85366803304f61edd5999a595c144203444709e3d80135e815d",
+      "pages": 31,
+      "bytes": 294834,
+      "markersVerified": [
+        "TAIL-SNAPSHOT-MARKER",
+        "CODE-LAST",
+        "TABLE-LAST",
+        "中文",
+        "café",
+        "Reference",
+        "Longparagraph",
+        "Noël",
+        "naïve",
+        "français",
+        "E=mc^2",
+        "LONG-CODE-HEAD",
+        "LONG-CODE-TAIL",
+        "LONG-TABLE-TAIL"
+      ],
+      "excludedMarkers": [
+        "Aftersnapshotmarker",
+        "AFTER-TITLE",
+        "AFTER-TABLE",
+        "AFTER-BODY",
+        "CLIPPED-UI-CONTROL"
+      ],
+      "firstSnapshotMarkerMethod": "pdf-text",
+      "fixtureImageDimensionsVerified": "320x120"
+    },
+    "firefox-frozen.pdf": {
+      "sha256": "edc0bced8448121cbd8a77bc1f76a88792bd2b2307fe1deff53b3d7b72decd40",
+      "pages": 31,
+      "bytes": 356162,
+      "markersVerified": [
+        "TAIL-SNAPSHOT-MARKER",
+        "CODE-LAST",
+        "TABLE-LAST",
+        "中文",
+        "café",
+        "Reference",
+        "Longparagraph",
+        "Noël",
+        "naïve",
+        "français",
+        "E=mc^2",
+        "LONG-CODE-HEAD",
+        "LONG-CODE-TAIL",
+        "LONG-TABLE-TAIL"
+      ],
+      "excludedMarkers": [
+        "Aftersnapshotmarker",
+        "AFTER-TITLE",
+        "AFTER-TABLE",
+        "AFTER-BODY",
+        "CLIPPED-UI-CONTROL"
+      ],
+      "firstSnapshotMarkerMethod": "independent-rendered-first-page-OCR",
+      "fixtureImageDimensionsVerified": "320x120"
+    }
+  }
+}

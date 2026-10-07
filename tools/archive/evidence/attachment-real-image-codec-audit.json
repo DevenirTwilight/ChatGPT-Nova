@@ -1,0 +1,16 @@
+{
+  "source": "user-authorized compatible repacked export; host-only codec validation",
+  "imagesFullyDecoded": 230,
+  "formats": {
+    "PNG": 82,
+    "JPEG": 148
+  },
+  "decodeFailures": 0,
+  "maximumPixelsGuard": 16000000,
+  "binaryPersisted": false,
+  "manualVisualCheck": false,
+  "AndroidValidation": false,
+  "privateValuesInReport": false,
+  "decoder": "Pillow",
+  "decoderVersion": "12.3.0"
+}

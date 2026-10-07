@@ -1,4 +1,4 @@
-## Attachment Restoration：当前实现已接通，验收进行中
+## Attachment Restoration：实现与fixture验收完成，真实手机人工验收待完成
 
 SQLite schema2非破坏升级新增assets/message_assets；用户导入ZIP中已实证的sediment://file_32hex与metadata file_32hex精确对应file_32hex.dat，保留parts顺序，metadata重复图片去重，attachment-only合法。private UUID文件、streaming copy/CRC/hash/MIME/尺寸、官方身份upsert/first-latest来源、事务取消/失败与启动recovery、删除本地档案含assets/pending。binary不存SQLite BLOB，无DOM/在线Cookie/backend/cloud同步。
 
@@ -6,11 +6,17 @@ SQLite schema2非破坏升级新增assets/message_assets；用户导入ZIP中已
 
 预算：container512MiB/JSONentry64MiB/JSONtotal256MiB原边界保持；独立asset single64MiB（真实PDF63.62MiB必要）/total256MiB/2048per import/256per conversation、ratio200、图片最大边16384/16Mpixel、nested OOXML2048entries/2MiBcentral/64MiBdeclared展开。恢复前新增候选bytes+DB/WAL128MiB+reserve32MiB剩余空间检查，SAF阶段另计input cache。官方格式未来可能变化，不保证任意export/附件/server完整性。
 
-本地JVM93与编译通过；新Android/实际三格式/签名/Stable/Legacy验收待CI，不称AR1完成。真实手机重打包数据已授权在repo外审计122/7250/7130、mapped326 CRC全部通过，230PNG/JPEG、82DOCX、5PDF、5XLSX、4unknown；此为AR2结构检查，真实Nova DB/Reader/重复/离线/人工AR3–5仍需用户本地验收。私有原文件/正文/ID/name/path/hash不进入repo/CI/fixtures/logs。详情[完整步骤与证据](archive-attachment-restoration.md)。下方历史schema1与metadata-only段落记录当时实现，以上为本轮当前状态。
+当前实际测试源码787f18f5296e7bbf4148146c21c9c7656e8c7859，[正式CI](https://github.com/DevenirTwilight/ChatGPT-Nova/actions/runs/37677076099)与[Legacy CI](https://github.com/DevenirTwilight/ChatGPT-Nova/actions/runs/37677076223)全success。独立JVM93、API26原生14、API35/36各Archive34+Stable43、Legacy19+原Gecko2ignore，实际HTML/Markdown/16页Archive PDF的图片像素和文档描述、31页Stable/System及Firefox PDF与升级、原签名APK均核对通过。普通build legacy=false，显式实验build true；旧scanner没有删除或加强。
+
+真实手机重打包compatible export在repo外授权检查：122会话/7250mapping/7130messages/4267当前主链、3065可见（1202thoughts隐藏）；mapped326全部匹配/CRC/copy通过，154521964bytes并在host临时复制后回滚，无残留。230PNG/JPEG亦host完整decode通过；82DOCX、5PDF、5XLSX、4unknown。AR1为synthetic / fixture validation passed；AR2为真实compatible repack容器/mapping与host校验；不是原始ZIP字节一致证明，也不是Android已恢复。真实Nova导入/重复与离线、重启、文档外部阅读/人工AR3–5仍待用户设备验收。
+
+统一数据库打开/关闭的Archive一致性锁→SQLiteOpenHelper monitor顺序，保留文件recovery与事务机制；两项native并发回归通过。此前3c API36两次阻塞证据保留，根因未捕获，不能以本次通过改写。未知类型保存binary并保守卡片展示；CRC/检测/Android bounds校验不保证任意图片、PDF或Office文档都可读，第三方实际打开需人工验证。HTML内嵌预算限制、Markdown只含描述、PDF不拼文档页、LaTeX保留源等边界不变。
+
+[完整37项报告与最终APK](archive-attachment-validation.md)、[手机验收清单](archive-local-validation.md)、[全部历史步骤](archive-attachment-restoration.md)。覆盖安装保留已有档案；升级schema本身不读取旧ZIP，需手动重新导入来补回binary。私有原文件/正文/ID/name/path/hash不进入repo/CI/fixtures/logs。下方schema1/metadata-only段落仅保留历史，不代表当前实现。
 
 ## 历史 schema1 兼容修复记录（不代表当前附件实现）
 
-> 当时用户任务报告：真实会话兼容Level2–4已在用户设备通过（首次/重复导入和统计）。这是user-reported local validation，开发环境未读取该ZIP；下方历史pending保留其当时状态。附件metadata占位属于当前Nova实现限制，用户官方ZIP已报告包含实际binary。本轮Attachment Restoration正在进行，尚未接入Reader/exports，详见[调查/安全基础与待办](archive-attachment-restoration.md)。AR1–5与会话Level独立，未验收。
+> 当时用户任务报告：真实会话兼容Level2–4已在用户设备通过（首次/重复导入和统计）。这是user-reported local validation，开发环境未读取该ZIP；下方历史pending保留其当时状态。附件metadata占位属于当时Nova实现限制，用户官方ZIP已报告包含实际binary。当时Attachment Restoration尚未接入Reader/exports，详见[调查/安全基础与待办](archive-attachment-restoration.md)。当时AR1–5与会话Level独立，尚未验收。
 
 # Nova Archive
 

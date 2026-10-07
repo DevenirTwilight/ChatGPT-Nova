@@ -85,7 +85,7 @@ ANR=none observed / observed / not verified
 
 ## Attachment Restoration：AR3–AR5 手机验收（新 schema2 构建）
 
-上方1990cb1链接属于历史schema1兼容修复，**不能用于附件恢复验收**。新包应从附件恢复最终验收记录中的同签名正式artifact取得；以诊断buildRevision识别，不按相同versionName判断。最终artifact未核对前不要用旧包宣称成功。
+上方1990cb1链接属于历史schema1兼容修复，**不能用于附件恢复验收**。使用[附件恢复正式签名APK](https://github.com/DevenirTwilight/ChatGPT-Nova/actions/runs/37677076099/artifacts/11507044105)（buildRevision787f18f5296e7bbf4148146c21c9c7656e8c7859），完整证据见[37项报告](archive-attachment-validation.md)；以诊断buildRevision识别，不按相同versionName判断。当前正式包签名/源码/默认flag与全套fixture输出已核对；真实手机恢复与人工验收尚未完成。覆盖安装，不卸载/清空已有数据；schema1→2只新增表，升级不会自动重新读取旧ZIP。请主动重新导入一次，才能为已有会话补回附件binary与引用。
 
 1. 导入原始官方ZIP，记录新附件数、更新/跳过数、引用数、不可用数、MIME不一致数、assetBytes/assetStorageBytes及导入耗时。当前结构审计参考：unique326，PNG82/JPEG148/DOCX82/PDF5/XLSX5/unknown4，mapped154521964bytes；实际统计可因已有档案/输入不同而变化。unknown卡片不自动打开为图片。
 2. 同ZIP二次导入，预期没有复制同一binary或额外重复引用；首次来源保留，最近来源更新。用计数与存储量核对，不反馈真实文件名/ID/hash。
@@ -95,4 +95,4 @@ ANR=none observed / observed / not verified
 6. 在同一阅读scope导出HTML/Markdown/System Print PDF。HTML只在单图2MiB/累计6MiB范围嵌入PNG/JPEG，超限保留描述；Markdown保留可编辑正文和附件描述，不携带binary；PDF应包含实际图片和文档描述。检查首/中/尾、角色、代码/表格/Unicode；文件留在手机，不上传真实输出。
 7. 如测试删除，使用Archive自己的删除入口，确认档案及私有附件移除，原ZIP和在线登录保持。不要在重要档案上卸载应用来模拟删除。
 
-AR2当前仅compatible repack结构审计passed；AR3真实Android恢复、AR4真实重复导入、AR5真实内容人工核对仍pending，不能用JVM/模拟器通过替代。可安全反馈：buildRevision；first-import；asset counts/bytes；second-import；restart；source-ZIP-unavailable；airplane-mode；每类型抽查数量与pass/fail；HTML/MD/PDF数量与pass/fail；固定A码；ANR是否观察到。请勿发真实截图、导出文件、聊天内容或文件名。
+AR1 synthetic / fixture passed；AR2 compatible repack容器/map/host binary复制与图片完整decode passed；AR3真实Android恢复、AR4真实重复导入、AR5真实内容人工核对仍pending，不能用JVM/模拟器通过替代。可安全反馈：buildRevision；first-import；asset counts/bytes；second-import；restart；source-ZIP-unavailable；airplane-mode；每类型抽查数量与pass/fail；HTML/MD/PDF数量与pass/fail；固定A码；ANR是否观察到。请勿发真实截图、导出文件、聊天内容或文件名。
