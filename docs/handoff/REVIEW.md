@@ -6,7 +6,7 @@
 
 ## 本轮隔离边界（Step 1）
 
-Stable=当前网页Frozen Snapshot三格式；Archive=未来主动导入官方Data Export（未实现）；Experimental=仅显式开启的Legacy Conversation Scanner，当前公开DOM滚屏累计，historyCompleteness永远not-proven。已完成静态调用链审查，尚未实施/运行。旧错误/29或39条/虚拟化/progress/Share和历史CI证据保留，详见../legacy-conversation-scanner.md。
+Stable=当前网页Frozen Snapshot三格式；Archive=未来主动导入官方Data Export（未实现）；Experimental=仅显式开启的Legacy Conversation Scanner，当前公开DOM滚屏累计，historyCompleteness永远not-proven。已完成静态调用链审查，Step2已实施默认关闭与实验确认/前台取消/diagnostic白名单；浏览器DOM17与snapshot13通过，Android构建/UI暂未验证。旧错误/29或39条/虚拟化/progress/Share和历史CI证据保留，详见../legacy-conversation-scanner.md。
 
 ## 现有验收结果
 

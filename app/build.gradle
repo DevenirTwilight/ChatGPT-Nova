@@ -8,6 +8,10 @@ if (signingPropsFile.exists()) {
     signingPropsFile.withInputStream { signingProps.load(it) }
 }
 
+// Opt in explicitly for personal/research builds; debug is also off by default.
+final String legacyScanner = providers.gradleProperty('novaLegacyScanner').getOrElse('false')
+if (!(legacyScanner in ['true', 'false'])) throw new GradleException('novaLegacyScanner must be true or false')
+
 final String trialRevision = System.getenv('GITHUB_SHA') ?: 'local'
 final String safeTrialRevision = trialRevision.matches('[0-9a-f]{40}') ? trialRevision : 'local'
 
@@ -25,6 +29,7 @@ android {
         testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner'
         versionCode 14
         versionName '1.4.0-scroll-trial'
+        buildConfigField 'boolean', 'ENABLE_LEGACY_SCANNER', legacyScanner
         buildConfigField 'String', 'EXPORT_REVISION', '"'+safeTrialRevision+'"'
     }
 

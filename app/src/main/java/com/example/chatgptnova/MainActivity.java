@@ -315,7 +315,9 @@ public class MainActivity extends Activity {
     private AccountUiState accountUiState = AccountUiState.UNKNOWN;
     private int accountQuerySerial;
     private WebShareAdapter webShare;
+    // Experimental controller is absent in default builds. No page-load injection.
     private ConversationExport conversationExport;
+    private boolean activityForeground;
     private PageSnapshotExport pageSnapshotExport;
 
     @Override
@@ -468,8 +470,10 @@ public class MainActivity extends Activity {
         WebView shareView = webView;
         pageSnapshotExport = new PageSnapshotExport(this, shareView,
                 () -> !clearing && webView == shareView);
-        conversationExport = new ConversationExport(this, shareView,
-                () -> !clearing && webView == shareView);
+        if (BuildConfig.ENABLE_LEGACY_SCANNER) {
+            conversationExport = new ConversationExport(this, shareView,
+                    () -> activityForeground && !clearing && webView == shareView);
+        }
         webShare = new WebShareAdapter(this, shareView,
                 () -> !clearing && webView == shareView);
 
@@ -511,7 +515,6 @@ public class MainActivity extends Activity {
                 Uri pageOrigin = Uri.parse(view.getUrl() == null ? "" : view.getUrl());
                 if (isTrustedOrigin(pageOrigin) && "chatgpt.com".equals(pageOrigin.getHost())) {
                     if (webShare != null) webShare.pageFinished();
-                    if (conversationExport != null) conversationExport.pageFinished();
                     view.evaluateJavascript(PASTE_COMPATIBILITY, null);
                 }
                 refreshAccountUiState(null);
@@ -929,6 +932,7 @@ public class MainActivity extends Activity {
             items.add("清除登录与网站数据");
             items.add("登录帮助");
             items.add("关于 ChatGPT Nova");
+            if (BuildConfig.ENABLE_LEGACY_SCANNER) items.add("实验功能");
             if (settingsDialog != null) settingsDialog.dismiss();
             settingsDialog = new AlertDialog.Builder(this).setTitle("设置")
                     .setItems(items.toArray(new String[0]), (dialog, which) -> {
@@ -936,12 +940,23 @@ public class MainActivity extends Activity {
                         if ("退出当前账号".equals(selected)) confirmClear(true);
                         else if ("清除登录与网站数据".equals(selected)) confirmClear();
                         else if ("登录帮助".equals(selected)) showLoginHelp(false);
+                        else if ("实验功能".equals(selected)) showLegacyExperiments();
                         else showAbout();
                     }).setNegativeButton("关闭", null).create();
             AlertDialog shown = settingsDialog;
             shown.setOnDismissListener(dialog -> { if (settingsDialog == shown) settingsDialog = null; });
             settingsDialog.show();
         });
+    }
+
+    private void showLegacyExperiments() {
+        if (!BuildConfig.ENABLE_LEGACY_SCANNER || conversationExport == null || clearing) return;
+        new AlertDialog.Builder(this).setTitle("实验功能 · Legacy Conversation Scanner")
+                .setItems(new String[]{"实验：扫描当前会话", "实验扫描诊断"}, (dialog, which) -> {
+                    if (conversationExport == null || !activityForeground) return;
+                    if (which == 0) conversationExport.start();
+                    else conversationExport.showDiagnostic();
+                }).setNegativeButton("关闭", null).show();
     }
 
     private void showAbout() {
@@ -1068,6 +1083,7 @@ public class MainActivity extends Activity {
 
     @Override
     protected void onPause() {
+        activityForeground = false;
         if (conversationExport != null) conversationExport.activityPaused();
         CookieManager.getInstance().flush();
         if (webView != null) webView.onPause();
@@ -1078,7 +1094,7 @@ public class MainActivity extends Activity {
     protected void onResume() {
         super.onResume();
         if (webView != null) webView.onResume();
-        if (conversationExport != null) conversationExport.activityResumed();
+        activityForeground = true;
     }
 
     @Override

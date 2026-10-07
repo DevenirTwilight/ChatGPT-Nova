@@ -163,7 +163,7 @@
             reason:authorChars===0 ? 'no-dom-text' : 'no-readable-content-after-filtering'};
           error('D09_EMPTY_BODY');
         }
-        messages.push({id,role,messageType,html:parts.map(p=>p.html).join(''),markdown});
+        messages.push({id,role,messageType,captureFallback:!e.hasAttribute('data-message-author-role') || fallbackTried,html:parts.map(p=>p.html).join(''),markdown});
       }
       diagnostic.processed++;
     }

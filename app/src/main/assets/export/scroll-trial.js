@@ -1,3 +1,4 @@
+// Experimental / Legacy: public DOM windows only; completion never proves history.
 (function(command, token) {
  'use strict';
  const KEY='__novaHistoryScrollTrial';
@@ -27,17 +28,19 @@
   }).length + (s.container.getAttribute('aria-busy')==='true' ? 1 : 0);
  }
  function resetWindow() {
+  s.windowRecorded=false;s.windowUnstable=false;
   s.stable=0;s.last='';s.lastIds='';s.prevPos=null;s.prevMax=null;s.edgeStable=0;s.stepStarted=performance.now();s.readyStarted=s.stepStarted;s.wasLoading=false;
   s.window={polls:0,loadingSignals:0,loadingPolls:0,loadingObserved:false,listChanges:0,bodyChanges:0,positionChanges:0,extentChanges:0,mountedCount:0,reason:'awaiting-content',scrollTopPx:0,scrollMaxPx:0,viewportPx:0};
  }
- function stats() {return {source:'scroll-dom-trial',history:'not-proven',count:s.messages.size,
+ function stats() {return {captureMode:'legacy-scroll-experimental',historyCompleteness:'not-proven',cancelled:false,windowCount:s.windowCount,capturedMessageCount:s.messages.size,unstableWindowCount:s.unstableWindowCount,overlapFailures:s.overlapRetries,
+  fallbackCount:[...s.messages.values()].filter(m=>m.captureFallback).length,unknownCount:[...s.messages.values()].filter(m=>m.messageType==='assistant-unknown').length,startDirection:s.direction,source:'scroll-dom-trial',history:'not-proven',count:s.messages.size,
   users:[...s.messages.values()].filter(m=>m.role==='user').length,assistants:[...s.messages.values()].filter(m=>m.role==='assistant').length,
   steps:s.steps,leg:s.leg,traversal:'single-direction',direction:s.direction,plannedLegs:1,startObserved:s.startObserved,overlapRetries:s.overlapRetries,topObserved:s.top,bottomObserved:s.bottom,secondPass:false,
   chars:s.chars,cacheBytes:s.bytes,elapsedMs:Math.round(performance.now()-s.started),
   settling:{...s.window,readyAgeMs:Math.round(performance.now()-s.readyStarted),windowLimitMs:WINDOW_LIMIT_MS,scanLimitMs:SCAN_LIMIT_MS,stepLimit:STEP_LIMIT,contentStable:s.stable,windowAgeMs:Math.round(performance.now()-s.stepStarted),
    totalListChanges:s.changes.list,totalBodyChanges:s.changes.body,totalPositionChanges:s.changes.position,totalExtentChanges:s.changes.extent}};}
  try {
-  if(command==='cancel') {if(s?.token===token) dispose(true);return JSON.stringify({cancelled:true});}
+  if(command==='cancel') {const coverage=s?.token===token ? {...stats(),cancelled:true} : null;if(s?.token===token) dispose(true);return JSON.stringify({cancelled:true,captureMode:'legacy-scroll-experimental',historyCompleteness:'not-proven',coverage});}
   if(command==='start') {
    if(s) abort('H04_BUSY');
    const first=snapshot();if(first.error) return JSON.stringify(first);
@@ -57,7 +60,7 @@
    }
    if(!container) abort('H01_SCROLL_CONTAINER');
    s={token,container,original:container.scrollTop,route:location.href,title:document.title,started:performance.now(),stepStarted:performance.now(),
-    direction:container.scrollTop<=2?'down':'up',startObserved:false,previousWindow:null,move:null,overlapRetries:0,messages:new Map(),edges:new Map(),warnings:new Set(),chars:0,bytes:0,steps:0,leg:0,top:false,bottom:false,stable:0,edgeStable:0,last:'',lastPosition:'',invalid:false,changes:{list:0,body:0,position:0,extent:0}};
+    windowCount:0,unstableWindowCount:0,direction:container.scrollTop<=2?'down':'up',startObserved:false,previousWindow:null,move:null,overlapRetries:0,messages:new Map(),edges:new Map(),warnings:new Set(),chars:0,bytes:0,steps:0,leg:0,top:false,bottom:false,stable:0,edgeStable:0,last:'',lastPosition:'',invalid:false,changes:{list:0,body:0,position:0,extent:0}};
    // One traversal only. Starting in the middle first positions at the bottom.
    if(s.direction==='up') container.scrollTo({top:container.scrollHeight,behavior:"instant"});
    resetWindow();window[KEY]=s;
@@ -96,6 +99,7 @@
   const extentDelta=hadGeometry ? Math.abs(max-s.prevMax) : 0;
   const quietGeometry=hadGeometry && positionDelta<=2 && extentDelta<=2;
   s.window.polls++;s.window.mountedCount=rows.length;
+  if(hadPrevious && (!sameList || !sameContent) && !s.windowUnstable) {s.windowUnstable=true;s.unstableWindowCount++;}
   if(hadPrevious && !sameList) {s.window.listChanges++;s.changes.list++;s.readyStarted=performance.now();s.edgeStable=0;}
   if(hadPrevious && sameList && !sameContent) {s.window.bodyChanges++;s.changes.body++;}
   if(positionDelta>0.1) {s.window.positionChanges++;s.changes.position++;}
@@ -132,6 +136,7 @@
    s.window.reason='retrying-overlap';return JSON.stringify({waiting:true,coverage:stats()});
   }
   s.move=null;
+  if(!s.windowRecorded) {s.windowCount++;s.windowRecorded=true;}
   // Store strings immediately, never references to message DOM nodes that can be unmounted.
   let added=0;
   for(const m of rows) {
@@ -161,7 +166,7 @@
     }
     if(ordered.length!==s.messages.size) abort('H03_ORDER');
     const coverage={...stats(),secondPass:false,order:'consistent',text:'not-proven',attachmentMetadata:'not-audited',attachmentFiles:0,imageFiles:0};
-    const result={done:true,title:s.title,messages:ordered,warnings:[
+    const result={done:true,captureMode:'legacy-scroll-experimental',historyCompleteness:'not-proven',title:s.title,messages:ordered,warnings:[
       '试用版：已单向滚动并缓存可见历史，完整历史仍未确认。到达边界或顺序一致不证明无遗漏。',
       '附件元数据覆盖未核实；附件原文件、图片原文件均未包含。',
       'Markdown根据渲染DOM转换，不保证原始写法。',...s.warnings],coverage};
@@ -181,6 +186,6 @@
   return JSON.stringify({waiting:true,coverage:stats()});
  } catch(e) {return JSON.stringify(failure(e.code || 'H99_SCAN'));}
  function failure(code,dom) {
-  const result={error:code};if(s) {result.coverage=stats();dispose(true);}if(dom) result.diagnostic=dom;return result;
+  const result={error:code,captureMode:'legacy-scroll-experimental',historyCompleteness:'not-proven'};if(s) {result.coverage=stats();dispose(true);}if(dom) result.diagnostic=dom;return result;
  }
 })(__NOVA_SCROLL_COMMAND__, __NOVA_SCROLL_TOKEN__)

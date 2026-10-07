@@ -22,7 +22,11 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 import org.json.JSONTokener;
 
-/** Legacy experiment retained for fixture comparison; no normal menu entry or PDF engine. */
+/**
+ * Experimental / Legacy Conversation Scanner. Kept under its historical class name
+ * so fixtures and evidence remain traceable. Explicit build flag + user action only;
+ * public DOM only, never proof of complete server history. See docs/legacy-conversation-scanner.md.
+ */
 final class ConversationExport {
     private static final int SAVE = 0x6201;
     private final Activity activity;
@@ -36,19 +40,21 @@ final class ConversationExport {
     private String mime, address;
     private Runnable deadline;
     private JSONObject diagnostic = new JSONObject();
-    private AlertDialog scanDialog;
+    private AlertDialog scanDialog, promptDialog;
     private String scrollToken;
     private Runnable scanPoll;
     private String scanAsset;
 
     ConversationExport(Activity activity, WebView web, BooleanSupplier active) {
+        if (!BuildConfig.ENABLE_LEGACY_SCANNER) throw new IllegalStateException("Legacy scanner disabled");
         this.activity=activity; this.web=web; this.active=active;
         resetDiagnostic();
     }
-    // Existing Activity callbacks retained. Nothing is injected on page load.
-    void pageFinished() { }
-    void activityPaused() { }
-    void activityResumed() { }
+    // A scan never survives leaving the foreground and never resumes automatically.
+    void activityPaused() {
+        if (promptDialog != null) { promptDialog.dismiss(); promptDialog=null; busy=false; }
+        if (collecting) cancelScroll();
+    }
     private String asset() { return asset("dom-trial.js"); }
     private String asset(String name) {
         try (java.io.InputStream input=activity.getAssets().open("export/"+name)) {
@@ -61,17 +67,21 @@ final class ConversationExport {
         return MainActivity.isTrustedOrigin(u) && "chatgpt.com".equals(u.getHost());
     }
     void start() {
-        if (busy) { toast("导出正在进行，请稍候。"); return; }
-        if (!trusted() || !active.getAsBoolean()) { fail("N01_PAGE", "请打开 ChatGPT 会话后重试。",null); return; }
+        if (destroyed || !BuildConfig.ENABLE_LEGACY_SCANNER) return;
+        if (busy) { toast("实验采集正在进行，请稍候。"); return; }
+        if (!trusted() || !active.getAsBoolean()) { fail("N01_PAGE", "请在前台打开 ChatGPT 会话后重试。",null); return; }
         busy=true;
-        new AlertDialog.Builder(activity).setTitle("导出聊天历史（试用）")
-            .setMessage("快速导出当前已加载消息，不滚动。需要加载更早历史时，可选单向扫描：在顶部向下、在底部向上；从中间先定位到底部再向上，不折返。请等待回复结束，采集时不要操作页面。完整历史仍未确认；图片与附件原文件不会打包。")
-            .setPositiveButton("快速导出已加载消息",(d,w)->capture())
-            .setNeutralButton("单向扫描历史",(d,w)->startScroll())
-            .setNegativeButton("取消",(d,w)->busy=false).setOnCancelListener(d->busy=false).show();
+        promptDialog=new AlertDialog.Builder(activity).setTitle("实验：扫描当前会话")
+            .setMessage("这是实验性的滚动采集工具。它会自动滚动当前 ChatGPT 会话并尝试跨虚拟化窗口累计消息。结果可能漏消息、顺序异常或缺少部分进度内容，不代表完整服务器历史。\n\n请勿把扫描成功理解为已完整备份会话。\n\n仅在前台运行，可取消；结束后恢复滚动位置。请等待回复结束，采集时不要操作页面。图片与附件原文件不会打包。")
+            .setPositiveButton("开始扫描",(d,w)->{promptDialog=null;startScroll();})
+            .setNegativeButton("取消",(d,w)->busy=false).setOnCancelListener(d->busy=false).create();
+        promptDialog.show();
     }
-    private void capture() {
-        resetDiagnostic(); started=android.os.SystemClock.elapsedRealtime();
+    // Retained single-window fixture/research path; not a product menu or snapshot exporter.
+    void capture() {
+        if (destroyed || busy || !BuildConfig.ENABLE_LEGACY_SCANNER) return;
+        busy=true;
+        resetDiagnostic(); put("captureMode","legacy-dom-experimental"); started=android.os.SystemClock.elapsedRealtime();
         if (!active.getAsBoolean() || !trusted()) { fail("N01_PAGE","页面已不可用，请重新打开会话。",null); return; }
         collecting=true; address=web.getUrl(); long ticket=++generation;
         put("routeType",Uri.parse(address).getPath()!=null && Uri.parse(address).getPath().startsWith("/g/") ? "project" : "conversation");
@@ -111,10 +121,10 @@ final class ConversationExport {
     private void startScroll() {
         resetDiagnostic();file=null;
         if(!active.getAsBoolean() || !trusted()) {fail("N01_PAGE","请重新打开会话。",null);return;}
-        collecting=true;address=web.getUrl();long ticket=++generation;
+        busy=true;collecting=true;address=web.getUrl();long ticket=++generation;
         scrollToken=UUID.randomUUID().toString();put("mode","scroll-cache");
         put("routeType",Uri.parse(address).getPath()!=null && Uri.parse(address).getPath().startsWith("/g/") ? "project" : "conversation");
-        scanDialog=new AlertDialog.Builder(activity).setTitle("正在滚动收集历史")
+        scanDialog=new AlertDialog.Builder(activity).setTitle("实验扫描进行中")
             .setMessage("正在识别聊天滚动区域…\n可随时取消；不会自动保存部分内容。")
             .setNegativeButton("取消采集",(d,w)->cancelScroll()).setOnCancelListener(d->cancelScroll()).create();
         scanDialog.setCanceledOnTouchOutside(false);scanDialog.show();
@@ -159,25 +169,22 @@ final class ConversationExport {
         } catch(RuntimeException e) {fail("N03_EVALUATE","无法执行历史采集。",e);}
     }
     private void showCoverage(JSONObject result,JSONObject rendered) {
-        JSONArray messages=result.optJSONArray("messages");
         JSONObject coverage=result.optJSONObject("coverage");
-        String first=messages==null || messages.length()==0 ? "" : preview(messages.optJSONObject(0));
-        String last=messages==null || messages.length()==0 ? "" : preview(messages.optJSONObject(messages.length()-1));
-        new AlertDialog.Builder(activity).setTitle("历史覆盖结果（未确认完整）")
-            .setMessage(coverageText(coverage)+"\n\n最早："+first+"\n最新："+last)
+        new AlertDialog.Builder(activity).setTitle("扫描完成，共采集 "+rendered.optInt("count")+" 条记录，请人工核对")
+            .setMessage(coverageText(coverage))
             .setPositiveButton("选择导出格式",(d,w)->chooseFormat(rendered))
             .setNeutralButton("复制诊断",(d,w)->{copyDiagnostic();busy=false;})
             .setNegativeButton("关闭",(d,w)->busy=false).setOnCancelListener(d->busy=false).show();
     }
-    private static String preview(JSONObject message) {
-        String text=message==null ? "" : message.optString("markdown").replaceAll("\\s+"," ");
-        return text.length()>90 ? text.substring(0,90)+"…" : text;
-    }
     private static String coverageText(JSONObject c) {
         if(c==null) return "完整历史未确认。";
-        return "已缓存 "+c.optInt("count")+" 条（用户 "+c.optInt("users")+" / 助手 "+c.optInt("assistants")+"）"
+        return "完整性：未证明（historyCompleteness = not-proven）\n实验采集记录："+c.optInt("count")+" 条（用户 "+c.optInt("users")+" / 助手 "+c.optInt("assistants")+"）"
             +"\n顶部："+(c.optBoolean("topObserved") ? "已观察到滚动顶部" : "未确认")
             +"\n底部："+(c.optBoolean("bottomObserved") ? "已观察到滚动底部" : "未确认")
+            +"\n窗口："+c.optInt("windowCount")+"；耗时："+c.optLong("elapsedMs")+" ms"
+            +"\n未知类型助手："+c.optInt("unknownCount")+"；fallback turn："+c.optInt("fallbackCount")
+            +"\n重叠重试："+c.optInt("overlapRetries")+"；不稳定窗口："+c.optInt("unstableWindowCount")
+            +"\n警告：fallback 或页面结构变化可能漏采。扫描结束不等于完整备份。"
             +"\n扫描：单向一遍，已检查缓存顺序与重复正文；未做折返核对"
             +"\n文本历史：完整性未确认（无独立基准）"
             +"\n附件元数据：未核实覆盖；附件原文件：未包含；图片原文件：未包含。";
@@ -192,7 +199,7 @@ final class ConversationExport {
     }
     private void cancelScroll() {
         stopDeadline();stopScan(true);generation++;collecting=false;busy=false;
-        stage("H07_CANCELLED","scroll-cancelled");toast("已取消采集，未生成部分文件。");
+        put("cancelled",true);stage("H07_CANCELLED","scroll-cancelled");toast("已取消采集，未生成部分文件。");
     }
     private boolean current(long ticket) {
         return !destroyed && ticket==generation && active.getAsBoolean()
@@ -231,9 +238,10 @@ final class ConversationExport {
         String title=data.optString("title","未命名会话");
         JSONArray messages=data.getJSONArray("messages"), warnings=data.getJSONArray("warnings");
         JSONObject coverage=data.optJSONObject("coverage");
-        String notice=coverage==null ? "试用版：仅当前已加载消息，完整历史未确认。" : "试用版：滚动收集并缓存可见历史，完整历史未确认。";
+        String captureMode=coverage==null ? "legacy-dom-experimental" : "legacy-scroll-experimental";
+        String notice="Experimental captured message set：实验采集记录，完整历史未确认。historyCompleteness = not-proven；不是服务器完整历史备份。";
         String summary=coverage==null ? "" : coverageText(coverage);
-        StringBuilder body=new StringBuilder(), md=new StringBuilder("# "+title.replaceAll("[\\r\\n]"," ")+"\n\n> "+notice+"\n\n"+summary+"\n\n");
+        StringBuilder body=new StringBuilder(), md=new StringBuilder("# "+title.replaceAll("[\\r\\n]"," ")+"\n\n> "+notice+"\n> captureMode = "+captureMode+"\n\n"+summary+"\n\n");
         for(int i=0;i<messages.length();i++) {
             JSONObject m=messages.getJSONObject(i); String role="user".equals(m.getString("role")) ? "用户" : "助手";
             if ("assistant-progress".equals(m.optString("messageType"))) role="助手进度";
@@ -244,14 +252,15 @@ final class ConversationExport {
         for(int i=0;i<warnings.length();i++) {body.append("<li>").append(escape(warnings.getString(i))).append("</li>");md.append("- ").append(warnings.getString(i)).append('\n');}
         String html="<!doctype html><html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'>"
             +"<meta http-equiv='Content-Security-Policy' content=\"default-src 'none'; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'\">"
+            +"<meta name=\"captureMode\" content=\""+captureMode+"\"><meta name=\"historyCompleteness\" content=\"not-proven\">"
             +"<title>"+escape(title)+"</title><style>body{font:16px/1.7 sans-serif;margin:24px;overflow-wrap:anywhere;color:#20242a;background:white}main{max-width:860px;margin:auto}article{border-bottom:1px solid #ddd;padding:12px 0}pre{background:#f4f5f6;padding:12px;white-space:pre-wrap;overflow-wrap:anywhere}table{border-collapse:collapse;max-width:100%}td,th{border:1px solid #aaa;padding:6px}a{color:#1467a3}@media print{body{margin:0}pre,table{font-size:11px}h2{break-after:avoid}tr{break-inside:avoid}}</style></head><body><main><h1>"
             +escape(title)+"</h1><p>"+escape(notice)+"</p><p>"+escape(summary).replace("\n","<br>")+"</p>"+body+"</ul></footer></main></body></html>";
-        return new JSONObject().put("title",title).put("html",html).put("markdown",md.toString()).put("warnings",warnings).put("count",messages.length());
+        return new JSONObject().put("title",title).put("html",html).put("markdown",md.toString()).put("warnings",warnings).put("count",messages.length()).put("historyCompleteness","not-proven").put("captureMode",captureMode);
     }
     private static String escape(String s) {return s.replace("&","&amp;").replace("<","&lt;").replace(">","&gt;").replace("\"","&quot;").replace("'","&#39;");}
     private void chooseFormat(JSONObject data) {
         if (destroyed) return;
-        new AlertDialog.Builder(activity).setTitle("已采集 "+data.optInt("count")+" 条已加载消息")
+        new AlertDialog.Builder(activity).setTitle("实验采集记录 · "+data.optInt("count")+" 条（完整性未证明）")
             .setItems(new String[]{"HTML 阅读版（推荐）","Markdown"},(dialog,index)-> {
                 if (destroyed) return;
                 stage("N00_FILE","cache-write");
@@ -277,7 +286,7 @@ final class ConversationExport {
         String cleaned=title.replaceAll("[\\p{Cntrl}\\\\/:*?\"<>|]","-").trim().replaceAll("[. ]+$","");
         if(cleaned.isEmpty()) cleaned="未命名会话";
         if(cleaned.codePointCount(0,cleaned.length())>48) cleaned=cleaned.substring(0,cleaned.offsetByCodePoints(0,48));
-        return "ChatGPT-"+cleaned+"-"+new SimpleDateFormat("yyyyMMdd-HHmmss-SSS",Locale.ROOT).format(new Date())+"-"+UUID.randomUUID().toString().substring(0,6)+"."+extension;
+        return "Nova-legacy-scan-"+cleaned+"-"+new SimpleDateFormat("yyyyMMdd-HHmmss-SSS",Locale.ROOT).format(new Date())+"-"+UUID.randomUUID().toString().substring(0,6)+"."+extension;
     }
     private void saveToLocal(File ready,String type) {
         try {
@@ -289,7 +298,7 @@ final class ConversationExport {
     private void actions() {
         stopDeadline(); busy=false; if(destroyed) return;
         final File ready=file; final String type=mime;
-        new AlertDialog.Builder(activity).setTitle("已生成试用导出文件")
+        new AlertDialog.Builder(activity).setTitle("已生成实验采集文件（非完整历史备份）")
             .setItems(new String[]{"保存到本地…","打开文件","分享文件","复制诊断"},(d,index)-> {
                 try {
                     if(index==3) {copyDiagnostic();return;}
@@ -322,17 +331,64 @@ final class ConversationExport {
     private void stopDeadline() {if(deadline!=null) web.removeCallbacks(deadline);deadline=null;}
     private void resetDiagnostic() {
         diagnostic=new JSONObject();started=android.os.SystemClock.elapsedRealtime();
-        put("scheme","DOM-SCROLL-TRIAL-2");put("buildRevision",BuildConfig.EXPORT_REVISION);put("historyCompleteness","not-proven");put("oldCaptureInstalled",false);
+        put("captureMode","legacy-scroll-experimental");put("cancelled",false);
+        put("scheme","LEGACY-SCANNER-1");put("buildRevision",BuildConfig.EXPORT_REVISION);put("historyCompleteness","not-proven");put("oldCaptureInstalled",false);
         put("android",android.os.Build.VERSION.SDK_INT);
         android.content.pm.PackageInfo w=WebView.getCurrentWebViewPackage();put("webView",w==null ? "unknown" : w.versionName);
         try {android.content.pm.PackageInfo p=activity.getPackageManager().getPackageInfo(activity.getPackageName(),0);put("app",p.versionName);} catch(Exception ignored) {put("app","unknown");}
         stage("N00_IDLE","idle");
     }
-    private void put(String key,Object value) {try {diagnostic.put(key,value);} catch(Exception ignored) {}}
-    private void stage(String code,String phase) {put("code",code);put("phase",phase);put("elapsedMs",android.os.SystemClock.elapsedRealtime()-started);android.util.Log.i("NovaDomTrial",diagnostic.toString());}
+    private void put(String key,Object value) {
+        try {diagnostic.put(key,value instanceof JSONObject ? redacted((JSONObject)value) : value);} catch(Exception ignored) {}
+    }
+    // JS diagnostics are an untrusted boundary: never log arbitrary strings, IDs,
+    // HTML, title, URL, body/signature, or attribute values returned by the page.
+    static JSONObject redacted(JSONObject source) throws org.json.JSONException {
+        JSONObject safe=new JSONObject();
+        java.util.Iterator<String> keys=source.keys();
+        while(keys.hasNext()) {
+            String key=keys.next();
+            if (!DIAGNOSTIC_KEYS.contains(key)) continue;
+            Object value=source.opt(key);
+            if(value instanceof Number || value instanceof Boolean) safe.put(key,value);
+            else if(value instanceof String && DIAGNOSTIC_ENUMS.contains(value)) safe.put(key,value);
+            else if(value instanceof JSONObject) safe.put(key,redacted((JSONObject)value));
+            else if(value instanceof JSONArray) {
+                JSONArray array=new JSONArray(), input=(JSONArray)value;
+                for(int i=0;i<Math.min(input.length(),80);i++) {
+                    Object item=input.opt(i);
+                    if(item instanceof JSONObject) array.put(redacted((JSONObject)item));
+                    else if(item instanceof Number || item instanceof Boolean) array.put(item);
+                }
+                safe.put(key,array);
+            }
+        }
+        return safe;
+    }
+    private static final java.util.Set<String> DIAGNOSTIC_KEYS=java.util.Set.of(
+        "source","history","historyCompleteness","captureMode","count","chars","processed","authorFallbacks","turnFallbacks","explicitProgressBlocks",
+        "missingIds","duplicateIds","codeBlocks","tables","math","images","elapsedMs","filtered","hidden","ariaHidden","displayNone","visibilityHidden","contentVisibilityHidden","controls",
+        "authors","raw","supported","visibleSupported","user","assistant","other","missingId","outsideMarkdownTextNodes","outsideMarkdownChars","authorSamples",
+        "domIndex","role","hasId","markdownRoots","turns","visible","visibleWithoutSupportedAuthor","withOutsideAuthorText","outsideAuthorTextNodes","outsideAuthorChars",
+        "turnSamples","outsideAuthorSamples","declaredRole","supportedAuthors","authorNodes","visibleTextNodes","visibleTextChars","bodyIncluded","idsIncluded","truncated","progressDiscovery","error",
+        "failedMessage","index","authorChars","selectedChars","markdownCandidates","selectedBlocks","display","visibility","contentVisibility","hasOwnBox","fallbackTried","canvas","media","details","reason",
+        "steps","leg","traversal","direction","plannedLegs","startObserved","overlapRetries","overlapFailures","topObserved","bottomObserved","secondPass","cacheBytes","settling",
+        "readyAgeMs","windowLimitMs","scanLimitMs","stepLimit","contentStable","windowAgeMs","totalListChanges","totalBodyChanges","totalPositionChanges","totalExtentChanges",
+        "polls","loadingSignals","loadingPolls","loadingObserved","listChanges","bodyChanges","positionChanges","extentChanges","mountedCount","scrollTopPx","scrollMaxPx","viewportPx","positionDeltaPx","extentDeltaPx",
+        "order","text","attachmentMetadata","attachmentFiles","imageFiles","windowCount","capturedMessageCount","unstableWindowCount","fallbackCount","unknownCount","cancelled","startDirection",
+        "code","matches","authorIndex","authorRole","authorSelected","ariaHiddenFlag","visibilityFlags","cssHidden","hiddenAttribute","insideMarkdown","chain","tag","turn","channel","hasMessageId","hasTestId","conversationTurnTestId","markdown",
+        "visitedTextNodes","scannedChars","capture","matchingMessageIndexes","exportSourceHasId","capturedHere");
+    private static final java.util.Set<String> DIAGNOSTIC_ENUMS=java.util.Set.of(
+        "not-proven","legacy-scroll-experimental","scroll-dom-trial","read-only-dom-v3","read-only-progress-discovery-v2","read-only-text-locator",
+        "user","assistant","tool","absent","other","up","down","single-direction","consistent","not-audited","none","block","contents","visible","hidden","auto","collapse","unknown",
+        "awaiting-content","history-loading","page-not-ready","message-list-changing","body-or-structure-changing","content-stable","edge-layout-changing","start-layout-changing","positioning-start","retrying-overlap",
+        "no-dom-text","no-readable-content-after-filtering","commentary","final","D00_CAPTURED","D09_EMPTY_BODY","D04_STREAMING","D05_NO_MESSAGES","D06_LIMIT","D07_NESTED","D08_DUPLICATE_ID",
+        "Q01_ORIGIN","Q02_ROUTE","Q03_LIMIT","Q04_LOADING","Q99_PROBE","L00_MATCH","L01_NOT_FOUND","L02_ORIGIN","L02_ROUTE","L02_LOADING","L02_QUERY","L03_LIMIT","L99_LOCATOR",
+        "HTML","BODY","MAIN","DIV","SPAN","P","SECTION","ARTICLE","LI","UL","OL","PRE","CODE","BLOCKQUOTE","A","STRONG","EM","B","I","DETAILS","SUMMARY","TABLE","TR","TD","TH","H1","H2","H3","H4","H5","H6","OTHER");
+    private void stage(String code,String phase) {put("code",code);put("phase",phase);put("elapsedMs",android.os.SystemClock.elapsedRealtime()-started);android.util.Log.i("NovaLegacyScanner",diagnostic.toString());}
     void showDiagnostic() {
         if(destroyed) return;
-        new AlertDialog.Builder(activity).setTitle("新方案导出诊断").setMessage(diagnostic.toString())
+        new AlertDialog.Builder(activity).setTitle("Legacy Scanner 实验诊断 · 完整性未证明").setMessage(diagnostic.toString())
             .setPositiveButton("复制诊断",(d,w)->copyDiagnostic()).setNeutralButton("定位缺失文字",(d,w)->showTextLocator()).setNegativeButton("关闭",null).show();
     }
     private void showTextLocator() {
@@ -371,13 +427,13 @@ final class ConversationExport {
     }
     private void copyDiagnostic() {
         android.content.ClipboardManager clipboard=activity.getSystemService(android.content.ClipboardManager.class);
-        if(clipboard!=null) {clipboard.setPrimaryClip(ClipData.newPlainText("Nova DOM 试用诊断",diagnostic.toString()));toast("已复制诊断（不含聊天正文和登录凭据）。");}
+        if(clipboard!=null) {clipboard.setPrimaryClip(ClipData.newPlainText("Nova Legacy Scanner 脱敏诊断",diagnostic.toString()));toast("已复制诊断（不含聊天正文和登录凭据）。");}
     }
     private void fail(String code,String message,Exception error) {
         stopDeadline();stopScan(true);generation++;collecting=false;busy=false;
         stage(code,"failed");if(error!=null) put("exceptionType",error.getClass().getSimpleName());
         if(!destroyed && !activity.isFinishing() && !activity.isDestroyed())
-            new AlertDialog.Builder(activity).setTitle("试用导出失败").setMessage(message+"\n\n错误码："+code+"\n可复制诊断发回排查。")
+            new AlertDialog.Builder(activity).setTitle("实验采集已停止").setMessage(message+"\n\n错误码："+code+"\n可复制诊断发回排查。")
                 .setPositiveButton("知道了",null).setNeutralButton("复制诊断",(d,w)->copyDiagnostic()).show();
     }
     private String messageFor(String code) {
@@ -392,11 +448,11 @@ final class ConversationExport {
     private static String message(String code) {
         switch(code) {
             case "H01_SCROLL_CONTAINER":return "未能可靠识别或移动聊天滚动区域，已停止。可尝试当前页面采集，并复制诊断反馈。";
-            case "H02_MISSING_ID":return "消息缺少稳定ID，无法安全合并历史，未生成文件。";
-            case "H03_ORDER":return "跨窗口消息顺序冲突或无法确定，未生成文件。";
+            case "H02_MISSING_ID":return "H02_IDENTITY_INSUFFICIENT：消息缺少稳定身份，无法可靠累计窗口，扫描已停止。";
+            case "H03_ORDER":return "H03_OVERLAP_INSUFFICIENT：相邻虚拟化窗口无法建立可靠重叠关系，或顺序冲突；为避免错误拼接，扫描已停止。";
             case "H04_CHANGED":case "H04_SECOND_PASS":case "H04_SESSION":return "采集期间页面、分支或正文发生变化，或第二轮无法核对全部缓存消息。请等待稳定后重试。";
             case "H05_LIMIT":return "历史采集达到时间、滚动次数、消息或大小限制，已停止，未生成截断文件。";
-            case "H06_UNSETTLED":return "消息正文、消息列表或边界布局未稳定，采集已停止。请复制诊断（含变化分类）反馈。";
+            case "H06_UNSETTLED":return "H06_HISTORY_UNSTABLE：消息正文、列表或边界布局未稳定，扫描已停止。请复制脱敏诊断反馈。";
             case "D04_STREAMING":return "回复仍在生成，请结束后重试。";
             case "D05_NO_MESSAGES":return "没有找到已加载消息，可能未登录、页面尚未就绪或官网结构改变。";
             case "D06_LIMIT":return "已加载内容超过试用版限制（1000条、200万字符或8MiB结果），已停止，未生成截断文件。";
@@ -409,5 +465,5 @@ final class ConversationExport {
     }
     private static void copy(java.io.InputStream in,OutputStream out) throws java.io.IOException {byte[] buffer=new byte[16384];int n;while((n=in.read(buffer))!=-1) out.write(buffer,0,n);}
     private void toast(String message) {if(!destroyed) Toast.makeText(activity,message,Toast.LENGTH_LONG).show();}
-    void destroy() {stopScan(true);destroyed=true;generation++;collecting=false;busy=false;pendingSave=null;stopDeadline();}
+    void destroy() {if(promptDialog!=null) {promptDialog.dismiss();promptDialog=null;}stopScan(true);destroyed=true;generation++;collecting=false;busy=false;pendingSave=null;stopDeadline();}
 }

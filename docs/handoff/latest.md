@@ -2,13 +2,13 @@
 
 工作分支 feature/export-conversation；已验收应用/测试源码 ac4776ff31feaed9794dbc434e423ac291fbee83。文档提交不是APK源码HEAD，开始续接先fetch核远端，读AGENTS/latest/REVIEW/docs/frozen-page-save.md、实际源码和CI，不回退旧修复。
 
-## 最新要求与 Step 1（2026-10-07）
+## 最新要求与 Step 2（2026-10-07）
 
-当前分支 feature/export-conversation；本轮远端基线 da4176c5731ee07ea3c8815d56169abf1b143b25。用户授权隔离旧滚屏采集为 Experimental / Legacy Conversation Scanner，不删除算法/失败证据、不恢复正式完整历史导出。默认构建禁用、显式 property 开启、设置入口警告与主动开始、前台/取消/恢复、脱敏及 not-proven、独立 legacy CI、保留正式快照与未来官方 Data Export Archive 边界。
+分支 feature/export-conversation，Step1审查提交29ea76d；本步源码基于该提交。用户要求的Experimental隔离已实施：BuildConfig.ENABLE_LEGACY_SCANNER默认false（debug也false），仅-PnovaLegacyScanner=true启用；默认MainActivity不创建controller，移除空pageFinished/resume hook，实验设置→警告→主动“开始扫描”。onPause取消当前采集，不自动恢复。保留类名/四JS/算法/历史，未扩selector或数据源。
 
-Step 1 success：已读取指定代码/文档/旧tests/workflows，审查实际调用链，见 ../legacy-conversation-scanner.md。当前默认菜单无scanner、无页面自动注入，但 MainActivity 无条件初始化且保留空 pageFinished/pause/resume hook；旧测试反射取此实例，正式CI仍耦合legacy。源码未改、测试未跑（not verified）。
+实验文件Nova-legacy-scan，HTML/Markdown及结果metadata not-proven；增加窗口/不稳定/overlap/fallback统计和摘要，Java diagnostic白名单去除任意字符串/真实ID/正文/signature，复制诊断保留。H02/H03/H06原码不变，文案解释身份/重叠/稳定失败。实验PDF未恢复（Gecko已退役）；正式Frozen HTML/MD/System Print不改。
 
-本步文档提交随审查push，不改变既有已验收APK。下一步 BuildConfig默认false+实验设置入口，移除空hook、取消暂停中的scan、整理脱敏/文件语义；不改selector、不新增数据源、不合并main/不发布Release/不增版本。
+验证success：本地Chromium单窗口17场景、正式snapshot13场景、diff检查；scroll suite进行中。Android构建/实验UI/旧Android fixtures暂未验证。本步用[skip ci]检查点提交（现有旧CI尚需显式flag与分离测试），下一步分类legacy测试、添加默认关闭/确认/暂停断言、拆CI，完善docs再跑完整回归。原已验收ac4776f APK证据仍属历史，不代表本步APK。
 
 ## 已实现
 
