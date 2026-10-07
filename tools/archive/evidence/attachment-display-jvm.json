@@ -1,0 +1,15 @@
+{
+  "baseline": "66a62c6",
+  "validation": "synthetic / fixture validation passed",
+  "tests": 88,
+  "existingCore": 48,
+  "assetFiles": 25,
+  "assetMap": 7,
+  "display": 8,
+  "singleAssetLimitMiB": 64,
+  "totalAssetsLimitMiB": 256,
+  "jsonLimitsChanged": false,
+  "displayConnectedToReader": false,
+  "assetDatabaseImplemented": false,
+  "privateFixtureValuesIncluded": false
+}

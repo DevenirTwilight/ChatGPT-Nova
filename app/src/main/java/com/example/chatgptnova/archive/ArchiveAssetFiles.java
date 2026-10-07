@@ -8,7 +8,7 @@ import java.util.zip.*;
 
 /** Attachment file primitives. Not connected to schema mapping or the UI yet. No source logs. */
 public final class ArchiveAssetFiles {
-  public static final long SINGLE_LIMIT = 32L * 1024 * 1024;
+  public static final long SINGLE_LIMIT = 64L * 1024 * 1024;
   public static final long TOTAL_LIMIT = 256L * 1024 * 1024;
   public static final int COUNT_LIMIT = 2048, PER_CONVERSATION_LIMIT = 256;
   public static final long PIXEL_LIMIT = 16_000_000;

@@ -67,3 +67,7 @@ ArchiveAssetMap只支持已经核对的object<string,string>，保留原显示me
 15份用户授权Drive分卷已下载至repo外并合并，普通non-ZIP64/未加密ZIP607条（含2directory），是手机重打包副本，不称原ZIP字节一致。Nova实际bounded parser128MiB解析122/7250/7130/map326成功。observed parts.asset_pointer=`sediment://file_<32hex>`、metadata.attachments[].id=`file_<32hex>`、map/exported=`file_<32hex>.dat`；265+376refs均精确匹配326physical binaries，265同消息metadata/parts重复。所有326 CRC通过，magic与尺寸统计见attachment-repacked-container-audit.json，真实数据未入repo/CI/fixture。
 
 single32MiB暂定预算被真实63.62MiB PDF证明不足，应独立调整为64MiB，total256MiB/JSONentry64MiB等不扩大；此为已验证必要调整，不是统一取消预算。230images最大2.36Mpixel，16Mpixel预算保持。每会话82asset、全导入326低于256/2048限制。引用结构证据已足，无需用户再手工样例；现在可接schema2/reader/export端到端，再验收AR1/3–5。
+
+## Step I：shared ordered Display基础
+
+ArchiveDisplay已按实证指针形式解析身份/entry，保留Map.text与inline part顺序，抑制同消息metadata重复图片，metadata附件按collection顺序接正文后；attachment-only合法标签，thoughts visible隐藏/refs保留，recap readable。unknown reference不猜转换。single64MiB实证调整，total256MiB/JSON不变。JVM88通过，新增8项值均虚构。当前尚未接schema2/Reader/export，不构成AR1完成。

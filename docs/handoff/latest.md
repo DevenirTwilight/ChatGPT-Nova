@@ -1,3 +1,9 @@
+## Attachment Restoration — Step I：精确引用与shared Display解析（2026-10-07）
+
+- 分支feature/export-conversation，实施基线66a62c6；本提交为源码检查点。success本地JVM88=原48/file25/map7/display8（128MiB heap），仅新造synthetic values，无私人正文/ID/filename/bytes进fixtures。
+- 新ArchiveDisplay按已实证sediment://file_<32hex>/metadata id解析稳定身份与.dat entry，保留parts text/image顺序及Map.text；同消息parts与metadata重复引用去重，不按文字或显示文件名合并；attachment-only为“附件消息”，metadata-only附件在正文后；unknown pointer不解码/截query/猜转换，thoughts可持久refs但visible隐藏，recap保留。
+- single asset32→64MiB（实证63.62MiB PDF），total256MiB/JSON与其余pixel/count limits不改。源码Display尚未接Reader/Store，schema1现状保持，AR1/3–5仍pending。下一步schema2/filesystem事务/upsert/Reader/provider/exports；引用缺口已解决，不再询问用户。完整新CI等待触发/核对，不以本地88替代Android。
+
 ## Attachment Restoration — Step H：15分卷成功读取，真实结构缺口已解决（2026-10-07）
 
 - 分支feature/export-conversation，当前测试源码9ab3f72585e78e064468917636b75797c0f50861；本步仅本地审计/脱敏证据。用户主动提供15个Drive分卷链接，均≤24MiB、001–015连续；下载并在repo外私有目录按字节合并，371257079bytes的未加密普通non-ZIP64 ZIP。此为手机重打包官方导出内容，607entries含2directories，不宣称与原370566688bytes ZIP逐字节一致。
