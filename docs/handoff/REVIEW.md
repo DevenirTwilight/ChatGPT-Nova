@@ -4,6 +4,10 @@
 
 用户2026-10-07明确要求每完成一个工作步骤更新交接，并让后续AI也遵守。AGENTS/latest/README及下一会话模板已同步：latest逐步记录实际结果与下一步，验证结论/边界变化时同步本文件；交接随步提交push，不等压缩/迁移，普通更新不生成迁移提示词。此步骤仅文档修改，用diff及一致性检查，不触发新APK或公开Release。下列已有验证结果未改变，下一步等待用户真机反馈。
 
+## 本轮隔离边界（Step 1）
+
+Stable=当前网页Frozen Snapshot三格式；Archive=未来主动导入官方Data Export（未实现）；Experimental=仅显式开启的Legacy Conversation Scanner，当前公开DOM滚屏累计，historyCompleteness永远not-proven。已完成静态调用链审查，尚未实施/运行。旧错误/29或39条/虚拟化/progress/Share和历史CI证据保留，详见../legacy-conversation-scanner.md。
+
 ## 现有验收结果
 
 已测source ac4776ff31feaed9794dbc434e423ac291fbee83；CI37556129018 build、Android35/36全success。两API实际HTML/MD/PDF下载独立核Unicode/结构/首尾/后续mutation排除，两份打印源与Firefox逐字节相同，四PDF均31页，抽查长代码/表格/尾页可读。最终SAF HTML在Chromium/Firefox/Edge以普通file打开通过。完整13项报告及限制见../frozen-page-save.md，来源与原失败保留tools/snapshot/evidence。

@@ -2,13 +2,13 @@
 
 工作分支 feature/export-conversation；已验收应用/测试源码 ac4776ff31feaed9794dbc434e423ac291fbee83。文档提交不是APK源码HEAD，开始续接先fetch核远端，读AGENTS/latest/REVIEW/docs/frozen-page-save.md、实际源码和CI，不回退旧修复。
 
-## 最新要求与本步结果（2026-10-07）
+## 最新要求与 Step 1（2026-10-07）
 
-用户要求：将最新要求和进展写入交接文档，**每完成一步都更新一次，并要求之后接手的AI也这样做**。已核对远端HEAD d33cae70439bb82a498f7c671442b233dd25fc8a（之前最终报告文档提交），工作区无旧未提交修改；已同步AGENTS.md、本文件、REVIEW.md和交接README/模板，清除“只在压缩/迁移才更新文档”的旧限制。本文档更新提交不会改变已验收APK源码ac4776ff31feaed9794dbc434e423ac291fbee83。
+当前分支 feature/export-conversation；本轮远端基线 da4176c5731ee07ea3c8815d56169abf1b143b25。用户授权隔离旧滚屏采集为 Experimental / Legacy Conversation Scanner，不删除算法/失败证据、不恢复正式完整历史导出。默认构建禁用、显式 property 开启、设置入口警告与主动开始、前台/取消/恢复、脱敏及 not-proven、独立 legacy CI、保留正式快照与未来官方 Data Export Archive 边界。
 
-本步仅修改交接约定和进度记录，检查文档一致性及git diff --check，使用[skip ci]提交/push；不重跑无关Android构建，不改生产源码/包名/签名/版号、不公开Release。下一步等用户真机测试反馈；现有受控验收已完成，真实账号/物理设备验收仍未完成，不自动继续开发历史扫描或新增数据源。
+Step 1 success：已读取指定代码/文档/旧tests/workflows，审查实际调用链，见 ../legacy-conversation-scanner.md。当前默认菜单无scanner、无页面自动注入，但 MainActivity 无条件初始化且保留空 pageFinished/pause/resume hook；旧测试反射取此实例，正式CI仍耦合legacy。源码未改、测试未跑（not verified）。
 
-后续每步记录：完成了什么、实际源码/分支、证据与通过/失败/未验证状态、下一步；在开始下一步前同步，提交push到工作分支。工作步骤按有独立结果的阶段划分，不为每条命令或交接维护自身递归提交。详情以根AGENTS.md和交接README为准。
+本步文档提交随审查push，不改变既有已验收APK。下一步 BuildConfig默认false+实验设置入口，移除空hook、取消暂停中的scan、整理脱敏/文件语义；不改selector、不新增数据源、不合并main/不发布Release/不增版本。
 
 ## 已实现
 
