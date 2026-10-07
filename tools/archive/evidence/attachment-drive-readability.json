@@ -1,0 +1,24 @@
+{
+  "sourceCommit": "9ab3f72585e78e064468917636b75797c0f50861",
+  "userAuthorizedProvidedDriveFileRead": true,
+  "metadataReadPassed": true,
+  "mime": "application/zip",
+  "bytes": 370566688,
+  "rawDownloadPassed": false,
+  "toolError": "413 file exceeds connector download limit",
+  "connectorLimitBytes": 268435456,
+  "unauthenticatedDirectRead": "sign-in HTML only; no ZIP bytes",
+  "sharingChanged": false,
+  "zipContentsAccessed": false,
+  "privateFileIdUrlNameOrHashIncluded": false,
+  "formalCI": {
+    "run": 37645986505,
+    "conclusion": "success",
+    "independentRuntimeArtifactsReviewed": false
+  },
+  "legacyCI": {
+    "run": 37645986535,
+    "conclusion": "success",
+    "independentRuntimeArtifactsReviewed": false
+  }
+}

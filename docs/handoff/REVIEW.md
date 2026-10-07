@@ -1,3 +1,7 @@
+## Drive metadata available; private raw ZIP remains unread due to connector size limit
+
+User now explicitly authorized read access to their supplied Drive ZIP, superseding the earlier local-only availability assumption. Metadata370566688bytes verified; raw fetch rejected HTTP413 at256MiB. Direct unauthenticated endpoint returns sign-in HTML, not ZIP; no sharing changes, credentials or Cookie extraction, real conversation/ZIP bytes remain unread. No private Drive URL/id/name/hash is recorded. Source9ab3f72 formal37645986505 and Legacy37645986535 completed/success; independent new runtime/output artifacts still to review. Attachment end-to-end implementation and AR1–5 remain pending, not inferred from CI or real single-DOCX detector success. Next obtain safely bounded authorized input or sanitized message-reference structure.
+
 ## One actual DOCX binary detected and matched to filename map; no message linkage proven
 
 - 分支feature/export-conversation，当前测试源码9ab3f72585e78e064468917636b75797c0f50861；本步仅安全审计/文档。用户另提供单个binary，本地只读magic/ZIP结构/CRC及Nova有界检测：DOCX、3459605bytes、40entries、expanded3737696bytes，content-types/word存在，xl/macros无，CRC通过。精确命中先前用户filename map，display扩展名一致；不输出或提交实际file name/ID/path/hash/正文/字节。证据tools/archive/evidence/attachment-local-binary-audit.json。

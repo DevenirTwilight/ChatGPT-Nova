@@ -1,3 +1,11 @@
+## Attachment Restoration — Step G：Drive ZIP元数据可读，整包下载受限（2026-10-07）
+
+- 分支feature/export-conversation，测试源码9ab3f72585e78e064468917636b75797c0f50861，本提交仅交接/脱敏证据。用户最新明确授权读取其提供的Drive真实ZIP链接；这更新此前“真实ZIP仅用户本地”的访问范围，不授权向GitHub/CI上传私有数据。Drive链接/ID/原文件名/私有hash未入库。
+- success Drive metadata：application/zip、370566688bytes，与用户样本大小一致。failed raw fetch：connector HTTP413，最大268435456bytes（256MiB）；没有下载ZIP或解析其消息。只读direct访问检查返回登录HTML，不是ZIP；未改共享权限、未读取/提取账号凭据或Cookie，不要求公开分享。证据tools/archive/evidence/attachment-drive-readability.json。
+- success新[正式CI37645986505](https://github.com/DevenirTwilight/ChatGPT-Nova/actions/runs/37645986505)与[Legacy37645986535](https://github.com/DevenirTwilight/ChatGPT-Nova/actions/runs/37645986535)均completed/success；本步核workflow状态，尚未独立下载新runtime产物/实际输出，不以状态替代实物核对。
+- 实现边界不变：map326与单DOCX有本地检查，metadata+file primitives完备但schema2/message linkage/Reader/provider/exports仍未接通，AR1–5未完成。当前仍无conversation JSON字段结构可供关联。
+- 下一步：用户可提供小于工具限制的必要输入（脱敏引用结构，或原ZIP按字节切成每份≤25MiB供本地原样合并，非新建多卷ZIP），不需公开文件；收到后继续精确mapping实现。新CI产物独立核对也待续，不动Stable/Legacy/包名/签名/版号，不merge/Release。
+
 ## Attachment Restoration — Step F：单个真实DOCX的安全本地核对（2026-10-07）
 
 - 分支feature/export-conversation，当前测试源码9ab3f72585e78e064468917636b75797c0f50861；本步仅安全审计/文档。用户另提供单个binary，本地只读magic/ZIP结构/CRC及Nova有界检测：DOCX、3459605bytes、40entries、expanded3737696bytes，content-types/word存在，xl/macros无，CRC通过。精确命中先前用户filename map，display扩展名一致；不输出或提交实际file name/ID/path/hash/正文/字节。证据tools/archive/evidence/attachment-local-binary-audit.json。
