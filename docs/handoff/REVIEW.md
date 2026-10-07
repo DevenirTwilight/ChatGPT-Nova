@@ -1,3 +1,7 @@
+## Nova Archive core checkpoint
+
+Core fixture validation passed (28 JVM tests, 128 MiB heap). Android database adapter is implemented but not yet emulator verified. No real OpenAI export verified; UI/export still pending. Legacy code and formal snapshot behavior retained.
+
 # Nova Archive设计审查（2026-10-07）
 
 Step1调查/设计success，基线d48aed0/work branch feature/export-conversation；正式与legacy最新CI绿。Archive尚未实现/未验收；官方兼容数据结构仅synthetic，不能写real export verified。批准范围为用户主动SAF文件、私有SQLite/流式有界解析、主链/保留分支、离线Reader与单会话三格式。Default snapshot/legacy边界保持，旧scanner/证据不删。核心隔离、数据/安全上限/复用选择见../nova-archive.md。下一步实现数据核心和测试，未授权main/Release/签名/版号改动。

@@ -1,3 +1,11 @@
+## Nova Archive — Step 2：核心与存储实现（2026-10-07）
+
+- 分支 `feature/export-conversation`；步骤基线源码 `d9ddca7`，本提交包含核心实现。
+- success：逐会话严格 JSON / ZIP discovery、安全路径/CRC/规模限制；保留 mapping、未知 metadata、全部分支；current_node 主链与 cycle/orphan 安全降级；身份 upsert 计划；私有 SQLite schema v1 与事务回滚。
+- success：独立 JVM 合成测试 28 项，128 MiB heap；1/100/1000 会话、9999 节点树、超长代码/多语言、恶意 ZIP/JSON、重复合并/旧导入、取消/时间限额。证据 `tools/archive/evidence/core-jvm.txt`，脚本 `tools/archive/jvm-tests.sh`。
+- not verified：Android SQLite/SAF/UI/导出尚待实现和 emulator 验证；没有真实官方数据样本。此步骤不是 MVP 完成。
+- 下一步：原生 Archive Activity、离线 Reader、HTML/Markdown renderer 与独立 System Print 输入，随后 CI。
+
 # 当前任务：Nova Archive MVP（Step 1 调查与设计，2026-10-07）
 
 当前分支feature/export-conversation，实际远端/源码基线d48aed0da152025902b83b1027b3a8e8bfc918ad；远端默认HEAD main/e8ffa0c6但不是最新开发线。已读取AGENTS/latest/REVIEW/frozen-page-save/README、Main菜单/manifest/Gradle及现有SAF/静态打印/CI。最新正式37593888527与实验37588638326 success；旧failure/cancel保留，不当当前现状。
