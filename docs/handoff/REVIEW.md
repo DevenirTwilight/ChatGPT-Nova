@@ -1,3 +1,10 @@
+## One actual DOCX binary detected and matched to filename map; no message linkage proven
+
+- 分支feature/export-conversation，当前测试源码9ab3f72585e78e064468917636b75797c0f50861；本步仅安全审计/文档。用户另提供单个binary，本地只读magic/ZIP结构/CRC及Nova有界检测：DOCX、3459605bytes、40entries、expanded3737696bytes，content-types/word存在，xl/macros无，CRC通过。精确命中先前用户filename map，display扩展名一致；不输出或提交实际file name/ID/path/hash/正文/字节。证据tools/archive/evidence/attachment-local-binary-audit.json。
+- success新[LegacyCI37645986535](https://github.com/DevenirTwilight/ChatGPT-Nova/actions/runs/37645986535)全部job，尚未独立下载该runtime产物核对数量；[正式37645986505](https://github.com/DevenirTwilight/ChatGPT-Nova/actions/runs/37645986505) build/API26 success、API35/36进行中，完整新回归尚未验收。
+- not verified message association、schema2 DB导入、Reader/FileProvider、真实去重/重启/exports；AR1端到端pending，AR2仅map和单binary部分，AR3–5未通过。不是已恢复真实附件，也不是.docx打开能力实测。
+- 必需待办保持：完全虚构同结构的图片asset_pointer和attachment-only message metadata、同一假ID对应map key，不能按binary/filename/hash猜message归属。收到后继续实施及新CI，Frozen/Legacy/包名/签名/版号保持。
+
 ## Bounded map parser accepted actual map only; no attachment restoration claim
 
 - 分支feature/export-conversation，实施基线dfb7ec87ac5426886c8dae20ab36bd6030ac4d34；本提交为bounded map源码检查点，最终CI sourceRevision以实际SHA为准。success本地JVM80（原48+file25+map7，128MiB heap）。

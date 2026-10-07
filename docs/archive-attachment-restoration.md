@@ -53,3 +53,11 @@ ArchiveAssetMap只支持已经核对的object<string,string>，保留原显示me
 本地核心80=原48+file25+map7全部通过。**独立用新Nova解析器只读用户上传的真实映射文件，326条全部成功**；没有ZIP、消息关系或实际binary输入。只输出count，无private names/identity/path/hash落库。此parser尚未接生产Store，schema仍v1。
 
 消息关联仍是必需待办：map不能提供message关系，不能凭32hex或file-prefix进行未证实转换。已请求完全虚构但对应同一假ID的图片与attachment-only消息字段。拿到结构后才能接schema2+refs+upsert+Reader/provider+三格式+删除/重启与真正AR1。正式新CI/Legacy80源码验证进行中，AR2–5未完成。
+
+## Step F：单个用户binary本地只读识别
+
+用户另提供一个.dat，本地仅结构核对：3459605bytes，DOCX容器40entries，声明展开3737696bytes，[Content_Types].xml和word/存在，无xl/或vbaProject.bin；全部entries CRC通过。新Nova ArchiveAssetFiles.inspect亦通过，MIME为DOCX。该exported entry精确存在于用户先前filename map，映射display扩展名与检测结果一致。未读取正文或写入repo/CI/fixtures，未输出真实filename/ID/path/hash。safe count/type结果见attachment-local-binary-audit.json。
+
+这是单个真实binary类型/容器/filename-map验证，**不是Nova DB导入/Reader恢复/跨导入去重/AR3通过**。映射仍无消息引用字段，不能由这个binary推导conversation/message归属。下一步仍需完全虚构但同结构的图片asset_pointer与attachment-only metadata，再接端到端。
+
+9ab3f72新CI：正式37645986505 build/API26 success，API35/36尚在运行；Legacy37645986535各job success（本步核API状态，未独立下载新runtime artifacts，不重复引用旧runtime数量充当新证据）。
