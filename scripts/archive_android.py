@@ -30,6 +30,11 @@ try:
 except Exception as e:
     failures.append(str(e));print('Archive validation failure:',str(e)[:2000])
 finally:
+    # Retain actual fixture documents even when another method/teardown fails.
+    for name in ['archive.html','archive.md','archive-print-source.html','archive.pdf']:
+        if not (out/name).exists():
+            try:adb('pull','/sdcard/Android/data/com.example.chatgptnova/files/'+name,str(out/name))
+            except subprocess.CalledProcessError:pass
     (out/'logcat.txt').write_text(adb('logcat','-d','-v','threadtime'))
     (out/'summary.json').write_text(json.dumps({'sourceCommit':os.environ.get('GITHUB_SHA'),'api':adb('shell','getprop','ro.build.version.sdk').strip(),'validation':'synthetic / fixture only; no real OpenAI export verified','failures':failures},indent=2))
 if failures:raise SystemExit(1)

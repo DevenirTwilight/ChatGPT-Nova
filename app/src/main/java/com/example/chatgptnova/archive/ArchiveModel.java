@@ -7,6 +7,7 @@ import java.util.*;
 public final class ArchiveModel {
   public static final Gson JSON =
       new com.google.gson.GsonBuilder()
+          .serializeNulls()
           .setObjectToNumberStrategy(com.google.gson.ToNumberPolicy.BIG_DECIMAL)
           .create();
 

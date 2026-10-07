@@ -23,7 +23,7 @@ Nova Archive是用户主动导入OpenAI官方Data Export兼容ZIP/JSON后，本�
 
 ACTION_OPEN_DOCUMENT → content URI → 后台限量复制私有 cache → 按所选文件扩展名识别 ZIP 或 UTF-8 JSON → ZipFile中央目录检查 → 遍历/发现conversations.json或conversations[-_]编号.json（可在文件夹，顺序无关）→ JsonReader逐会话 → validate/model → SQLite transaction/upsert → summary → 删除临时ZIP。
 
-JSON支持会话数组、conversations数组wrapper和单会话mapping对象；未知会话/节点字段保留，未知wrapper字段仅有界解析。malformed JSON、重复JSON键、mapping类型错误明确失败。消息字段未知/非text不猜正文，原始metadata保留；附件文件本轮不解压/嵌入。
+JSON支持会话数组、conversations数组wrapper和单会话mapping对象；未知会话/节点字段及显式 null 保留，未知wrapper字段仅有界解析。malformed JSON、重复JSON键、mapping类型错误明确失败。消息字段未知/非text不猜正文，原始metadata保留；附件文件本轮不解压/嵌入。
 
 树按current_node parent链重建；可确定唯一叶时使用其链；缺失 parent 所指节点标注部分链；parent 字段本身缺失/类型错误时明确使用全部节点安全顺序；cycle/多叶无法确定时按时间+稳定node key的明确“非单一分支安全顺序”回退。保留所有节点，并可查看全部节点；不按正文相似度拼接，不伪造身份。
 
@@ -37,7 +37,7 @@ Reader/print静态HTML：JS/storage/file/content/混合内容/bridge关闭，所
 
 ## UI 与生命周期
 
-设置 → Nova Archive（无需ChatGPT登录）→ 导入ChatGPT数据、标题搜索、最近更新/最早时间排序、每页最多200条的会话列表（上一页/下一页，不累积整个库在内存）；行显示标题/日期/消息数；超长标题展示前 512 字符，原始标题保留，搜索输入最多 256 字符。独立Reader区分角色/channel，主链或明确全部节点安全顺序；导出HTML/Markdown/打印PDF。
+设置 → Nova Archive（无需ChatGPT登录）→ 导入ChatGPT数据、标题搜索、最近更新/最早时间排序、每页最多200条的会话列表（上一页/下一页，不累积整个库在内存）；行显示标题/日期/消息数；超长标题展示前 512 字符，原始标题保留，搜索输入最多 256 字符。首页控件作为原生 ListView header 可滚动，横屏不会挤没列表；独立Reader区分角色/channel，主链或明确全部节点安全顺序；导出HTML/Markdown/打印PDF。
 
 导入使用application context worker，不持有已销毁Activity；旋转可保留任务/重绑定回调，取消/真正销毁回滚，重启只读取已提交SQLite。UI不自动重开URI/继续导入。Reader导出基于已载入Archive模型，SAF保存用wt；printing按现有静态WebView可见状态→PrintManager，finish/cancel/destroy释放renderer，不把onFinish视为成功。诊断仅随机import id、schema/version、阶段、数量、字节、耗时、固定错误码，可复制。
 

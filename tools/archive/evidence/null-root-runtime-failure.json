@@ -1,0 +1,20 @@
+{
+  "ciRun": 37605668339,
+  "sourceCommit": "4a79a97d",
+  "apis": [
+    35,
+    36
+  ],
+  "executedMethodsPerApi": 17,
+  "failureEntriesPerApi": 8,
+  "productionCause": "Gson omitted explicit null map fields; loaded null roots appeared malformed, selecting all nodes instead of current branch",
+  "fixtureCause": "ActivityScenario Reader launches clear prior task; teardown onActivity called on destroyed Archive",
+  "fixes": [
+    "serializeNulls preserves raw null metadata and parent/message fields",
+    "guard teardown by real ActivityScenario state",
+    "JVM storage-round-trip root regression",
+    "retain fixture output artifacts even on failed methods"
+  ],
+  "jvmAfterFix": 39,
+  "realOpenAIExportVerified": false
+}

@@ -1,3 +1,7 @@
+## Archive null-root persistence runtime failure
+
+37605668339 API35/36 exposed omitted null metadata on database serialization: root parent/message disappeared and main-chain selection fell back to all nodes. serializeNulls plus JVM storage-round-trip fixture fixes this production issue; JVM39 pass. Teardown NPE was separate (Scenario Reader clears previous task) and now respects real destroyed state. Native header scrolling fixes landscape list reachability. Actual new runtime and full Stable regressions pending.
+
 ## Minimum Android and signed artifact independently verified
 
 4a79a97 API26 foundation tests2 pass; downloaded JVM XML confirms38 passed/no failures/errors. Actual signed APK2.08MB verifies v2 signature/content digest, original cert, unchanged identity/version, DEX legacy=false and source revision, retained legacy assets and no native.so. API35/36 full Archive/Stable/PDF still pending. No real OpenAI export verified.

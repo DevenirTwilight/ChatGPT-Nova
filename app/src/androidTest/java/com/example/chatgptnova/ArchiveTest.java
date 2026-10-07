@@ -54,7 +54,9 @@ public final class ArchiveTest extends FixtureActivity {
   public void after() {
     if (monitor != null) instrument.removeMonitor(monitor);
     if (readerScenario != null) readerScenario.close();
-    if (archiveScenario != null)
+    else if (reader != null) main(() -> reader.finish());
+    if (archiveScenario != null
+        && archiveScenario.getState() == androidx.lifecycle.Lifecycle.State.RESUMED)
       archiveScenario.onActivity(
           a ->
               a.setRequestedOrientation(
@@ -120,7 +122,12 @@ public final class ArchiveTest extends FixtureActivity {
     main(
         () -> {
           ListView list = (ListView) field(archive, "list");
-          n.set(list.getAdapter() == null ? 0 : list.getAdapter().getCount());
+          n.set(
+              list.getAdapter() == null
+                  ? 0
+                  : list.getAdapter().getCount()
+                      - list.getHeaderViewsCount()
+                      - list.getFooterViewsCount());
         });
     return n.get();
   }
@@ -210,6 +217,26 @@ public final class ArchiveTest extends FixtureActivity {
       assertFalse(diagnostic.contains(value));
     File[] leftovers = new File(archive.getCacheDir(), "nova-archive-import").listFiles();
     assertTrue(leftovers == null || leftovers.length == 0);
+    // Exercise the real list -> Reader Activity transition, without launching a new task.
+    Instrumentation.ActivityMonitor launched =
+        new Instrumentation.ActivityMonitor(ArchiveReaderActivity.class.getName(), null, false);
+    instrument.addMonitor(launched);
+    try {
+      AtomicReference<String> label = new AtomicReference<>();
+      main(
+          () -> {
+            ListView view = (ListView) field(archive, "list");
+            label.set((String) view.getAdapter().getItem(view.getHeaderViewsCount()));
+          });
+      click(label.get());
+      Activity actual = instrument.waitForMonitorWithTimeout(launched, 20000);
+      assertNotNull(actual);
+      reader = (ArchiveReaderActivity) actual;
+      waitFor("real native row reader", () -> readerStatus().contains("current-branch"));
+      assertFalse(((String) field(reader, "html")).contains("OTHER-BRANCH"));
+    } finally {
+      instrument.removeMonitor(launched);
+    }
   }
 
   @Test

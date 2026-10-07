@@ -488,6 +488,31 @@ public class ArchiveCoreTest {
   }
 
   @Test
+  public void explicitNullRootsAndMetadataSurviveStorageRoundTrip() throws Exception {
+    Map<String, Object> d = data("null");
+    Map<String, Object> root = new LinkedHashMap<>();
+    root.put("message", null);
+    root.put("parent", null);
+    ArchiveModel.object(d.get("mapping")).put("root", root);
+    ArchiveModel.object(ArchiveModel.object(d.get("mapping")).get("u")).put("parent", "root");
+    d.put("unknownNull", null);
+    Conversation original = new Conversation(d);
+    Map<String, Object> header =
+        ArchiveModel.object(ArchiveModel.JSON.fromJson(original.header, Map.class));
+    Map<String, Object> mapping = new LinkedHashMap<>();
+    for (ArchiveModel.Node n : original.nodes.values())
+      mapping.put(n.key, ArchiveModel.JSON.fromJson(n.raw, Map.class));
+    header.put("mapping", mapping);
+    Conversation loaded = new Conversation(header);
+    assertTrue(loaded.nodes.get("root").data.containsKey("parent"));
+    assertTrue(loaded.nodes.get("root").data.containsKey("message"));
+    assertTrue(loaded.header.contains("unknownNull"));
+    assertFalse(loaded.nodes.get("root").malformedParent);
+    assertEquals("current-branch", ArchiveTree.select(loaded, false).scope);
+    assertEquals(2, ArchiveTree.select(loaded, false).messages.size());
+  }
+
+  @Test
   public void generatedScaleAndLongCode() throws Exception {
     for (int count : new int[] {1, 100, 1000}) {
       List<Object> d = new ArrayList<>();

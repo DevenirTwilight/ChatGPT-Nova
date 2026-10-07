@@ -1,3 +1,13 @@
+## Nova Archive — Step 4i：数据库 null 根节点往返与测试生命周期修正（2026-10-07）
+
+- 分支 `feature/export-conversation`；实际失败源码 `4a79a97`，CI `37605668339`，API35/36各执行17方法，8条failure entries（包含同一方法的测试与teardown重复错误）。未运行后续Stable suites，不能说已回归通过。
+- 生产原因：Gson默认丢掉显式null的Map字段，root parent/message落库后丢失；重载误判malformedParent，主链变全部节点，HTML包含非当前分支。改为serializeNulls，未知metadata的null同样保留。
+- 测试原因：ActivityScenario.launch Reader 默认清前任务，原Archive已销毁；@After无条件onActivity恢复方向触发NPE。清理改为检查真实RESUMED状态，不吞业务失败。新增真实原生会话行点击→Reader检查，保留原来的独立Scenario销毁/重建测试。
+- success：JVM39，通过新增raw header/node数据库序列化往返的null根节点/主链/unknown null测试。API26此前2项及原签名验证仍是真实已执行，但新源码须重新验证。
+- 可读性修正：首页原生ListView header承载控件，可随列表滚动，解决横屏固定控件挤没列表；仍每页200条。默认状态改为选择导入或阅读现有记录，避免重启已有库误写“尚未导入”。
+- 证据 `tools/archive/evidence/null-root-runtime-failure.json`；测试失败也尽力拉取已生成的合成HTML/MD/PDF，不丢失败文件。
+- 下一步：新源码 API26/35/36、实际PDF/重启/Stable回归；不以旧的部分通过宣称完成。
+
 ## Nova Archive — Step 4h：最低版本与安装包独立验证完成（2026-10-07）
 
 - 分支 `feature/export-conversation`；验证实际源码 `4a79a97`，当前后续提交仅证据/文档。CI `37605668339`。

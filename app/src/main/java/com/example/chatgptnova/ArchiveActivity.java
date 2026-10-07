@@ -39,8 +39,13 @@ public final class ArchiveActivity extends Activity {
     super.onCreate(state);
     root = new LinearLayout(this);
     root.setOrientation(LinearLayout.VERTICAL);
-    setContentView(root);
-    ArchiveUi.inset(root, 12);
+    int padding = Math.round(12 * getResources().getDisplayMetrics().density);
+    root.setPadding(padding, padding, padding, padding);
+    list = new ListView(this);
+    list.setItemsCanFocus(true);
+    list.addHeaderView(root, null, false);
+    setContentView(list);
+    ArchiveUi.inset(list, 0);
     TextView heading = new TextView(this);
     heading.setText("Nova Archive");
     heading.setTextSize(24);
@@ -57,7 +62,7 @@ public final class ArchiveActivity extends Activity {
           if (task != null) task.cancel();
         });
     status = new TextView(this);
-    status.setText("尚未导入");
+    status.setText("请选择文件导入，或打开下方本地会话。");
     root.addView(status);
     search = new EditText(this);
     search.setSingleLine(true);
@@ -73,12 +78,12 @@ public final class ArchiveActivity extends Activity {
           offset = 0;
           refresh();
         });
-    list = new ListView(this);
-    root.addView(list, new LinearLayout.LayoutParams(-1, 0, 1));
     list.setOnItemClickListener(
         (p, v, pos, id) -> {
+          int item = pos - list.getHeaderViewsCount();
+          if (item < 0 || item >= rows.size()) return;
           Intent i = new Intent(this, ArchiveReaderActivity.class);
-          i.putExtra("row", rows.get(pos).id);
+          i.putExtra("row", rows.get(item).id);
           startActivity(i);
         });
     LinearLayout pages = new LinearLayout(this);
