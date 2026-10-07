@@ -119,9 +119,62 @@ public final class ArchiveAssetReaderTest {
       assertNotNull(document);
       Uri uri =
           androidx.core.content.FileProvider.getUriForFile(
-              context, context.getPackageName() + ".archiveassets", document.file, document.name);
+              context, context.getPackageName() + ".archiveassets", document.file);
       assertEquals("content", uri.getScheme());
+      assertNull(uri.getQuery());
+      assertFalse(uri.toString().contains(document.name));
+      try (android.database.Cursor q =
+          context.getContentResolver().query(uri, null, null, null, null)) {
+        assertNotNull(q);
+        assertTrue(q.moveToFirst());
+        assertEquals(
+            document.name,
+            q.getString(q.getColumnIndexOrThrow(android.provider.OpenableColumns.DISPLAY_NAME)));
+        assertEquals(
+            document.bytes,
+            q.getLong(q.getColumnIndexOrThrow(android.provider.OpenableColumns.SIZE)));
+      }
       assertEquals(document.mime, context.getContentResolver().getType(uri));
+      java.util.concurrent.atomic.AtomicReference<Intent> dispatched =
+          new java.util.concurrent.atomic.AtomicReference<>();
+      android.app.Instrumentation instrumentation = InstrumentationRegistry.getInstrumentation();
+      android.app.Instrumentation.ActivityMonitor monitor =
+          new android.app.Instrumentation.ActivityMonitor() {
+            @Override
+            public android.app.Instrumentation.ActivityResult onStartActivity(Intent intent) {
+              dispatched.set(new Intent(intent));
+              return new android.app.Instrumentation.ActivityResult(
+                  android.app.Activity.RESULT_CANCELED, null);
+            }
+          };
+      instrumentation.addMonitor(monitor);
+      try {
+        scenario.onActivity(
+            a -> {
+              try {
+                Method open =
+                    ArchiveReaderActivity.class.getDeclaredMethod("openAsset", String.class);
+                open.setAccessible(true);
+                open.invoke(
+                    a, ArchiveRenderer.LOCAL_ORIGIN + "/attachments/" + document.file.getName());
+              } catch (Exception e) {
+                throw new AssertionError(e);
+              }
+            });
+        Intent opened = dispatched.get();
+        assertNotNull(opened);
+        assertEquals(Intent.ACTION_VIEW, opened.getAction());
+        assertEquals(uri, opened.getData());
+        assertNull(opened.getData().getQuery());
+        assertEquals(document.mime, opened.getType());
+        assertEquals(
+            Intent.FLAG_GRANT_READ_URI_PERMISSION,
+            opened.getFlags() & Intent.FLAG_GRANT_READ_URI_PERMISSION);
+        assertEquals(0, opened.getFlags() & Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
+        assertEquals(uri, opened.getClipData().getItemAt(0).getUri());
+      } finally {
+        instrumentation.removeMonitor(monitor);
+      }
       assertFalse(uri.toString().contains(document.file.getPath()));
       try (InputStream in = context.getContentResolver().openInputStream(uri)) {
         assertNotNull(in);

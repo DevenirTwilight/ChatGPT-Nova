@@ -249,7 +249,7 @@ public final class ArchiveReaderActivity extends Activity {
     try {
       Uri uri =
           androidx.core.content.FileProvider.getUriForFile(
-              this, getPackageName() + ".archiveassets", asset.file, asset.name);
+              this, getPackageName() + ".archiveassets", asset.file);
       Intent intent =
           new Intent(Intent.ACTION_VIEW)
               .setDataAndType(uri, asset.mime)

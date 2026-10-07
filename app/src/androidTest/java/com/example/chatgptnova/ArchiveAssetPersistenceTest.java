@@ -142,7 +142,7 @@ public final class ArchiveAssetPersistenceTest {
         assertEquals(mimes[i], a.mime);
         android.net.Uri uri =
             androidx.core.content.FileProvider.getUriForFile(
-                context, context.getPackageName() + ".archiveassets", a.file, a.name);
+                context, context.getPackageName() + ".archiveassets", a.file);
         assertEquals(mimes[i], context.getContentResolver().getType(uri));
         try (InputStream in = context.getContentResolver().openInputStream(uri)) {
           assertNotNull(in);

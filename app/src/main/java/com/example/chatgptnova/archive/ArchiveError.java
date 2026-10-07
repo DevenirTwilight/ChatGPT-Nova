@@ -23,7 +23,7 @@ public final class ArchiveError extends Exception {
       case "A05_ARCHIVE_TOO_LARGE":
         return "文件超过安全限制，请使用较小的导出文件。";
       case "A06_DATABASE_WRITE_FAILED":
-        return "本地数据库写入失败，导入已回滚。";
+        return "本地数据库写入失败，请重新核对已有档案。";
       case "A07_IMPORT_CANCELLED":
         return "导入已取消，已有档案未改变。";
       case "A08_SCHEMA_UNSUPPORTED":

@@ -1,3 +1,13 @@
+## Attachment Restoration — Step N：全套基线实物通过，修正外部URI隐私边界（2026-10-07）
+
+- 分支feature/export-conversation，已完整验证源码ea26e180d6f466d9f283123b3ec7c5db93a38e33；文档基点422fecd。本提交为新provider修正源码，以实际SHA区分，不把旧实物冒充新源码。
+- success正式CI37661640199 build/lint/unit/API26/35/36、Legacy37661640158各job。独立下载JVM93 XML零fail/error/skip；API26 foundation2+persistence7+Reader3；35/36各Archive32（7+3+20+force-stop2）和Stable43，实际会话PDF16页含12x8图片/文档描述，HTML实际PNG decode12x8与无private链接/MD描述/source PRINT image模型；Stable两PDF31页/320x120图、首尾/代码表格Unicode/后续变更排除、Firefox同source及独立OCR均通过。证据attachment-runtime-35/36.json；Legacy各19及原2ignore保留，attachment-ea26-legacy-runtime.json。
+- success ea26 APK2106741bytes，artifact11500822418，v2签名/content digest/原cert/sha文件、package/version14、defaultlegacyfalse/revision、5旧asset源码一致、无native libs或test fixtures，attachment-ea26-package-verification.json。没有发布Release，尚未把旧包作为最终新provider修复APK交付。
+- 最后隐私复查：生产getUriForFile第四参会把original name放入URI query，可能进入系统Intent日志。改生产URI只含随机内部文件名；provider query通过私有DB返回原display name、super query支持projection/size并保持路径检查，getType仍magic metadata。新native断言包括真实Reader openAsset发出的ACTION_VIEW URI无query/原name、detected MIME/READ grant/无WRITE/ClipData，监视器阻止实际外部应用启动；还核content query的name/size。这验证Intent管线，不冒称第三方Office成功。
+- A06文案改“写入失败，请重新核对已有档案”，避免事务结束/诊断后写入异常结果不确定时宣称必已回滚；文件仍按实际DB恢复，逻辑不变。success本地JVM93、ECJ provider/Reader/native test编译/diff；新源码Android完整CI与原签名APK仍待重跑核对。
+- 清单更新初始空间：本样本ZIP+147.36MiB附件+DB/WAL128MiB+32MiB余量约661MiB，实际仍需更多余量且运行时分阶段检查；不能把SAF预算513.4MiB当完整恢复保证。
+- AR2 real compatible repack结构+host326copy/rollback passed；AR1完整synthetic属于ea26基线，新隐私修正待验证；真实AR3/4/5仍pending。下一步新CI/实际provider与三格式/签名核对，最终文档与APK交付；不加FTS/DOM/backend/Cloud，不改版号签名，不删除Legacy。
+
 ## Attachment Restoration — Step M：真实binary有界复制与回滚独立通过（2026-10-07）
 
 - 分支feature/export-conversation，测试源码ea26e180d6f466d9f283123b3ec7c5db93a38e33；本步仅host审计/工具/脱敏证据，非Android SQLite验收。success JVM -Xmx128m 实際ArchiveDisplay引用集合→ArchiveAssetFiles.Batch preflight→326必要entry stream copy/CRC/SHA/magic→private随机文件→未commit close rollback；326/326complete，154521964bytes，2495ms，82PNG/148JPEG/5PDF/82DOCX/5XLSX/4unknown，回滚文件0/pending0。只计数/固定类型，所有真实binary输出仅repo外并已回滚。

@@ -1,3 +1,9 @@
+## ea26 baseline fully verified; final provider URI privacy fix requires fresh native acceptance
+
+ea26e180正式37661640199与Legacy37661640158全success，独立JVM93/API26 12/API35-36各Archive32+Stable43/Legacy19与实际PDF16/31页、images/portableHTML/MD/Unicode/升级全部核对。APK原签名/版本/defaultflag proof见attachment-ea26-package-verification，runtime35/36 JSON永久留证。
+
+最后边界修正：原external asset URI的displayName query可能进入系统Intent日志；新生产URI只有generated internal filename，displayName经FileProvider query DB返回，不丢用户外部显示名。实际Reader ACTION_VIEW/READ-only/ClipData/无query及provider query name/size新native断言；监视器阻止真实外部应用，所以外部文档阅读仍manual pending。A06取消无依据的必已回滚承诺。新源码本地93/compile passed，新完整native与APK待核，不引用ea26充当新provider执行。AR2实际copy/rollback passed；真实AR3–5 pending。
+
 ## Real bounded binary copy passed on host; Android/manual acceptance still pending
 
 源码ea26e180：真实compatible repack用actual bounded Batch复制326/326、154521964bytes/2495ms，CRC/hash/type/私有UUID publish后未commit rollback剩余0。82PNG/148JPEG/5PDF/82DOCX/5XLSX/4unknown。只repo外临时binary，无真实ID/name/hash/内容进Git或CI。证据attachment-real-bounded-copy.json，通用工具ArchiveBinaryAudit.java。host JVM128MiB cap，不等于Android heap测量；不是手机SQLite/assets已恢复、第三方打开或AR3–5成功。fd3 Legacy success，新ea26与正式完整runtime仍待核。

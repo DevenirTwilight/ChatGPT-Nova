@@ -1,0 +1,23 @@
+{
+  "sourceCommit": "ea26e180d6f466d9f283123b3ec7c5db93a38e33",
+  "ciRun": 37661640158,
+  "validation": "synthetic / fixture only; history completeness not-proven",
+  "android": {
+    "35": {
+      "artifactId": 11501936653,
+      "results": {
+        "instrumentation.txt": [
+          "OK (19 tests)"
+        ]
+      }
+    },
+    "36": {
+      "artifactId": 11502235144,
+      "results": {
+        "instrumentation.txt": [
+          "OK (19 tests)"
+        ]
+      }
+    }
+  }
+}
