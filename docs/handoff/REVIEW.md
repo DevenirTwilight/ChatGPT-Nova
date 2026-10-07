@@ -2,9 +2,13 @@
 
 ## 最新维护要求
 
-用户2026-10-07明确要求每完成一个工作步骤更新交接，并让后续AI也遵守。AGENTS/latest/README及下一会话模板已同步：latest逐步记录实际结果与下一步，验证结论/边界变化时同步本文件；交接随步提交push，不等压缩/迁移，普通更新不生成迁移提示词。此步骤仅文档修改，用diff及一致性检查，不触发新APK或公开Release。下列已有验证结果未改变，下一步等待用户真机反馈。
+用户2026-10-07明确要求每完成一个工作步骤更新交接，并让后续AI也遵守。AGENTS/latest/README及下一会话模板已同步：latest逐步记录实际结果与下一步，验证结论/边界变化时同步本文件；交接随步提交push，不等压缩/迁移，普通更新不生成迁移提示词。此步骤仅文档修改，用diff及一致性检查，不触发新APK或公开Release。分步记录保留当时状态；本轮结论以接下来的“当前隔离结论”为准。
 
-## 本轮隔离边界（Step 1）
+## 当前隔离结论
+
+已实现默认BuildConfig关闭、无controller初始化/自动注入，显式property才开放实验设置；用户主动警告确认/前台/取消/恢复、固定not-proven/文件前缀/脱敏诊断。保持正式Frozen Snapshot不滚动、未来Archive独立；不新增网站selector或内部数据源，不删除研究证据。5d9efe8实验CI37588638326两API各19通过，正式37588638317 API35通过、API36两次spooler错误实物失败均留证。日志证实初始目的地未加载时测试错误重选PDF；仅补测试同步等待，生产PDF路径不改，正式回归待新CI。原签名及实际APK DEX false/true已独立核对，真实账号/物理设备未验收。不建议此时新增sourceSet。
+
+## 分步历史：本轮隔离边界（Step 1）
 
 Stable=当前网页Frozen Snapshot三格式；Archive=未来主动导入官方Data Export（未实现）；Experimental=仅显式开启的Legacy Conversation Scanner，当前公开DOM滚屏累计，historyCompleteness永远not-proven。已完成静态调用链审查，Step2已实施默认关闭与实验确认/前台取消/diagnostic白名单；浏览器DOM17与snapshot13通过，Android构建/UI暂未验证。旧错误/29或39条/虚拟化/progress/Share和历史CI证据保留，详见../legacy-conversation-scanner.md。
 
@@ -44,7 +48,11 @@ Stable=当前网页Frozen Snapshot三格式；Archive=未来主动导入官方Da
 
 5d9efe8 API35正式全通过且独立核实际HTML/MD及31页Nova/Firefox PDF；API36原打印filename超时，截图确实是spooler错误/Retry界面，记录failure并保留原证据。其他正式套件通过，但不把API36 PDF冒称成功；只重跑失败job、不改源码/不放宽断言，结果待核。
 
-## 现有验收结果
+## Step 4i 原生打印测试同步
+
+5d9efe8 API36重试仍失败，保留artifact11468372879的原始instrumentation/UI截图。新增先等待目的地标题再判是否选择PDF，避免窗口尚未加载即重选；所有实际PDF/内容检查保留，无生产快照修改，待验证，不继续盲重跑同源。
+
+## 此前 Frozen Snapshot 验收（历史）
 
 已测source ac4776ff31feaed9794dbc434e423ac291fbee83；CI37556129018 build、Android35/36全success。两API实际HTML/MD/PDF下载独立核Unicode/结构/首尾/后续mutation排除，两份打印源与Firefox逐字节相同，四PDF均31页，抽查长代码/表格/尾页可读。最终SAF HTML在Chromium/Firefox/Edge以普通file打开通过。完整13项报告及限制见../frozen-page-save.md，来源与原失败保留tools/snapshot/evidence。
 

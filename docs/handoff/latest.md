@@ -1,8 +1,16 @@
-# 当前交接：冻结网页三格式（2026-10-07）
+# 当前交接：Legacy Scanner 隔离（2026-10-07）
 
-工作分支 feature/export-conversation；已验收应用/测试源码 ac4776ff31feaed9794dbc434e423ac291fbee83。文档提交不是APK源码HEAD，开始续接先fetch核远端，读AGENTS/latest/REVIEW/docs/frozen-page-save.md、实际源码和CI，不回退旧修复。
+工作分支 `feature/export-conversation`；本轮应用/测试源码 `5d9efe8eee0c24d1ce2b1a48b6e14f74360ae583`；当前文档基点 `610fb8708fac93d7334ca9d44292805d67673165`。最终文档提交可由git log核对，不等于APK源码HEAD。远端默认HEAD仍main/e8ffa0c6，本轮全程以工作分支最新远端为准；开始续接先fetch并读AGENTS/latest/REVIEW/legacy-conversation-scanner/frozen-page-save，不回退旧修复。
 
-## 最新要求与 Step 4b（2026-10-07）
+## 当前结论（优先于下方分步历史）
+
+隔离实现已完成：Stable保存当前网页三格式；Archive官方导入仍未来规划；Experimental只显式flag启用，默认debug/release=false且不构造controller，不注入或自动扫描。实验设置警告确认→用户开始→前台当前会话→可取消/恢复；结果/文件/脱敏diagnostic永远not-proven。ConversationExport类名保留，历史源码/算法/失败证据未删除，不扩数据源/selector，不改包名/签名/code14，不main/forcepush/Release。
+
+验证源码5d9efe8：本地DOM18/scroll32/progress19/locator18/snapshot13通过；实验CI37588638326 build和Android35/36全success，各19项通过（旧16+新3），Gecko2项明确退役。正式CI37588638317 API35全success，API36第一轮实际System Print失败，同源重试亦失败，已修复原生测试等待目的地标题的同步，等待新CI，不放宽PDF断言。实际default/experimental APK DEX false/true、sourceRevision、原签名v2及content digest已独立核对，约1.83MiB。证据tools/legacy-scanner/evidence/isolation-validation.json、package-verification.json。
+
+下一步核原生测试同步修复后的正式CI和实际PDF，再更新最终结论；之后仅物理设备/真实账号人工验证，不能证明完整历史；不重新投入selector扩张或批量采集。下方保留每步当时状态，ac4776f快照验收属于历史。
+
+## 分步历史：最新要求与 Step 4b（2026-10-07）
 
 当前分支feature/export-conversation，待Android验收源码4ca3c0428f46a646fc6c95a476349e35942888d8；审查29ea76d、隔离3d7f051、CI分类755d727、minSdk26与顶层错误码白名单修正4ca3c04。用户要求隔离旧实验scanner，默认false、显式property开启、警告/手动/前台/取消/恢复、脱敏not-proven，保留旧代码与失败证据；不增selector、不扩数据源、不main/Release/版号。
 
@@ -42,7 +50,12 @@
 
 源码5d9efe8正式API35 job112685070124全success，独立下载artifact11467699020核checks无失败、默认关闭2/快照10/全部原web/IME/share/native/升级回归通过；实际HTML/MD首尾/变更排除、同打印源、Nova/Firefox两PDF各31页与文本标记独立通过。API36 job112685070153仅realSystemPrintUiSavesFrozenMultipagePdf等待native PDF filename失败，另9项快照/默认关闭2/其余正式套件与Firefox均通过；截图显示printspooler错误/Retry页，不能称PDF成功。失败原instrumentation/UI文本/截图与JSON保留tools/legacy-scanner/evidence。已只重跑该失败job，源码/断言不改，不擅自归为环境问题。当前HEAD e26d9ad；本步实际结果success/failure混合，下一步读取同源API36重试、核PDF实物再最终交接。
 
-## 已实现
+
+### Step 4i：正式API36同源重试失败，修复原生打印测试同步
+
+当前文档基点610fb8708fac93d7334ca9d44292805d67673165；已测源码5d9efe8。API36 job112689954042/artifact11468372879第二次仍native PDF filename超时，failure已保留原测试/UI和摘要，正式整体failure不能验收。日志在07:59:20首轮write(1 range)后测试打开destination并重选默认PDF，07:59:23第二次layout、write(0 ranges)后spooler错误。原测试只等窗口包名就判断Save as PDF缺席，窗口存在不代表目的地标题已加载。新增等待spinner标题非空后才判断是否切换目的地，避免加载时误操作；不改生产SnapshotWebView/PageSnapshotExport，不跳过实际保存/31页/首尾/变更排除/Firefox断言。本步修复待新CI验证，尚非成功结论。下一步核新正式CI与实际文件；legacy应用/fixture不变，其19项结论仍属于5d9efe8。
+
+## 此前 Frozen Snapshot 实现与验收（历史）
 
 用户最终要求普通HTML/Markdown/PDF，取消Share/MHTML/新完整历史算法。正式“保存当前网页”→一次evaluateJavascript同步深clone→同clone静态HTML和Markdown→不可变FrozenPageSnapshot。HTML为唯一标准表示；PDF仅同frozenHtml→独立无JS/static WebView→Android System Print。Nova860px阅读/白底print CSS，不复制ChatGPT SPA。无滚动/backend/private reader/React/token/storage读取/ID去重/跨窗口缓存，不重构输入上传下载分享。
 

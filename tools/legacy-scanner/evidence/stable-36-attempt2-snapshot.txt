@@ -1,0 +1,167 @@
+INSTRUMENTATION_STATUS: class=com.example.chatgptnova.FrozenPageSnapshotTest
+INSTRUMENTATION_STATUS: current=1
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=10
+INSTRUMENTATION_STATUS: stream=
+com.example.chatgptnova.FrozenPageSnapshotTest:
+INSTRUMENTATION_STATUS: test=cancelledPrintAdapterCleansUpAndLivePageStillAcceptsInput
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: class=com.example.chatgptnova.FrozenPageSnapshotTest
+INSTRUMENTATION_STATUS: current=1
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=10
+INSTRUMENTATION_STATUS: stream=.
+INSTRUMENTATION_STATUS: test=cancelledPrintAdapterCleansUpAndLivePageStillAcceptsInput
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_STATUS: class=com.example.chatgptnova.FrozenPageSnapshotTest
+INSTRUMENTATION_STATUS: current=2
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=10
+INSTRUMENTATION_STATUS: stream=
+INSTRUMENTATION_STATUS: test=actualSystemPrintCancellationReturnsToLiveChatAndCanRepeat
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: class=com.example.chatgptnova.FrozenPageSnapshotTest
+INSTRUMENTATION_STATUS: current=2
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=10
+INSTRUMENTATION_STATUS: stream=.
+INSTRUMENTATION_STATUS: test=actualSystemPrintCancellationReturnsToLiveChatAndCanRepeat
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_STATUS: class=com.example.chatgptnova.FrozenPageSnapshotTest
+INSTRUMENTATION_STATUS: current=3
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=10
+INSTRUMENTATION_STATUS: stream=
+INSTRUMENTATION_STATUS: test=staticRendererRejectsUnsafeResourcesAndDoesNotChangeCookies
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: class=com.example.chatgptnova.FrozenPageSnapshotTest
+INSTRUMENTATION_STATUS: current=3
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=10
+INSTRUMENTATION_STATUS: stream=.
+INSTRUMENTATION_STATUS: test=staticRendererRejectsUnsafeResourcesAndDoesNotChangeCookies
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_STATUS: class=com.example.chatgptnova.FrozenPageSnapshotTest
+INSTRUMENTATION_STATUS: current=4
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=10
+INSTRUMENTATION_STATUS: stream=
+INSTRUMENTATION_STATUS: test=captureDoesNotAlterLiveDomOrInstallHooks
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: class=com.example.chatgptnova.FrozenPageSnapshotTest
+INSTRUMENTATION_STATUS: current=4
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=10
+INSTRUMENTATION_STATUS: stream=.
+INSTRUMENTATION_STATUS: test=captureDoesNotAlterLiveDomOrInstallHooks
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_STATUS: class=com.example.chatgptnova.FrozenPageSnapshotTest
+INSTRUMENTATION_STATUS: current=5
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=10
+INSTRUMENTATION_STATUS: stream=
+INSTRUMENTATION_STATUS: test=sameSnapshotMarkdownAndStaticHtmlIgnoreLiveMutation
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: class=com.example.chatgptnova.FrozenPageSnapshotTest
+INSTRUMENTATION_STATUS: current=5
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=10
+INSTRUMENTATION_STATUS: stream=.
+INSTRUMENTATION_STATUS: test=sameSnapshotMarkdownAndStaticHtmlIgnoreLiveMutation
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_STATUS: class=com.example.chatgptnova.FrozenPageSnapshotTest
+INSTRUMENTATION_STATUS: current=6
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=10
+INSTRUMENTATION_STATUS: stream=
+INSTRUMENTATION_STATUS: test=htmlProductionPathUsesSafAndFrozenTitleBodyTable
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: class=com.example.chatgptnova.FrozenPageSnapshotTest
+INSTRUMENTATION_STATUS: current=6
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=10
+INSTRUMENTATION_STATUS: stream=.
+INSTRUMENTATION_STATUS: test=htmlProductionPathUsesSafAndFrozenTitleBodyTable
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_STATUS: class=com.example.chatgptnova.FrozenPageSnapshotTest
+INSTRUMENTATION_STATUS: current=7
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=10
+INSTRUMENTATION_STATUS: stream=
+INSTRUMENTATION_STATUS: test=snapshotRemainsImmutableAndDiagnosticsExcludePrivateValues
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: class=com.example.chatgptnova.FrozenPageSnapshotTest
+INSTRUMENTATION_STATUS: current=7
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=10
+INSTRUMENTATION_STATUS: stream=.
+INSTRUMENTATION_STATUS: test=snapshotRemainsImmutableAndDiagnosticsExcludePrivateValues
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_STATUS: class=com.example.chatgptnova.FrozenPageSnapshotTest
+INSTRUMENTATION_STATUS: current=8
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=10
+INSTRUMENTATION_STATUS: stream=
+INSTRUMENTATION_STATUS: test=realSystemPrintUiSavesFrozenMultipagePdf
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: class=com.example.chatgptnova.FrozenPageSnapshotTest
+INSTRUMENTATION_STATUS: current=8
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=10
+INSTRUMENTATION_STATUS: stack=java.lang.AssertionError: Timed out: native PDF filename
+	at org.junit.Assert.fail(Assert.java:89)
+	at com.example.chatgptnova.FrozenPageSnapshotTest.waitFor(FrozenPageSnapshotTest.java:38)
+	at com.example.chatgptnova.FrozenPageSnapshotTest.realSystemPrintUiSavesFrozenMultipagePdf(FrozenPageSnapshotTest.java:113)
+
+INSTRUMENTATION_STATUS: stream=
+Error in realSystemPrintUiSavesFrozenMultipagePdf(com.example.chatgptnova.FrozenPageSnapshotTest):
+java.lang.AssertionError: Timed out: native PDF filename
+	at org.junit.Assert.fail(Assert.java:89)
+	at com.example.chatgptnova.FrozenPageSnapshotTest.waitFor(FrozenPageSnapshotTest.java:38)
+	at com.example.chatgptnova.FrozenPageSnapshotTest.realSystemPrintUiSavesFrozenMultipagePdf(FrozenPageSnapshotTest.java:113)
+
+INSTRUMENTATION_STATUS: test=realSystemPrintUiSavesFrozenMultipagePdf
+INSTRUMENTATION_STATUS_CODE: -2
+INSTRUMENTATION_STATUS: class=com.example.chatgptnova.FrozenPageSnapshotTest
+INSTRUMENTATION_STATUS: current=9
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=10
+INSTRUMENTATION_STATUS: stream=
+INSTRUMENTATION_STATUS: test=cancelledSaveCanRepeatWithoutRendererLeak
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: class=com.example.chatgptnova.FrozenPageSnapshotTest
+INSTRUMENTATION_STATUS: current=9
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=10
+INSTRUMENTATION_STATUS: stream=.
+INSTRUMENTATION_STATUS: test=cancelledSaveCanRepeatWithoutRendererLeak
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_STATUS: class=com.example.chatgptnova.FrozenPageSnapshotTest
+INSTRUMENTATION_STATUS: current=10
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=10
+INSTRUMENTATION_STATUS: stream=
+INSTRUMENTATION_STATUS: test=activityRecreationAndRendererRecoveryDestroySnapshotViews
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: class=com.example.chatgptnova.FrozenPageSnapshotTest
+INSTRUMENTATION_STATUS: current=10
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=10
+INSTRUMENTATION_STATUS: stream=.
+INSTRUMENTATION_STATUS: test=activityRecreationAndRendererRecoveryDestroySnapshotViews
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_RESULT: stream=
+
+Time: 141.984
+There was 1 failure:
+1) realSystemPrintUiSavesFrozenMultipagePdf(com.example.chatgptnova.FrozenPageSnapshotTest)
+java.lang.AssertionError: Timed out: native PDF filename
+	at org.junit.Assert.fail(Assert.java:89)
+	at com.example.chatgptnova.FrozenPageSnapshotTest.waitFor(FrozenPageSnapshotTest.java:38)
+	at com.example.chatgptnova.FrozenPageSnapshotTest.realSystemPrintUiSavesFrozenMultipagePdf(FrozenPageSnapshotTest.java:113)
+
+FAILURES!!!
+Tests run: 10,  Failures: 1
+
+
+INSTRUMENTATION_CODE: -1

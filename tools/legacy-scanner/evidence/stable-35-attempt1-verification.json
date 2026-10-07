@@ -58,13 +58,41 @@
       "sha256": "5b8289367d7e81cd5ebce56d920c222b7e906d4d9189bcf709e5c69a4d639ea9",
       "pages": 31,
       "markersVerified": true,
-      "lateMutationAbsent": true
+      "lateMutationAbsent": true,
+      "fixtureImageDimensionsVerified": "320x120"
     },
     "firefox-frozen.pdf": {
       "sha256": "2771116af5072574204bb56e32af733291adee7dda1f14366c9ef045ce271288",
       "pages": 31,
       "markersVerified": true,
-      "lateMutationAbsent": true
+      "lateMutationAbsent": true,
+      "fixtureImageDimensionsVerified": "320x120"
+    }
+  },
+  "upgradeSuites": {
+    "gecko-upgrade-current": {
+      "passed": true,
+      "count": 1
+    },
+    "gecko-upgrade-persistence": {
+      "passed": true,
+      "count": 1
+    },
+    "gecko-upgrade-seed": {
+      "passed": true,
+      "count": 1
+    },
+    "upgrade-current": {
+      "passed": true,
+      "count": 1
+    },
+    "upgrade-persistence": {
+      "passed": true,
+      "count": 1
+    },
+    "upgrade-seed": {
+      "passed": true,
+      "count": 1
     }
   }
 }

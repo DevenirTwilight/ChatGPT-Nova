@@ -1,0 +1,16 @@
+{
+  "sourceCommit": "5d9efe8eee0c24d1ce2b1a48b6e14f74360ae583",
+  "android": 36,
+  "attempt": 2,
+  "jobId": 112689954042,
+  "artifactId": 11468372879,
+  "zipSha256": "45e91b06e4d29990ac40b69b0612de53c03acfd0224d31d70482a070a2aca9ff",
+  "failures": [
+    "snapshot",
+    "pull-frozen-page.pdf",
+    "pdf-content"
+  ],
+  "failedTest": "realSystemPrintUiSavesFrozenMultipagePdf",
+  "reason": "native PDF filename timeout; log shows write page ranges=1, then unnecessary destination reselection/layout and write page ranges=0; printspooler error screen",
+  "proposedFix": "Wait for destination title before deciding whether to select PDF. No production change or relaxed PDF assertion; pending CI."
+}

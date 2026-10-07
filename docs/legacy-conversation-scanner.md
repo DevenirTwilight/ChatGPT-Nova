@@ -83,7 +83,9 @@ Java diagnostic对白名单数字/布尔、受限枚举和结构数组做递归�
 
 ## 当前验证与后续
 
-Step1审查29ea76d，Step2隔离3d7f051。本地旧DOM17/滚动32/snapshot13已通过（本轮新增断言仍需重跑）；Android新增合同及正式回归待CI。通过仅证明fixtures，不代表真实ChatGPT完整历史或物理设备成功。下一步完成独立CI并记录实际结果，保持原包名/证书/code14；不合并main/forcepush/公开Release。
+实现/测试源码 `5d9efe8eee0c24d1ce2b1a48b6e14f74360ae583`。本地DOM18/scroll32/progress19/locator18/snapshot13通过。实验CI [37588638326](https://github.com/DevenirTwilight/ChatGPT-Nova/actions/runs/37588638326) build/lint/browser及Android35/36全通过，各19个执行项、2个明确退役Gecko项。正式CI [37588638317](https://github.com/DevenirTwilight/ChatGPT-Nova/actions/runs/37588638317) API35通过，API36两次真实System Print失败，原生测试已补目的地标题加载同步、待新CI；失败截图及报告保留，不写成成功。
+
+两实际APK独立核原证书/签名content digest、DEX默认flag=false/实验true、源码revision及assets，未改变包名/签名/code14。报告 [isolation-validation.json](../tools/legacy-scanner/evidence/isolation-validation.json) 与 [package-verification.json](../tools/legacy-scanner/evidence/package-verification.json)。通过仅证明受控fixtures，未做真实ChatGPT账号或物理设备验收，永远不能由算法正常结束推断完整服务器历史。不合并main/forcepush/公开Release。
 
 未来Archive可把用户主动导入的官方记录作为独立人工基准（例如官方40 vs scanner39），但scanner不自动访问官方导出，不与Archive共用完整性承诺。不描述为官方导出替代、完整备份或绝对安全/法律结论。
 

@@ -29,14 +29,29 @@
   "ci": {
     "stable": {
       "runId": 37588638317,
-      "status": "retry_in_progress",
+      "status": "completed",
       "build": "success",
       "android35": "success",
       "android36Attempt1": "failure",
-      "android36Retry": "requested",
+      "android36Retry": "failure",
       "artifactVerification": [
         "stable-35-attempt1-verification.json",
         "stable-36-attempt1-verification.json"
+      ],
+      "conclusion": "failure",
+      "android36Attempts": [
+        {
+          "attempt": 1,
+          "jobId": 112685070153,
+          "result": "failure",
+          "evidence": "stable-36-attempt1-verification.json"
+        },
+        {
+          "attempt": 2,
+          "jobId": 112689954042,
+          "result": "failure",
+          "evidence": "stable-36-attempt2-verification.json"
+        }
       ]
     },
     "experimental": {
