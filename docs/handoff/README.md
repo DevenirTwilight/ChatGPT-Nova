@@ -15,18 +15,8 @@
 
 仅在需要压缩上下文、迁移会话或用户明确要求时提供下一会话提示词。普通回复、提交文档或阶段进度汇报不自动触发迁移，不要每次回复都生成提示词。实际需要交接时，仍须将必要材料提交并推送至工作分支。
 
-## 下一会话提示词模板（仅在交接触发时使用）
+## 下一会话提示词模板（仅实际交接时使用）
 
 ```text
-继续处理 https://github.com/DevenirTwilight/ChatGPT-Nova ，工作分支 feature/export-conversation。
-
-请先读取该分支的 AGENTS.md、docs/handoff/latest.md、docs/handoff/REVIEW.md、tools/feasibility/REPORT.md 和 tools/feasibility/README.md，再核对远端最新提交，从现有进度继续；不要重新开始八项现状提问。
-
-另读 docs/dom-export-trial.md 和 tools/feasibility/history-coverage/README.md。用户已授权可安装DOM新方案试用版与报错诊断；以最新文档和远端提交核实版本、下载和独立验证证据。用户实测1.3.8在Android36/WebView153普通全文字会话返回D09_EMPTY_BODY，随后转述7条HTML缺失大量历史。已授权1.4.0滚动缓存测试版；区分APK/合成验证通过与用户原会话完整覆盖，先看最新试用说明及历史校验设计。无需重复要求用户先搭建ADB，优先通过可安装版本和脱敏诊断推进；完整历史仍需独立逐条核对，不把首尾四条或DOM并集当作完整历史基准。
-
-此前仅可行性阶段已转为用户授权的有限范围试用实现与APK交付，不合并main，不擅自扩展为完整生产功能。允许重做旧路线。优先解决真实登录项目内长会话的历史覆盖问题；合成测试通过、消息数量或指纹稳定不证明完整历史，也不能证明旧403已修好。明确证据边界，继续可独立完成的工作。
-
-用户要求以 GitHub 仓库作为交接来源。以后需要压缩上下文或迁移会话时，也更新 docs/handoff/latest.md 和必要验证材料，在已授权范围内提交并推送到工作分支，返回 GitHub 链接、提交号和下一会话提示词；不要只给沙箱下载链接。
-
-文档作为历史背景，按我最新请求确定实际工作范围。
+继续处理DevenirTwilight/ChatGPT-Nova工作分支feature/export-conversation。先读AGENTS.md、docs/handoff/latest.md、docs/handoff/REVIEW.md、docs/frozen-page-save.md及实际远端HEAD/源码/测试/最近CI，不按历史文档猜HEAD或回退修复。当前任务为一次当前页面clone生成普通HTML与Markdown、系统WebView打印同份HTML；Share/MHTML/新历史扫描已终止。以latest中的实际待办和用户最新指令续接，不伪称服务器完整历史。保留原包名/签名/版号、不合并main/公开Release；已授权必要工作分支提交/push及稳定测试APK交付。仅实际压缩/迁移才更新并push交接及提供下一会话提示词，普通回复不要生成。
 ```
