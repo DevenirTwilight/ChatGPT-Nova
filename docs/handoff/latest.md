@@ -12,6 +12,12 @@
 
 正式路径不变；默认debug/release不初始化ConversationExport；实验设置需开始扫描；单向stable ID/overlap/拓扑序/冲突/稳定上限/恢复保留，文件Nova-legacy-scan和not-proven。旧Gecko PDF已在此前退役，仅实验HTML/MD；正式System Print PDF保留。详见../legacy-conversation-scanner.md，未来Archive官方导入仅规划。
 
+### Step 4c：实际APK独立核对 success
+
+已通过GitHub connector取回正式artifact11466649749、实验artifact11467092575（CLI token/下载失败由connector解决，不重新登录/不绕代理）。独立核ZIP digest与GitHub元数据、APK SHA与交付校验、APK v2 RSA签名及签名content digest、原证书指纹、四legacy+freeze assets逐字节等于4ca3c04源码、无native so。DEX BuildConfig.ENABLE_LEGACY_SCANNER正式false/实验true。正式1916121bytes/SHA a37d8cd6371591f263ac00dc13eb49283abc0e3adda45d0e933351d941af5eaa；实验1917341bytes/SHA 6856865eb9439088910a02625d7005f2b4f9be68ec54426a4f2c1cdab7e02e3c。
+
+入库报告 ../../tools/legacy-scanner/evidence/package-verification.json。两套build/lint/unit/签名均success，四个Android jobs仍进行中（not verified），不能把包验证当作UI/恢复/正式保存通过。下一步继续读取Android结果，不公开Release、不改版本。
+
 ## 已实现
 
 用户最终要求普通HTML/Markdown/PDF，取消Share/MHTML/新完整历史算法。正式“保存当前网页”→一次evaluateJavascript同步深clone→同clone静态HTML和Markdown→不可变FrozenPageSnapshot。HTML为唯一标准表示；PDF仅同frozenHtml→独立无JS/static WebView→Android System Print。Nova860px阅读/白底print CSS，不复制ChatGPT SPA。无滚动/backend/private reader/React/token/storage读取/ID去重/跨窗口缓存，不重构输入上传下载分享。
