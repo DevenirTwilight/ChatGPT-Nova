@@ -1,3 +1,12 @@
+## Real export compatibility — Step C：新源码构建与签名实核（2026-10-07）
+
+- 实際分支feature/export-conversation；正式测试源码dcd9464bba57aa54868d7d6fc35074c0087b8cae，正式CI37631627786。
+- success：build/Gradle/lint/browser、CI JVM XML48 tests/failures0/errors0独立下载核对；下载签名APK，v2 signature/content digest/原证书/SHA256/DEX源码revision与defaultlegacy=false均实核，包名/code14/name不变，旧export与snapshot assets一致，无native.so。
+- 证据 `tools/archive/evidence/compatibility-package-verification.json`，正式APK artifact11487340777。`real-export-compatibility-summary.json`严格区分用户提供audit与本地未验证真实结果，不含正文/title/ID/路径或私有文件hash。
+- not verified：API26/35/36/实际新schema PDF/Stable仍进行中；Legacy37631515308源码d36246e新构建success，Android仍进行中，dcd只修Archive test-provider未知SIZE分支，共享legacy/生产源码一致。
+- 用户确认本地真实ZIP；Level2–4 pending、Level5manual pending、旧版real runtime not verified。已提供仓库内 `docs/archive-local-validation.md`，不得把数目匹配当人工内容验收。
+- 下一步：完整CI及实际Artifact核对，然后交付已验证签名APK；本提交仅文档/证据，不改已构建源码。
+
 ## Real export compatibility — Step B2：未知SAF SIZE夹具检查（2026-10-07）
 
 - 实际分支feature/export-conversation，实施源码基线d36246e044e52fff86dcc50a2458df37db7a7c02。

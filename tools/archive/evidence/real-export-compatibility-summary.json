@@ -1,0 +1,71 @@
+{
+  "testedSourceCommit": "dcd9464bba57aa54868d7d6fc35074c0087b8cae",
+  "suppliedAuditSource": "user task document; not independently re-audited here",
+  "realZipAccessibleInDevelopmentEnvironment": false,
+  "userValidationLocation": "user-owned phone/computer; private file not uploaded",
+  "sampleAudit": {
+    "containerBytes": 370566688,
+    "zip64": false,
+    "entries": 605,
+    "conversationJsonFiles": 2,
+    "approxConversationJsonMiB": [
+      49.44,
+      6.0
+    ],
+    "approxSelectedJsonMiB": 55.44,
+    "conversations": 122,
+    "mappingNodes": 7250,
+    "messageBearingNodes": 7130,
+    "approxCurrentBranchMessages": 4267,
+    "approxContentTypeCounts": {
+      "text": 3216,
+      "multimodal_text": 892,
+      "thoughts": 1874,
+      "reasoning_recap": 1148
+    }
+  },
+  "oldVersion": {
+    "source": "7854f3ea06309fa20e5e26a7acc4b77750322968",
+    "sourceConfirmedFailure": "A05_ARCHIVE_TOO_LARGE at 256MiB container metadata/copy limit; subsequent1Mi chars/2Mi serialized and Store budgets also insufficient",
+    "realRuntimeResult": "not verified; requires local old-build attempt"
+  },
+  "changedLimits": {
+    "containerMiB": 512,
+    "conversationStringAndKeyMiChars": 4,
+    "serializedAndStoreConversationMiChars": 4
+  },
+  "unchangedLimits": {
+    "entryMiB": 64,
+    "selectedJsonTotalMiB": 256,
+    "declaredUncompressedTotalMiB": 512,
+    "entries": 10000,
+    "mappingPerConversation": 10000,
+    "valuesPerConversation": 100000,
+    "jsonDepth": 64,
+    "lexicalStringKiChars": 512,
+    "rawNodeMiBytes": 1,
+    "compressionRatio": 200,
+    "databaseMiB": 512
+  },
+  "levels": {
+    "level1": "local JVM48 and CI build/lint/JVM48 passed; Android full fixture regression pending",
+    "level2": "pending",
+    "level3": "pending",
+    "level4": "pending",
+    "level5": "manual content validation pending"
+  },
+  "localRealResults": {
+    "firstImport": "pending",
+    "databaseBytes": null,
+    "durationMs": null,
+    "sampledHeapPeakBytes": null,
+    "temporaryBytes": null,
+    "restart": "pending",
+    "duplicateImport": "pending",
+    "html": "pending",
+    "markdown": "pending",
+    "pdf": "pending",
+    "manualSamples": 0
+  },
+  "privateFileHashesRecorded": false
+}

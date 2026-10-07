@@ -1,3 +1,7 @@
+## Corrected compatibility source package independently verified
+
+Source dcd9464 / CI37631627786 build/lint/browser/JVM48 success. Downloaded XML and APK independently verify v2 signed content/original cert/sha/source revision/default legacy=false/unchanged identity version and retained assets. Android26/35/36/Stable and new schema actual PDF still pending; Legacy37631515308(d36246e) Android pending. Real sample remains on user's own device: Levels2–4 and manual Level5 not verified, audit facts explicitly attributed, no private data/hash/path in committed evidence. Local checklist ready.
+
 ## Bounded real-schema compatibility implementation
 
 Local JVM48 pass under128MiB heap. Container512MiB and one-conversation chars/serialized/Store aggregate4Mi, remaining byte/depth/node/DB limits unchanged. Storage precheck ZIP+128MiB DB/WAL allowance+32MiB reserve, periodic checks, rollback; no extraction/media expansion. Unified visibility hides thoughts in Reader/both export scopes while retaining raw/tree/DB; recap explicitly labeled, object text preserved, unknown metadata retained. New Android20 and actual PDF schema markers awaiting full CI. Legacy algorithm/snapshot unchanged. User confirms real ZIP stays on their phone/computer: local real Levels2–4 pending; Level5 only user manual confirmation. No private export uploaded or checked into repo.
