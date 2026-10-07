@@ -1,3 +1,11 @@
+## Real export compatibility — Step E：最终修正源码的基础验收（2026-10-07）
+
+- 分支feature/export-conversation，实际源码3e2d39f4be08ce333f6b77a128abf212fb62dd66，CI37633057743。
+- success：build/Gradle/lint/browser/JVM48与API26基础2；独立下载JVM XML/API26 instrumentation确认，不只引用job状态。独立下载APK v2签名/content digest/原证书/source revision/defaultlegacy=false实核，原包名/签名/code14/name保持，旧4export+freeze assets一致；test provider/虚构内容未入生产APK。
+- 证据 `tools/archive/evidence/compatibility-final-package-verification.json`，最终签名APK artifact11487790533。前一份dcd package报告/失败不覆盖。本轮生产代码与成功Legacy测试源码d36246e一致（后续只有Archive test-only修正/文档）。
+- not verified：最终API35/36 Archive20+restart2/Stable43/实际schemaPDF仍进行中；真实用户文件未在开发环境使用，Level2–4 pending、Level5 manual pending。
+- 下一步：最终Android Artifact独立核对后交付APK。此提交只文档/证据，不改已构建源码或触发新公开发布。
+
 ## Real export compatibility — Step D：真实Android夹具失败与修正（2026-10-07）
 
 - 分支feature/export-conversation；失败源码dcd9464bba57aa54868d7d6fc35074c0087b8cae，CI37631627786，两API均20项/8失败；其余12包括3Mi SQLite往返/重复导入通过。后续Stable suites未执行，不能宣称回归通过。
