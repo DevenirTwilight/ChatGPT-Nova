@@ -5,7 +5,7 @@
 ## 准备与旧版失败
 
 1. 如果当前仍是已验收的旧版7854f3ea，请先选择同一真实ZIP：预期SAF SIZE已知在复制前A05_ARCHIVE_TOO_LARGE；SIZE未知在复制超过256MiB后A05。记录实际错误/阶段，不能以预期冒充结果。若已升级，标旧版real runtime not verified，不删除本地档案来制造测试条件。
-2. 使用新CI签名Artifact `nova-frozen-page-apk` 的ChatGPT-Nova.apk覆盖安装，原包名/签名/code14保持；不公开Release。新旧版号一样，以“复制诊断”的buildRevision确认源码。正式Artifact默认legacy=false；不要误装实验Legacy或测试APK。
+2. 使用[最终CI签名Artifact](https://github.com/DevenirTwilight/ChatGPT-Nova/actions/runs/37634607647/artifacts/11487454505)（buildRevision1990cb1ffb7a0832e94c552cc349023e6e5989d9） `nova-frozen-page-apk` 的ChatGPT-Nova.apk覆盖安装，原包名/签名/code14保持；不公开Release。新旧版号一样，以“复制诊断”的buildRevision确认源码。正式Artifact默认legacy=false；不要误装实验Legacy或测试APK。
 3. ZIP保持在系统SAF可读位置。当前样本353.40MiB；复制前约需513.40MiB私有卷空闲（ZIP+128MiB DB/WAL规划+32MiB余量）。SIZE未知时持续检查160MiB空闲；这不是任意数据的充分空间保证。
 4. Archive内容全部本地。可以保留现有档案；如果既有数据会影响总行数，则使用导入统计区分本次输入，不能把全部库总数误认为新增量。不清在线登录。
 

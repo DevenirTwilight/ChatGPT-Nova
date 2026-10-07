@@ -1,5 +1,5 @@
 {
-  "testedSourceCommit": "dcd9464bba57aa54868d7d6fc35074c0087b8cae",
+  "testedSourceCommit": "1990cb1ffb7a0832e94c552cc349023e6e5989d9",
   "suppliedAuditSource": "user task document; not independently re-audited here",
   "realZipAccessibleInDevelopmentEnvironment": false,
   "userValidationLocation": "user-owned phone/computer; private file not uploaded",
@@ -48,7 +48,7 @@
     "databaseMiB": 512
   },
   "levels": {
-    "level1": "local JVM48 and CI build/lint/JVM48 passed; Android full fixture regression pending",
+    "level1": "synthetic / fixture validation passed: JVM48, API26 foundation2, API35/36 each Archive20+process restart2 and Stable43; actual outputs independently verified",
     "level2": "pending",
     "level3": "pending",
     "level4": "pending",
@@ -67,5 +67,23 @@
     "pdf": "pending",
     "manualSamples": 0
   },
-  "privateFileHashesRecorded": false
+  "privateFileHashesRecorded": false,
+  "syntheticCiRun": 37634607647,
+  "legacyCiRun": 37631515308,
+  "syntheticResults": {
+    "jvmTests": 48,
+    "api26Tests": 2,
+    "archivePerApi": 20,
+    "processRestartPerApi": 2,
+    "stablePerApi": 43,
+    "archivePdfPagesPerApi": 16,
+    "snapshotAndFirefoxPdfPagesPerApi": 31,
+    "legacyPerApi": 19,
+    "historicGeckoIgnoredPerApi": 2,
+    "apis": [
+      35,
+      36
+    ]
+  },
+  "apkArtifactId": 11487454505
 }

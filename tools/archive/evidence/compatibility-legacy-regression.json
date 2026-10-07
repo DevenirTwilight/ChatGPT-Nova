@@ -19,5 +19,7 @@
       "result": "success"
     }
   },
-  "productionAndLegacyDependenciesUnchangedBetweenTestedSources": true
+  "productionAndLegacyDependenciesUnchangedBetweenTestedSources": true,
+  "finalStableSourceCommit": "1990cb1ffb7a0832e94c552cc349023e6e5989d9",
+  "productionAndLegacyDependenciesUnchangedThroughFinalSource": true
 }

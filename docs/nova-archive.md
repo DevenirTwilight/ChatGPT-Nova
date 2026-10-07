@@ -70,7 +70,7 @@ A01 unsupported、A02 invalid ZIP、A03 no conversations、A04 malformed JSON、
 
 JVM：ZIP发现/分片/顺序/无关文件/重复entry/traversal/bomb/CRC、strict JSON/未知字段/深度/超长、树current/编辑/分支/孤儿/cycle/角色/非text、重复导入/新旧版本、安全Markdown HTML，以及1/100/1000会话/长代码/中法英/emoji合成夹具。Android：SAF/取消/持久化/重启/列表搜索排序/Reader/HTML/MD/实际System Print PDF/取消/旋转/销毁/导入生命周期；原有Nova回归与原签名升级必须保留。证据严格标synthetic / fixture validation passed。
 
-## Real OpenAI Data Export compatibility — 本轮待验收
+## Real OpenAI Data Export compatibility — fixture修复通过，真实设备待验收
 
 用户提供结构审计：370566688 bytes（约353.40MiB）、605 entries、普通non-ZIP64单卷Deflate；两个JSON约49.44MiB/6.00MiB，合计55.44MiB；122 conversations、7250 mapping nodes、7130 message-bearing nodes、约4267 current-branch messages。content_type约text3216/multimodal_text892/thoughts1874/reasoning_recap1148；这些是用户审计数据，**本开发环境未独立读取真实ZIP**。当前样本据用户审计未使用ZIP64；ZIP64仍不支持。
 
@@ -80,7 +80,7 @@ JVM：ZIP发现/分片/顺序/无关文件/重复entry/traversal/bomb/CRC、stri
 
 成功诊断新增buildRevision、输入mapping/message/current-branch/可见branch计数、白名单content_type统计、复制/解析/总耗时、临时bytes、前后空闲、关闭DB后的主库bytes、采样Java used heap与WAL峰值。采样值不是精确profiler峰值，整个进程heap包括WebView/应用；取消延迟/ANR需设备人工观察，诊断不含正文/title/ID/文件路径/原filename/私有文件hash。Reader数量为可见记录，列表message count仍含已保存thoughts，不将隐藏误称删除。
 
-当前等级：Level1新修复回归待CI；Level2容器/Level3真实导入重启/Level4真实重复导入 **pending**；Level5 **manual content validation pending**。用户明确真实ZIP在其手机/电脑，仅使用修复签名APK本地验证，不上传开发服务器、GitHub/CI或输出文件。旧版真实运行失败也需用户本地实测，不能以源码推断冒充运行结果。[本地验收清单](archive-local-validation.md)。前轮MVP的已通过证据保留，不能代替本轮新源码验收。
+当前等级：**Level1 synthetic / fixture validation passed**，实际源码`1990cb1ffb7a0832e94c552cc349023e6e5989d9`，[正式CI37634607647](https://github.com/DevenirTwilight/ChatGPT-Nova/actions/runs/37634607647) build/API26/35/36全success：JVM48/browser13/API26基础2；API35/36各Archive20+独立force-stop seed/restart2、原正式17套43执行。实际Archive HTML/MD/16页PDF独立核对object text/recap/中文标签/首尾/code/table/Unicode且thoughts/OTHER-BRANCH排除；正式四份31页System/Firefox PDF仍同打印源、内容/图片/晚变更排除通过。新[LegacyCI37631515308](https://github.com/DevenirTwilight/ChatGPT-Nova/actions/runs/37631515308) d36246e各API19通过+2历史Gecko-only Ignore，scanner/共享生产依赖与最终源码完全一致。后续提交只文档/证据；Level2容器/Level3真实导入重启/Level4真实重复导入 **pending**；Level5 **manual content validation pending**。用户明确真实ZIP在其手机/电脑，仅使用修复签名APK本地验证，不上传开发服务器、GitHub/CI或输出文件。旧版真实运行失败也需用户本地实测，不能以源码推断冒充运行结果。[本地验收清单](archive-local-validation.md)。前轮MVP的已通过证据保留，不能代替本轮新源码验收。
 
 ## 数据删除与限制
 
@@ -97,3 +97,9 @@ schema、解析器、Activity、实际三格式导出、重启/生命周期和�
 - JVM：ArchiveCoreTest、`tools/archive/jvm-tests.sh`；Android：ArchiveTest、ArchiveProcessTest、ArchiveMinSdkTest、ArchiveFixtures、ArchiveFixtureDocuments及test manifest。
 - CI：`scripts/archive_android.py`、`.github/workflows/dom-trial.yml`；Legacy workflow只补共享SnapshotWebView触发路径。NovaWebViewTest同步授权新增菜单项，FrozenPageSnapshotTest只修正文件名控件选择，实际内容断言保留。
 - 依赖/许可证：app/build.gradle中Gson/CommonMark/GFM与JUnit；`assets/archive-licenses/`；说明README、本页、Legacy产品分层和handoff，验收/失败证据 `tools/archive/evidence/`。
+
+## 本轮签名包与证据
+
+[下载最终签名APK Artifact](https://github.com/DevenirTwilight/ChatGPT-Nova/actions/runs/37634607647/artifacts/11487454505)，解压安装ChatGPT-Nova.apk，原包名/证书/code14/name保持。生产APK默认legacy=false、旧export/freeze assets一致、无新增native引擎，test provider/虚构聊天不入生产包。v2 signature/content digest、源码revision及SHA256已独立核对；无需GitHub Release。
+
+[API35实际输出](../tools/archive/evidence/compatibility-runtime-35.json)、[API36实际输出](../tools/archive/evidence/compatibility-runtime-36.json)、[最终包](../tools/archive/evidence/compatibility-1990cb1-package-verification.json)、[Legacy回归](../tools/archive/evidence/compatibility-legacy-regression.json)、[用户审计与分级状态](../tools/archive/evidence/real-export-compatibility-summary.json)。本轮两次fixture失败也保留：不可变Map及旧short SAF输出缺schema标记；修正夹具与加强检查，没有改生产打印/扫描或删除断言。真实文件/正文/路径/输出/私有文件hash未进入仓库或CI。

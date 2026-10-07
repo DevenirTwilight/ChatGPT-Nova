@@ -1,3 +1,15 @@
+## Real export compatibility — 最终开发/fixture验收，用户真实验证待完成（2026-10-07）
+
+- 分支feature/export-conversation；实际完整测试源码 **1990cb1ffb7a0832e94c552cc349023e6e5989d9**，本提交仅最终文档/证据。正式[CI37634607647](https://github.com/DevenirTwilight/ChatGPT-Nova/actions/runs/37634607647) build/API26/API35/API36全success，独立下载与核对，不把此前红CI当成功。
+- success Level1：JVM48/browser13/API26基础2；API35/36各Archive20+真正force-stop seed/restart2，原Stable17套43执行（Frozen10/登录/菜单/IME/upload/download/share/生命周期/原签名升级）。实际HTML/MD、Archive各16页PDF object text/recap/摘要标签/首尾/code/table/Unicode正确，thoughts/非当前branch排除；正式System/Firefox四份31页PDF同静态源、Unicode/图片/长代码表格/晚变更排除核对通过。
+- success Legacy新CI37631515308，源码d36246e各API19通过+2历史Gecko-only Ignore；该源码与最终1990全部生产、共享scanner依赖/legacy fixture一致，仅Archive test-only/文档/CI断言修正。旧scanner/JS/失败历史未删除，defaultfalse/not-proven保持。
+- 最终正式[签名APK](https://github.com/DevenirTwilight/ChatGPT-Nova/actions/runs/37634607647/artifacts/11487454505)，约1.99MiB。独立核v2 signature/content digest/原证书/sourceRevision1990/默认legacy=false/保留assets/test provider排除；包名/签名/code14/name保持。无main merge/forcepush/GitHub Release，无FTS/附件/Legacy增强/DOM历史扩展。
+- 修复边界：container512MiB；parser单会话chars/serialized/Store写入与reload统一4Mi UTF-16 chars，entry64MiB/selectedJSON256MiB/声明解压512MiB/raw node1MiB UTF8/depth64/ratio200/10000entries/nodes/100000values/DB512MiB保持。SAF复制前ZIP+128MiB DB/WAL规划+32MiB余量，未知SIZE持续检查，事务低空间A09回滚。streaming/单事务/current_node/分支/未知metadata保持。
+- 统一显示：String/Map.text可见；asset与未知Map分别占位；thoughts任何阅读/导出scope隐藏但raw/树/DB保留；reasoning_recap明确推理摘要。诊断有安全输入计数/类型、复制/导入耗时、DB/temp/free、采样heap/WAL，无正文/真实title/ID/filename/path/hash。采样值不冒充精确峰值。
+- 证据 `tools/archive/evidence/compatibility-runtime-35.json`、`compatibility-runtime-36.json`、`compatibility-1990cb1-package-verification.json`、`compatibility-legacy-regression.json`、`real-export-compatibility-summary.json`。此前dcd不可变Map及3e输出fixture接线失败保留，不改成绿，生产代码无需为这两次fixture失败更改。
+- **not verified real Levels2–4；Level5 manual content validation pending。** 用户确认真实ZIP在其手机/电脑；本环境未读取真实ZIP、未做旧版real runtime A05、真实首次导入/DB大小/耗时/heap/temp/重启/重复导入/真实三格式人工内容核对。370566688bytes/non-ZIP64/605entries/两JSON49.44+6.00MiB/122会话/7250节点/7130消息等仅用户提供审计，不当作新APK实测。未上传私人文件/输出/日志/截图至开发环境/GitHub/CI。
+- 文档 `docs/nova-archive.md` 与[本地清单](../archive-local-validation.md)同步。**下一步由用户在本地安装最终APK，按清单反馈脱敏诊断、restart/duplicate状态、至少5会话与HTML/MD/PDF人工检查数量。** 不请求上传ZIP/正文；收到结果再分级记录真实Level2/3/4，只有用户明确确认才能Level5。不声称所有未来官方schema/ZIP64/附件恢复/服务器完整性。
+
 ## Real export compatibility — Step F：20项通过，实物检查夹具接线修正（2026-10-07）
 
 - 分支feature/export-conversation；源码3e2d39f4be08ce333f6b77a128abf212fb62dd66，CI37633057743两API各Archive20全部success。

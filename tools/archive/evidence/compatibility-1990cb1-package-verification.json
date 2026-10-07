@@ -1,0 +1,21 @@
+{
+  "sourceCommit": "1990cb1ffb7a0832e94c552cc349023e6e5989d9",
+  "ciRun": 37634607647,
+  "artifactId": 11487454505,
+  "apkBytes": 2086509,
+  "apkSha256": "d46f027bba4a42a1af12cccfde86acb4ed9ea9d94879876545a27827cabb049e",
+  "certificateSha256": "f93221ee0d2be2b806233a0b3427ec9c14766100c1bab3208841e6203e2b4289",
+  "apkV2Signature": "verified",
+  "apkV2ContentDigest": "verified",
+  "enableLegacyScannerDexValue": false,
+  "applicationId": "com.example.chatgptnova",
+  "versionCode": 14,
+  "versionName": "1.4.0-scroll-trial",
+  "nativeLibraries": [],
+  "legacyAndSnapshotAssetsMatchSource": true,
+  "testProviderAndSyntheticChatExcludedFromProductionApk": true,
+  "jvmTests": 48,
+  "realPrivateDataIncluded": false,
+  "api26Tests": 2,
+  "api26ArtifactId": 11488136161
+}
