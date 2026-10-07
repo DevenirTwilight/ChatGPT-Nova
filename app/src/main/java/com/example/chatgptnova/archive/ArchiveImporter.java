@@ -85,7 +85,7 @@ public final class ArchiveImporter {
 
   static String safeName(String name) throws ArchiveError {
     if (name.length() > 1024
-        || name.indexOf('\0') >= 0
+        || name.chars().anyMatch(c -> Character.isISOControl(c))
         || name.indexOf('\\') >= 0
         || name.startsWith("/")
         || name.matches("^[A-Za-z]:.*")) throw new ArchiveError("A02_INVALID_ZIP");
@@ -99,58 +99,8 @@ public final class ArchiveImporter {
     return out.toString();
   }
 
-  /** Inspect central records before ZipFile eagerly allocates its directory index. */
-  private void preflightZip(File file) throws IOException, ArchiveError {
-    try (RandomAccessFile in = new RandomAccessFile(file, "r")) {
-      int tailSize = (int) Math.min(65557, in.length());
-      if (tailSize < 22) throw new ArchiveError("A02_INVALID_ZIP");
-      byte[] tail = new byte[tailSize];
-      in.seek(in.length() - tailSize);
-      in.readFully(tail);
-      int end = -1;
-      for (int i = tail.length - 22; i >= 0; i--)
-        if (u32(tail, i) == 0x06054b50L && i + 22 + u16(tail, i + 20) == tail.length) {
-          end = i;
-          break;
-        }
-      if (end < 0
-          || u16(tail, end + 4) != 0
-          || u16(tail, end + 6) != 0
-          || u16(tail, end + 8) != u16(tail, end + 10)) throw new ArchiveError("A02_INVALID_ZIP");
-      int count = u16(tail, end + 10);
-      long size = u32(tail, end + 12), offset = u32(tail, end + 16);
-      if (count > 10000 || size > 16L * 1024 * 1024 || offset == 0xffffffffL)
-        throw new ArchiveError("A05_ARCHIVE_TOO_LARGE");
-      long directoryEnd = offset + size, actualEnd = in.length() - tailSize + end;
-      if (directoryEnd != actualEnd || offset < 0) throw new ArchiveError("A02_INVALID_ZIP");
-      in.seek(offset);
-      byte[] header = new byte[46];
-      int records = 0;
-      while (in.getFilePointer() < directoryEnd) {
-        control.check();
-        if (++records > 10000) throw new ArchiveError("A05_ARCHIVE_TOO_LARGE");
-        if (directoryEnd - in.getFilePointer() < 46) throw new ArchiveError("A02_INVALID_ZIP");
-        in.readFully(header);
-        if (u32(header, 0) != 0x02014b50L) throw new ArchiveError("A02_INVALID_ZIP");
-        long next = in.getFilePointer() + u16(header, 28) + u16(header, 30) + u16(header, 32);
-        if (next > directoryEnd || u16(header, 28) > 4096)
-          throw new ArchiveError("A02_INVALID_ZIP");
-        in.seek(next);
-      }
-      if (records != count) throw new ArchiveError("A02_INVALID_ZIP");
-    }
-  }
-
-  private static int u16(byte[] b, int p) {
-    return (b[p] & 255) | ((b[p + 1] & 255) << 8);
-  }
-
-  private static long u32(byte[] b, int p) {
-    return (long) u16(b, p) | ((long) u16(b, p + 2) << 16);
-  }
-
   private void readZip(File file, Sink sink) throws IOException, ArchiveError {
-    preflightZip(file);
+    ArchiveZip.inspect(file, control, false);
     try (ZipFile zip = new ZipFile(file)) {
       Enumeration<? extends ZipEntry> entries = zip.entries();
       Set<String> names = new HashSet<>();

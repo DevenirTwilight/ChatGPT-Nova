@@ -1,3 +1,5 @@
+> 最新用户任务报告：真实会话兼容Level2–4已在用户设备通过（首次/重复导入和统计）。这是user-reported local validation，开发环境未读取该ZIP；下方历史pending保留其当时状态。附件metadata占位属于当前Nova实现限制，用户官方ZIP已报告包含实际binary。本轮Attachment Restoration正在进行，尚未接入Reader/exports，详见[调查/安全基础与待办](archive-attachment-restoration.md)。AR1–5与会话Level独立，未验收。
+
 # Nova Archive
 
 ## 设计基线（Step 1，2026-10-07）

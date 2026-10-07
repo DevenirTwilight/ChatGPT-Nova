@@ -1,3 +1,11 @@
+## Attachment Restoration — Step B：有界安全基础与25项新增fixture（2026-10-07）
+
+- 分支feature/export-conversation，实施基线306ffa6，本提交为安全基础源码检查点（CI sourceRevision以实际提交SHA为准）。success本地JVM73，原48保持+新增25；ECJ/Java21 -Xmx128m，纯虚构生成binary。
+- ArchiveZip替换原preflight并强化outer/nested全部路径/local-central/加密/method/symlink/extra/ZIP64/重叠验证。ArchiveAssetFiles新增独立budget、流式CRC/hash/size、magic/尺寸头/OOXML、private generated文件Batch回滚与stale recovery接口。安全基础已实现，asset接口未接生产/DB/UI，不能说附件恢复已实现。
+- schema1/Reader/HTML/MD/PDF/MainActivity/Snapshot/旧scanner/四JS/签名/包名/版号均未改变；正式导入仍metadata，占位现状明确保留。未上传真实文件、名称、ID、路径/hash/输出。
+- not verified新CI/Android26/35/36/Stable/Legacy/实际输出；AR1完整mapping与AR2–5pending。真实会话Level2–4仅用户新任务报告通过。
+- 下一步：新CI核对，等待完全虚构等结构官方asset map+消息引用示例，再实施schema2/精确refs/跨导入upsert/offlineReader/provider/exports/cleanup，不可猜关联。设计与完整安全预算见docs/archive-attachment-restoration.md。
+
 ## Attachment Restoration — Step A：远端调查与设计（2026-10-07）
 
 - 分支feature/export-conversation，调查源码e0ecabddfe6bb52a0569d8fc5b0fafee16f71180；默认远端main/e8ffa0c6不是开发基线。当前正式37634607647/Legacy37631515308 success。已读当前AGENTS/handoff/产品docs、Archive实际源码/SAF/SQLite/renderer/print/manifest/provider与tests/CI。

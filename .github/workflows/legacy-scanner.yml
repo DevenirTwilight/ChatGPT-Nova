@@ -13,6 +13,9 @@ on:
       - 'app/build.gradle'
       # Verify the retained experimental APK when packaged Archive display semantics change.
       - 'app/src/main/java/com/example/chatgptnova/archive/ArchiveModel.java'
+      - 'app/src/main/java/com/example/chatgptnova/archive/ArchiveImporter.java'
+      - 'app/src/main/java/com/example/chatgptnova/archive/ArchiveZip.java'
+      - 'app/src/main/java/com/example/chatgptnova/archive/ArchiveAssetFiles.java'
       - 'app/src/androidTest/java/com/example/chatgptnova/DomTrialExportTest.java'
       - 'app/src/androidTest/java/com/example/chatgptnova/FixtureActivity.java'
       - 'app/src/androidTest/assets/**'

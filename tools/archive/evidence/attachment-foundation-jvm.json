@@ -1,0 +1,21 @@
+{
+  "stage": "security-foundation-only",
+  "baseline": "306ffa6",
+  "validation": "synthetic / fixture validation passed",
+  "jvm": {
+    "tests": 73,
+    "existing": 48,
+    "added": 25,
+    "heapLimitMiB": 128
+  },
+  "realExportAccessed": false,
+  "realConversationValidation": "user-reported Levels 2\u20134 passed",
+  "assetMappingImplemented": false,
+  "assetDatabaseImplemented": false,
+  "readerRestorationImplemented": false,
+  "AR1": "pending end-to-end mapping/storage",
+  "AR2": "not verified",
+  "AR3": "not verified",
+  "AR4": "not verified",
+  "AR5": "manual validation pending"
+}

@@ -25,3 +25,13 @@ ArchiveActivity SAF选择→私有cache ZIP→ArchiveStore单事务→ArchiveImp
 ## 验收边界
 
 AR1–AR5均尚未完成；本页为设计，不能称附件功能已实现。真实ZIP/正文/文件名/ID/path/hash/附件/截图不得进入GitHub、CI或fixtures。需要补充脱敏结构证据，之后接通mapping、DB、Reader/exports。当前可以独立完成ZIP/MIME/存储安全基础及synthetic tests。
+
+## Step B：独立安全基础已实现，附件端到端仍待结构证据
+
+新增ArchiveZip共用preflight，全部outer/nested路径在ZipFile前检查，拒绝symlink/特殊Unix文件、加密/未知method、ZIP64 extra、malformed extra、local/central名称或flags/size冲突、重名canonical path、重叠entry、控制字符路径；保留现有容量/ratio/entry边界。ArchiveImporter已复用此验证，conversation parser/显示/DB保持。
+
+ArchiveAssetFiles提供32MiB单件/256MiB总量/2048候选/空间计划、随机私有文件名、CRC/长度/SHA256流式复制、PNG/JPEG尺寸头检查、PDF magic、bounded OOXML目录/manifest（无XML执行、宏/混合类型不标DOCX/XLSX）、unknown安全存储。Batch只接收调用方明确提供的候选，missing/damaged可记录；未commit close删本批新文件，保留旧文件；DB成功结束事务后才调用committed。recover需要调用方持锁及DB真实complete集合，清理无引用生成文件/死进程pending；不猜引用。当前这些附件文件接口**没有接入生产导入或Reader**，原有导入只变化ZIP校验。单文件预算与真实尺寸分布尚未实测；图片header/MIME检测不是完整codec验证，后续Android显示前仍需decode bounds/安全验证。
+
+本地ECJ/Java21 JVM -Xmx128m：73 tests passed，原48+新增25。测试二进制由ImageIO/ZipOutputStream生成虚构图片与文件；PNG/JPEG/PDF/DOCX/XLSX仅结构/存储基础，不是Reader/PDF实际附件显示验收。新增rollback、重复logical ref只copy一次、ZIP移除后持久文件、cancel、stale recovery、unsafeDB引用集合不删除旧文件等。跨导入数据库去重、schema2迁移、provider、真实离线Reader、exports、AR1完整mapping尚未实现。
+
+下一步仍需conversation_asset_file_names.json及对应消息的完全虚构等结构示例，确认key/value、identity与entry关系；不能根据通用文件名推测本样本映射。CI新源码验证等待中；Legacy path补上述Archive安全类，以用户要求在新APK跑独立实验回归，不改变scanner行为。
