@@ -1,0 +1,21 @@
+{
+  "sourceCommit": "8966489b87f16d528a2b8a4b1845478594e6a0f9",
+  "artifactId": 11518951058,
+  "artifactZipSha256": "9a6d9dc46219a8cfd4f458177db88bd9466197ddf9fedc7ee02bc8908df02051",
+  "apkBytes": 2110929,
+  "apkSha256": "d1752009481dff7de7d9dcdc8c8297c00f9f722b9d06c9649dca360904927bb7",
+  "signature": "independent apksig verifies full APK signing and v2",
+  "expectedCertificateSha256": "f93221ee0d2be2b806233a0b3427ec9c14766100c1bab3208841e6203e2b4289",
+  "package": "com.example.chatgptnova",
+  "versionCode": "14",
+  "versionName": "1.4.0-scroll-trial",
+  "dexResearchAdapterAndRevision": true,
+  "noTestFixturesOrNativeLibrariesOrSigningSecrets": true,
+  "ciJvmXml": {
+    "tests": 101,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "androidAcceptance": "pending"
+}

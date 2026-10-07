@@ -6,7 +6,7 @@
 
 支持已观察的 JSON version 1：`widget_state.status=completed`，`widget_state.report_message` 的 author role=assistant、content type=text、metadata.is_complete=true，parts 为至少一个非空纯字符串。仅恢复这个明确的最终正文消息；不导入 activity_messages、thoughts、source_searches，也不将任意 widget 字段当报告。
 
-本次授权输入在仓库外独立核对：标准 inventory 635 条中 19 条研究报告，用户指定会话关联 4 条完成报告，正文20797/24339/25569/26872字符，总97577。真实名称、会话/文件/消息标识、正文及二进制不进Git、CI或日志。
+本次授权输入在仓库外独立核对：标准 inventory 635 条中 19 条研究报告，用户指定会话关联 4 条完成报告，正文20797/24339/25569/26872字符，总97577。当前122个导入会话中仅这4份报告的外层thread精确匹配，另15条report的外层thread不在会话输入，不猜归属或称全部19已恢复。真实名称、会话/文件/消息标识、正文及二进制不进Git、CI或日志。
 
 ## 阅读与导出
 

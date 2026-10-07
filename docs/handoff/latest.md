@@ -1,3 +1,11 @@
+## Deep Research — Step Z：正式包/JVM/真实本地正文独立核对通过，Android运行中（2026-10-07）
+
+- 实际生产源码8966489b87f16d528a2b8a4b1845478594e6a0f9。正式CI37703447205 build/lint/unit/signing success；Legacy37703447262 build/lint/browser success；API26/35/36与Legacy35/36正在运行，不能称完整验收通过。
+- success独立下载正式artifact11518951058，ZIP SHA匹配provider digest；APK2110929bytes/SHA d1752009481dff7de7d9dcdc8c8297c00f9f722b9d06c9649dca360904927bb7。apksig独立verify完整签名内容/v2，cert匹配原f93221ee…，AXML package/code14/name保持，DEX revision8966/ArchiveResearch及artifact标识、无testfixtures/native.so/签名秘密核对。报告research-8966-package-verification.json；目前只包验证，不等于Android恢复或默认flag测试通过。
+- success独立下载CI JVM XML artifact11518064436：101 tests/fail0/error0/skip0。再次本地当前production parser/renderer执行真实仓库外输入：122 imported conversation、inventory19report中4条精确thread匹配，另外15条外层thread不在当前会话输入，不猜归属；4complete/1conversation/97577bodychars/MD4逐字/HTML成功，research-restoration-real-local.json。不称19条均恢复。
+- 本检查点仅证据/交接及恢复jvm-tests.sh原有executable mode，不改production/版号、不公开Release，skip ci。8966误将原脚本100755写成100644，本步恢复；本地bash执行仍通过，原包代码不受影响。
+- 下一步只核同8966 Android结果，读取actual native4、原schema1/2/资产并发/原回归、实际HTML/MD/PDF与默认Legacy关闭；实际失败留证并据具体原因修正，不跳过/放宽断言。真实手机仍待稳定包覆盖安装+手动重导入+报告人工核对。
+
 ## Deep Research — Step Y：恢复实现与本地验收，Android待验（2026-10-07）
 
 - 基点55a34ce；本步骤将实际源码提交至feature/export-conversation，不改包名/签名/code14、不main/公开Release。实现ArchiveResearch标准inventory→exact thread/file→version1 completed report_message，只取明确最终正文，无activity/thoughts/在线访问；不猜两段聊天之间的插入位置。

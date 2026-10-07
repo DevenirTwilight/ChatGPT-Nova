@@ -1,3 +1,7 @@
+## Source8966 build and independently downloaded package/JVM verified; native acceptance pending
+
+正式37703447205与Legacy37703447262 build阶段通过；API26/35/36和Legacy35/36仍运行。独立JVM XML101/零fail-error-skip，实际APK11518951058/2110929bytes/SHA d1752009481dff7de7d9dcdc8c8297c00f9f722b9d06c9649dca360904927bb7，经apksig完整v2验证/原cert/AXML package-version/Dex revision和新adapter/无native或testfixture确认。包验证不替代运行时。真实本地122会话中inventory19report仅4精确thread匹配（其他15外层thread不在输入）；4完成正文97577chars、MD逐字、HTML生成通过，匿名报告入库。不宣称全部19/手机/精确聊天位置已恢复；当前仍需Android实际文件与完整回归。
+
 ## Deep Research restoration implemented; local source/body evidence passed, Android pending
 
 新增精确library_files deep_research_report→origination_thread_id→canonical file_id唯一.dat→version1 completed明确report_message恢复，schema3独立持久化、Reader独立报告入口、HTML/MD/Print共享安全正文；不猜聊天位置、不导入activity/thoughts。当前真实仓库外4完成正文97577chars与MD4/4逐字通过，HTML生成成功。101 JVM通过（初次新增2边界失败已修，保留历史）；native4/API26/35/36和原实际三格式新报告断言仅已接入，CI/Android尚未验收。升级需要手动重导入补报告，坏重导入不覆盖旧完成正文。不得宣称真实手机恢复成功或提前交付修复APK；生产源码由本步骤提交SHA/CI绑定，787为之前基线。
