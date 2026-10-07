@@ -6,7 +6,7 @@
 
 隔离实现已完成：Stable保存当前网页三格式；Archive官方导入仍未来规划；Experimental只显式flag启用，默认debug/release=false且不构造controller，不注入或自动扫描。实验设置警告确认→用户开始→前台当前会话→可取消/恢复；结果/文件/脱敏diagnostic永远not-proven。ConversationExport类名保留，历史源码/算法/失败证据未删除，不扩数据源/selector，不改包名/签名/code14，不main/forcepush/Release。
 
-验证源码5d9efe8：本地DOM18/scroll32/progress19/locator18/snapshot13通过；实验CI37588638326 build和Android35/36全success，各19项通过（旧16+新3），Gecko2项明确退役。此前正式CI37588638317 API35全success、API36两次实际System Print失败；修复原生测试同步后的fbd7130正式CI37592089643 build/lint/签名success，Android35/36进行中，不放宽PDF断言。实际default/experimental APK DEX false/true、sourceRevision、原签名v2及content digest已独立核对，约1.83MiB。证据tools/legacy-scanner/evidence/isolation-validation.json、package-verification.json。
+验证源码5d9efe8：本地DOM18/scroll32/progress19/locator18/snapshot13通过；实验CI37588638326 build和Android35/36全success，各19项通过（旧16+新3），Gecko2项明确退役。此前正式CI37588638317 API35全success、API36两次实际System Print失败；修复原生测试同步后的fbd7130正式CI37592089643 build/lint/签名success，Android35/36均因新增目的地等待过窄失败，已保留并修正初始状态/分页等待，待新CI，不放宽PDF断言。实际default/experimental APK DEX false/true、sourceRevision、原签名v2及content digest已独立核对，约1.83MiB。证据tools/legacy-scanner/evidence/isolation-validation.json、package-verification.json。
 
 下一步核原生测试同步修复后的正式CI和实际PDF，再更新最终结论；之后仅物理设备/真实账号人工验证，不能证明完整历史；不重新投入selector扩张或批量采集。下方保留每步当时状态，ac4776f快照验收属于历史。
 
@@ -58,6 +58,10 @@
 ### Step 4j：修复候选包独立核对 success
 
 当前HEAD/新构建源码fbd7130a7656d4839c6a527d1e509dcc7b4193d6，正式CI37592089643 build/lint/browser/unit/原签名success；两档Android进行中。已独立下载默认artifact11468968104，ZIP digest匹配、APK v2 RSA签名与content digest验证、原证书/5份assets/无native so/DEX flag=false及revision=fbd7130/applicationId通过。1916145bytes/SHA44a337745c9a5c5c3e26bda1dc95f6807f847451600f186c8bc9a8460095046a。旧5d9两包报告另存package-verification-5d9efe8.json，实验包仍5d9（生产/legacy源码无变化）。本步仅包核对success，正式Android仍not verified；下一步核实际PDF和全部回归。
+
+### Step 4k：修正过窄原生目的地等待（failure保留）
+
+当前HEAD8e70aa1，fbd7130正式CI37592089643两API失败均在新增print destination populated等待，并非实际PDF内容断言。新等待错误假设标题有com.android.printspooler:id/title，初态实际Select a printer文本无ID；两档截图已有1/31与2/31完整分页预览。原instrumentation/UI/摘要分别保留stable-35/36-fbd7130-*。修正为等可见Select a printer/Save as PDF状态，再等真实分页预览page_number，才切换目的地，避免未生成页面即切换造成原empty-range路径；所有实际PDF/文件/内容/多页/对照仍保留，不改生产代码。新修正待CI，不能记success；下一步核新两API实际文件。
 
 ## 此前 Frozen Snapshot 实现与验收（历史）
 

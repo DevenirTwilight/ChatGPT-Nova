@@ -30,8 +30,12 @@
     "stable": {
       "runId": 37592089643,
       "sourceCommit": "fbd7130a7656d4839c6a527d1e509dcc7b4193d6",
-      "status": "in_progress",
-      "build": "success"
+      "status": "completed",
+      "build": "success",
+      "conclusion": "failure",
+      "android35": "failure",
+      "android36": "failure",
+      "reason": "new print destination wait too narrow: initial Select a printer state has no title ID"
     },
     "experimental": {
       "runId": 37588638326,

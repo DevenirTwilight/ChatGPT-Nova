@@ -1,0 +1,15 @@
+{
+  "sourceCommit": "fbd7130a7656d4839c6a527d1e509dcc7b4193d6",
+  "android": 35,
+  "artifactId": 11469424480,
+  "zipSha256": "8b542c2d52d7a3f4faa35c5b7a42968a03b676d4f3d5738c7adcf36d9ec2deb5",
+  "result": "failure",
+  "failedWait": "print destination populated",
+  "failures": [
+    "snapshot",
+    "pull-frozen-page.pdf",
+    "pdf-content"
+  ],
+  "visibleState": "Select a printer; rendered page numbers 1/31 and 2/31",
+  "reason": "New native test wait assumed title view ID missing from unselected-printer state; production snapshot remains unchanged."
+}

@@ -101,13 +101,16 @@ public class FrozenPageSnapshotTest extends FixtureActivity {
         evidence("frozen-page-print-source.md",snapshot.markdown.getBytes(StandardCharsets.UTF_8));
         mutate();click("打印 / 保存为 PDF");
         waitFor("system print window",()->{AccessibilityNodeInfo root=instrument.getUiAutomation().getRootInActiveWindow();return root!=null&&"com.android.printspooler".contentEquals(root.getPackageName());});
-        // The window can precede its destination label. Do not reselect the
-        // default PDF printer merely because the accessibility tree is loading.
+        // Wait for the initial preview before switching printers: the window
+        // appears before its destination and asynchronous page selection load.
         waitFor("print destination populated",()->{
             AccessibilityNodeInfo root=instrument.getUiAutomation().getRootInActiveWindow();if(root==null)return false;
-            for(AccessibilityNodeInfo spinner:root.findAccessibilityNodeInfosByViewId("com.android.printspooler:id/destination_spinner"))
-                for(AccessibilityNodeInfo title:spinner.findAccessibilityNodeInfosByViewId("com.android.printspooler:id/title"))
-                    if(title.isVisibleToUser()&&title.getText()!=null&&title.getText().length()>0)return true;
+            return find(root,"Select a printer")!=null||find(root,"Save as PDF")!=null;
+        });
+        waitFor("initial paginated print preview",()->{
+            AccessibilityNodeInfo root=instrument.getUiAutomation().getRootInActiveWindow();if(root==null)return false;
+            for(AccessibilityNodeInfo page:root.findAccessibilityNodeInfosByViewId("com.android.printspooler:id/page_number"))
+                if(page.isVisibleToUser()&&page.getText()!=null&&page.getText().toString().matches("[0-9]+/[0-9]+"))return true;
             return false;
         });
         AccessibilityNodeInfo selected=instrument.getUiAutomation().getRootInActiveWindow();
