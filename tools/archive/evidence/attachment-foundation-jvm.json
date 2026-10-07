@@ -3,9 +3,10 @@
   "baseline": "306ffa6",
   "validation": "synthetic / fixture validation passed",
   "jvm": {
-    "tests": 73,
+    "tests": 80,
     "existing": 48,
-    "added": 25,
+    "assetFilesTests": 25,
+    "assetMapTests": 7,
     "heapLimitMiB": 128
   },
   "realExportAccessed": false,
@@ -17,5 +18,6 @@
   "AR2": "not verified",
   "AR3": "not verified",
   "AR4": "not verified",
-  "AR5": "manual validation pending"
+  "AR5": "manual validation pending",
+  "realMapOnlyAccessed": true
 }

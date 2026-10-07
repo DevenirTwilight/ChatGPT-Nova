@@ -45,3 +45,11 @@ ArchiveAssetFiles提供32MiB单件/256MiB总量/2048候选/空间计划、随机
 ## Step D：Android Gradle测试编译失败记录
 
 55830d1两CI的测试编译失败：桌面AWT/ImageIO在Android bootclasspath不存在。改用纯Java生成同样12×8的虚构PNG/JPEG；原73项本地再通过，独立Pillow实际decode两图通过。生产实现不变，Android运行尚未验证；失败证据保留attachment-foundation-build-failure.json，不把本地ECJ通过当Gradle通过。
+
+## Step E：verified map shape的有界解析已实现
+
+ArchiveAssetMap只支持已经核对的object<string,string>，保留原显示metadata但不把它用于路径/身份匹配；明确精确entry key。ZIP discovery忽略无关文件，map缺失返回空，多个同leaf映射拒绝猜选。预算4MiB字节/2048条/key1024/display4096字符及lexical32768防单token分配；严格UTF-8/JSON、CRC/length、duplicate、cancel，所有错误固定码，不附parser exception私密数据。已有conversation JSON Guard默认512K lexical/原字符预算未改，仅允许map使用更小token限额。
+
+本地核心80=原48+file25+map7全部通过。**独立用新Nova解析器只读用户上传的真实映射文件，326条全部成功**；没有ZIP、消息关系或实际binary输入。只输出count，无private names/identity/path/hash落库。此parser尚未接生产Store，schema仍v1。
+
+消息关联仍是必需待办：map不能提供message关系，不能凭32hex或file-prefix进行未证实转换。已请求完全虚构但对应同一假ID的图片与attachment-only消息字段。拿到结构后才能接schema2+refs+upsert+Reader/provider+三格式+删除/重启与真正AR1。正式新CI/Legacy80源码验证进行中，AR2–5未完成。

@@ -1,3 +1,11 @@
+## Bounded map parser accepted actual map only; no attachment restoration claim
+
+- 分支feature/export-conversation，实施基线dfb7ec87ac5426886c8dae20ab36bd6030ac4d34；本提交为bounded map源码检查点，最终CI sourceRevision以实际SHA为准。success本地JVM80（原48+file25+map7，128MiB heap）。
+- 新ArchiveAssetMap基于已审计string→string真实结构，4MiB/2048条/严格JSON UTF8/key-display-token limits/CRC/重复-歧义/cancel。独立运行新parser读取用户真实mapping326条成功，只输出安全count；原文件/名称/ID/path/hash未入repo/日志/CI。实际ZIP/binary/消息未接触。
+- schema1/生产asset恢复/refs/Reader/provider/export尚未实施；map接口与file接口未接Store。AR1端到端未通过；AR2仅partial实际map，AR3/4/5未验证。会话Level2–4另为用户已报告通过。不能把基础测试或mapcount当附件恢复。
+- 55830d1测试AWT编译失败保留，dfb7ec8 fixture修正后新正式CI37645538332仍在验证；本提交触发80项源码正式/Legacy回归，状态待核对。
+- 必需缺口：图片asset_pointer与attachment-only metadata的完全虚构等结构例，使用同一假ID对应map键。已向用户请求，不要求ZIP/正文；不得猜prefix变换/按文件名hash顺序关联。下一步从结构证据接schema2/精确mapping/offlineReader/exports再验收，不动Frozen/Legacy/包名/签名/版号。
+
 ## Fixture-only build failure retained; portable image generator corrected
 
 - 分支feature/export-conversation，失败源码55830d144dd0418267beba47667580c54b6388a4；正式37644928632/Legacy37644928646在unit test编译失败，Android suites未执行，不报回归成功。错误为新增test使用桌面AWT/ImageIO，Android Gradle bootclasspath不提供。

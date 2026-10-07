@@ -298,7 +298,7 @@ public final class ArchiveImporter {
     }
   }
 
-  private static final class LimitIOException extends IOException {
+  static final class LimitIOException extends IOException {
     private static final long serialVersionUID = 1;
   }
 
@@ -312,12 +312,18 @@ public final class ArchiveImporter {
   }
 
   /** Reject oversized lexical strings/nesting BEFORE Gson allocates a complete token. */
-  private static final class GuardReader extends FilterReader {
+  static final class GuardReader extends FilterReader {
     boolean quoted, escape;
+    private final int stringLimit;
     int depth, stringLength, tokenLength;
 
     GuardReader(Reader r) {
+      this(r, 512 * 1024);
+    }
+
+    GuardReader(Reader r, int stringLimit) {
       super(r);
+      this.stringLimit = stringLimit;
     }
 
     @Override
@@ -326,7 +332,7 @@ public final class ArchiveImporter {
       for (int i = off; i < off + Math.max(0, n); i++) {
         char c = b[i];
         if (quoted) {
-          if (++stringLength > 512 * 1024) throw new LimitIOException();
+          if (++stringLength > stringLimit) throw new LimitIOException();
           if (escape) escape = false;
           else if (c == '\\') escape = true;
           else if (c == '"') {

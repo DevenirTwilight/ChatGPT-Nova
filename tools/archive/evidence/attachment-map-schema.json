@@ -20,5 +20,8 @@
   "binaryMagicVerified": false,
   "conversationReferenceSchemaVerified": false,
   "AR2": "partial mapping audit only, real ZIP/reference not accessed",
-  "privateNamesIdsOrHashIncluded": false
+  "privateNamesIdsOrHashIncluded": false,
+  "novaBoundedParserCount": 326,
+  "novaBoundedParserSucceeded": true,
+  "parserRealBinaryValidation": false
 }
