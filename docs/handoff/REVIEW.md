@@ -1,3 +1,7 @@
+## Android fixture factory failure retained
+
+37631627786(dcd9464) APIs35/36 each20 run/8 failures, all UnsupportedOperationException from immutable synthetic message Map.of before longBody schema mutation/import. Make only test fixture message mutable; actual local fixture smoke short/long JSON and normal/slow ZIP passes. Production code unchanged, assertions retained; Stable not executed in failed job, new full CI required. Independent Legacy37631515308 eachAPI19 pass+2 explicit historic ignores and API26 foundation2 artifact verified. Real-file Levels2–5 still pending on user device.
+
 ## Corrected compatibility source package independently verified
 
 Source dcd9464 / CI37631627786 build/lint/browser/JVM48 success. Downloaded XML and APK independently verify v2 signed content/original cert/sha/source revision/default legacy=false/unchanged identity version and retained assets. Android26/35/36/Stable and new schema actual PDF still pending; Legacy37631515308(d36246e) Android pending. Real sample remains on user's own device: Levels2–4 and manual Level5 not verified, audit facts explicitly attributed, no private data/hash/path in committed evidence. Local checklist ready.

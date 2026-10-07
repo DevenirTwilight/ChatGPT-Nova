@@ -1,0 +1,23 @@
+{
+  "sourceCommit": "d36246e044e52fff86dcc50a2458df37db7a7c02",
+  "stableSourceCommit": "dcd9464bba57aa54868d7d6fc35074c0087b8cae",
+  "ciRun": 37631515308,
+  "validation": "synthetic legacy fixtures only; history completeness not-proven",
+  "apis": {
+    "35": {
+      "artifactId": 11487416484,
+      "artifactSha256": "53770cb0607aab7c1cafd0df12b36866f194db41bc1534540f34bb2ba4652027",
+      "tests": 19,
+      "ignoredHistoricGeckoOnly": 2,
+      "result": "success"
+    },
+    "36": {
+      "artifactId": 11486762167,
+      "artifactSha256": "834d5c215154813c9159be71c9040d3a0316a2d49424b665d5cb00deb87ca0e3",
+      "tests": 19,
+      "ignoredHistoricGeckoOnly": 2,
+      "result": "success"
+    }
+  },
+  "productionAndLegacyDependenciesUnchangedBetweenTestedSources": true
+}

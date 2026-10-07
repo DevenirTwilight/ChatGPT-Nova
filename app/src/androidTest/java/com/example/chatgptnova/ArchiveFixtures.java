@@ -24,6 +24,7 @@ final class ArchiveFixtures {
             Map.of("content_type", "text", "parts", List.of(text)),
             "metadata",
             Map.of("future", true)));
+    n.put("message", new LinkedHashMap<>(ArchiveModel.object(n.get("message"))));
     return n;
   }
 

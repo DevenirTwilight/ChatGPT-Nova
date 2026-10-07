@@ -1,3 +1,12 @@
+## Real export compatibility — Step D：真实Android夹具失败与修正（2026-10-07）
+
+- 分支feature/export-conversation；失败源码dcd9464bba57aa54868d7d6fc35074c0087b8cae，CI37631627786，两API均20项/8失败；其余12包括3Mi SQLite往返/重复导入通过。后续Stable suites未执行，不能宣称回归通过。
+- 原因：Android synthetic fixture node.message原Map.of不可修改，新增longBody schema替换content抛UnsupportedOperationException（导入前）。改为LinkedHashMap的虚构message，生产代码不改、schema/真实PDF断言不删。
+- success：本地编译并执行实际ArchiveFixtures短/长JSON、普通/slowZIP生成，四变体均通过；核心JVM48已有通过，新Android须以本提交重新验证。失败保留 `tools/archive/evidence/compatibility-fixture-failure.json`。
+- success：独立LegacyCI37631515308源码d36246e，两API19执行通过+2历史Gecko Ignore，下载核对 `compatibility-legacy-regression.json`；API26基础2独立Artifact通过。legacy生产/共享依赖与当前源码相同。
+- not verified：新源码正式Android/实际schemaPDF/Stable待重新运行；真实文件仍用户本地，Level2–5pending。本提交仅test-only fixture修正及证据，未改签名/包名/版号/legacy/snapshot。
+- 下一步：新CI全绿与实际输出核对，提交最终文档/APK及用户本地清单。
+
 ## Real export compatibility — Step C：新源码构建与签名实核（2026-10-07）
 
 - 实際分支feature/export-conversation；正式测试源码dcd9464bba57aa54868d7d6fc35074c0087b8cae，正式CI37631627786。

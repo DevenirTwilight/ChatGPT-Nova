@@ -1,0 +1,22 @@
+{
+  "sourceCommit": "dcd9464bba57aa54868d7d6fc35074c0087b8cae",
+  "ciRun": 37631627786,
+  "apis": {
+    "35": {
+      "testsRun": 20,
+      "failures": 8,
+      "artifactId": 11487491458
+    },
+    "36": {
+      "testsRun": 20,
+      "failures": 8,
+      "artifactId": 11487202149
+    }
+  },
+  "cause": "test-only ArchiveFixtures.node returned immutable Map.of message; new longBody schema mutation throws UnsupportedOperationException before import",
+  "fix": "make synthetic message map mutable; retain all schema and actual PDF assertions",
+  "localFixtureSmoke": "short/long JSON and normal/slow ZIP builders pass",
+  "productionChangesRequired": false,
+  "stableSuitesExecuted": false,
+  "realPrivateDataUsed": false
+}

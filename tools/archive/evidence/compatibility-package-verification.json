@@ -14,5 +14,7 @@
   "nativeLibraries": [],
   "legacyAndSnapshotAssetsMatchSource": true,
   "jvmTests": 48,
-  "realPrivateDataIncluded": false
+  "realPrivateDataIncluded": false,
+  "api26Tests": 2,
+  "api26ArtifactId": 11486144053
 }
