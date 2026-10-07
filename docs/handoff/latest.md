@@ -1,3 +1,10 @@
+## Real export compatibility — Step B2：未知SAF SIZE夹具检查（2026-10-07）
+
+- 实际分支feature/export-conversation，实施源码基线d36246e044e52fff86dcc50a2458df37db7a7c02。
+- 代码复查发现test-only provider的嵌套数字/null ternary可能对未知SIZE解箱null；改为显式分支，真实生产逻辑不改。保留未知SIZE实际复制场景，不吞provider错误。
+- success：diff/Java格式检查；核心JVM48未受影响。not verified：新源码Android/完整CI待运行。用户真实ZIP仍在用户本地，Level2–5未标通过。
+- 下一步：以下新源码为本轮CI验收基线，完成签名APK交付与本地清单。
+
 ## Real export compatibility — Step B：有界兼容修复与虚构回归（2026-10-07）
 
 - 分支feature/export-conversation；实施基线9668e8b，本提交为修复源码；测试buildRevision将记录实际本提交SHA，后续交接引用CI真实源码。

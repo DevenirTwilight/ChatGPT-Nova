@@ -65,12 +65,10 @@ public final class ArchiveFixtureDocuments extends ContentProvider {
       if (cols[i].equals(OpenableColumns.DISPLAY_NAME)) row[i] = uri.getLastPathSegment();
       if (cols[i].equals(OpenableColumns.SIZE)) {
         String name = uri.getLastPathSegment();
-        row[i] =
-            name.equals("metadata300.zip")
-                ? 300L * 1024 * 1024
-                : name.equals("oversize.zip")
-                    ? 513L * 1024 * 1024
-                    : name.equals("unknown-size.zip") ? null : file(uri).length();
+        if (name.equals("unknown-size.zip")) row[i] = null;
+        else if (name.equals("metadata300.zip")) row[i] = 300L * 1024 * 1024;
+        else if (name.equals("oversize.zip")) row[i] = 513L * 1024 * 1024;
+        else row[i] = file(uri).length();
       }
     }
     q.addRow(row);
