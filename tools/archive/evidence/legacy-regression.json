@@ -1,0 +1,25 @@
+{
+  "ciRun": 37604491058,
+  "sourceCommit": "66172a1d",
+  "validation": "synthetic / fixture only",
+  "apis": {
+    "35": {
+      "instrumentation": [
+        {
+          "file": "instrumentation.txt",
+          "tests": 19
+        }
+      ],
+      "summary": {}
+    },
+    "36": {
+      "instrumentation": [
+        {
+          "file": "instrumentation.txt",
+          "tests": 19
+        }
+      ],
+      "summary": {}
+    }
+  }
+}

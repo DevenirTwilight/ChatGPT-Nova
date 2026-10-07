@@ -1,3 +1,11 @@
+## Nova Archive — Step 4g：Legacy 回归独立完成（2026-10-07）
+
+- 分支 `feature/export-conversation`；Archive当前源码 `4a79a97`（数据库接口修正），Legacy验证源码 `66172a1d`。两者的 legacy scanner、MainActivity、BuildConfig依赖、共享SnapshotWebView没有源码差异；后续差异仅Archive适配/测试及文档。
+- success：Legacy CI `37604491058` build与API35/36均success；独立下载两份Artifact，instrumentation各 `OK (19 tests)`，历史Gecko-only PDF ignored保持原状，不据此宣称legacy完整历史。
+- 证据 `tools/archive/evidence/legacy-regression.json`。旧JS/ConversationExport/诊断/失败历史全部保留，默认flag仍false。
+- success：修正后Archive CI `37605668339` build再次通过；API26/35/36正运行，尚未验收。
+- 下一步：完成Archive+Stable实际运行与PDF证据，更新最终文档。
+
 ## Nova Archive — Step 4f：首轮 Android 数据库容量接口失败（2026-10-07）
 
 - 分支 `feature/export-conversation`；源码基线 `29be17176cc3ed26ea0139b8f2a6deadf8f3179e`，CI `37604805034`。

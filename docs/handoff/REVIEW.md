@@ -1,3 +1,7 @@
+## Legacy research regression retained during Archive implementation
+
+37604491058 succeeded on build/API35/API36. Downloaded artifacts independently show19 instrumentation tests passed each; historical Gecko-only ignores retained. Scanner remains not-proven and disabled by default. Archive4a79a97 build succeeds in37605668339; Archive runtime/Stable regression still pending.
+
 ## Archive first Android runtime failure
 
 29be171 build/lint/signature/JVM38 succeeded (downloaded XML verified). API26 foundation tests failed A06 before transaction because row-returning PRAGMA was sent through execSQL; use Android setMaximumSize instead. This was a real adapter failure, not covered by pure Java fixtures. Source fix now requires fresh Android verification; no real OpenAI export verified.
