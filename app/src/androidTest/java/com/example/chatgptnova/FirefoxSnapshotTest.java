@@ -29,8 +29,14 @@ public final class FirefoxSnapshotTest extends FrozenPageSnapshotTest {
     }
     @Test public void sameFrozenHtmlCanBeSavedAsPdfInFirefoxAndroid() throws Exception {
         org.junit.Assume.assumeTrue(activity.getPackageManager().getLaunchIntentForPackage("org.mozilla.firefox")!=null);
-        FrozenPageSnapshot snapshot=freeze();mutate();main(()->exporter().cancel());
-        byte[] html=snapshot.frozenHtml.getBytes(StandardCharsets.UTF_8);
+        // Reuse the exact HTML previously sent to System Print by the snapshot suite.
+        // A second capture would have a different timestamp and would weaken A/B.
+        File source=new File(activity.getExternalFilesDir(null),"frozen-page-print-source.html");
+        assertTrue("System Print source fixture must be captured first",source.isFile());
+        byte[] html=java.nio.file.Files.readAllBytes(source.toPath());
+        assertTrue(html.length>0&&html.length<12*1024*1024);
+        final String fixtureTitle="Frozen 中文 café 😀";
+        mutate();
         evidence("firefox-source.html",html);Set<String> before=downloads();
         try(ServerSocket server=new ServerSocket(0,8,java.net.InetAddress.getByName("127.0.0.1"))) {
             Thread serving=new Thread(()->{while(!server.isClosed())try(Socket socket=server.accept()){
@@ -53,9 +59,9 @@ public final class FirefoxSnapshotTest extends FrozenPageSnapshotTest {
                 }
                 // First-run UI may return to Home after loading the supplied tab.
                 // Reopen only this fixture's visible Continue card, never other tabs.
-                AccessibilityNodeInfo tab=find(root,snapshot.title);
+                AccessibilityNodeInfo tab=find(root,fixtureTitle);
                 if(tab!=null&&"recent.tab.title".equals(tab.getViewIdResourceName())) {
-                    press(snapshot.title);nextStartupAction[0]=now+2000;return false;
+                    press(fixtureTitle);nextStartupAction[0]=now+2000;return false;
                 }
                 for(String label:new String[]{"Start browsing","Not now","Skip","Continue"})if(press(label)){nextStartupAction[0]=now+2000;break;}
                 return false;

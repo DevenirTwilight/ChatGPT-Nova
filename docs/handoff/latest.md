@@ -1,3 +1,7 @@
+## 阶段B最新源码与严格A/B修正
+
+阶段B源9d74db8540ec1fae64eb468ab7eb74562d22bbca已推，CI37554349621尚在运行；Gecko生产清理已实现，不回退。新增对照修正：此前A7两个测试分别freeze同fixture，正文一致但timestamp不同；现Firefox直接读取System Print测试保留的唯一frozen-page-print-source.html，host逐字节比较firefox-source.html，强制完全同源。同clone的生产架构本来不分格式重读live；此次只加强A/B测试，不改聊天模块。后续核本修正新CI，不将被后续提交取消的旧B检查记为通过；大小待实际构建。A7文件重核通过与原验收误判均保留。
+
 # 当前工作交接（2026-10-07）
 
 ## 实际状态：阶段A实物通过，阶段B已实现待CI

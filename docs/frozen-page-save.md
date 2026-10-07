@@ -67,3 +67,5 @@ CI37548381063/source462ba8c：Android35与36均通过新快照10项与原18项�
 source544/CI37552313716所有Android instrumentation实际通过，Nova/Firefox×35/36的四份PDF已取回；原CI仅host PDF检验误判仍标failure。Firefox粗体标题视觉正常却不在提取文本、中文为兼容字形，现正文按NFKC等价核对，首标记仅Firefox必要时实际第一页渲染+离线OCR验证，没有删除断言。四份全部正文/首尾/长代码/表格/数学/法语/320×120图像/AFTER排除独立重验通过；均31页Letter，Firefox356099/355771字节，附网页页眉页脚和日期；Nova无该额外页眉页脚，分页面积有轻微差异，代码表格及文本均可读。证据android-pdf-firefox-A7.json保留失败来源及重核方法。
 
 B正式入口退役旧扫描UI并移除生产Gecko。16旧Android例继续，2Gecko专用Ignore保留历史；完整新测试/正常容器回归、A大包及v1覆盖升级、APK/依赖校验待CI。SAF使用wt并测覆盖较长旧目标；CSS clip零面积/clip-path50%辅助隐藏控制不进入两格式，样例已证明旧行为误包含。OCR/Firefox仅CI测试，主APK无新增OCR依赖。
+
+Firefox A/B进一步严格使用System Print测试记录的原始frozen-page-print-source.html，而不是另一次freeze同fixture；host要求firefox-source.html逐字节相同，连capture时间也不允许不同。生产三格式本来就是一个FrozenPageSnapshot，此修正仅加强浏览器对照来源。最终结果待新CI。

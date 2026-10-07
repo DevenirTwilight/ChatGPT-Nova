@@ -63,6 +63,9 @@ def pdf(name='frozen-page.pdf'):
     (out/(name+'.urls.txt')).write_text(subprocess.check_output(['pdfinfo','-url',str(out/name)]).decode())
     (out/(name+'.info.txt')).write_text(subprocess.check_output(['pdfinfo',str(out/name)]).decode())
     (out/(name+'.verification.json')).write_text(json.dumps({'beforeMarker':before_method,'otherMarkers':'pdf-text','unicodeNormalization':'NFKC','lateMarkersAbsent':True,'fixtureImage':'320x120'},indent=2))
+def assert_same_print_source():
+    assert (out/'firefox-source.html').read_bytes()==(out/'frozen-page-print-source.html').read_bytes(), 'Firefox A/B source differs from actual System Print input'
+
 def assert_print_markdown():
     text=(out/'frozen-page-print-source.md').read_text(encoding='utf-8')
     assert 'Before snapshot marker' in text and 'TAIL-SNAPSHOT-MARKER' in text
@@ -99,6 +102,7 @@ try:
     suite('com.example.chatgptnova.FirefoxSnapshotTest#sameFrozenHtmlCanBeSavedAsPdfInFirefoxAndroid','firefox-android',1)
     for name in ['firefox-source.html','firefox-frozen.pdf']:
         independent('pull-'+name,lambda name=name:adb('pull','/sdcard/Android/data/com.example.chatgptnova/files/'+name,str(out/name)))
+    independent('firefox-exact-print-source',lambda:assert_same_print_source())
     for name in ['firefox-ui-failure.txt','firefox-ui-failure.png']:
         try:adb('pull','/sdcard/Android/data/com.example.chatgptnova/files/'+name,str(out/name))
         except Exception:pass
