@@ -1,3 +1,7 @@
+## API36 first attempt failed during old malformed JSON import; root cause unknown
+
+新源码3c6c0f78：正式37665103092 API26/35成功并独立实物核对；36job112943290944 failed。附件7+Reader3含actual privacy Intent已pass，原Archive malformed JSON error等待/worker teardown超时，套件900s被host终止；没有打印/Stable后续产物。不能归因为测试或生产具体组件，worker位置未捕获，不能报整体成功。证据attachment-3c6c-api36-attempt1-failure.json。先只同源码重跑失败36一次；重复则抓线程阻塞并修根因，不放宽断言。旧ea26全success仍历史，不替代新36。真实AR3–5 pending。
+
 ## ea26 baseline fully verified; final provider URI privacy fix requires fresh native acceptance
 
 ea26e180正式37661640199与Legacy37661640158全success，独立JVM93/API26 12/API35-36各Archive32+Stable43/Legacy19与实际PDF16/31页、images/portableHTML/MD/Unicode/升级全部核对。APK原签名/版本/defaultflag proof见attachment-ea26-package-verification，runtime35/36 JSON永久留证。

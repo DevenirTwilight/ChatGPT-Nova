@@ -1,0 +1,131 @@
+{
+  "sourceCommit": "3c6c0f78baac317f344f73e088bc48595c348221",
+  "ciRun": 37665103092,
+  "android": 35,
+  "artifactId": 11502872641,
+  "artifactSha256": "eb8b95fedfc6aa208485e72e149fa544ab9f37a83f2956ec897708a5ec0e637d",
+  "validation": "synthetic / fixture validation passed; no real OpenAI export verified",
+  "archive": {
+    "archive-asset-persistence": 7,
+    "archive-asset-reader": 3,
+    "archive-instrumentation": 20,
+    "archive-seed": 1,
+    "archive-restart": 1,
+    "pdf": {
+      "sha256": "0c853d1e3c2104c5d79a932dcca480363744863caa1862f50c5652a4b853b5a6",
+      "pages": 16,
+      "bytes": 181830,
+      "markersVerified": [
+        "ARCHIVE-FIRST",
+        "ARCHIVE-LAST",
+        "CODE-TAIL",
+        "TABLE-TAIL",
+        "中文",
+        "café",
+        "LongArchiveparagraph",
+        "Noël",
+        "E=mc^2",
+        "SCHEMA-OBJECT-TEXT",
+        "SCHEMA-RECAP",
+        "推理摘要"
+      ],
+      "excludedMarkers": [
+        "OTHER-BRANCH",
+        "SYNTHETIC-HIDDEN-THOUGHT"
+      ],
+      "firstSnapshotMarkerMethod": "pdf-text"
+    },
+    "sha256": {
+      "archive.html": "aa9c6890551c8f4acdbf915aaff67733c053ab620f1c20c121586a950a48a889",
+      "archive.md": "367ce477eac8ebd207e1179bb41caca3202928063254fc43e8180679669b5683",
+      "archive-print-source.html": "90016faca114faeb8f28933bf0dea62f6f1265f9f76e1655fcb8d243d29b9061"
+    },
+    "assetHtmlPngDecoded": "12x8",
+    "assetPrintImageVerified": "12x8",
+    "attachmentDescriptorsVerified": true
+  },
+  "stable": {
+    "legacy-disabled": 2,
+    "snapshot": 10,
+    "firefox-android": 1,
+    "web-regressions": 9,
+    "share-regressions": 5,
+    "input-regressions": 5,
+    "input-imeCommitText": 1,
+    "input-imePasteCommand": 1,
+    "input-longPressSystemPaste": 1,
+    "native-lifecycle": 1,
+    "native-restart": 1,
+    "gecko-upgrade-current": 1,
+    "gecko-upgrade-persistence": 1,
+    "gecko-upgrade-seed": 1,
+    "upgrade-current": 1,
+    "upgrade-persistence": 1,
+    "upgrade-seed": 1
+  },
+  "installedPackageMatchesVerifiedApk": true,
+  "stableHtmlMarkdownMarkersVerified": true,
+  "firefoxPrintSourceIdentical": true,
+  "stablePdf": {
+    "frozen-page.pdf": {
+      "sha256": "0760f98aaf0a687b9060623cee639ca8b5a5cba783b2eef35581c4c40f412adc",
+      "pages": 31,
+      "bytes": 278243,
+      "markersVerified": [
+        "TAIL-SNAPSHOT-MARKER",
+        "CODE-LAST",
+        "TABLE-LAST",
+        "中文",
+        "café",
+        "Reference",
+        "Longparagraph",
+        "Noël",
+        "naïve",
+        "français",
+        "E=mc^2",
+        "LONG-CODE-HEAD",
+        "LONG-CODE-TAIL",
+        "LONG-TABLE-TAIL"
+      ],
+      "excludedMarkers": [
+        "Aftersnapshotmarker",
+        "AFTER-TITLE",
+        "AFTER-TABLE",
+        "AFTER-BODY",
+        "CLIPPED-UI-CONTROL"
+      ],
+      "firstSnapshotMarkerMethod": "pdf-text",
+      "fixtureImageDimensionsVerified": "320x120"
+    },
+    "firefox-frozen.pdf": {
+      "sha256": "138c78ed31e2fa777a73bf92eb3859746f15e9b47709a3ac469bd39bc1e150f3",
+      "pages": 31,
+      "bytes": 355980,
+      "markersVerified": [
+        "TAIL-SNAPSHOT-MARKER",
+        "CODE-LAST",
+        "TABLE-LAST",
+        "中文",
+        "café",
+        "Reference",
+        "Longparagraph",
+        "Noël",
+        "naïve",
+        "français",
+        "E=mc^2",
+        "LONG-CODE-HEAD",
+        "LONG-CODE-TAIL",
+        "LONG-TABLE-TAIL"
+      ],
+      "excludedMarkers": [
+        "Aftersnapshotmarker",
+        "AFTER-TITLE",
+        "AFTER-TABLE",
+        "AFTER-BODY",
+        "CLIPPED-UI-CONTROL"
+      ],
+      "firstSnapshotMarkerMethod": "independent-rendered-first-page-OCR",
+      "fixtureImageDimensionsVerified": "320x120"
+    }
+  }
+}

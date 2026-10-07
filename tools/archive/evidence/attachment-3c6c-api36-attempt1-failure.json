@@ -1,0 +1,22 @@
+{
+  "sourceCommit": "3c6c0f78baac317f344f73e088bc48595c348221",
+  "ciRun": 37665103092,
+  "jobId": 112943290944,
+  "artifactId": 11503043598,
+  "api": 36,
+  "result": "failure",
+  "passedBeforeFailure": {
+    "ArchiveAssetPersistenceTest": 7,
+    "ArchiveAssetReaderTest": 3
+  },
+  "observedFailure": {
+    "method": "safJsonAndMalformedFilesHaveFixedErrors",
+    "assertion": "Timed out: JSON fixed error",
+    "teardown": "Timed out: import worker cleanup",
+    "laterSuite": "ArchiveTest host instrumentation timeout after 900 seconds",
+    "actualPdf": "not produced"
+  },
+  "rootCause": "not determined; source-identical old ArchiveTest method passed API35 and prior ea26 API36",
+  "next": "one same-source failed-job retry; preserve original failure; if repeated capture worker thread state and fix root cause",
+  "validationBoundary": "not full CI acceptance; no real Android/manual attachment verification"
+}

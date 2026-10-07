@@ -1,3 +1,10 @@
+## Attachment Restoration — Step O：新provider API35通过，API36旧JSON测试阻塞失败留证（2026-10-07）
+
+- 分支feature/export-conversation，测试源码3c6c0f78baac317f344f73e088bc48595c348221。success build/lint/JVM93/API26 2+7+3；最新API26独立actual Reader ACTION_VIEW无query/original name、READ-only/ClipData与provider name/size/MIME通过；API35各Archive32+Stable43、实际16/31页/图片/HTMLMD/Unicode/升级独立通过，attachment-3c6c-runtime-35.json。
+- failed API36 job112943290944，artifact11503043598，正式37665103092整体failure。独立artifact/logcat：asset persistence7与Reader3（含新provider Intent）全部pass；原safJsonAndMalformedFilesHaveFixedErrors等待“JSON fixed error”60秒timeout，after等待import worker cleanup再timeout；后actual print test开始后无结束，host整个ArchiveTest900秒timeout，没有PDF/之后Stable实物，不能验收。
+- **根因未知**，不能擅自归于emulator或JSON/parser/文件一致性锁。该旧方法/Task/importer在本次provider修正未改，API35及此前ea26 API36曾通过；下一步只重跑同源码失败API36一次检查重复性，原failure永久保留。若再次出现，抓worker/SQLite/Binder线程状态再修，不增timeout、不跳过malformed/cancel/print断言。
+- latest APK artifact11503035582/2106829bytes签名/content digest/cert/flagfalse/source3c及包版本14核对通过，尚非最终完整CI验收；没有发布Release/递增版号。真实AR3/4/5仍pending。37项报告草稿/本地清单已备，待完整CI后入库与交付。
+
 ## Attachment Restoration — Step N：全套基线实物通过，修正外部URI隐私边界（2026-10-07）
 
 - 分支feature/export-conversation，已完整验证源码ea26e180d6f466d9f283123b3ec7c5db93a38e33；文档基点422fecd。本提交为新provider修正源码，以实际SHA区分，不把旧实物冒充新源码。
