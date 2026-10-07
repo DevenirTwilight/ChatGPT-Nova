@@ -2,19 +2,15 @@
 
 工作分支 feature/export-conversation；已验收应用/测试源码 ac4776ff31feaed9794dbc434e423ac291fbee83。文档提交不是APK源码HEAD，开始续接先fetch核远端，读AGENTS/latest/REVIEW/docs/frozen-page-save.md、实际源码和CI，不回退旧修复。
 
-## 最新要求与 Step 3（2026-10-07）
+## 最新要求与 Step 4b（2026-10-07）
 
-分支feature/export-conversation。审查29ea76d、隔离源码3d7f051；本步分类测试/CI与文档，新增default-build合同2项、实验确认/暂停取消/diagnostic白名单3项，保留旧16项Android/四browser与2个Gecko退役案例。实验测试显式要求flag=true，正式合同显式要求false，不能通过skip假绿。
+当前分支feature/export-conversation，待Android验收源码4ca3c0428f46a646fc6c95a476349e35942888d8；审查29ea76d、隔离3d7f051、CI分类755d727、minSdk26与顶层错误码白名单修正4ca3c04。用户要求隔离旧实验scanner，默认false、显式property开启、警告/手动/前台/取消/恢复、脱敏not-proven，保留旧代码与失败证据；不增selector、不扩数据源、不main/Release/版号。
 
-正式dom-trial.yml移除legacy浏览器/Android执行，保留snapshot13和既有完整正式回归/原证书/升级；legacy-scanner.yml独立相关路径触发+manual，显式flag、19项Android35/36，不作为正式依赖。历史export-validation仍固定旧revision手动执行。无Release，不增code14，不改签名/包名。
+本步独立本地验证success：DOM18、scroll32、progress19、locator18、snapshot13；Python语法/YAML/diff通过。受跟踪文件无删除，FrozenPageSnapshot/PageSnapshotExport/freeze.js/ComposerWebView/WebShareAdapter与原基线无diff。报告：../../tools/legacy-scanner/evidence/isolation-validation.json。
 
-已完善docs/legacy-conversation-scanner.md（架构/事实/启用/错误/统计/未来Archive/测试分类），README开发者资料仅一段；旧文档加历史标识不删除证据。通用NAV/ARIA控件过滤修复防止UI文本进入fallback；不增网站selector/不大改parser。结果captureMode分清DOM研究 vs scroll，historyCompleteness永远not-proven。
+正式CI37587862891构建/lint/unit与原签名检查success，Android35/36进行中；legacy37587862825浏览器success、构建进行中。755d727两次旧CI因新提交concurrency cancelled，不能写通过。当前Android新增default合同2、实验19及原正式回归not verified，待读取结果修复实际失败。真实账号/物理设备未验证。下一步核对两套CI、下载小报告独立验证、更新docs/REVIEW再push。
 
-验证：旧本地DOM17/scroll32/snapshot13成功；新增断言/Android19与default-build及正式回归待CI（not verified），Python编译和diff检查通过。当前步骤commit+push后开始CI验证，下一步读取两套CI结果并处理实际失败，再保存证据和更新REVIEW。新APK不借用旧ac4776f验收结论；真实账号与物理设备仍未验证。
-
-### Step 4a：兼容/诊断边界预检查
-
-Step3提交755d727已触发正式37587740638和legacy37587740673（进行中，未完成）。本地新增后DOM18/progress19/locator18成功，scroll32重跑中。静态复查发现Set.of不适合minSdk26，改为Android8兼容不可变HashSet；并将网页返回的顶层错误码严格枚举化，防止任意字符串绕过nested diagnostic白名单写日志，修复warning dialog引用清理。以上小修无selector变更。下一步对新提交运行两套CI，旧进行中由concurrency自动取消并如实保留。
+正式路径不变；默认debug/release不初始化ConversationExport；实验设置需开始扫描；单向stable ID/overlap/拓扑序/冲突/稳定上限/恢复保留，文件Nova-legacy-scan和not-proven。旧Gecko PDF已在此前退役，仅实验HTML/MD；正式System Print PDF保留。详见../legacy-conversation-scanner.md，未来Archive官方导入仅规划。
 
 ## 已实现
 

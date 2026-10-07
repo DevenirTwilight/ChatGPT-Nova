@@ -16,6 +16,10 @@ Stable=当前网页Frozen Snapshot三格式；Archive=未来主动导入官方Da
 
 对minSdk26避免Set.of新平台API；网页返回error字符串也通过固定错误码枚举，不只过滤nested diagnostic。两套755d727 CI尚未完成，不记录为通过，下一提交需重跑。无版号/签名/包名/正式快照更改。
 
+## Step 4b本地与构建证据
+
+已测源码4ca3c04：本地DOM18/scroll32/progress19/locator18/snapshot13通过，正式CI37587862891的build/lint/unit/原签名通过，Android35/36尚进行中；legacy37587862825尚进行中。独立JSON在tools/legacy-scanner/evidence/isolation-validation.json。未删除历史文件，五个正式核心源码无diff；不借用历史APK结论。755d727旧运行已cancelled，非success。
+
 ## 现有验收结果
 
 已测source ac4776ff31feaed9794dbc434e423ac291fbee83；CI37556129018 build、Android35/36全success。两API实际HTML/MD/PDF下载独立核Unicode/结构/首尾/后续mutation排除，两份打印源与Firefox逐字节相同，四PDF均31页，抽查长代码/表格/尾页可读。最终SAF HTML在Chromium/Firefox/Edge以普通file打开通过。完整13项报告及限制见../frozen-page-save.md，来源与原失败保留tools/snapshot/evidence。

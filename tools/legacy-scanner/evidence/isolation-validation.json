@@ -1,0 +1,41 @@
+{
+  "sourceCommit": "4ca3c0428f46a646fc6c95a476349e35942888d8",
+  "baseline": "da4176c5731ee07ea3c8815d56169abf1b143b25",
+  "branch": "feature/export-conversation",
+  "scope": "controlled fixtures, no live account or physical-device proof",
+  "historyCompleteness": "not-proven",
+  "local": {
+    "domBrowser": {
+      "passed": 18
+    },
+    "scrollBrowser": {
+      "passed": 32
+    },
+    "progressBrowser": {
+      "passed": 19
+    },
+    "locatorBrowser": {
+      "passed": 18
+    },
+    "frozenSnapshotBrowser": {
+      "passed": 13
+    },
+    "pythonSyntax": "pass",
+    "workflowYaml": "pass",
+    "diffCheck": "pass",
+    "deletedTrackedFiles": [],
+    "stableCoreSourceChanged": false
+  },
+  "ci": {
+    "stable": {
+      "runId": 37587862891,
+      "status": "in_progress",
+      "build": "success"
+    },
+    "experimental": {
+      "runId": 37587862825,
+      "status": "in_progress"
+    }
+  },
+  "deviceAcceptance": "not_verified"
+}
