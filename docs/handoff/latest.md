@@ -1,3 +1,11 @@
+## 已取真实 PDF 的最新检查点（2026-10-07）
+
+应用源码462ba8ccce0f155844946ef9df18866e1c14a82a，CI37548381063已结束。Android35/36的新快照10项、旧18项及全部容器/IME/上传下载分享/旋转生命周期/原签名v1覆盖升级回归均通过；实际SAF HTML/MD及实际System Print UI保存PDF已拉回，不能再沿用下方旧轮“无PDF实物”的结论。API35 frozen-page.pdf 278243字节，API36 294594字节，host pdftotext首尾/中文/法语/长代码/长表格/数学/图片320×120及排除AFTER均通过。小产物11452620683(API35)、11451684941(API36)，可从CI下载，不含真实账号正文。
+
+CI唯一剩余失败是Firefox A/B：正文已打开，More菜单可见，但测试严格匹配“More”而实际accessibility是“More Collapsed”，未进入Save as PDF。已查看失败截图/公开UI树，修正正常UI操作，尚需重跑。没有取得Firefox PDF，不把此对照记为成功。Commit B未开始，Gecko仍保留。当前准确universal APK681117497字节，installedBaseApk同值；无权限读取du总安装占用，不虚构安装总量。原版号/包名/证书不变，无Release。
+
+下一步完成Firefox实际PDF对照、独立检查两份Nova PDF分页与实际HTML三浏览器打开，再按既有B清单退役唯一Gecko生产路径并跑全检/测小包。下方为历史过程，最新结论以本段为准。保持一次clone→普通HTML/MD→同HTML系统打印，停止Share/MHTML/新历史扫描。压缩/迁移更新并push文档；普通回复不要生成迁移提示词。
+
 ## 实际最新检查点：462ba8c / CI37548381063
 
 当前远端应用源码462ba8ccce0f155844946ef9df18866e1c14a82a，CI37548381063进行中；必须等实际结果。最新A修正包含公开Rw shell采样、已观测android:id/title文件框、Firefox递归accessibility节点（A4截图已显示Before正文，快捷findByText失败）、首页测试卡片和官方157.0.1 More子菜单导航；PNG320×120、同snapshot实际打印源HTML/MD、强内容/图片PDF核对、包体/安装代码和依赖记录。旧source e775/A4 Android35/36均失败且无已取PDF文件；不能将spooler完成/291k数据日志或可见正文截图认证为保存文件。全部旧/容器回归及HTML/MD检查仍通过。

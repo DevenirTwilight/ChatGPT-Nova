@@ -1,3 +1,11 @@
+## 已取真实 PDF 的最新检查点（2026-10-07）
+
+应用源码462ba8ccce0f155844946ef9df18866e1c14a82a，CI37548381063已结束。Android35/36的新快照10项、旧18项及全部容器/IME/上传下载分享/旋转生命周期/原签名v1覆盖升级回归均通过；实际SAF HTML/MD及实际System Print UI保存PDF已拉回，不能再沿用下方旧轮“无PDF实物”的结论。API35 frozen-page.pdf 278243字节，API36 294594字节，host pdftotext首尾/中文/法语/长代码/长表格/数学/图片320×120及排除AFTER均通过。小产物11452620683(API35)、11451684941(API36)，可从CI下载，不含真实账号正文。
+
+CI唯一剩余失败是Firefox A/B：正文已打开，More菜单可见，但测试严格匹配“More”而实际accessibility是“More Collapsed”，未进入Save as PDF。已查看失败截图/公开UI树，修正正常UI操作，尚需重跑。没有取得Firefox PDF，不把此对照记为成功。Commit B未开始，Gecko仍保留。当前准确universal APK681117497字节，installedBaseApk同值；无权限读取du总安装占用，不虚构安装总量。原版号/包名/证书不变，无Release。
+
+下一步完成Firefox实际PDF对照、独立检查两份Nova PDF分页与实际HTML三浏览器打开，再按既有B清单退役唯一Gecko生产路径并跑全检/测小包。下方为历史过程，最新结论以本段为准。保持一次clone→普通HTML/MD→同HTML系统打印，停止Share/MHTML/新历史扫描。压缩/迁移更新并push文档；普通回复不要生成迁移提示词。
+
 <!-- Latest actual source 462ba8c / CI37548381063 pending. Local 13 snapshot scenarios and Chrome/Firefox/Edge ordinary HTML passed. A4 API35/36 failed test shell parsing and Firefox virtual-node text search; new public Rw/recursive helper/More submenu fixes await actual saved PDF. No Gecko removal or Release. -->
 <!-- Latest checkpoint: e7759f6 / CI37546450115 pending; A3 API35 failed observed android:id/title filename control, Firefox loaded tab remains on Home Continue card; A3 API36 cancelled after fix push. No actual Android PDF yet; no Gecko removal. -->
 <!-- checkpoint 2026-10-06: source d2e44a8 CI37542015192 Android35/36 failed. API35 real Print UI returned, PDF test read wrong assumed UUID filename; no actual PDF proof yet. Firefox fixture accessibility wait failed; preserve dedicated UI evidence and restore Nova before scenario teardown. Gecko removal remains blocked. -->

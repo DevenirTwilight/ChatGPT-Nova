@@ -57,12 +57,13 @@ public final class FirefoxSnapshotTest extends FrozenPageSnapshotTest {
             waitFor("Firefox Save as PDF",()->{
                 if(press("Save as PDF"))return true;
                 // Firefox 157.0.1 publicly groups this action under MoreSettingsSubmenu.
-                long now=android.os.SystemClock.uptimeMillis();if(now>=nextMenuAction[0]){press("More");nextMenuAction[0]=now+2000;}
+                long now=android.os.SystemClock.uptimeMillis();if(now>=nextMenuAction[0]){if(!press("More Collapsed"))press("More");nextMenuAction[0]=now+2000;}
                 return false;
             });
             final byte[][] result={null};
             waitFor("Firefox actual PDF file",()->{
-                press("Save"); // Handles an optional native document picker; no unrelated UI matching.
+                press("Save"); // Optional native document picker.
+                press("Download"); // Firefox's explicit save-file confirmation, if shown.
                 for(String path:downloads())if(!before.contains(path))try{
                     byte[] bytes=fixtureShellBytes("cat "+quote(path));if(bytes.length>1000&&new String(bytes,0,5,StandardCharsets.US_ASCII).equals("%PDF-")){
                         File pdf=evidence("firefox-frozen.pdf",bytes);
