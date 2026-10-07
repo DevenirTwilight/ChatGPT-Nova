@@ -1,3 +1,12 @@
+## Attachment Restoration — Step R：新锁顺序API26、Legacy与签名独立通过（2026-10-07）
+
+- 分支feature/export-conversation；实际源码787f18f5296e7bbf4148146c21c9c7656e8c7859。正式37677076099 build/lint/JVM93、API26success；35/36仍running，不能称整个最新验收完成。本步为已完成的独立证据检查点，正式Android输出继续待核。
+- success独立实际XML93（fail/error/skip0）；API26 artifact11507865359：foundation2+persistence7+Reader3+new concurrency2=14，包含打开helper锁序及close等锁两原断言，非仅编译。attachment-787f-foundation.json。
+- success同源码Legacy37677076223全部job，独立35/36 instrumentation各19pass+原Gecko-only2ignore，attachment-787f-legacy-runtime.json。普通签名APK artifact11507044105/2106973bytes/v2 signature+content digest+原cert/package/code14/revision787/defaultflagfalse，原5assets一致/无.so/无test diagnostics；独立实验APK11507605371同source/原签名/flagtrue与assets也确认，不把实验包交作正式默认包。attachment-787f-package-verification及legacy-package.json。
+- success最新纯parser/tree源码重新编译并在repo外授权真实compatible repack解析-Xmx128m：122conv/7250mapping/7130message/4267current-branch、3065displayable（1202thoughts隐藏）、fallback0；all-node text3216/multimodal892/thoughts1874/recap1148。与既有真实兼容计数一致，不是Android SQLite恢复；只aggregate证据attachment-current-content-counts.json，无真实data/ID/name/path/hash。
+- AR1最新API26/Legacypassed而完整35/36待核；AR2真实repack容器/map/326copy-rollback通过；AR3真实Android恢复、AR4真实duplicate、AR5人工含offline/restart/source loss/三格式pending。清单纠正AR4语义；空间原ZIP约661MiB/repack约662MiB初始规划，非充分保证。
+- 旧3c两次API36stall原因仍unproven。新consistent LOCK→helper修正的是可见锁序风险；Android16公开实现还有条件性的同DB名shared opening lock，未检查hidden/runtime flag或将旧失败归因。下一步只完成现有正式35/36、actual export/图片像素/installed APK匹配与37项最终报告；不再增加scope/版号或发布Release，不删除Legacy。
+
 ## Attachment Restoration — Step Q：诊断基线实物通过，修正可见的数据库锁顺序风险（2026-10-07）
 
 - 分支feature/export-conversation，已测基线ad30d7f3301ddab63120791d4519de5cbc22e25e（生产行为仍3c6c0f7）。正式37672756518全success；独立artifact核对JVM93、API26 2+7+3、35/36各Archive32+Stable43、实际16页Archive PDF/12×8图片与portableHTML/MD/描述、31页Stable/System及Firefox PDF/Unicode/code/table/升级；v2签名/content digest/原证书/defaultlegacyfalse/source/package/code14通过。证据attachment-ad30-foundation/runtime-35/runtime-36/package-verification.json。35/36没有生成超时线程文件，本次绿色不能证明此前两次阻塞的根因或修复。

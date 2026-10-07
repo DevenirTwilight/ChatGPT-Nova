@@ -6,7 +6,7 @@
 
 1. 如果当前仍是已验收的旧版7854f3ea，请先选择同一真实ZIP：预期SAF SIZE已知在复制前A05_ARCHIVE_TOO_LARGE；SIZE未知在复制超过256MiB后A05。记录实际错误/阶段，不能以预期冒充结果。若已升级，标旧版real runtime not verified，不删除本地档案来制造测试条件。
 2. 使用[最终CI签名Artifact](https://github.com/DevenirTwilight/ChatGPT-Nova/actions/runs/37634607647/artifacts/11487454505)（buildRevision1990cb1ffb7a0832e94c552cc349023e6e5989d9） `nova-frozen-page-apk` 的ChatGPT-Nova.apk覆盖安装，原包名/签名/code14保持；不公开Release。新旧版号一样，以“复制诊断”的buildRevision确认源码。正式Artifact默认legacy=false；不要误装实验Legacy或测试APK。
-3. ZIP保持在系统SAF可读位置。当前样本353.40MiB；复制前约需513.40MiB私有卷空闲（ZIP+128MiB DB/WAL规划+32MiB余量）。SIZE未知时持续检查160MiB空闲；这只是SAF复制阶段的预算，不是任意数据的充分空间保证。附件恢复阶段还会在ZIP cache之外规划新增asset bytes；本样本约147.36MiB附件，因此初始空间至少约661MiB（ZIP+assets+128MiB DB/WAL+32MiB余量），实际DB/WAL和provider行为仍需留额外空间，不把此值当充分保证。
+3. ZIP保持在系统SAF可读位置。当前样本353.40MiB；复制前约需513.40MiB私有卷空闲（ZIP+128MiB DB/WAL规划+32MiB余量）。SIZE未知时持续检查160MiB空闲；这只是SAF复制阶段的预算，不是任意数据的充分空间保证。附件恢复阶段还会在ZIP cache之外规划新增asset bytes；本样本约147.36MiB附件，因此初始空间原始ZIP约661MiB、当前重打包副本约662MiB（ZIP+assets+128MiB DB/WAL+32MiB余量），实际DB/WAL和provider行为仍需留额外空间，不把此值当充分保证。
 4. Archive内容全部本地。可以保留现有档案；如果既有数据会影响总行数，则使用导入统计区分本次输入，不能把全部库总数误认为新增量。不清在线登录。
 
 ## Level2 — container compatibility
@@ -95,4 +95,4 @@ ANR=none observed / observed / not verified
 6. 在同一阅读scope导出HTML/Markdown/System Print PDF。HTML只在单图2MiB/累计6MiB范围嵌入PNG/JPEG，超限保留描述；Markdown保留可编辑正文和附件描述，不携带binary；PDF应包含实际图片和文档描述。检查首/中/尾、角色、代码/表格/Unicode；文件留在手机，不上传真实输出。
 7. 如测试删除，使用Archive自己的删除入口，确认档案及私有附件移除，原ZIP和在线登录保持。不要在重要档案上卸载应用来模拟删除。
 
-AR2当前仅compatible repack结构审计passed；AR3真实Android恢复、AR4真实重复/离线重启、AR5真实内容人工核对仍pending，不能用JVM/模拟器通过替代。可安全反馈：buildRevision；first-import；asset counts/bytes；second-import；restart；source-ZIP-unavailable；airplane-mode；每类型抽查数量与pass/fail；HTML/MD/PDF数量与pass/fail；固定A码；ANR是否观察到。请勿发真实截图、导出文件、聊天内容或文件名。
+AR2当前仅compatible repack结构审计passed；AR3真实Android恢复、AR4真实重复导入、AR5真实内容人工核对仍pending，不能用JVM/模拟器通过替代。可安全反馈：buildRevision；first-import；asset counts/bytes；second-import；restart；source-ZIP-unavailable；airplane-mode；每类型抽查数量与pass/fail；HTML/MD/PDF数量与pass/fail；固定A码；ANR是否观察到。请勿发真实截图、导出文件、聊天内容或文件名。

@@ -1,0 +1,16 @@
+{
+  "sourceCommit": "787f18f5296e7bbf4148146c21c9c7656e8c7859",
+  "ciRun": 37677076099,
+  "jvmTests": 93,
+  "jvmFailures": 0,
+  "jvmErrors": 0,
+  "jvmSkipped": 0,
+  "syntheticOnly": true,
+  "android26": {
+    "tests.txt": 2,
+    "asset-tests.txt": 7,
+    "asset-reader-tests.txt": 3,
+    "store-concurrency-tests.txt": 2
+  },
+  "android26Artifact": 11507865359
+}

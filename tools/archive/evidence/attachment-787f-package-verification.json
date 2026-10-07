@@ -1,0 +1,23 @@
+{
+  "sourceCommit": "787f18f5296e7bbf4148146c21c9c7656e8c7859",
+  "ciRun": 37677076099,
+  "artifactId": 11507044105,
+  "apkBytes": 2106973,
+  "apkSha256": "726624300448bc653163ed095eab1f5364e51f60bcfcf032efdbdf23c1282a38",
+  "certificateSha256": "f93221ee0d2be2b806233a0b3427ec9c14766100c1bab3208841e6203e2b4289",
+  "apkV2Signature": "verified",
+  "apkV2ContentDigest": "verified",
+  "ENABLE_LEGACY_SCANNER": false,
+  "EXPORT_REVISION": "787f18f5296e7bbf4148146c21c9c7656e8c7859",
+  "APPLICATION_ID": "com.example.chatgptnova",
+  "VERSION_CODE": 14,
+  "VERSION_NAME": "1.4.0-scroll-trial",
+  "assetsMatchSource": [
+    "export/dom-trial.js",
+    "export/scroll-trial.js",
+    "export/progress-discovery.js",
+    "export/locate-text.js",
+    "snapshot/freeze.js"
+  ],
+  "testOnlyDiagnosticsInApk": false
+}

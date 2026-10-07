@@ -1,0 +1,14 @@
+{
+  "sourceCommit": "787f18f5296e7bbf4148146c21c9c7656e8c7859",
+  "ciRun": 37677076223,
+  "artifactId": 11507605371,
+  "apkBytes": 2107825,
+  "apkSha256": "7214332058013b546b445fc45160d70900b24d3e8b45cc926a23fde5858c36f4",
+  "certificateSha256": "f93221ee0d2be2b806233a0b3427ec9c14766100c1bab3208841e6203e2b4289",
+  "apkV2Signature": "verified",
+  "apkV2ContentDigest": "verified",
+  "ENABLE_LEGACY_SCANNER": true,
+  "EXPORT_REVISION": "787f18f5296e7bbf4148146c21c9c7656e8c7859",
+  "APPLICATION_ID": "com.example.chatgptnova",
+  "VERSION_CODE": 14
+}

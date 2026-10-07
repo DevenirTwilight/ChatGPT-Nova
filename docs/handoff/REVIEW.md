@@ -1,3 +1,9 @@
+## New source API26 and Legacy accepted; final formal API35/36 still pending
+
+787f18f5296e7bbf4148146c21c9c7656e8c7859，正式37677076099 JVM93/API26原生14独立through actual artifacts，含concurrency2。Legacy37677076223全success、35/36各实际19+原2ignored；原签名普通APK/defaultflagfalse与实验APK/flagtrue独立核对。真实host新parser计数122/7250/7130/4267/3065displayable/fallback0只aggregate，不是AndroidDB。证据attachment-787f-foundation/package/legacy-runtime/legacy-package及current-content-counts。
+
+正式35/36仍在运行，尚不交付“完整最新验收”。旧3c stall仍unknown，不以consistent lock-order hardening或一次绿色证明历史根因。真实AR3/4/5pending，AR4仅duplicate，offline/restart/sourceZIP loss属于AR5。原ZIP/repack初始空间规划约661/662MiB仍需余量；保持安全边界、默认Legacy关闭与私有数据不进repo/CI。
+
 ## Diagnostic baseline passes; explicit helper/file lock order hardened independently
 
 ad30d7f3正式37672756518全success，独立JVM93/API26 12/35-36各Archive32+Stable43及实际HTML/MD/Archive16页PDF图与Stable31页PDF、签名原cert/flagfalse核对，见attachment-ad30证据。无超时stack文件；两次3c阻塞根因仍未确认，不能以test-only watchdog改变调度后的绿色宣称根因修复。

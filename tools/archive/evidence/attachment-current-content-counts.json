@@ -1,0 +1,19 @@
+{
+  "sourceCommit": "787f18f5296e7bbf4148146c21c9c7656e8c7859",
+  "validation": "host bounded parser on user-authorized repacked data; no Android database import claim",
+  "heapCapMiB": 128,
+  "conversations": 122,
+  "mappingNodes": 7250,
+  "messageNodes": 7130,
+  "currentBranchMessages": 4267,
+  "displayableCurrentBranchMessages": 3065,
+  "hiddenThoughtsOnCurrentBranches": 1202,
+  "fallbackConversations": 0,
+  "contentTypeCounts": {
+    "multimodal_text": 892,
+    "reasoning_recap": 1148,
+    "text": 3216,
+    "thoughts": 1874
+  },
+  "privateDataInEvidence": false
+}
