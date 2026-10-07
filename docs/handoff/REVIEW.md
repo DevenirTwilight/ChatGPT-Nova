@@ -1,3 +1,7 @@
+## Archive validation checkpoint
+
+30 JVM synthetic tests passed. Android fixtures now cover 15 adapter/UI/lifecycle/print cases plus two separate process-restart instrumentations. CI checks actual Archive System Print PDF text, not only callbacks. Android runtime results pending; no real OpenAI export verified. Legacy retained and formal regressions still mandatory.
+
 ## Nova Archive UI/export checkpoint
 
 Implemented independent native Activities and Archive-model HTML/Markdown/System Print pipelines. Shared SnapshotWebView has a separate offline overload: no Archive-to-FrozenPageSnapshot coupling, no CookieManager calls on Archive path. 30 JVM synthetic tests passed; Android acceptance and shared print regression remain not verified. README now separates Archive import from current-page snapshot and legacy research.

@@ -5,6 +5,8 @@ on:
     paths:
       - 'app/**'
       - 'tools/snapshot/**'
+      - 'tools/archive/**'
+      - 'scripts/archive_android.py'
       - 'scripts/snapshot_android.py'
       - '.github/workflows/dom-trial.yml'
   workflow_dispatch:
@@ -75,6 +77,13 @@ jobs:
 
       - name: Build and lint trial
         run: ./gradlew :app:assembleRelease :app:assembleReleaseAndroidTest :app:lintRelease :app:testReleaseUnitTest --stacktrace --no-daemon
+      - name: Retain Archive JVM results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nova-archive-jvm
+          path: app/build/test-results/testReleaseUnitTest/
+          if-no-files-found: warn
       - name: Verify original signature and trial identity
         run: |
           mkdir -p dist
@@ -195,6 +204,7 @@ jobs:
             adb install -r dist/ChatGPT-Nova.apk
             adb install -r dist/ChatGPT-Nova-tests.apk
             adb install /tmp/nova-firefox.apk
+            python3 scripts/archive_android.py
             python3 scripts/snapshot_android.py
       - uses: actions/upload-artifact@v4
         if: always()
@@ -203,4 +213,5 @@ jobs:
           path: |
             dom-trial-results/
             snapshot-results/
+            archive-results/
           if-no-files-found: warn

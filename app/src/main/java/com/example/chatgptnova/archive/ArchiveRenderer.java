@@ -9,16 +9,16 @@ import com.example.chatgptnova.archive.ArchiveModel.Conversation;
 
 /** Archive model -> static documents. No DOM, snapshot, script or remote assets. */
 public final class ArchiveRenderer {
-    private static final List<org.commonmark.Extension> EXT=List.of(TablesExtension.create());
+    private static final List<org.commonmark.Extension> EXT=Collections.singletonList(TablesExtension.create());
     private static final Parser MARKDOWN=Parser.builder().extensions(EXT).build();
     private static final HtmlRenderer HTML=HtmlRenderer.builder().extensions(EXT).escapeHtml(true).sanitizeUrls(true)
         .nodeRendererFactory(context->new org.commonmark.renderer.NodeRenderer() {
-            public Set<Class<? extends Node>> getNodeTypes(){return Set.of(Image.class,Link.class);}
+            public Set<Class<? extends Node>> getNodeTypes(){return new HashSet<>(Arrays.asList(Image.class,Link.class));}
             public void render(Node node) {
                 HtmlWriter w=context.getWriter();
                 if(node instanceof Image){w.text("[图片：离线附件占位]");return;}
                 Link link=(Link)node;String url=link.getDestination();boolean allowed=url.matches("(?i)^https?://[^\\s]+$");
-                if(allowed)w.tag("a",Map.of("href",url,"rel","noreferrer noopener"));else w.tag("span");
+                if(allowed){Map<String,String> attrs=new LinkedHashMap<>();attrs.put("href",url);attrs.put("rel","noreferrer noopener");w.tag("a",attrs);}else w.tag("span");
                 for(Node child=node.getFirstChild();child!=null;child=child.getNext())context.render(child);
                 w.tag(allowed?"/a":"/span");
             }

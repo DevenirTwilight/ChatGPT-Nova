@@ -13,5 +13,6 @@
         <provider android:name="com.example.chatgptnova.FixtureDocuments"
             android:authorities="com.example.chatgptnova.test.documents"
             android:exported="true" />
+        <provider android:name="com.example.chatgptnova.ArchiveFixtureDocuments" android:authorities="com.example.chatgptnova.test.archive.documents" android:exported="true" />
     </application>
 </manifest>

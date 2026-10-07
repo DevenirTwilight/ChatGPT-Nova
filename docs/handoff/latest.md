@@ -1,3 +1,12 @@
+## Nova Archive — Step 4a：Android 验收夹具与 CI 接入（2026-10-07）
+
+- 分支 `feature/export-conversation`；基线源码 `2531aad`，本提交包含 Android tests 与 CI 调度。
+- success：30 JVM tests；Android 新源码/测试的本地参考 API 编译与 Python 脚本语法检查通过，不等同 Gradle/运行验证。
+- 新增 15 项 instrumentation：SAF ZIP/取消、SQLite重复/缺ID/回滚/取消、1000会话/标题搜索/排序/分页、HTML/MD真实content URI写入、Reader策略/链接/Cookie保留、导入旋转/销毁/慢provider取消、Reader重建清理、删除隔离、实际多页PDF与打印取消重试。另 2 项通过独立 instrumentation + shell force-stop 验证进程重启。
+- CI `dom-trial.yml` 在正式回归前运行 Archive；保存实际HTML/MD/PDF、pdftotext标记和重启证据。原有正式 suites、升级与 Legacy job 保留。CommonMark Java11使用 coreLibraryDesugaring，minSdk/package/signature/version 未改。
+- not verified：本提交的 emulator/Gradle/lint/实际PDF结果尚未返回，不称 MVP implemented。没有真实官方导出样本。
+- 下一步：检查新 CI，按实际失败修正，完成全部正式回归和最终证据。
+
 ## Nova Archive — Step 3：原生 UI 与独立导出（2026-10-07）
 
 - 分支 `feature/export-conversation`；源码基线 `80e31dd`，本提交实现 Archive 菜单/原生首页/SAF 导入、标题搜索/排序/分页、离线 Reader、主链/全部分支、HTML/Markdown SAF 保存与 System Print PDF。
