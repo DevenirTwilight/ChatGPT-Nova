@@ -1,3 +1,9 @@
+## B1实际回归与待修测试预期
+
+source435/CI37554538538 API36已取artifact11453609820：旧16通过/2Geo显式退役，新snapshot10、实际PDF及严格同一HTML的Firefox1/host OCR首尾/内容图像/所有输入native/A→B及v1覆盖升级通过；唯一失败是NovaWebViewTest菜单列表仍写“原型/旧扫描/旧诊断”，实际列表正是用户要求的正式保存菜单。现只同步4个菜单预期，保留账号状态/设置/清理Cookie断言，不改生产行为、不忽略此用例。API35仍等结果，不伪称B1整体绿；后续必须核本修正新CI。
+
+API36实测installedBaseApk1910725字节，A原基线681117497，du总量未知；A→B与v1三个seed/persist/preserve各通过。主APK已取但未作全部稳定交付。下一步等待新完整CI，取两API证据、复核浏览器/文件/包体，写最终报告和交接并提供主APK/CI链接。
+
 ## 最新实际源码/CI/包体检查点
 
 应用/测试source435ebaeeec4734c1ff31b646b13ad5d8d80bc800，CI37554538538构建/lint/签名/浏览器通过，Android35/36执行中。前B9d/37554349621因后续严格A/B测试提交取消，不记回归完成；生产Gecko清理未回退。
