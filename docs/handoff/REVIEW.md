@@ -1,3 +1,7 @@
+## Source8966 API26 native acceptance independently passed
+
+正式API26 actual artifact11517963703独立digest/原instrumentation确认18项全OK：foundation2/persistence7/Reader3/concurrency2/research4。新增四项SQLite恢复、迁移、保留/回滚及实际Reader入口/重建/离线已执行。APK的BuildConfig DEX静态值独立确认默认Legacy=false、revision8966及原包版本14。35/36与Legacy运行中，尚无新实际PDF/全部回归结论，用户手机未测。
+
 ## Source8966 build and independently downloaded package/JVM verified; native acceptance pending
 
 正式37703447205与Legacy37703447262 build阶段通过；API26/35/36和Legacy35/36仍运行。独立JVM XML101/零fail-error-skip，实际APK11518951058/2110929bytes/SHA d1752009481dff7de7d9dcdc8c8297c00f9f722b9d06c9649dca360904927bb7，经apksig完整v2验证/原cert/AXML package-version/Dex revision和新adapter/无native或testfixture确认。包验证不替代运行时。真实本地122会话中inventory19report仅4精确thread匹配（其他15外层thread不在输入）；4完成正文97577chars、MD逐字、HTML生成通过，匿名报告入库。不宣称全部19/手机/精确聊天位置已恢复；当前仍需Android实际文件与完整回归。

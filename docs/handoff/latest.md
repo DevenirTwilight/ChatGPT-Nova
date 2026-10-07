@@ -1,3 +1,9 @@
+## Deep Research — Step AA：API26实物18项与默认DEX开关验收（2026-10-07）
+
+- 源码仍8966489，正式37703447205 API26 job113072536668 success。独立下载artifact11517963703匹配ZIP digest并核原instrumentation：foundation2+asset persistence7+asset reader3+concurrency2+research4=18全部OK。research四个真实方法包括Reader切换/重建/离线、SQLite去重/来源ZIP删除重开、schema2→3、坏重导入保留/超限/取消回滚；不是仅编译。匿名证据research-8966-api26.json。
+- success独立解析实际已下载APK的DEX static encoded values：APPLICATION_ID原包、code14/name保持、EXPORT_REVISION=8966、ENABLE_LEGACY_SCANNER=false；补入package-verification报告。不借CI报告猜默认开关。
+- 正式API35/36与Legacy35/36仍运行，本步仅API26和包开关验收，不称完整Android/三格式验收成功。下一步核35/36新4项与原回归、实际研究正文PDF首尾/代码/表格及旧Stable实物。仅文档证据skipci，无新APK/生产变更；用户手机仍未验证。
+
 ## Deep Research — Step Z：正式包/JVM/真实本地正文独立核对通过，Android运行中（2026-10-07）
 
 - 实际生产源码8966489b87f16d528a2b8a4b1845478594e6a0f9。正式CI37703447205 build/lint/unit/signing success；Legacy37703447262 build/lint/browser success；API26/35/36与Legacy35/36正在运行，不能称完整验收通过。
