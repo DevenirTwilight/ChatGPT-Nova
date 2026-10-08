@@ -1,3 +1,10 @@
+## Deep Research — Step AI：聊天流源码b1bc签名包/JVM独立验收（2026-10-08）
+
+- 实际production **b1bcf2f43c6ccd2a875fc71b9f06696d521afc90**，正式[37740255179](https://github.com/DevenirTwilight/ChatGPT-Nova/actions/runs/37740255179) build success；API26/35/36仍运行，实际中间插入Reader/HTML/MD/PDF尚待验。此次Renderer/Timeline未触及Legacy workflow path，未触发新实验CI；前1565 Legacy19+2ignore仅历史基线，不冒称b1bc跑过实验19项。正式本轮涵盖默认Legacy关闭与Stable43回归。
+- 独立下载artifact11533617189匹配ZIPdigest，APK2112225bytes/SHA4175cb213657d2aa85cda09c6856d8592005c1bca4b4444b235060f69b6419c8，完整apksig v2/原cert、AXML package/code14/name、DEX sourceb1bc/Timeline与按时间标签/defaultLegacyfalse、无testfixtures/.so/签名秘密核对通过。独立JVM XML artifact11533288225：107/0fail-error-skip。证据research-timeline-b1bc-package.json。
+- 真实仓库外当前core已重编译：4timePlaced/0unknown/MD正文4逐字/97577chars/输入ordinal4-3-2-1、chat raw graph未变，report timeline HTML/MD已给用户私有预览；证据research-timeline-b1bc-real-local.json。没有真实正文进Git/CI，不将此等同真实Android SQLite验收。
+- 新包独立保存timeline文件名，保留上一1565下载包，最终运行时通过后才给用户新下载链接；未公开Release/递增版本/main。下一步核新API26 Reader默认中间插入断言、新35/36三格式/actualPDF before→report→after与旧回归，原签名包已验不能替代设备运行；用户手机仍待覆盖安装核对。
+
 ## Deep Research — Step AH：共享时间聊天流实现与本地验收（2026-10-08）
 
 - 基点23e5cf7，本步骤提交actual新源码至feature/export-conversation，不改package/原签名/code14/schema3。新增ArchiveTimeline display entries，原chat nodes/parent/分支selection不改；Report按report_message.create_time（消息时间，不冒称最终完成时刻）排序，落在左侧所有消息时间≤报告且右侧全部>报告的有效cut中，同时间报告按official identity稳定排序；支持分支内局部非单调但仍存在一致cut的情况，不重新排序原聊天。

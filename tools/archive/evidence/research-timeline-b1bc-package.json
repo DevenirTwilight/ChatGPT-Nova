@@ -1,0 +1,32 @@
+{
+  "sourceCommit": "b1bcf2f43c6ccd2a875fc71b9f06696d521afc90",
+  "apkBytes": 2112225,
+  "apkSha256": "4175cb213657d2aa85cda09c6856d8592005c1bca4b4444b235060f69b6419c8",
+  "certificateSha256": "f93221ee0d2be2b806233a0b3427ec9c14766100c1bab3208841e6203e2b4289",
+  "signature": "independent apksig full APK verified; v2 true",
+  "package": "com.example.chatgptnova",
+  "versionCode": "14",
+  "versionName": "1.4.0-scroll-trial",
+  "independentDexStaticValues": {
+    "APPLICATION_ID": "com.example.chatgptnova",
+    "BUILD_TYPE": "release",
+    "DEBUG": false,
+    "ENABLE_LEGACY_SCANNER": false,
+    "EXPORT_REVISION": "b1bcf2f43c6ccd2a875fc71b9f06696d521afc90",
+    "VERSION_CODE": 14,
+    "VERSION_NAME": "1.4.0-scroll-trial"
+  },
+  "researchAdapterPresent": true,
+  "testFixturesNativeLibrariesSigningSecretsAbsent": true,
+  "ciRun": 37740255179,
+  "artifactId": 11533617189,
+  "artifactZipSha256": "d32a0c44d0ba07029ac80db17219cb87c8a6df6e63f1c92af0dad62ef1f0efdd",
+  "ciJvmXml": {
+    "tests": 107,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "timelineAdapterAndLabelInDex": true,
+  "androidAcceptance": "pending"
+}
