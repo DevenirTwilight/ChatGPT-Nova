@@ -1,3 +1,7 @@
+## GPT/Codex — Step BD：使用说明同步（2026-10-08）
+
+README顶部使用说明新增ChatGPT→Codex/Codex→GPT可见文字、Nova内切换、返回及内部导航/恢复时随地址更新。生产source仍7acc576、原签名候选已核；API26实际23/JVM112/Legacy35/36各19+2ignore通过。正式35/36完整Stable44+Archive42及文件/截图仍运行，本步骤仅文档skipci，不宣称总体验收或交付；下一步核最终实际产物，不main/Release/版号变化。
+
 ## GPT/Codex — Step BC：相关Legacy实验回归通过（2026-10-08）
 
 同source7acc576 Legacy37785028769所有job success；35/36 artifact11554072654/11554027921独立ZIPdigest与actualinstrumentation日志各19 code0/OK、历史2 Gecko code-3忽略，非21通过，证据navigation-7acc576-legacy.json。默认正式APK ENABLE_LEGACY_SCANNER仍false。API26导航+旧23/JVM112/原签名包已核；正式35/36各Stable44+Archive42及实际PDF/截图仍待，下一步完整核验再交包，旧失败/取消保持，不main/Release/版号变化。

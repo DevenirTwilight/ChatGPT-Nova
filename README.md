@@ -18,7 +18,7 @@ HTML/Markdown由系统文件选择器保存；“网页保存诊断”仅记录�
 
 ## 使用
 
-启动后进入官网，顶部显示 ChatGPT Nova 和当前域名。右上角菜单提供刷新、ChatGPT 首页、用浏览器打开和设置；页面明确显示未登录时增加“登录”。设置集中放置退出当前账号（明确已登录时）、清除登录与网站数据、登录帮助和关于 ChatGPT Nova。退出与数据清除都有确认，不影响官方 App 或浏览器。文件上传支持系统文件 / 图片选择器以及拍照；相机和麦克风只为 HTTPS 的 chatgpt.com 及其子域请求 Android 权限。Cookie 在页面完成和应用暂停时写入本地；清除时等待 Cookie 删除完成再加载首页。
+启动后进入官网，顶部显示 ChatGPT Nova 和当前域名。在 ChatGPT 页面显示“跳转至 Codex”，在 Codex 页面显示“跳转至 GPT”，点击可在 Nova 内切换；返回键可回到之前的页面。网页内部切换和恢复页面时，按钮文字会随当前地址更新。右上角菜单提供刷新、ChatGPT 首页、用浏览器打开和设置；页面明确显示未登录时增加“登录”。设置集中放置退出当前账号（明确已登录时）、清除登录与网站数据、登录帮助和关于 ChatGPT Nova。退出与数据清除都有确认，不影响官方 App 或浏览器。文件上传支持系统文件 / 图片选择器以及拍照；相机和麦克风只为 HTTPS 的 chatgpt.com 及其子域请求 Android 权限。Cookie 在页面完成和应用暂停时写入本地；清除时等待 Cookie 删除完成再加载首页。
 
 HTTPS 下载与 blob 下载均通过系统保存对话框写入用户选择的位置，不需要存储权限。HTTPS 在后台线程流式写入，只向下载开始时的 ChatGPT 同源地址发送 Cookie；一旦跨源，后续全程不携带 Cookie，拒绝 HTTPS 降级为 HTTP；blob 分块保存，上限 256 MiB。下载进行时请保持 Nova 运行，清除数据或销毁 Activity 会取消未完成下载；失败时保存位置可能有不完整文件。不会将 Cookie 发给代理服务。HTTP 页面及 HTTP 下载通过浏览器打开。支持安全处理 intent 链接和其它外部 scheme，拒绝本地 file/content/javascript/data 页面跳转。TLS 验证和 Safe Browsing 保持启用。
 
