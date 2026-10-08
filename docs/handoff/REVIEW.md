@@ -1,3 +1,11 @@
+## Final source1565 acceptance complete; physical-device report verification pending
+
+Formal37704403878 and Legacy37704403572 completed/success with source15651dc. Independently verified JVM101, API26 native19, API35/36 each Archive39 including research5 plus Stable43; Legacy each19 passed + historicalGecko2 ignored. Actual Archive PDFs17pages contain research first/last/code/table and old body/Unicode/descriptor markers; 12×8 RGB24/108/150 pixels and portable PNG decoded. Stable/System/Firefox31pages with320×120 image, identical Firefox print source, independent first-page OCR when required, late mutation exclusion and installed APK SHA passed. Runtime evidence research-1565-runtime-35/36.json.
+
+Formal signed APK11518783109/2110961bytes/SHA217bf895a5fa285ef15ac38e1df37f99a5091faf6f63f40ece353df928e70923 independently full-apksig/v2/original cert/package-code14/Dex source1565/defaultLegacyfalse validated. Initial host audit erroneously expected portable data URI in PRINT mode; corrected mode-specific check and actual PDF pixel validation passed, production/CI unchanged. No skipped new assertions or timeout changes.
+
+Private input current rebuilt core:122 conversations, inventory19 reports,4 exact imported-thread matches and4 complete bodies97577chars/Markdown4 exact/HTML passed. Other15 thread ids absent from imported conversations, never guess ownership. Host body recovery and synthetic Android acceptance do not prove private-export SQLite/physical-device success. Cover-install then manually reimport complete ZIP containing library_files.json and matching dat; Reader independent report section. Exact chat insertion position unknown; generated PDF/Word download-file restoration remains outside this body-only fix. No public Release/main/version change; final handoff is docs-only after tested production source.
+
 ## Final source1565 Legacy35/36 independently passed
 
 Run37704403572 all jobs successful. Independently downloaded fixture artifacts35=11519530918 and36=11519122828 matched ZIP digests, each actual instrumentation19 passed with historicalGecko2 ignored (not counted as passed). Default APK independently has Legacy=false. Formal35/36 research5/full Archive/Stable and actual PDF acceptance still pending; API26 native19/JVM101/package already passed. No physical-device conclusion.

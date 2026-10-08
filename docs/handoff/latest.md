@@ -1,3 +1,14 @@
+## Deep Research — Step AF：最终源码完整验收与交付（2026-10-08）
+
+- 工作分支feature/export-conversation，实际生产源码**15651dc5d0ea9289128c753900b6f65aef0de847**；正式[37704403878](https://github.com/DevenirTwilight/ChatGPT-Nova/actions/runs/37704403878)与Legacy[37704403572](https://github.com/DevenirTwilight/ChatGPT-Nova/actions/runs/37704403572)同source、所有job completed/success。本步仅最终证据/文档skipci，不改生产，不main/公开Release/版号。
+- success独立JVM101/0fail-error-skip；API26 actual19；API35/36各Archive39（research5+assets7+Reader3+Archive20+concurrency2+force-stop2）和Stable43全OK。原签名升级、schema1/2→3、重复/损坏重导入保留、数量/Unicode/取消回滚、源ZIP删除重开、Reader入口/重建/离线均有实际fixture执行；真实用户手机仍待验，不将host真实正文或fixture当真实Android输入验收。
+- success实际artifact35=11519059455、36=11520100989，独立digest/原instrumentation及summary source/API/zero failures、HTML/MD/PRINT研究首尾/代码/表格/hidden activity排除；actual Archive PDF两API均17页，研究及旧全文/Unicode/文档markers、12×8实际RGB24/108/150核对。Stable/System与Firefox各31页/320×120图、同一打印源、首标题文本或必要独立144DPI OCR/晚变更排除/安装APK SHA全部通过。证据research-1565-runtime-35/36.json，Legacy实际19+历史Gecko2ignore前步已确认。
+- 独立host验收工具初次将PRINT image误要求为portable data URI而assert失败；读取actual PRINT源码确认既有内部intercepted resolver URL，改为按模式核portable PNG decode/PRINT resolver尺寸及actual PDF真实像素，全部通过。未改production/CI断言/超时，不将这次工具错误当产品失败或略去图片检查。
+- 最终[正式签名APK Artifact11518783109](https://github.com/DevenirTwilight/ChatGPT-Nova/actions/runs/37704403878/artifacts/11518783109)，2110961bytes/SHA256 **217bf895a5fa285ef15ac38e1df37f99a5091faf6f63f40ece353df928e70923**。完整apksig v2/原cert、AXML原package/code14/name、独立DEX revision1565/defaultLegacyfalse、无testfixtures/.so/签名秘密通过。包证据research-1565-package-verification.json；不交8966旧包。
+- 授权真实当前生产core重新编译/运行：122会话中inventory19report仅4 exact thread匹配（另15外层thread不在输入），4完成正文/97577chars/MD4逐字/HTML生成通过，research-1565-real-local.json。真实输入和报告文件仅仓库外；用户可私有查看4份正文/大学专业那份，未放Git/CI或公开网站。
+- 用户安装步骤：同签名覆盖安装→手动重新导入包含library_files.json及.dat的完整导出ZIP→打开原会话→“研究报告 (4)”；现有升级不自动重读旧ZIP。4份独立正文按官方thread绑定，不知道精确聊天气泡位置，不能冒称插回引用的两段之间。该部分恢复完整最终report_message，不包含activity/thoughts或PDF-Word生成下载文件。
+- 已完成授权实现/fixture验收/稳定测试包交付准备，下一步为用户手机重新导入与正文人工核对；不继续无依据改生产，不自动递增版本/Release/main。后续每完成步骤仍按AGENTS更新交接并push，普通回复不生成迁移提示词。
+
 ## Deep Research — Step AE：最终源码Legacy35/36回归通过（2026-10-07）
 
 - 实际生产源码15651dc，Legacy37704403572所有job success。独立下载artifact35=11519530918、36=11519122828均匹配provider ZIP digest，各actual instrumentation 19执行通过+原Gecko2ignore，非将ignore算通过；证据research-1565-legacy-runtime.json。默认交付包DEX仍Legacy=false。

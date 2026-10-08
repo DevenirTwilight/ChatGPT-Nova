@@ -24,4 +24,8 @@ SQLite schema 3 非破坏新增 research_reports 表，按 conversation + offici
 
 本地 JVM 原93+新增8=101测试通过，新增覆盖精确归属、无mapping报告、缺失/坏JSON/不唯一、pending/hidden/incomplete、重复身份/版本、数量预算、三格式/分支独立性与取消。初次新增测试暴露坏report JSON整体失败和空ZIP取消漏检，已修正后101全部通过；失败历史在交接保留。
 
-新增Android原生5项包括SQLite重复导入/源文件删除重开、schema2迁移、坏重导入保留/超限与取消事务回滚、补充平面Unicode aggregate超限回滚并保持旧31份可读正文、真实Reader入口/重建/离线设置。原Archive实际HTML/MD/System Print PDF测试附带虚构报告并检查首尾/代码/表格及思考排除，原旧断言不删除。新Android/CI尚未执行完，不提前写通过。真实手机报告恢复仍需新包安装、重新导入与用户核对；本地源正文恢复不是手机恢复结论。
+新增Android原生5项包括SQLite重复导入/源文件删除重开、schema2迁移、坏重导入保留/超限与取消事务回滚、补充平面Unicode aggregate超限回滚并保持旧31份可读正文、真实Reader入口/重建/离线设置。原Archive实际HTML/MD/System Print PDF测试附带虚构报告并检查首尾/代码/表格及思考排除，原旧断言不删除。最终源码15651dc正式37704403878与Legacy37704403572全部job通过；独立核JVM101、API26原生19、35/36各Archive39+Stable43及实际HTML/MD/17页Archive PDF报告首尾/代码/表格/旧markers与12×8图片像素，详tools/archive/evidence/research-1565-runtime-35/36.json。真实手机报告恢复仍需同签名新包覆盖安装、手动重新导入完整导出ZIP与用户核对；本地源正文恢复和fixture验收不是手机恢复结论。
+
+## 最终测试包
+
+实际生产源码15651dc5d0ea9289128c753900b6f65aef0de847，正式[APK artifact11518783109](https://github.com/DevenirTwilight/ChatGPT-Nova/actions/runs/37704403878/artifacts/11518783109)，2110961bytes，SHA256217bf895a5fa285ef15ac38e1df37f99a5091faf6f63f40ece353df928e70923。原包com.example.chatgptnova、原certificate、code14/name1.4.0-scroll-trial保持；DEX revision1565/defaultLegacy=false独立验证，无公开Release。覆盖安装后手动重新导入包含library_files.json和matching .dat的完整ZIP，打开原会话“研究报告”入口查看；不能用缺少这些源文件的旧裁剪ZIP补回报告。

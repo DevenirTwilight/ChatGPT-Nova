@@ -1,0 +1,22 @@
+{
+  "sourceCommit": "15651dc5d0ea9289128c753900b6f65aef0de847",
+  "validation": "current production core rebuilt independently and rerun under -Xmx128m; not Android SQLite/device acceptance",
+  "importedConversations": 122,
+  "inventoryResearchRecords": 19,
+  "exactImportedThreadMatches": 4,
+  "unmatchedExternalThreads": 15,
+  "completeReportBodies": 4,
+  "matchedConversations": 1,
+  "reportBodyCharacters": 97577,
+  "individualBodyCharacters": [
+    20797,
+    24339,
+    25569,
+    26872
+  ],
+  "exactMarkdownBodyMatches": 4,
+  "portableHtmlGenerated": true,
+  "activityMessagesImported": false,
+  "specificChatInsertionPositionKnown": false,
+  "privateDataCommitted": false
+}
