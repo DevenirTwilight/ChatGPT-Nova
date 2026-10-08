@@ -1,3 +1,9 @@
+## Deep Research — Step AJ：聊天流源码API26默认中间插入验收（2026-10-08）
+
+- production b1bcf2f，正式37740255179 API26 job113189552123 completed/success。独立下载artifact11533717660匹配ZIPdigest并核actual instrumentation：foundation2+assets7+Reader3+concurrency2+research5=19全OK。
+- 这次nativeReportsEntryAndRecreationUseOfflineBody实际先验证默认聊天HTML前消息→完整报告首尾→后消息及“按时间恢复位置”，再验证快捷仅报告/页面重建/离线；新增顺序断言确已执行，不是只证明按钮或正文存在。SQLite迁移/去重/Unicode限额回滚等原验证亦通过，证据research-timeline-b1bc-api26.json。
+- 最终API35/36和三格式actualPDF before/report/after仍运行；JVM107/原签名包与真实host4/正文97577已通过。下一步等待并独立核这些本轮结果，不能用旧1565 PDF替代；仅文档/证据skipci，不改production/版本/Release/main，用户物理设备仍待验。
+
 ## Deep Research — Step AI：聊天流源码b1bc签名包/JVM独立验收（2026-10-08）
 
 - 实际production **b1bcf2f43c6ccd2a875fc71b9f06696d521afc90**，正式[37740255179](https://github.com/DevenirTwilight/ChatGPT-Nova/actions/runs/37740255179) build success；API26/35/36仍运行，实际中间插入Reader/HTML/MD/PDF尚待验。此次Renderer/Timeline未触及Legacy workflow path，未触发新实验CI；前1565 Legacy19+2ignore仅历史基线，不冒称b1bc跑过实验19项。正式本轮涵盖默认Legacy关闭与Stable43回归。

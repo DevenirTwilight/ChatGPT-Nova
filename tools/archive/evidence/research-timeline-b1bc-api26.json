@@ -1,0 +1,18 @@
+{
+  "sourceCommit": "b1bcf2f43c6ccd2a875fc71b9f06696d521afc90",
+  "ciRun": 37740255179,
+  "android": 26,
+  "artifactId": 11533717660,
+  "artifactZipSha256": "1cdb0e35244b2271ebc646a05bfa0bfee521c719dcd16f2231d5836fd7568223",
+  "nativeTests": {
+    "tests.txt": 2,
+    "asset-tests.txt": 7,
+    "asset-reader-tests.txt": 3,
+    "store-concurrency-tests.txt": 2,
+    "research-tests.txt": 5
+  },
+  "totalPassed": 19,
+  "actualDefaultReaderBeforeReportAfterAsserted": true,
+  "actualReaderRecreationAndOfflineSettingsAsserted": true,
+  "validation": "actual synthetic instrumentation independently downloaded; not physical device or private export SQLite acceptance"
+}
