@@ -1,0 +1,16 @@
+{
+  "sourceCommit": "15651dc5d0ea9289128c753900b6f65aef0de847",
+  "validation": "private export schema/identifier/timeline audit only; not exact chat-slot recovery",
+  "matchedReports": 4,
+  "exactOriginationMessageMatches": 0,
+  "exactReportMessageMatches": 0,
+  "widgetSessionOrBackingConversationReferencesInOuterMapping": 0,
+  "otherTextEntriesScanned": 12,
+  "otherTextEntryOriginationOrWidgetMatches": 0,
+  "allCompletedReportTimesAfterLastOuterChatMessage": true,
+  "universityReportActivityStartsAboutSecondsAfterQuotedReply": 0.442,
+  "originalBranchAndBubblePositionProven": false,
+  "userSelected": "completion-time inline placement with explicit approximate-position label",
+  "privateTimelinePreviewGenerated": true,
+  "productionChanged": false
+}

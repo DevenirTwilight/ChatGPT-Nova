@@ -1,3 +1,10 @@
+## Deep Research — Step AG：用户要求聊天流原位展示，选择按时间恢复（2026-10-08）
+
+- 用户追问报告为何只有顶部按钮而未回自己的位置。已说明此前仅恢复独立正文/入口，精确气泡位置未证明；最新用户明确选择“按时间插入聊天流（推荐）”，接受标注“按时间恢复位置”。新的目标为Reader/HTML/MD/PDF共享时间插入，而非仅按钮或尾部报告合集。
+- 工作分支HEAD5f16bee、实际生产仍15651dc，远端已核一致。仓库外再次扫描全部mapping keys/values及12个其他文本entry（含1 HTML）：四份report的origination_message_id/report_message_id/widget_session_id/backing_conversation_id均无直接气泡关联。widget里的外层thread引用仅普通提醒建议组件，不是研究报告定位。报告任务activity首时刻约在用户引用的确认回复后0.442s，完成正文约随后6min；活动不展示/不持久化。
+- 四份完成时间均晚于当前导出最后一条外层聊天消息，因此这份输入按时间恢复会位于最后回复之后，并按时间使大学专业报告排在另外3份之前；不能称找到了缺失parent或原分支位置。生成私有时间排列HTML预览，不进Git/CI，匿名报告research-position-source-audit.json。
+- 下一步实施独立display timeline entries，保持原chat tree/branch次序，按report完成时间插入并明确标注；无法比较的缺时间/乱序情况保持明确未知位置。同步Reader/HTML/MD/PDF与有界导出，测试中间插入/时间排序/缺时间/非单调分支与旧body/hidden排除。用户已授权时间插入，无需再问确认；不main/Release/改版号签名，完成验收后统一交同版本更新包。
+
 ## Deep Research — Step AF：最终源码完整验收与交付（2026-10-08）
 
 - 工作分支feature/export-conversation，实际生产源码**15651dc5d0ea9289128c753900b6f65aef0de847**；正式[37704403878](https://github.com/DevenirTwilight/ChatGPT-Nova/actions/runs/37704403878)与Legacy[37704403572](https://github.com/DevenirTwilight/ChatGPT-Nova/actions/runs/37704403572)同source、所有job completed/success。本步仅最终证据/文档skipci，不改生产，不main/公开Release/版号。
