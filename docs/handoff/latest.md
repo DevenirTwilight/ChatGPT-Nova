@@ -1,3 +1,10 @@
+## GPT/Codex — Step AV：顶部双向快捷入口实现（2026-10-08）
+
+- 基点103e618；MainActivity顶部新增独立可见120dp action，ChatGPT官方root显示“跳转至 Codex”→https://chatgpt.com/codex，/codex或/codex/子路径显示“跳转至 GPT”→HOME。单WebView.loadUrl保留原返回历史/会话容器，不修改Cookie/账号信息；其他origin按钮隐藏，严格HTTPS/rootHost/443/nouserinfo/pathsegment，不因query或codex-other误认。
+- onPageStarted/onPageFinished/display-error、doUpdateVisitedHistory（SPA）、restored/fallback初始URL更新header；heading动态让位，原菜单48dp触控区保持。仅URL检测，不新增私有DOM/认证读取。Archive/Stable保存源码与schema/版本签名保持，默认Legacyfalse。
+- 新meaningful native1：真实顶部双向点击→固定URL、返回、两次pushState、旋转restore真实savedURL与文字、外部页面隐藏、伪域名/子域/http/端口/userinfo/pathquery边界；fixture代理新visitedhistory回调到真实client，页面测试APK本地提供，无账号登录。API26早期执行本新项，35/36全Stable新增同项，旧43及Archive42不删。
+- 静态diff/代码调用链已检查；Android编译/实际点击/SPA/restoration均尚待新CI，不能写通过。下一步核新source build/lint/native23(API26)/Stable44(35/36)+Archive42、保留相关Legacy回归与原签名包，然后统一交付；不main/Release/递增版本。
+
 ## GPT/Codex — Step AU：双向快捷导航授权与源码调查（2026-10-08）
 
 - 用户新要求：ChatGPT显示“跳转至Codex”，Codex显示“跳转至GPT”。基点d9c1229，实际生产e702；本轮独立于已完成批量导出。

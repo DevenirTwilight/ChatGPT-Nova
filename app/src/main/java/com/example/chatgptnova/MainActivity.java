@@ -56,6 +56,7 @@ public class MainActivity extends Activity {
     private static final int WEB_PERMISSIONS = 1002;
     private static final int SAVE_BLOB = 1005;
     private static final String HOME = "https://chatgpt.com/";
+    private static final String CODEX = "https://chatgpt.com/codex";
     private static final String LOGIN = "https://chatgpt.com/auth/login";
     private enum AccountUiState { UNKNOWN, SIGNED_OUT, SIGNED_IN }
     // Read only visible public controls. Never read input values, cookies,
@@ -302,6 +303,9 @@ public class MainActivity extends Activity {
     private BlobDownload blobDownload;
     private HttpDownload httpDownload;
     private TextView origin;
+    private TextView navigationShortcut;
+    private LinearLayout toolbarHeading;
+    private String shortcutDestination;
     private LinearLayout errorPanel;
     private TextView errorMessage;
     private String failedUrl;
@@ -337,8 +341,11 @@ public class MainActivity extends Activity {
         catch (RuntimeException ignored) { }
         if (!restored) {
             String last = savedInstanceState == null ? null : savedInstanceState.getString("nova.lastUrl");
-            webView.loadUrl(safePage(last) ? last : HOME);
+            String initial = safePage(last) ? last : HOME;
+            displayOrigin(initial);
+            webView.loadUrl(initial);
         }
+        if (restored) displayOrigin(webView.getUrl());
         if (Build.VERSION.SDK_INT >= 33) {
             getOnBackInvokedDispatcher().registerOnBackInvokedCallback(
                     OnBackInvokedDispatcher.PRIORITY_DEFAULT, this::navigateBack);
@@ -379,6 +386,7 @@ public class MainActivity extends Activity {
                 ViewGroup.LayoutParams.MATCH_PARENT, dp(56));
 
         LinearLayout heading = new LinearLayout(this);
+        toolbarHeading = heading;
         heading.setOrientation(LinearLayout.VERTICAL);
         heading.setGravity(Gravity.CENTER_VERTICAL);
         heading.setPadding(0, 0, dp(52), 0);
@@ -407,6 +415,21 @@ public class MainActivity extends Activity {
         FrameLayout.LayoutParams menuLp = new FrameLayout.LayoutParams(
                 dp(48), ViewGroup.LayoutParams.MATCH_PARENT, Gravity.END);
         bar.addView(menu, menuLp);
+        navigationShortcut = new TextView(this);
+        navigationShortcut.setTextSize(13);
+        navigationShortcut.setTextColor(0xFF145BA8);
+        navigationShortcut.setGravity(Gravity.CENTER);
+        navigationShortcut.setSingleLine(true);
+        navigationShortcut.setFocusable(true);
+        navigationShortcut.setOnClickListener(v -> {
+            if (!clearing && webView != null && shortcutDestination != null)
+                webView.loadUrl(shortcutDestination);
+        });
+        FrameLayout.LayoutParams shortcutLp = new FrameLayout.LayoutParams(
+                dp(120), ViewGroup.LayoutParams.MATCH_PARENT, Gravity.END);
+        shortcutLp.rightMargin = dp(48);
+        bar.addView(navigationShortcut, shortcutLp);
+        updateNavigationShortcut(HOME);
         root.addView(bar, barLp);
 
         progress = new ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal);
@@ -504,6 +527,12 @@ public class MainActivity extends Activity {
                 errorContainer().setVisibility(View.GONE);
                 displayOrigin(url);
                 progress.setVisibility(View.VISIBLE);
+            }
+
+            @Override
+            public void doUpdateVisitedHistory(WebView view, String url, boolean isReload) {
+                if (view != webView || clearing) return;
+                displayOrigin(url);
             }
 
             @Override
@@ -817,9 +846,29 @@ public class MainActivity extends Activity {
     }
 
     private void displayOrigin(String url) {
+        updateNavigationShortcut(url);
         Uri uri = Uri.parse(url == null ? HOME : url);
         String host = uri.getHost();
         origin.setText(host == null ? "chatgpt.com" : host + (uri.getPort() != -1 && uri.getPort() != 443 ? ":" + uri.getPort() : ""));
+    }
+
+    // Public URL only: path segment, not page content, query strings or account state.
+    static String destinationForPage(String address) {
+        if (address == null || address.length() > 16384) return null;
+        Uri uri = Uri.parse(address);
+        if (!isTrustedOrigin(uri) || !"chatgpt.com".equalsIgnoreCase(uri.getHost())) return null;
+        String path = uri.getEncodedPath();
+        return "/codex".equals(path) || (path != null && path.startsWith("/codex/")) ? HOME : CODEX;
+    }
+
+    private void updateNavigationShortcut(String address) {
+        if (navigationShortcut == null) return;
+        shortcutDestination = destinationForPage(address);
+        navigationShortcut.setVisibility(shortcutDestination == null ? View.GONE : View.VISIBLE);
+        toolbarHeading.setPadding(0, 0, dp(shortcutDestination == null ? 52 : 172), 0);
+        String label = HOME.equals(shortcutDestination) ? "跳转至 GPT" : "跳转至 Codex";
+        navigationShortcut.setText(label);
+        navigationShortcut.setContentDescription(label);
     }
 
     private static boolean safePage(String url) {

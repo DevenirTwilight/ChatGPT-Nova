@@ -223,6 +223,7 @@ abstract class FixtureActivity {
                 return original.shouldInterceptRequest(view, request);
             }
             @Override public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) { return original.shouldOverrideUrlLoading(view, request); }
+            @Override public void doUpdateVisitedHistory(WebView view, String url, boolean isReload) { original.doUpdateVisitedHistory(view,url,isReload); }
             @Override public void onPageStarted(WebView view, String url, Bitmap icon) { original.onPageStarted(view,url,icon); }
             @Override public void onPageFinished(WebView view, String url) {
                 original.onPageFinished(view,url);

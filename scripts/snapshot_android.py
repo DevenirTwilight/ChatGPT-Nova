@@ -115,6 +115,7 @@ try:
     suite('com.example.chatgptnova.ClipboardUiTest','input-regressions',5)
     for method in ['imeCommitText','imePasteCommand','longPressSystemPaste']:
         suite('com.example.chatgptnova.ClipboardProbeTest#'+method,'input-'+method,1)
+    suite('com.example.chatgptnova.NativeUiTest#chatGptCodexShortcutTracksNavigationHistoryAndRestoration','gpt-codex-navigation',1)
     suite('com.example.chatgptnova.NativeUiTest#nativeControlsAndLifecycleRemainUsable','native-lifecycle',1)
     adb('shell','am','force-stop','com.example.chatgptnova')
     suite('com.example.chatgptnova.NativeUiTest#processRestartPreservesSyntheticSessionAndControls','native-restart',1)

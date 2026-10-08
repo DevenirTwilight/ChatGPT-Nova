@@ -1,3 +1,7 @@
+## GPT/Codex toolbar implementation pending runtime (2026-10-08)
+
+Top-level visible action uses exact public URL origin/path segment, fixed destinations in existing WebView, updates for full/SPA/restore/error navigation. Untrusted origins hidden; title space reserved without moving existing menu hitbox. Native1 added for actual clicks, back, SPA, rotation saved URL, external hide and origin/path boundaries; local test pages only. API26 and35/36 will run it with old suites preserved (23 minSDK /44 Stable+42 Archive). Build/runtime/signature verification pending; no account success claim or source-version change.
+
 ## GPT/Codex navigation scope (2026-10-08)
 
 New authorization: visible context-dependent toolbar action on official ChatGPT/Codex pages. Fixed destinations ChatGPT HOME and /codex, exact official root origin/path segment detection, existing WebView/history, SPA and restore updates. No account/DOM/credential reads or new session container. Implementation and runtime acceptance pending; prior batch source e702 remains accepted baseline.

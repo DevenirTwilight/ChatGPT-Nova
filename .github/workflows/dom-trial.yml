@@ -250,6 +250,9 @@ jobs:
             adb install -r dist/ChatGPT-Nova-tests.apk
             adb shell input keyevent KEYCODE_WAKEUP
             mkdir -p archive-min-results
+            adb shell am instrument -w -r -e class com.example.chatgptnova.NativeUiTest#chatGptCodexShortcutTracksNavigationHistoryAndRestoration com.example.chatgptnova.test/androidx.test.runner.AndroidJUnitRunner > archive-min-results/navigation-tests.txt
+            cat archive-min-results/navigation-tests.txt
+            grep -F 'OK (1 test)' archive-min-results/navigation-tests.txt
             adb shell am instrument -w -r -e class com.example.chatgptnova.ArchiveMinSdkTest com.example.chatgptnova.test/androidx.test.runner.AndroidJUnitRunner > archive-min-results/tests.txt
             cat archive-min-results/tests.txt
             grep -F 'OK (2 tests)' archive-min-results/tests.txt

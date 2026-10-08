@@ -22,6 +22,37 @@ public final class NativeUiTest extends FixtureActivity {
     @Before public void before() { nativeFixture = true; loginFixture = true; start(); }
     @After public void after() { if (scenario != null) scenario.close(); }
 
+    @Test public void chatGptCodexShortcutTracksNavigationHistoryAndRestoration() throws Exception {
+        assertEquals("https://chatgpt.com/", MainActivity.destinationForPage("https://chatgpt.com/codex/tasks/fictional?tab=all"));
+        assertEquals("https://chatgpt.com/codex", MainActivity.destinationForPage("https://chatgpt.com/codex-other?next=/codex"));
+        for (String untrusted : new String[]{"https://chatgpt.com.example.invalid/codex", "https://other.chatgpt.com/codex", "http://chatgpt.com/codex", "https://user@chatgpt.com/codex", "https://chatgpt.com:8443/codex"})
+            assertNull(MainActivity.destinationForPage(untrusted));
+        waitFor("GPT shortcut", () -> shown("跳转至 Codex"));
+        click("跳转至 Codex");
+        waitFor("Codex destination", () -> "https://chatgpt.com/codex".equals(currentUrl()));
+        waitFor("Codex shortcut", () -> shown("跳转至 GPT"));
+        capture("codex-shortcut");
+        click("跳转至 GPT");
+        waitFor("GPT destination", () -> "https://chatgpt.com/".equals(currentUrl()));
+        waitFor("GPT shortcut after click", () -> shown("跳转至 Codex"));
+        main(() -> activity.onBackPressed());
+        waitFor("back to Codex", () -> shown("跳转至 GPT") && "https://chatgpt.com/codex".equals(currentUrl()));
+        js("history.pushState({}, '', '/c/fictional?next=/codex'); true");
+        waitFor("SPA GPT path", () -> shown("跳转至 Codex"));
+        js("history.pushState({}, '', '/codex/tasks/fictional'); true");
+        waitFor("SPA Codex task path", () -> shown("跳转至 GPT"));
+        scenario.recreate();
+        AtomicReference<String> restoredUrl = new AtomicReference<>();
+        scenario.onActivity(value -> {
+            activity=value; web=web(value); restoredUrl.set(web.getUrl()); web.stopLoading();
+        });
+        assertEquals("https://chatgpt.com/codex/tasks/fictional", restoredUrl.get());
+        fixture(restoredUrl.get());
+        waitFor("restored Codex shortcut", () -> shown("跳转至 GPT"));
+        fixture("https://example.invalid/nova-fixture");
+        assertFalse(shown("跳转至 GPT")); assertFalse(shown("跳转至 Codex"));
+    }
+
     @Test public void nativeControlsAndLifecycleRemainUsable() throws Exception {
         waitFor("Nova title in accessibility window", () -> shown("ChatGPT Nova"));
         assertTrue(shown("ChatGPT Nova"));
