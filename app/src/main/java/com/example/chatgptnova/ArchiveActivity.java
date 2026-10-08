@@ -17,7 +17,11 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 /** Native local library. Retained import owns only application Context, never an Activity. */
 public final class ArchiveActivity extends Activity {
-  static final int OPEN = 7101;
+  static final int OPEN = 7101, BATCH_SAVE = 7102;
+  private Button batchExport, batchCancel;
+  private ArchiveBatchTask batchTask;
+  private String batchQuery;
+  private boolean batchEarliest, batchAll;
   private LinearLayout root;
   private EditText search;
   private TextView status;
@@ -55,6 +59,14 @@ public final class ArchiveActivity extends Activity {
     root.addView(description);
     Button open = button("导入 ChatGPT 数据");
     open.setOnClickListener(v -> choose());
+    batchExport = button("批量逐会话导出（HTML + Markdown）");
+    batchExport.setOnClickListener(v -> chooseBatch());
+    batchCancel = button("取消批量导出");
+    batchCancel.setVisibility(View.GONE);
+    batchCancel.setOnClickListener(
+        v -> {
+          if (batchTask != null) batchTask.cancel();
+        });
     cancel = button("取消导入");
     cancel.setVisibility(View.GONE);
     cancel.setOnClickListener(
@@ -124,6 +136,9 @@ public final class ArchiveActivity extends Activity {
       offset = state.getInt("offset");
       search.setText(state.getString("search", ""));
       diagnostic = state.getString("diagnostic", diagnostic);
+      batchQuery = state.getString("batchQuery", "");
+      batchEarliest = state.getBoolean("batchEarliest");
+      batchAll = state.getBoolean("batchAll");
       sort.setText(earliest ? "排序：最早时间" : "排序：最近更新时间");
     }
     search.addTextChangedListener(
@@ -138,7 +153,10 @@ public final class ArchiveActivity extends Activity {
           public void afterTextChanged(Editable e) {}
         });
     Object retained = getLastNonConfigurationInstance();
-    if (retained instanceof Task) {
+    if (retained instanceof ArchiveBatchTask) {
+      batchTask = (ArchiveBatchTask) retained;
+      batchTask.attach(this);
+    } else if (retained instanceof Task) {
       task = (Task) retained;
       task.attach(this);
     } else if (ACTIVE.get() == 0) cleanTemporary(this);
@@ -152,8 +170,48 @@ public final class ArchiveActivity extends Activity {
     return b;
   }
 
+  private void chooseBatch() {
+    if (ACTIVE.get() > 0 || (batchTask != null && !batchTask.done)) {
+      Toast.makeText(this, "请等待或取消当前任务", Toast.LENGTH_SHORT).show();
+      return;
+    }
+    new AlertDialog.Builder(this)
+        .setTitle("分别导出当前标题筛选的全部会话")
+        .setMessage("每个会话独立 HTML、Markdown 与附件文件夹，统一保存到一个 ZIP。包含研究报告；缺失附件会标注，失败会话列在 manifest.json。")
+        .setNegativeButton("取消", null)
+        .setNeutralButton("全部分支", (d, w) -> createBatch(true))
+        .setPositiveButton("当前分支", (d, w) -> createBatch(false))
+        .show();
+  }
+
+  private void createBatch(boolean all) {
+    batchQuery = search.getText().toString();
+    batchEarliest = earliest;
+    batchAll = all;
+    Intent i = new Intent(Intent.ACTION_CREATE_DOCUMENT);
+    i.addCategory(Intent.CATEGORY_OPENABLE);
+    i.setType("application/zip");
+    i.putExtra(Intent.EXTRA_TITLE, "Nova-separate-conversations.zip");
+    startActivityForResult(i, BATCH_SAVE);
+  }
+
+  void updateBatch(ArchiveBatchTask t) {
+    if (destroyed || batchTask != t) return;
+    batchExport.setEnabled(t.done);
+    batchCancel.setVisibility(t.done ? View.GONE : View.VISIBLE);
+    if (!t.done) status.setText(t.stage + " · " + t.processed + "/" + t.total + " · 可取消");
+    else if (t.error != null) status.setText(t.error);
+    else
+      status.setText(
+          "已逐会话导出并核验：成功 "
+              + t.succeeded
+              + "，失败 "
+              + t.failed
+              + "。每个主题独立文件；详情见 ZIP 内 manifest.json。缺失源内容无法补全。");
+  }
+
   private void choose() {
-    if (ACTIVE.get() > 0) {
+    if (ACTIVE.get() > 0 || (batchTask != null && !batchTask.done)) {
       Toast.makeText(this, "请等待或取消当前导入", Toast.LENGTH_SHORT).show();
       return;
     }
@@ -171,6 +229,16 @@ public final class ArchiveActivity extends Activity {
   @Override
   protected void onActivityResult(int req, int result, Intent data) {
     super.onActivityResult(req, result, data);
+    if (req == BATCH_SAVE) {
+      if (result == RESULT_OK && data != null && data.getData() != null) {
+        batchTask =
+            new ArchiveBatchTask(
+                getApplicationContext(), data.getData(), batchQuery, batchEarliest, batchAll);
+        batchTask.attach(this);
+        batchTask.start();
+      } else status.setText("未选择保存位置，未开始批量导出。");
+      return;
+    }
     if (req != OPEN) return;
     if (result != RESULT_OK || data == null || data.getData() == null) {
       status.setText("未选择文件，档案未改变。");
@@ -180,7 +248,7 @@ public final class ArchiveActivity extends Activity {
   }
 
   void startImport(Uri uri) {
-    if (ACTIVE.get() > 0) return;
+    if (ACTIVE.get() > 0 || (batchTask != null && !batchTask.done)) return;
     task = new Task(getApplicationContext(), uri);
     task.attach(this);
     task.start();
@@ -269,7 +337,7 @@ public final class ArchiveActivity extends Activity {
   }
 
   private void confirmDelete() {
-    if (ACTIVE.get() > 0) {
+    if (ACTIVE.get() > 0 || (batchTask != null && !batchTask.done)) {
       Toast.makeText(this, "请先取消导入并等待结束", Toast.LENGTH_SHORT).show();
       return;
     }
@@ -308,6 +376,10 @@ public final class ArchiveActivity extends Activity {
 
   @Override
   public Object onRetainNonConfigurationInstance() {
+    if (batchTask != null && !batchTask.done) {
+      batchTask.detach(this);
+      return batchTask;
+    }
     if (task != null) task.detach(this);
     return task;
   }
@@ -319,6 +391,9 @@ public final class ArchiveActivity extends Activity {
     out.putBoolean("earliest", earliest);
     out.putInt("offset", offset);
     out.putString("diagnostic", diagnostic);
+    out.putString("batchQuery", batchQuery);
+    out.putBoolean("batchEarliest", batchEarliest);
+    out.putBoolean("batchAll", batchAll);
   }
 
   @Override
@@ -326,6 +401,10 @@ public final class ArchiveActivity extends Activity {
     destroyed = true;
     listGeneration++;
     listWorker.shutdownNow();
+    if (batchTask != null) {
+      batchTask.detach(this);
+      if (!isChangingConfigurations()) batchTask.cancel();
+    }
     if (task != null) {
       task.detach(this);
       if (!isChangingConfigurations()) task.cancel();

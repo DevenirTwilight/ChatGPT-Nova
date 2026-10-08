@@ -1,3 +1,10 @@
+## Batch Export — Step AM：独立会话批量实现与本地验证（2026-10-08）
+
+- 基点3022064；新增ArchiveBatch逐项ZIP与ArchiveBatchTask保留旋转后台任务，Archive首页一次SAF保存当前标题筛选全部会话（不限当前200分页），明确current/all branch。每会话独立目录HTML/MD/可用附件原件，ordinal安全标题避免同名覆盖/path穿越，manifest列scope/消息/报告/附件缺失/失败/每文件SHA256。
+- 有界10000会话/512MiB展开输出/300秒协作取消；单项render拒绝记录失败并继续，IO/取消/整体预算停止全部，私有临时ZIP先CRC/SHA核验再写SAF，保存后readback重新核ZIP和整个已核验包hash；失败尝试删除新目标/删除不支持则明确提示，不称已成功。仅本地Archive，不触及在线/Stable/Legacy/版本签名/schema。
+- 本地111 JVM（原107+批量4）通过：同名/Unicode/path安全、失败manifest、报告隔离与附件原件、取消无successmanifest、篡改实际ZIP拒绝。新增native3待API26/35/36运行：201跨页与筛选同名、取消不改DB、实际入口单次SAF与旋转/报告时间。旧回归保留，CI尚未执行此源码。
+- 已使用仓库外真实输入自动逐会话导出122/成功122/失败0/研究4，当前主链；产物与附件仅私有目录，ZIP重读CRC/SHA通过。公开local runner仅输出aggregate，不含真实正文/IDs/URL。未将host当Android SQLite/手机成功；下一步独立核真实每份正文/报告/附件、触发新Android和签名包验收，稳定后统一交付，无main/Release。
+
 ## Batch Export — Step AL：逐会话批量导出授权与范围（2026-10-08）
 
 - 用户明确“不同会话是不同主题，逐个导出吧，帮我确认，不用我亲自动手就行，开工”。已授权加入批量操作；每个会话独立HTML/Markdown，不合并主题，单次选择ZIP保存位置，逐个处理/核验，失败列表与取消。PDF逐份系统打印无法免除多次系统交互，本轮不自动合并PDF或宣称静默逐份打印。

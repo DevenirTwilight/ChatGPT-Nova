@@ -1,3 +1,7 @@
+## Batch implementation checkpoint (2026-10-08)
+
+Separate local exports implemented with one SAF destination, bounded sequential conversation files and attachment copies, per-file manifest hashes, staged ZIP verification plus saved-byte re-read/hash equality. JVM111 pass (four new meaningful batch cases). Real private host run122 successes/0 failures/four reports; output kept outside repository. Native201-pagination/filter/cancellation/entry/rotation3 cases added but not yet run; do not claim Android acceptance. PDF remains individual system print path, unchanged. No online access or merged topics.
+
 ## Batch export scope (2026-10-08)
 
 User authorized separate outputs per conversation, automated verification, and batch work. Planned local filtered conversations → independent HTML/Markdown files in one ZIP, current/all branch option, progress/cancel/failure manifest. No merged topics or silent per-conversation system PDF claim. Implementation/runtime verification pending; b1bc timeline acceptance below remains historical baseline.
