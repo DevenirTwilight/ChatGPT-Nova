@@ -1,0 +1,32 @@
+{
+  "sourceCommit": "7acc5766b849b232a2b70c92032dd8947387e19f",
+  "apkBytes": 2118777,
+  "apkSha256": "3b77ebe1f85cf5926330e8c1204d90fe5e305ed87f5e923bff3dc89027dc30aa",
+  "certificateSha256": "f93221ee0d2be2b806233a0b3427ec9c14766100c1bab3208841e6203e2b4289",
+  "signature": "independent apksig full APK verified; v2 true",
+  "package": "com.example.chatgptnova",
+  "versionCode": "14",
+  "versionName": "1.4.0-scroll-trial",
+  "independentDexStaticValues": {
+    "APPLICATION_ID": "com.example.chatgptnova",
+    "BUILD_TYPE": "release",
+    "DEBUG": false,
+    "ENABLE_LEGACY_SCANNER": false,
+    "EXPORT_REVISION": "7acc5766b849b232a2b70c92032dd8947387e19f",
+    "VERSION_CODE": 14,
+    "VERSION_NAME": "1.4.0-scroll-trial"
+  },
+  "researchAdapterPresent": true,
+  "testFixturesNativeLibrariesSigningSecretsAbsent": true,
+  "runId": 37785028945,
+  "apkArtifactId": 11554036843,
+  "apkArtifactZipSha256": "1d1d73d14fdb4d6e36ed0c0102820dd0cfff0760b3ad6e4d1bd4a25295cd5e79",
+  "jvmArtifactId": 11554486082,
+  "jvmXml": {
+    "tests": 112,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "navigationLabelsAndCodexDestinationPresent": true
+}

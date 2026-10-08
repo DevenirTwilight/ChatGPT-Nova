@@ -1,3 +1,7 @@
+## Final navigation candidate package and JVM verified (2026-10-08)
+
+当前生产source7acc5766b849b232a2b70c92032dd8947387e19f，正式37785028945 build/lint成功；独立artifact11554036843 ZIPdigest与fullapksig v2原cert/AXML原identity14/DEX source/defaultLegacyfalse/两个文字与CodexURL/无testfixture.so签名秘密通过。APK2118777bytes/SHA3b77ebe1f85cf5926330e8c1204d90fe5e305ed87f5e923bff3dc89027dc30aa，仓库外navigation候选覆盖旧120包。JVM11554486082独立digest/actualXML112零fail-error-skip，证据navigation-7acc576-package.json。API26实际23、35/36 Stable44+Archive42与Legacy19+2ignore仍运行，未交未经native验收包；旧失败/取消保留。下一步核native及实际导出/PDF/截图，再统一交付，不main/Release/版号变化。
+
 ## API26 old-WebView fixture readiness compatibility (2026-10-08)
 
 5775142正式37784092447 minAPI26再次在@Before fixture loaded超时，artifact11552964999独立digest匹配，1run/1fail，未执行跳转断言。共享fixture的ready检测使用旧WebView不支持的optional chaining，改成显式element非空guard，保留URL/ready断言、其他测试与全部导航断言。production不变；旧失败证据navigation-api26-second-failure.json保留。新source需重新完整CI/API26实际23、35/36 Stable44+Archive42及Legacy回归/签名验收，再交付，不main/Release/改版号。
