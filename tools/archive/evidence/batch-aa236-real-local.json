@@ -1,0 +1,15 @@
+{
+  "source": "aa236abcffdccc9f3fb9f021750e0f2223b50709",
+  "kind": "real-private-host-only",
+  "conversations": 122,
+  "succeeded": 122,
+  "failed": 0,
+  "independentZipCrcSha256": "passed",
+  "plainRawMessagesChecked": 1897,
+  "plainRawMessageChars": 2554914,
+  "researchReports": 4,
+  "exactResearchBodyChars": 97577,
+  "attachmentOriginalFiles": 275,
+  "missingAttachmentReferences": 0,
+  "androidOrPhysicalDeviceValidated": false
+}

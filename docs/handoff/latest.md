@@ -1,3 +1,9 @@
+## Batch Export — Step AN：真实逐份正文/附件独立核对与验收触发（2026-10-08）
+
+- 真实私有122独立会话/0失败，Python独立读取原JSON与实际ZIP：1897原始plain消息/2554914chars逐字包含，4研究正文97577chars逐字，275附件原件/0缺失引用，ZIP所有成员CRC/SHA通过。证据batch-aa236-real-local.json，仅aggregate；私有下载包已给用户，不进Git/CI。统计排除附件metadata混合段，不冒称全部原始节点/线上全历史。
+- d6151bc补充render取消立即抛出，附件原件保留已识别PDF/DOCX/XLSX后缀；本提交接通extension调用。111本地JVM本源码重跑通过；Android仍待新CI，尚无新包验收。先前Git Data/Contents API提交未自动产生workflow run，当前会话发现CLI已有GitHub授权（不输出Token），将用正式workflow_dispatch触发当前源码，避免改CI事件/公开PR来绕行。
+- 逐会话主题独立，单个ZIP只是运输容器，Reader/导出研究时间顺序保持。下一步最终源码111与API26/35/36 native3+旧回归、原签名包、真实导出按新源码复跑；不main/Release/改版号。
+
 ## Batch Export — Step AM：独立会话批量实现与本地验证（2026-10-08）
 
 - 基点3022064；新增ArchiveBatch逐项ZIP与ArchiveBatchTask保留旋转后台任务，Archive首页一次SAF保存当前标题筛选全部会话（不限当前200分页），明确current/all branch。每会话独立目录HTML/MD/可用附件原件，ordinal安全标题避免同名覆盖/path穿越，manifest列scope/消息/报告/附件缺失/失败/每文件SHA256。

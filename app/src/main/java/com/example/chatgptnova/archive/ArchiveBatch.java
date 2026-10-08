@@ -80,10 +80,7 @@ public final class ArchiveBatch implements AutoCloseable {
     Map<String, ArchiveAsset> files = new LinkedHashMap<>();
     for (ArchiveAsset a : selectedAssets.values()) {
       String name =
-          String.format(Locale.ROOT, "attachments/%04d", files.size() + 1)
-              + (a.mime.equals("image/png")
-                  ? ".png"
-                  : a.mime.equals("image/jpeg") ? ".jpg" : ".bin");
+          String.format(Locale.ROOT, "attachments/%04d", files.size() + 1) + extension(a.mime);
       files.put(name, a);
       h.append("<li><a href=\"")
           .append(name)

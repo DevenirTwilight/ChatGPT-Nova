@@ -1,3 +1,7 @@
+## Independent real batch verification (2026-10-08)
+
+Actual private ZIP independently checked against original JSON:122 separate conversations,0failed;1897 plain messages/2554914 chars,4 research bodies/97577 chars exact;275 attachment files,0 missing references; all CRC/SHA matches. Evidence batch-aa236-real-local.json. This is host-only verification, excludes mixed attachment metadata text from plain-message count; Android checks remain pending. API writes produced no automatic run; authorized CLI workflow dispatch will target final source.
+
 ## Batch implementation checkpoint (2026-10-08)
 
 Separate local exports implemented with one SAF destination, bounded sequential conversation files and attachment copies, per-file manifest hashes, staged ZIP verification plus saved-byte re-read/hash equality. JVM111 pass (four new meaningful batch cases). Real private host run122 successes/0 failures/four reports; output kept outside repository. Native201-pagination/filter/cancellation/entry/rotation3 cases added but not yet run; do not claim Android acceptance. PDF remains individual system print path, unchanged. No online access or merged topics.
