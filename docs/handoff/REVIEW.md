@@ -1,3 +1,7 @@
+## Batch export scope (2026-10-08)
+
+User authorized separate outputs per conversation, automated verification, and batch work. Planned local filtered conversations → independent HTML/Markdown files in one ZIP, current/all branch option, progress/cancel/failure manifest. No merged topics or silent per-conversation system PDF claim. Implementation/runtime verification pending; b1bc timeline acceptance below remains historical baseline.
+
 ## Sourceb1bc inline timeline acceptance complete; original exact bubble relation remains absent
 
 Formal37740255179 all jobs completed/success with production b1bcf2f. Independent JVM107 zero failures/errors/skips, API26 native19, API35/36 each Archive39 + Stable43 passed. Actual native default Reader verifies before chat→report first/last→after chat, then optional shortcut/recreation/offline. Actual downloaded HTML/MD/PRINT and17page Archive PDFs assert ARCHIVE-LAST→RESEARCH-FIRST→RESEARCH-LAST→AFTER-RESEARCH-REPLY plus approximate position label; old code/table/Unicode/recap/descriptors/hidden exclusion and12×8 RGB24/108/150 pixels passed. Stable31page System/Firefox PDFs/image/source/first OCR when needed/late changes exclusion/install SHA passed. Runtime evidence research-timeline-b1bc-runtime-35/36.json.

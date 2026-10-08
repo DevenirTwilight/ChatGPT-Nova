@@ -1,3 +1,9 @@
+## Batch Export — Step AL：逐会话批量导出授权与范围（2026-10-08）
+
+- 用户明确“不同会话是不同主题，逐个导出吧，帮我确认，不用我亲自动手就行，开工”。已授权加入批量操作；每个会话独立HTML/Markdown，不合并主题，单次选择ZIP保存位置，逐个处理/核验，失败列表与取消。PDF逐份系统打印无法免除多次系统交互，本轮不自动合并PDF或宣称静默逐份打印。
+- 基点e1d1e689，生产b1bcf2f；现有本地Archive列表分页200，单会话Renderer已共用报告时间聊天流与附件解析。范围为已导入本地会话，当前标题筛选全部；保持主链/全部分支可选，同一ZIP内独立文件与清单。不读取在线账号，不main/Release/版号签名变更。
+- 本步仅需求/源码调查，尚未实现/验证批量导出。下一步实现有界逐项生产、同名安全命名、进度取消/失败结果，自动用真实私有ZIP在仓库外逐份导出并核验；合成与真实host验收不冒称用户手机成功。用户无需逐个点会话或替开发做人工确认。
+
 ## Deep Research — Step AK：时间聊天流最终验收与更新包交付（2026-10-08）
 
 - 用户已选择按时间插入聊天流并标注近似位置；已完成默认Reader和HTML/MD/SystemPrint共享报告插入，原chat parent/branch/次序不重写。实际production **b1bcf2f43c6ccd2a875fc71b9f06696d521afc90**，正式[37740255179](https://github.com/DevenirTwilight/ChatGPT-Nova/actions/runs/37740255179)所有job completed/success，同source。当前为本轮最终证据/交接docs-only skipci，不改production/签名/code14/schema3，不main/Release。
