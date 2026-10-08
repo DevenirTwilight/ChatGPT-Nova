@@ -1,3 +1,9 @@
+## Batch Export — Step AR：最终同源JVM与原签名包独立核验（2026-10-08）
+
+- production e702a77，独立dispatch37757051125 build/lint success，JVMartifact11540153994 ZIPdigest匹配/actualXML112零fail-error-skip。APK11540247734 digest匹配、2117745bytes/SHA2566cba6c30915c70a2b21d77001472020634c97803b65daf548f83e83f1552f52e，fullapksig v2原cert/AXML com.example.chatgptnova/code14/name/DEX revisione702/defaultLegacyfalse/Batch+Task+Timeline+Research类/无testfixtures.so签名秘密通过；证据batch-e702-package.json。
+- 最终包准备在仓库外独立batch名称，未公开Release或交未经native验收APK。API26/35/36仍运行；新native3（201跨页/筛选同名、取消、入口单次SAF/active+done旋转/报告时间）与旧19/39+Stable43仍待actual结果，不能用包验证或真实host122代替。
+- 下步独立核本run新设备artifact与旧HTML/MD/实际PDF/图片/升级回归，然后最终交付。Legacy production无改变/本轮无新的实验跑数主张，不main/改版本/schema，docs-only skipci不重复CI。
+
 ## Batch Export — Step AQ：最终源码真实独立核对与延迟CI处理（2026-10-08）
 
 - 实际production e702a77a974ec5a762f1cc30f3dbae4d923461ea。仓库外重编译最终core重新输出122会话，公开privacy-safe check-batch.py独立读原ZIPJSON/研究inventory与实际每个HTML/MD/附件：122/0failed、1897plain消息2554914chars/4报告97577chars逐字、HTML visible article数量逐会话一致/无script、275实际附件SHA均匹配原ZIP.dat/0缺失、ZIP成员CRC/SHA全通过；证据batch-e702-real-local.json。真实文件只在私有目录，已给用户下载。

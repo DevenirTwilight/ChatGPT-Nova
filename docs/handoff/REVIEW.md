@@ -1,3 +1,7 @@
+## Final e702 package verified (2026-10-08)
+
+Run37757051125 build/lint passed; independently downloaded112 JVM XML zero failures/errors/skips and original-signed2117745-byte APK verified. SHA6cba6c30915c70a2b21d77001472020634c97803b65daf548f83e83f1552f52e, revisione702, package/code14 unchanged, Batch/Task/Timeline/Research present, Legacyfalse, no test fixtures/native libraries/signing secrets. Actual final API26/35/36 batch3 and prior Archive/Stable/export files still running; no final device acceptance yet.
+
 ## Final batch core private host audit (2026-10-08)
 
 Final e702 source host run independently verified against original ZIP:122 conversations/0failed,1897 plain messages2554914chars,4 reports97577chars exact, per-HTML visible article counts and no scripts,275 binary copies each matches original .dat SHA,0missing refs, all ZIP CRC/SHA. check-batch.py is reusable and suppresses private details. e702 run37756714921 cancelled by delayed old aa236 concurrency event; its112 JVM XML passed, old run cancelled, same-source dispatch37757051125 now pending. Final Android/package acceptance still required; do not substitute this host evidence or old package.
