@@ -1,3 +1,9 @@
+## GPT/Codex — Step BF：最终完整验收与交付（2026-10-08）
+
+用户要求的顶部双向跳转已完成：ChatGPT root页面“跳转至 Codex”→固定/codex，Codex及task路径“跳转至 GPT”→HOME，单WebView、旧返回历史、SPA/恢复同步、外部origin隐藏。production7acc5766b849b232a2b70c92032dd8947387e19f；正式37785028945全部success（build/lint、112JVM、API26实际23、35/36各Stable44+Archive42），Legacy37785028769全部success（35/36各实际19、历史2忽略）。所有下载artifact独立digest/source/installedAPK SHA与日志核验；35/36 actual单会话HTML/MD/PRINT及17页Archive/31页System+Firefox PDF全部报告时间顺序/Unicode/长代码表格/图片原色与同源打印/隐藏排除通过，证据navigation-7acc576-runtime-35/36.json及package/api26/legacy.json。旧两次@Before兼容失败和取消历史保持；不将模拟页当真实账号成功。
+
+交付仓库外/workspace/nova-delivery/ChatGPT-Nova-navigation.apk，2118777bytes/SHA2563b77ebe1f85cf5926330e8c1204d90fe5e305ed87f5e923bff3dc89027dc30aa；原签名完整apksig v2 certf93221ee0d2be2b806233a0b3427ec9c14766100c1bab3208841e6203e2b4289、com.example.chatgptnova/code14/name1.4.0-scroll-trial/DEX7acc576/defaultLegacyfalse核验，覆盖安装。真实物理设备/真实账号在线切换未验证；native截图未由现有脚本拉取，未声称视觉审阅。实际按钮点击、URL、visible、返回、SPA、旋转断言已通过。README更新、持续交接与匿名证据随本步骤skipci入分支；无main/Release/版号签名/schema变更。授权工作完成，无需用户人工代替开发验收；按新反馈续接。
+
 ## GPT/Codex — Step BE：API35完整实际文件回归通过（2026-10-08）
 
 同source7acc576/正式37785028945 API35 job success，artifact11553804219独立ZIPdigest/source/API/installedAPK SHA一致；actual Stable44（新gpt-codex-navigation1全部断言运行）+Archive42，summary/checks零失败。实际HTML/MD/PRINT报告首尾/时间标签/前→报告→后、hidden排除、Unicode/长代码表格、17页Archive PDF实际12×8原色图、System/Firefox各31页PDF/320×120图/相同printsource/晚变更排除和必要首标题OCR通过，证据navigation-7acc576-runtime-35.json。native-smoke截图虽由测试生成，但脚本未拉取且后续升级测试卸载应用清理，最终artifact无此截图；不可声称独立视觉看过顶部。实际点击/visibility/accessibility断言通过，静态布局120dp入口与48dp菜单互不覆盖。API36仍待，不记整体验收；接下来核API36 actual结果后交原签名包，不main/Release/版号变化。
