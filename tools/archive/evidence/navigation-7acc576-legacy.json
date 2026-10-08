@@ -1,0 +1,22 @@
+{
+  "sourceCommit": "7acc5766b849b232a2b70c92032dd8947387e19f",
+  "runId": 37785028769,
+  "runConclusion": "success",
+  "native": [
+    {
+      "android": 35,
+      "artifactId": 11554072654,
+      "artifactZipSha256": "05756f65ddd6b47196ee37d25dd69e1c83e91f506a7763149756f3b86274512f",
+      "passed": 19,
+      "historicalIgnoredGeckoTests": 2
+    },
+    {
+      "android": 36,
+      "artifactId": 11554027921,
+      "artifactZipSha256": "98c4451dd72707f778afcfa271a2db30149ef33d4d04f32fa023633cdadc484f",
+      "passed": 19,
+      "historicalIgnoredGeckoTests": 2
+    }
+  ],
+  "validation": "Actual independently downloaded logs; ignored tests are not passed. Experimental scanner remains disabled in default APK."
+}

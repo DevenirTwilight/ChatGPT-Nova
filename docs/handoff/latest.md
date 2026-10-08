@@ -1,3 +1,7 @@
+## GPT/Codex — Step BC：相关Legacy实验回归通过（2026-10-08）
+
+同source7acc576 Legacy37785028769所有job success；35/36 artifact11554072654/11554027921独立ZIPdigest与actualinstrumentation日志各19 code0/OK、历史2 Gecko code-3忽略，非21通过，证据navigation-7acc576-legacy.json。默认正式APK ENABLE_LEGACY_SCANNER仍false。API26导航+旧23/JVM112/原签名包已核；正式35/36各Stable44+Archive42及实际PDF/截图仍待，下一步完整核验再交包，旧失败/取消保持，不main/Release/版号变化。
+
 ## GPT/Codex — Step BB：API26真实原生入口通过（2026-10-08）
 
 最终production7acc576/正式37785028945 minSDK job success，独立artifact11554017549/digest匹配；实际navigation1（双向真实点击/返回/SPA/旋转实际URL/外部隐藏）及旧Archive22全OK，总23，证据navigation-7acc576-api26.json。Java8读取与显式ready guard解决两次@Before测试兼容失败，历史失败保持；production导航无需现代JS。JVM112/原签名包已核。35/36 Stable44+Archive42与Legacy19+2ignore仍待结果/实际文件和截图核验，不能记整体通过；下一步完成后统一交包，不main/Release/版本变化。
