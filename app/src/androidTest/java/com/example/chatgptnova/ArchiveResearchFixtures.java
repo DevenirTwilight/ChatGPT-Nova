@@ -29,17 +29,34 @@ final class ArchiveResearchFixtures {
             "create_time",
             1);
     Map<String, Object> node = map("parent", null, "message", message);
+    Map<String, Object> afterMessage =
+        map(
+            "id",
+            "after-message",
+            "author",
+            map("role", "user"),
+            "create_time",
+            30,
+            "content",
+            map(
+                "content_type",
+                "text",
+                "parts",
+                Collections.singletonList("AFTER-RESEARCH-REPLY")));
+    Map<String, Object> mapping = new LinkedHashMap<>();
+    mapping.put("chat", node);
+    mapping.put("after", map("parent", "chat", "message", afterMessage));
     return map(
         "conversation_id",
         THREAD,
         "title",
         title,
         "current_node",
-        "chat",
+        "after",
         "update_time",
         101,
         "mapping",
-        Collections.singletonMap("chat", node));
+        mapping);
   }
 
   static Map<String, Object> record(String id, String thread) {

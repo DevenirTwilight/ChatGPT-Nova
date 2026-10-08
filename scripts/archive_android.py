@@ -39,11 +39,15 @@ try:
         assert 'SYNTHETIC-HIDDEN-THOUGHT' not in document
         assert 'RESEARCH-FIRST' in document and 'RESEARCH-LAST' in document
         assert 'RESEARCH-HIDDEN-ACTIVITY' not in document
+        assert document.index('ARCHIVE-LAST') < document.index('RESEARCH-FIRST') < document.index('RESEARCH-LAST') < document.index('AFTER-RESEARCH-REPLY')
+        assert '按时间恢复位置' in document
     subprocess.run(['pdftotext','-layout',str(out/'archive.pdf'),str(out/'archive-pdf.txt')],check=True)
     text=re.sub(r'\s+','',unicodedata.normalize('NFKC',(out/'archive-pdf.txt').read_text()))
     for marker in ['ARCHIVE-FIRST','ARCHIVE-LAST','CODE-TAIL','TABLE-TAIL','中文','café','LongArchiveparagraph','Noël','E=mc^2','SCHEMA-OBJECT-TEXT','SCHEMA-RECAP','推理摘要','fictional.docx','RESEARCH-FIRST','RESEARCH-LAST','RESEARCH-CODE-TAIL','RESEARCH-TABLE-TAIL']:
         assert marker in text,('PDF marker',marker)
     assert 'OTHER-BRANCH' not in text and 'SYNTHETIC-HIDDEN-THOUGHT' not in text
+    assert text.index('ARCHIVE-LAST') < text.index('RESEARCH-FIRST') < text.index('RESEARCH-LAST') < text.index('AFTER-RESEARCH-REPLY')
+    assert '按时间恢复位置' in text
     suite('com.example.chatgptnova.ArchiveProcessTest#seedPrivateArchiveForProcessRestart','archive-seed',1)
     adb('shell','am','force-stop','com.example.chatgptnova')
     suite('com.example.chatgptnova.ArchiveProcessTest#verifyPrivateArchiveAfterProcessRestart','archive-restart',1)

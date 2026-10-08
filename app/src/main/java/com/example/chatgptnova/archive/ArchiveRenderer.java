@@ -195,8 +195,12 @@ public final class ArchiveRenderer {
                 + " print{img{max-height:240mm;object-fit:contain}figure{break-inside:avoid}a.asset-open{display:none}}</style>");
     StringBuilder out = new StringBuilder(base.substring(0, base.lastIndexOf("</body>")));
     long embedded = 0;
-    for (ArchiveModel.Node node : selection.messages) {
-      if (!node.displayable()) continue;
+    for (ArchiveTimeline.Entry entry : ArchiveTimeline.select(c, selection)) {
+      if (entry.report != null) {
+        appendResearchHtml(out, entry);
+        continue;
+      }
+      ArchiveModel.Node node = entry.chat;
       out.append("<article><h2>").append(role(node));
       if (!node.channel.isEmpty()) out.append(" · ").append(escape(node.channel));
       out.append("</h2>");
@@ -273,7 +277,6 @@ public final class ArchiveRenderer {
       out.append("</article>");
       if (out.length() > 16 * 1024 * 1024) throw new ArchiveError("A05_ARCHIVE_TOO_LARGE");
     }
-    appendResearchHtml(out, c);
     return out.append("</body></html>").toString();
   }
 
@@ -286,8 +289,12 @@ public final class ArchiveRenderer {
                 c,
                 new ArchiveTree.Selection(
                     Collections.emptyList(), selection.warnings, selection.scope)));
-    for (ArchiveModel.Node node : selection.messages) {
-      if (!node.displayable()) continue;
+    for (ArchiveTimeline.Entry entry : ArchiveTimeline.select(c, selection)) {
+      if (entry.report != null) {
+        appendResearchMarkdown(out, entry);
+        continue;
+      }
+      ArchiveModel.Node node = entry.chat;
       out.append("## ").append(role(node)).append("\n\n");
       for (ArchiveDisplay.Block block : ArchiveDisplay.visible(node)) {
         if (block.asset == null) out.append(block.text).append("\n\n");
@@ -312,7 +319,6 @@ public final class ArchiveRenderer {
         if (out.length() > 2 * 1024 * 1024) throw new ArchiveError("A05_ARCHIVE_TOO_LARGE");
       }
     }
-    appendResearchMarkdown(out, c);
     return out.toString();
   }
 
@@ -320,30 +326,32 @@ public final class ArchiveRenderer {
     return r.state.equals("pending") ? "研究尚未完成，导出中没有完成正文。" : "报告文件未包含、格式尚不支持或无法读取。";
   }
 
-  private static void appendResearchHtml(StringBuilder out, Conversation c) throws ArchiveError {
-    if (c.reports.isEmpty()) return;
-    out.append("<section class=\"research-reports\"><h2>研究报告</h2><p>以下报告来自本次导入，与聊天分支独立保存。</p>");
-    for (ArchiveResearch.Report r : c.reports) {
-      out.append("<article><h3>").append(escape(r.title)).append("</h3>");
-      if (r.state.equals("complete")) out.append(renderMarkdown(r.node().text()));
-      else out.append("<p>").append(reportState(r)).append("</p>");
-      out.append("</article>");
-      if (out.length() > 16 * 1024 * 1024) throw new ArchiveError("A05_ARCHIVE_TOO_LARGE");
-    }
-    out.append("</section>");
+  private static void appendResearchHtml(StringBuilder out, ArchiveTimeline.Entry entry)
+      throws ArchiveError {
+    ArchiveResearch.Report r = entry.report;
+    out.append("<article class=\"research-report\" data-placement=\"")
+        .append(entry.placement)
+        .append("\"><h2>Assistant · 研究报告</h2><h3>")
+        .append(escape(r.title))
+        .append("</h3><p class=\"meta\">")
+        .append(escape(entry.note()))
+        .append("</p>");
+    if (r.state.equals("complete")) out.append(renderMarkdown(r.node().text()));
+    else out.append("<p>").append(reportState(r)).append("</p>");
+    out.append("</article>");
+    if (out.length() > 16 * 1024 * 1024) throw new ArchiveError("A05_ARCHIVE_TOO_LARGE");
   }
 
-  private static void appendResearchMarkdown(StringBuilder out, Conversation c)
+  private static void appendResearchMarkdown(StringBuilder out, ArchiveTimeline.Entry entry)
       throws ArchiveError {
-    if (c.reports.isEmpty()) return;
-    out.append("\n# 研究报告\n\n以下报告来自本次导入，与聊天分支独立保存。\n\n");
-    for (ArchiveResearch.Report r : c.reports) {
-      out.append("## ")
-          .append(r.title.replace('\n', ' '))
-          .append("\n\n")
-          .append(r.state.equals("complete") ? r.node().text() : reportState(r))
-          .append("\n\n");
-      if (out.length() > 2 * 1024 * 1024) throw new ArchiveError("A05_ARCHIVE_TOO_LARGE");
-    }
+    ArchiveResearch.Report r = entry.report;
+    out.append("## Assistant · 研究报告\n\n### ")
+        .append(r.title.replace('\n', ' '))
+        .append("\n\n")
+        .append(entry.note())
+        .append("\n\n")
+        .append(r.state.equals("complete") ? r.node().text() : reportState(r))
+        .append("\n\n");
+    if (out.length() > 2 * 1024 * 1024) throw new ArchiveError("A05_ARCHIVE_TOO_LARGE");
   }
 }

@@ -121,6 +121,10 @@ final class ArchiveFixtures {
 
   static byte[] assetZip() throws Exception {
     Map<String, Object> c = conversation("synthetic-0", "Archive 中 café 0", 100, true);
+    Map<String, Object> after = node("after", "a", "user", "AFTER-RESEARCH-REPLY");
+    ArchiveModel.object(after.get("message")).put("create_time", 30);
+    ArchiveModel.object(c.get("mapping")).put("after", after);
+    c.put("current_node", "after");
     Map<String, Object> user =
         ArchiveModel.object(
             ArchiveModel.object(ArchiveModel.object(c.get("mapping")).get("u")).get("message"));

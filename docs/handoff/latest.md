@@ -1,3 +1,11 @@
+## Deep Research — Step AH：共享时间聊天流实现与本地验收（2026-10-08）
+
+- 基点23e5cf7，本步骤提交actual新源码至feature/export-conversation，不改package/原签名/code14/schema3。新增ArchiveTimeline display entries，原chat nodes/parent/分支selection不改；Report按report_message.create_time（消息时间，不冒称最终完成时刻）排序，落在左侧所有消息时间≤报告且右侧全部>报告的有效cut中，同时间报告按official identity稳定排序；支持分支内局部非单调但仍存在一致cut的情况，不重新排序原聊天。
+- 时间缺失/无一致cut时保留报告在末尾并标“位置未确定”；正常插入标“按时间恢复位置 · 依据报告消息时间插入，原气泡位置未提供”。报告单独快捷视图保留并按时间排序，默认Reader/portable HTML/MD/Print共有同一timeline，取消尾部独立报告合集。快捷按钮不再是正文的唯一入口。
+- 本地107 JVM（原101+新增6）通过：多报告中间插入/三HTML modes与MD/不改graph、同时间tie、缺失/非法时间、缺chat时间、非单调有效cut与未知位置、主链/全部分支/报告快捷。Native existing research5中的实际Reader加入默认报告在两条聊天之间的断言；actual SAF/MD/SystemPrintfixture也有before→report→after，CI新增三格式及真实PDF顺序/“按时间恢复位置”断言，原旧checks保持；Android本轮尚未验证。
+- 仓库外重编译当前production core真实输入：4timePlaced/0unknown/4正文MD逐字/97577chars，报告次序input ordinals4→3→2→1，chat graph raw未变。4份均位于最后确认回复之后，大学专业那份第一；用户可以查看私有timeline-restored.html/.md。真实内容/IDs/路径不进Git/CI。
+- 新包覆盖安装即可对已在schema3导入的报告应用排列，无需为了本次纯显示修正再次重导ZIP；尚未导入报告仍须此前完整ZIP补正文。本次不称精确原parent/branch/气泡复原。下一步核新源码JVM/API26/35/36/native actual middle-position与PDF顺序、旧Stable/Legacy、签名版本/defaultLegacyfalse，再统一交付。
+
 ## Deep Research — Step AG：用户要求聊天流原位展示，选择按时间恢复（2026-10-08）
 
 - 用户追问报告为何只有顶部按钮而未回自己的位置。已说明此前仅恢复独立正文/入口，精确气泡位置未证明；最新用户明确选择“按时间插入聊天流（推荐）”，接受标注“按时间恢复位置”。新的目标为Reader/HTML/MD/PDF共享时间插入，而非仅按钮或尾部报告合集。

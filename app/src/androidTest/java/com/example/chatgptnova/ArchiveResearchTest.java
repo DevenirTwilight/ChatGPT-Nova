@@ -215,6 +215,22 @@ public final class ArchiveResearchTest {
       scenario.onActivity(
           a -> {
             try {
+              String html = (String) field(a, "html");
+              assertTrue(html.contains("Fictional chat body"));
+              assertTrue(html.contains("RESEARCH-FIRST"));
+              assertTrue(html.contains("RESEARCH-LAST"));
+              assertTrue(html.contains("AFTER-RESEARCH-REPLY"));
+              assertTrue(html.indexOf("Fictional chat body") < html.indexOf("RESEARCH-FIRST"));
+              assertTrue(html.indexOf("RESEARCH-LAST") < html.indexOf("AFTER-RESEARCH-REPLY"));
+              assertTrue(html.contains("按时间恢复位置"));
+              assertFalse(html.contains("<section class=\"research-reports\""));
+            } catch (Exception e) {
+              throw new AssertionError(e);
+            }
+          });
+      scenario.onActivity(
+          a -> {
+            try {
               Button b = (Button) field(a, "reports");
               assertEquals("研究报告 (1)", b.getText().toString());
               assertTrue(b.performClick());

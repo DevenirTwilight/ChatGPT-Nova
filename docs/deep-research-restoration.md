@@ -10,7 +10,11 @@
 
 ## 阅读与导出
 
-会话阅读器新增“研究报告 (数量)”入口，切到独立报告阅读，可返回聊天。报告区同时包含于会话 HTML/Markdown/System Print PDF，在“主链”和“全部分支”之间切换不移除报告。它们保持独立报告身份，不拼进某条聊天分支或冒称精确气泡位置。HTML 使用既有安全 CommonMark 渲染；Markdown 保留原文字；PDF 打印相同离线 HTML。引用元数据保留，不在本次实现额外 citation restoration、来源网页抓取或外部链接认证。
+默认会话阅读流现在按报告消息时间插入完整研究正文，并标注“按时间恢复位置”。HTML/Markdown/System Print PDF使用同一ArchiveTimeline。报告使用report_message.create_time，与chat create_time比较；不是推测最终完成时刻。原parent/branch selection和聊天次序保留，报告独立身份保留，不将显示位置写进原树。多个报告按时间和official identity稳定排序。
+
+插入点必须同时满足左侧所有可见聊天时间≤报告、右侧所有可见聊天时间>报告；同时间报告放在同时间聊天之后。不要求整个分支单调，但缺chat/report时间或无一致cut时保留在末尾并标“位置未确定”。因此不是精确原气泡/分支关系复原。顶部“研究报告”仍是可选快捷阅读，默认正文已在聊天流，不需要先点按钮。
+
+报告单独快捷视图按时间排列，HTML使用既有安全CommonMark，Markdown保留原文，PDF打印同一离线HTML。引用元数据保留，本次未增加citation restoration、来源网页抓取或外部链接认证。仅显示修正使用schema3已经保存的created/message，已有4份报告的用户覆盖安装即可；缺正文才需完整ZIP重导。
 
 ## 持久化与再导入
 
@@ -29,3 +33,7 @@ SQLite schema 3 非破坏新增 research_reports 表，按 conversation + offici
 ## 最终测试包
 
 实际生产源码15651dc5d0ea9289128c753900b6f65aef0de847，正式[APK artifact11518783109](https://github.com/DevenirTwilight/ChatGPT-Nova/actions/runs/37704403878/artifacts/11518783109)，2110961bytes，SHA256217bf895a5fa285ef15ac38e1df37f99a5091faf6f63f40ece353df928e70923。原包com.example.chatgptnova、原certificate、code14/name1.4.0-scroll-trial保持；DEX revision1565/defaultLegacy=false独立验证，无公开Release。覆盖安装后手动重新导入包含library_files.json和matching .dat的完整ZIP，打开原会话“研究报告”入口查看；不能用缺少这些源文件的旧裁剪ZIP补回报告。
+
+## 时间聊天流验证状态
+
+用户明确选择按时间插入及位置标注。本轮本地107 JVM通过，新增6项位置/排序/缺时间/非单调/分支/原树保留回归；真实本地4份时间插入/0unknown/正文4逐字97577chars、顺序4→3→2→1/原树未变。新Android Reader与实际HTML/MD/PDF中间插入和原regressions待本轮CI验证，前一1565签名包验收是独立报告恢复基线，不是本次聊天流实现。
