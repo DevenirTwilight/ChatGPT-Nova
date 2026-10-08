@@ -1,0 +1,15 @@
+{
+  "conversations": 122,
+  "succeeded": 122,
+  "failed": 0,
+  "plainRawMessagesChecked": 1897,
+  "plainRawMessageChars": 2554914,
+  "researchReports": 4,
+  "exactResearchBodyChars": 97577,
+  "attachmentOriginalFiles": 275,
+  "missingAttachmentReferences": 0,
+  "zipCrcSha256": "passed",
+  "androidOrPhysicalDeviceValidated": false,
+  "sourceCommit": "e702a77a974ec5a762f1cc30f3dbae4d923461ea",
+  "kind": "real-private-host-only"
+}

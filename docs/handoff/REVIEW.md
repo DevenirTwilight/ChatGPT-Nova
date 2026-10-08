@@ -1,3 +1,7 @@
+## Final batch core private host audit (2026-10-08)
+
+Final e702 source host run independently verified against original ZIP:122 conversations/0failed,1897 plain messages2554914chars,4 reports97577chars exact, per-HTML visible article counts and no scripts,275 binary copies each matches original .dat SHA,0missing refs, all ZIP CRC/SHA. check-batch.py is reusable and suppresses private details. e702 run37756714921 cancelled by delayed old aa236 concurrency event; its112 JVM XML passed, old run cancelled, same-source dispatch37757051125 now pending. Final Android/package acceptance still required; do not substitute this host evidence or old package.
+
 ## Batch package and lifecycle boundary checkpoint (2026-10-08)
 
 acd3776 package independently verified with original certificate, unchanged identity/version14, DEX revision/defaultLegacyfalse, JVM XML111 passed. Native run still pending. Completed batch state previously lost on rotation; final fix retains it and adds actual native same-task/completion-text assertions. Manifest titles512, entries32000 and manifest16MiB now bounded, one added JVM test preserves full document title;112 JVM pass. New source requires new Android/package verification; prior package is not final acceptance.

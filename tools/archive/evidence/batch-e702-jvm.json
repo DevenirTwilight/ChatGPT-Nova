@@ -1,0 +1,13 @@
+{
+  "sourceCommit": "e702a77a974ec5a762f1cc30f3dbae4d923461ea",
+  "runId": 37756714921,
+  "runCancelledByDelayedOldCommit": true,
+  "artifactId": 11540391975,
+  "artifactSha256": "87a54921008ccbf185ca55680d0f6a39ed28e88b71d1042af56b23f2c677ce76",
+  "actualXml": {
+    "tests": 112,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  }
+}

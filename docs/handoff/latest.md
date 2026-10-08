@@ -1,3 +1,9 @@
+## Batch Export — Step AQ：最终源码真实独立核对与延迟CI处理（2026-10-08）
+
+- 实际production e702a77a974ec5a762f1cc30f3dbae4d923461ea。仓库外重编译最终core重新输出122会话，公开privacy-safe check-batch.py独立读原ZIPJSON/研究inventory与实际每个HTML/MD/附件：122/0failed、1897plain消息2554914chars/4报告97577chars逐字、HTML visible article数量逐会话一致/无script、275实际附件SHA均匹配原ZIP.dat/0缺失、ZIP成员CRC/SHA全通过；证据batch-e702-real-local.json。真实文件只在私有目录，已给用户下载。
+- e702 push37756714921被稍后送达的旧aa236 push37756754400的concurrency取消，不是源码验收失败；旧aa已主动cancel，最终同source独立dispatch37757051125正在启动。被取消run的独立JVMartifact11540391975实际XML112全pass/digest匹配，证据batch-e702-jvm.json，但它不替代最后Android/签名包。
+- d615真实fixture编译failure与各取消历史保持；当前无main/Release/改版本，新package/native验收仍待37757051125。脚本只打印aggregate且异常抑制私有detail；mixed附件段不纳入plain逐字统计，不冒称全部rawnodes/线上历史/手机成功。本步docs/验收脚本与匿名证据skipci，避免重复构建或抢占最终运行。
+
 ## Batch Export — Step AP：签名包核验及旋转/清单边界修正（2026-10-08）
 
 - acd3776正式37756097400 build/lint成功，独立JVMartifact11539973584 digest匹配、实际XML111/0failure-error-skip。APK11539968700独立ZIPdigest/fullapksig v2原cert/AXML package/code14/name/DEX acd3776/defaultLegacyfalse通过，2117413bytes/SHAcc2d5a6c14a179179a955d8af6f3ae661e9284ee9a345c6e9caa864825cb02a3；证据batch-acd377-package.json。该包未交用户，Android尚进行。
