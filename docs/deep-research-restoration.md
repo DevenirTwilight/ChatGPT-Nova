@@ -30,10 +30,14 @@ SQLite schema 3 非破坏新增 research_reports 表，按 conversation + offici
 
 新增Android原生5项包括SQLite重复导入/源文件删除重开、schema2迁移、坏重导入保留/超限与取消事务回滚、补充平面Unicode aggregate超限回滚并保持旧31份可读正文、真实Reader入口/重建/离线设置。原Archive实际HTML/MD/System Print PDF测试附带虚构报告并检查首尾/代码/表格及思考排除，原旧断言不删除。最终源码15651dc正式37704403878与Legacy37704403572全部job通过；独立核JVM101、API26原生19、35/36各Archive39+Stable43及实际HTML/MD/17页Archive PDF报告首尾/代码/表格/旧markers与12×8图片像素，详tools/archive/evidence/research-1565-runtime-35/36.json。真实手机报告恢复仍需同签名新包覆盖安装、手动重新导入完整导出ZIP与用户核对；本地源正文恢复和fixture验收不是手机恢复结论。
 
-## 最终测试包
+## 独立正文恢复基线包（1565，旧排列）
 
 实际生产源码15651dc5d0ea9289128c753900b6f65aef0de847，正式[APK artifact11518783109](https://github.com/DevenirTwilight/ChatGPT-Nova/actions/runs/37704403878/artifacts/11518783109)，2110961bytes，SHA256217bf895a5fa285ef15ac38e1df37f99a5091faf6f63f40ece353df928e70923。原包com.example.chatgptnova、原certificate、code14/name1.4.0-scroll-trial保持；DEX revision1565/defaultLegacy=false独立验证，无公开Release。覆盖安装后手动重新导入包含library_files.json和matching .dat的完整ZIP，打开原会话“研究报告”入口查看；不能用缺少这些源文件的旧裁剪ZIP补回报告。
 
-## 时间聊天流验证状态
+## 时间聊天流最终验证与更新包
 
-用户明确选择按时间插入及位置标注。本轮本地107 JVM通过，新增6项位置/排序/缺时间/非单调/分支/原树保留回归；真实本地4份时间插入/0unknown/正文4逐字97577chars、顺序4→3→2→1/原树未变。新Android Reader与实际HTML/MD/PDF中间插入和原regressions待本轮CI验证，前一1565签名包验收是独立报告恢复基线，不是本次聊天流实现。
+用户明确选择按时间插入及位置标注。production b1bcf2f43c6ccd2a875fc71b9f06696d521afc90，正式[37740255179](https://github.com/DevenirTwilight/ChatGPT-Nova/actions/runs/37740255179)所有job通过。独立JVM107、API26原生19、35/36各Archive39+Stable43；实际Reader默认中间插入和actualHTML/MD/17页Archive PDF前消息→报告→后消息及时间标注已验，旧markers/图片像素/Stable31页PDF保持通过。详research-timeline-b1bc-runtime-35/36.json。
+
+[本轮原签名更新包11533617189](https://github.com/DevenirTwilight/ChatGPT-Nova/actions/runs/37740255179/artifacts/11533617189)，2112225bytes，SHA2564175cb213657d2aa85cda09c6856d8592005c1bca4b4444b235060f69b6419c8。原package/cert/code14/name保持，DEX sourceb1bc/Timeline label/defaultLegacyfalse独立验证。已有schema3报告覆盖安装后打开会话直接应用排列；报告尚未导入才需完整ZIP。
+
+真实本地当前核心4份时间插入/0unknown/正文4逐字97577chars、顺序4→3→2→1/原树未变；仅仓库外提供完整聊天流预览。全部时间在本输入最后一条聊天后，因此该样本报告显示在最后确认之后。这不证明原分支/精确气泡位置；物理手机和真实输入SQLite仍待用户核对。顶部报告按钮是可选快捷，默认正文已经显示在聊天流。Legacy本轮未触发（paths未改），旧实验回归仅历史1565基线；正式默认Legacy/Stable已有本轮验收，不冒称新实验CI。无公开Release/main/版号变更。

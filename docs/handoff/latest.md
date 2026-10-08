@@ -1,3 +1,13 @@
+## Deep Research — Step AK：时间聊天流最终验收与更新包交付（2026-10-08）
+
+- 用户已选择按时间插入聊天流并标注近似位置；已完成默认Reader和HTML/MD/SystemPrint共享报告插入，原chat parent/branch/次序不重写。实际production **b1bcf2f43c6ccd2a875fc71b9f06696d521afc90**，正式[37740255179](https://github.com/DevenirTwilight/ChatGPT-Nova/actions/runs/37740255179)所有job completed/success，同source。当前为本轮最终证据/交接docs-only skipci，不改production/签名/code14/schema3，不main/Release。
+- success独立JVM107零fail-error-skip；API26 actual19；API35/36各Archive39+Stable43全部OK。本轮native actualReader默认前消息→报告首尾→后消息与时间标注、快捷/重建/离线均已运行；schema1/2→3、资产/去重/并发/Unicode与取消回滚、force-stop保留等旧checks不删。
+- success独立artifact35=11533998146、36=11534585001均匹配digest，actualHTML/MD/PRINT及真实17页Archive PDF验证ARCHIVE-LAST→RESEARCH-FIRST→RESEARCH-LAST→AFTER-RESEARCH-REPLY，且“按时间恢复位置”存在；报告代码/表格与旧Unicode/recap/文档首尾、hidden activity/thoughts/另一分支排除、portable12×8PNG decode和实际PDF RGB24/108/150全部通过。Stable/System/Firefox各31页/320×120图、Firefox打印源一致、首标题必要独立OCR、晚变更排除、安装APK SHA一致。证据research-timeline-b1bc-runtime-35/36.json。Legacy path未改变/未新触发，1565实验19+2ignore仍仅历史基线；本轮默认Legacy=false及Stable回归已验，不冒称b1bc实验19项。
+- 最终[原签名更新APK Artifact11533617189](https://github.com/DevenirTwilight/ChatGPT-Nova/actions/runs/37740255179/artifacts/11533617189)，**2112225bytes / SHA2564175cb213657d2aa85cda09c6856d8592005c1bca4b4444b235060f69b6419c8**。独立完整apksig/v2/原cert、AXML package/code14/name、DEX revisionb1bc/Timeline与位置标签/defaultLegacyfalse/无testfixtures/.so/签名秘密已核；证据research-timeline-b1bc-package.json。本轮下载包使用独立timeline名称，保留上轮1565。
+- success仓库外重编译当前核心真实4份报告按消息时间插入，0unknown/MD正文4逐字97577chars/排序输入ordinal4-3-2-1/chat raw graph不改，research-timeline-b1bc-real-local.json；私有完整聊天流HTML/MD预览已给用户。4份的时间都晚于导出最后一条聊天回复，所以本样本位置在最后确认后，大学专业那份第一。这是用户选择的时间定位，不是精确旧气泡/分支关系复原；数据没有这些direct ids。未知时间/无一致cut仍明确位置未确定并保留末尾正文。
+- 用户覆盖安装后直接打开原会话查看；schema3已有报告直接应用新排列，不为纯显示修正重新要求371MB ZIP。尚无正文时才按前轮完整ZIP重新导入。顶部研究报告按钮保留为快捷过滤，默认正文已经在聊天流里。
+- 已完成授权的时间插入实现、Android fixture与实物导出验收、原签名更新包交付准备。物理手机/真实输入SQLite仍待用户实际核对，不能用host完整正文+synthetic设备测试冒称真实账号全历史或原精确位置。没有推main/Release/递增版本，后续按新反馈工作；每步仍按AGENTS维护交接，不输出迁移提示词。
+
 ## Deep Research — Step AJ：聊天流源码API26默认中间插入验收（2026-10-08）
 
 - production b1bcf2f，正式37740255179 API26 job113189552123 completed/success。独立下载artifact11533717660匹配ZIPdigest并核actual instrumentation：foundation2+assets7+Reader3+concurrency2+research5=19全OK。

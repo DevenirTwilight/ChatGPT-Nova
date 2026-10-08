@@ -1,0 +1,154 @@
+{
+  "sourceCommit": "b1bcf2f43c6ccd2a875fc71b9f06696d521afc90",
+  "android": 36,
+  "artifactZipSha256": "692651262743c227cd7cfc60785a0f4d974e4d11ec9a1257eded1f1fb3437704",
+  "validation": "independent downloaded actual fixture outputs; not physical device or private export SQLite acceptance",
+  "archive": {
+    "archive-research": 5,
+    "archive-asset-persistence": 7,
+    "archive-asset-reader": 3,
+    "archive-instrumentation": 20,
+    "archive-store-concurrency": 2,
+    "archive-seed": 1,
+    "archive-restart": 1,
+    "pdf": {
+      "sha256": "23fc650dce77c7030afae6953fccf2cc5c7743ceabbcd87894e2ded329b6178a",
+      "bytes": 242396,
+      "pages": 17,
+      "markersVerified": [
+        "ARCHIVE-FIRST",
+        "ARCHIVE-LAST",
+        "CODE-TAIL",
+        "TABLE-TAIL",
+        "中文",
+        "café",
+        "LongArchiveparagraph",
+        "Noël",
+        "E=mc^2",
+        "SCHEMA-OBJECT-TEXT",
+        "SCHEMA-RECAP",
+        "推理摘要",
+        "fictional.docx",
+        "RESEARCH-FIRST",
+        "RESEARCH-LAST",
+        "RESEARCH-CODE-TAIL",
+        "RESEARCH-TABLE-TAIL",
+        "AFTER-RESEARCH-REPLY",
+        "按时间恢复位置"
+      ],
+      "excludedMarkers": [
+        "OTHER-BRANCH",
+        "SYNTHETIC-HIDDEN-THOUGHT",
+        "RESEARCH-HIDDEN-ACTIVITY"
+      ],
+      "firstMarkerMethod": "pdf-text",
+      "imageDimensions": [
+        12,
+        8
+      ],
+      "actualImageRGB": [
+        24,
+        108,
+        150
+      ],
+      "inlineBeforeReportAfterOrderVerified": true
+    }
+  },
+  "stable": {
+    "legacy-disabled": 2,
+    "snapshot": 10,
+    "firefox-android": 1,
+    "web-regressions": 9,
+    "share-regressions": 5,
+    "input-regressions": 5,
+    "input-imeCommitText": 1,
+    "input-imePasteCommand": 1,
+    "input-longPressSystemPaste": 1,
+    "native-lifecycle": 1,
+    "native-restart": 1,
+    "gecko-upgrade-current": 1,
+    "gecko-upgrade-persistence": 1,
+    "gecko-upgrade-seed": 1,
+    "upgrade-current": 1,
+    "upgrade-persistence": 1,
+    "upgrade-seed": 1,
+    "pdf": {
+      "frozen-page.pdf": {
+        "sha256": "5ba208ab86735d61a3c844137c6f24864a2a9980b6fc450cd4d6fbcc9f0903eb",
+        "bytes": 295781,
+        "pages": 31,
+        "markersVerified": [
+          "TAIL-SNAPSHOT-MARKER",
+          "CODE-LAST",
+          "TABLE-LAST",
+          "中文",
+          "café",
+          "Reference",
+          "Longparagraph",
+          "Noël",
+          "naïve",
+          "français",
+          "E=mc^2",
+          "LONG-CODE-HEAD",
+          "LONG-CODE-TAIL",
+          "LONG-TABLE-TAIL"
+        ],
+        "excludedMarkers": [
+          "Aftersnapshotmarker",
+          "AFTER-TITLE",
+          "AFTER-TABLE",
+          "AFTER-BODY",
+          "CLIPPED-UI-CONTROL"
+        ],
+        "firstMarkerMethod": "pdf-text",
+        "imageDimensions": [
+          320,
+          120
+        ],
+        "actualImageRGB": null
+      },
+      "firefox-frozen.pdf": {
+        "sha256": "ac1f8bc59f1f890346dc0ef886292fb3e5260ef8b57096b357d74e2de9dfdd17",
+        "bytes": 356001,
+        "pages": 31,
+        "markersVerified": [
+          "TAIL-SNAPSHOT-MARKER",
+          "CODE-LAST",
+          "TABLE-LAST",
+          "中文",
+          "café",
+          "Reference",
+          "Longparagraph",
+          "Noël",
+          "naïve",
+          "français",
+          "E=mc^2",
+          "LONG-CODE-HEAD",
+          "LONG-CODE-TAIL",
+          "LONG-TABLE-TAIL"
+        ],
+        "excludedMarkers": [
+          "Aftersnapshotmarker",
+          "AFTER-TITLE",
+          "AFTER-TABLE",
+          "AFTER-BODY",
+          "CLIPPED-UI-CONTROL"
+        ],
+        "firstMarkerMethod": "independent-first-page-render-OCR",
+        "imageDimensions": [
+          320,
+          120
+        ],
+        "actualImageRGB": null
+      }
+    }
+  },
+  "installedPackageMatchesVerifiedApk": true,
+  "firefoxSamePrintSource": true,
+  "artifactId": 11534585001,
+  "ciRun": 37740255179,
+  "actualHtmlMarkdownPrintBeforeReportAfterVerified": true,
+  "approximateTimePlacementLabelVerified": true,
+  "chatAppendixRemoved": true,
+  "portablePngDecoded12x8": true
+}
