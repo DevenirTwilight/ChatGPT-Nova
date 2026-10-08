@@ -1,3 +1,7 @@
+## API26 navigation and previous regressions accepted (2026-10-08)
+
+最终production7acc576/正式37785028945 minSDK job success，独立artifact11554017549/digest匹配；实际navigation1（双向真实点击/返回/SPA/旋转实际URL/外部隐藏）及旧Archive22全OK，总23，证据navigation-7acc576-api26.json。Java8读取与显式ready guard解决两次@Before测试兼容失败，历史失败保持；production导航无需现代JS。JVM112/原签名包已核。35/36 Stable44+Archive42与Legacy19+2ignore仍待结果/实际文件和截图核验，不能记整体通过；下一步完成后统一交包，不main/Release/版本变化。
+
 ## Final navigation candidate package and JVM verified (2026-10-08)
 
 当前生产source7acc5766b849b232a2b70c92032dd8947387e19f，正式37785028945 build/lint成功；独立artifact11554036843 ZIPdigest与fullapksig v2原cert/AXML原identity14/DEX source/defaultLegacyfalse/两个文字与CodexURL/无testfixture.so签名秘密通过。APK2118777bytes/SHA3b77ebe1f85cf5926330e8c1204d90fe5e305ed87f5e923bff3dc89027dc30aa，仓库外navigation候选覆盖旧120包。JVM11554486082独立digest/actualXML112零fail-error-skip，证据navigation-7acc576-package.json。API26实际23、35/36 Stable44+Archive42与Legacy19+2ignore仍运行，未交未经native验收包；旧失败/取消保留。下一步核native及实际导出/PDF/截图，再统一交付，不main/Release/版号变化。

@@ -1,0 +1,18 @@
+{
+  "sourceCommit": "7acc5766b849b232a2b70c92032dd8947387e19f",
+  "runId": 37785028945,
+  "artifactId": 11554017549,
+  "artifactZipSha256": "8db0ba250f14cfd859cf3e6a33c95624423ff20bdd86387aa27977cad6fe7a8e",
+  "nativeCounts": {
+    "asset-reader-tests.txt": 3,
+    "asset-tests.txt": 7,
+    "batch-tests.txt": 3,
+    "navigation-tests.txt": 1,
+    "research-tests.txt": 5,
+    "store-concurrency-tests.txt": 2,
+    "tests.txt": 2
+  },
+  "nativeTotal": 23,
+  "navigationMethodExecuted": true,
+  "validation": "Independent downloaded actual API26 instrumentation logs. Controlled fictional WebView page; no real account or physical phone claim."
+}
