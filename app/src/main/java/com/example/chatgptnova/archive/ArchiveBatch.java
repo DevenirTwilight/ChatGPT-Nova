@@ -55,6 +55,7 @@ public final class ArchiveBatch implements AutoCloseable {
       html = ArchiveRenderer.html(c, selection, assets, ArchiveRenderer.AssetMode.PORTABLE);
       md = ArchiveRenderer.markdown(c, selection, assets);
     } catch (ArchiveError e) {
+      if (e.code.equals("A07_IMPORT_CANCELLED")) throw e;
       failure(c.title, e.code);
       return;
     }
@@ -116,6 +117,23 @@ public final class ArchiveBatch implements AutoCloseable {
     r.put("warnings", selection.warnings);
     results.add(r);
     succeeded++;
+  }
+
+  private static String extension(String mime) {
+    switch (mime) {
+      case "image/png":
+        return ".png";
+      case "image/jpeg":
+        return ".jpg";
+      case "application/pdf":
+        return ".pdf";
+      case "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
+        return ".docx";
+      case "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet":
+        return ".xlsx";
+      default:
+        return ".bin";
+    }
   }
 
   private void checkCount() throws ArchiveError {
