@@ -1,3 +1,7 @@
+## API26 navigation fixture setup failure preserved (2026-10-08)
+
+Actual120596 minSDK artifact11553281332 failed before navigation assertions: InputStream.readAllBytes is absent on API26, used in shared fixture setup formerly35/36 only. Buffered Java8 read fixes test-only compatibility, keeping all assertions and errors visible. Other lock-screen APIs guarded. New formal/native/Legacy verification required; this early failure cannot establish product click/SPA behavior. Production current-URL fix fromb646 retained, original failure evidence committed.
+
 ## Navigation asynchronous completion boundary (2026-10-08)
 
 Completion callback now reads actual WebView URL, falling back only if null, so a late original load callback cannot override a newer SPA path label. Native test waits for actual document location after both clicks/back before issuing SPA history changes. Previous120596 package/runtime candidate does not verify this final source; new formal/Legacy/native runs required. No private data or session manipulation added.

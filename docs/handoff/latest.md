@@ -1,3 +1,9 @@
+## GPT/Codex — Step AY：API26测试前置Java兼容失败修复（2026-10-08）
+
+- 正式120596/37782865844 minAPI26 job failure，独立artifact11553281332/digest匹配，actual navigation-tests日志1run/1fail为@Before FixtureActivity.shell调用InputStream.readAllBytes（API26无此方法）NoSuchMethodError；0.042s即失败，尚未执行任何跳转断言。不能称按钮或SPA功能失败/通过。匿名failure证据navigation-api26-first-failure.json。
+- FixtureActivity原来仅35/36使用，首次加入26暴露此前Java9 API；改为Java8 8KiB buffer+ByteArrayOutputStream读取，不新增依赖、不吞异常/删断言。SDK>=27锁屏API已有guard，其余使用路径已检查。production与b646一致，仅source buildRevision将随新CI改变。
+- AX的当前URL/实际document提交同步保留，b646候选CI由本新source替代。接下来核新minAPI26 native23（首项跳转真实执行），正式35/36 Stable44+Archive42/实际PDF及Legacy19+2ignore/签名包，再交付。旧120596首轮失败与取消历史保留；不main/Release/版本改变。
+
 ## GPT/Codex — Step AX：异步完成回调使用当前URL（2026-10-08）
 
 - 审查发现onPageFinished使用回调url，而同一次加载中SPA或后续导航可能已改变当前地址；改为getUrl实际当前地址（null才回退callback），避免迟来的完成回调把快捷按钮文字覆盖成旧页面。与原pageOrigin的既有当前URL读取一致，不读取私有数据。

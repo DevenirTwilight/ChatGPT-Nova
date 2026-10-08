@@ -308,7 +308,10 @@ abstract class FixtureActivity {
     private String shell(String command) {
         try(android.os.ParcelFileDescriptor descriptor=instrument.getUiAutomation().executeShellCommand(command);
             java.io.InputStream input=new android.os.ParcelFileDescriptor.AutoCloseInputStream(descriptor)) {
-            return new String(input.readAllBytes(),StandardCharsets.UTF_8);
+            java.io.ByteArrayOutputStream output = new java.io.ByteArrayOutputStream();
+            byte[] buffer = new byte[8192]; int count;
+            while ((count = input.read(buffer)) != -1) output.write(buffer, 0, count);
+            return new String(output.toByteArray(),StandardCharsets.UTF_8);
         } catch(Exception error) { throw new AssertionError("Fixture shell command failed: "+command,error); }
     }
 

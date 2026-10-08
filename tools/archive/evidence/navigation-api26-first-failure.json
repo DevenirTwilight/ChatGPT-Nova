@@ -1,0 +1,12 @@
+{
+  "sourceCommit": "120596a21d06651c1ca97c1637e679b7bd7046e7",
+  "runId": 37782865844,
+  "artifactId": 11553281332,
+  "artifactZipSha256": "2ce8e6295700d806be3fac08dc70407b3d19c69e24c4dc5f81f9bdf0a5782095",
+  "api": 26,
+  "testsRun": 1,
+  "failures": 1,
+  "failure": "NoSuchMethodError: java.io.InputStream.readAllBytes in FixtureActivity.shell called by @Before start",
+  "navigationAssertionsExecuted": false,
+  "fix": "Use buffered Java8-compatible read loop in test fixture; preserve all actual navigation assertions"
+}
