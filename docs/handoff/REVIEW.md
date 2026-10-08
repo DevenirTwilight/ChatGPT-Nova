@@ -1,3 +1,9 @@
+## Final separate batch export acceptance (2026-10-08)
+
+Source e702a77/run37757051125 all jobs success. Independent actual artifacts:112 JVM,22 native API26,42 Archive+43 Stable on each API35/36. Batch3 method logs verify201 across pages/filtered duplicates/cancel/single SAF/retained and completed rotation/report ordering; actual saved-byte verification passed. Downloaded prior HTML/MD/PRINT and actual17-page Archive PDFs plus31-page Stable/System/Firefox PDFs checked for full markers, time placement, excluded hidden/late changes, images and matching installed APK. This PDF evidence is unchanged single-conversation regression, not a silent bulk PDF claim.
+
+Final original-signed APK2117745 bytes/SHA6cba6c30915c70a2b21d77001472020634c97803b65daf548f83e83f1552f52e, revisione702/Batch+Task/defaultLegacyfalse/original identity14 independently verified. Real private final-source122 separate conversation ZIP:0failed,1897 plain messages/2554914 chars and4 reports/97577 chars exact,275 originals match sourceSHA,0missing refs, all CRC/SHA/per-HTML visible counts verified. No private data in repository. Ready to deliver files and batch APK; no user developer-validation task required. Physical phone/private-input SQLite and online completeness remain unproven, not substituted by host+synthetic devices. Failure and cancelled histories preserved; no main/Release/version change or new Legacy experimental acceptance claim.
+
 ## Final batch native API26 accepted (2026-10-08)
 
 Run37757051125/sourcee702 API26 actual22 methods all OK, including batch3:201 all pages/filtered duplicates, cancellation preserves DB/no success claim, native one-SAF ZIP/report timeline, same retained task and completed-state second rotation. Artifact11540581935 digest and actual logs independently checked. Old19 preserved. API35/36 actual42+Stable43/full saved PDF regressions still running, so overall final acceptance pending; no real physical device or real-input SQLite claim.

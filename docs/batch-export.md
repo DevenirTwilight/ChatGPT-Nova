@@ -18,3 +18,11 @@ ZIP 中每个会话有独立的序号与标题目录：
 批量提供HTML与Markdown。单会话“打印 / PDF”入口保持原有系统打印操作；不同会话不会被合并成一个PDF。
 
 开发者可通过 `bash tools/archive/batch-local.sh INPUT.zip OUTPUT.zip PRIVATE_STAGING` 在仓库外生成相同逐会话包。脚本只输出汇总，真实ZIP、附件与正文禁止提交仓库。设备验收与真实host验收是两类证据，当前状态见[交接](handoff/latest.md)。
+
+## 本轮验收（2026-10-08）
+
+实际源码 `e702a77a974ec5a762f1cc30f3dbae4d923461ea`，正式[CI37757051125](https://github.com/DevenirTwilight/ChatGPT-Nova/actions/runs/37757051125)所有job成功。独立JVM112，Android26实际22，35/36各Archive42与Stable43全通过。新批量3项含201跨页/筛选同名、取消、单次SAF/任务及完成态旋转/实际ZIP报告排列。旧实际17页Archive与31页Stable/System/Firefox PDF、图片、Unicode和报告时间顺序也独立核对；此处PDF是单会话回归，不冒称批量打印。
+
+真实私有官方ZIP已自动逐份导出122会话（当前分支），失败0；独立核对1897条原始plain消息、4份97577字符研究正文、275个原件匹配源文件SHA、0缺失引用，以及每个HTML消息数量与全部ZIP CRC/SHA。产物只保存在仓库外，没有真实正文/标题/IDs/文件链接入Git/CI。这不等同真实手机导入SQLite或线上全历史已验证。
+
+[原签名更新APK artifact11540247734](https://github.com/DevenirTwilight/ChatGPT-Nova/actions/runs/37757051125/artifacts/11540247734)：2117745bytes，SHA256 `6cba6c30915c70a2b21d77001472020634c97803b65daf548f83e83f1552f52e`。原package/code14/签名保持，可覆盖安装；已有本地档案无需为批量功能重新导入。匿名证据见 `tools/archive/evidence/batch-e702-*.json`。未合并main或发布公开Release。

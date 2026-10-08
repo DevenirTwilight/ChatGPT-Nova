@@ -1,3 +1,11 @@
+## Batch Export — Step AT：最终设备/实际文件验收与逐主题交付（2026-10-08）
+
+- 已完成用户授权的逐会话批量实现、自动核验与真实导出交付准备。production **e702a77a974ec5a762f1cc30f3dbae4d923461ea**；最终[37757051125](https://github.com/DevenirTwilight/ChatGPT-Nova/actions/runs/37757051125)所有job completed/success，同source。JVM112零fail-error-skip；API26 actual22；API35/36各Archive42（旧39+batch3）与Stable43全部OK。原失败d615/重复或延迟取消run均历史保留，不冒称它们通过。
+- 独立artifact35=11541297988/36=11541765497 ZIPdigest匹配、actual native batch3各方法确执行（201跨页/筛选同名、取消、单SAF、同Task/完成态旋转、实际ZIP报告时间），以及旧所有仪器日志/summary/source/API/installedAPK SHA一致。实际HTML/MD/PRINT/17页Archive PDF报告首尾/时间标签/前→报告→后、hidden排除、Unicode/长代码表格/图片原色均通过；Stable/System/Firefox各31页/320×120图、同一打印源/首标题必要独立OCR/晚变更排除通过。证据batch-e702-runtime-35/36.json。PDF为原单会话回归，本轮批量是HTML+MD，不合并主题。
+- 最终[原签名更新APK11540247734](https://github.com/DevenirTwilight/ChatGPT-Nova/actions/runs/37757051125/artifacts/11540247734)：**2117745bytes / SHA2566cba6c30915c70a2b21d77001472020634c97803b65daf548f83e83f1552f52e**；完整apksig v2原cert/AXML原package/code14/name/独立DEX revisione702+Batch/Task/Research/Timeline/defaultLegacyfalse、无testfixtures/.so/签名秘密，前步证据已通过。仓库外独立batch下载名，旧timeline包保留。覆盖安装→Archive批量按钮一次保存位置；已有档案不重新导入。
+- 仓库外真实最终source已自动逐份生成122独立会话/0失败，公开privacy-safe脚本独立核1897原始plain消息2554914chars/4研究97577chars逐字、每HTML article数量/无script、275原件源SHA一致/0缺失、ZIP全部CRC/SHA。已给用户私有ZIP下载，真实文件/标题/IDs/链接不入库。当前分支范围清单明确，含附件metadata混合段不纳入plain统计，不能称全rawnodes/在线全历史或真实手机SQLite成功。
+- 新Docs/README与匿名证据统一交付；本步仅skipci，不main/公开Release/版号签名/schema变更。无需用户替开发逐份人工验收；授权工作全部完成，按新反馈续接。物理设备体验仍是实际边界，不额外向用户布置确认任务。Legacy实验源码未改，默认禁用及Stable回归已核，本轮不冒称新增实验19执行。
+
 ## Batch Export — Step AS：最终源码API26实际批量入口与旧回归通过（2026-10-08）
 
 - production e702/最终run37757051125 archive-min-sdk job success。独立下载artifact11540581935 ZIPdigest匹配，实际native foundation2+assets7+Reader3+concurrency2+research5+batch3=22全OK；新3方法确实运行，证据batch-e702-api26.json。

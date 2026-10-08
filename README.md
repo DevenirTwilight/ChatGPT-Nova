@@ -52,6 +52,8 @@ Nova 是非官方第三方客户端，不由 OpenAI 发布、维护或背书。N
 
 ## Nova Archive
 
+支持[逐会话批量导出](docs/batch-export.md)：当前标题筛选全部会话（包含后续页），每会话独立HTML/Markdown/附件目录，一次保存ZIP，进度、取消与保存后自动校验。研究报告沿用恢复后的时间聊天流；单会话系统打印/PDF入口保留。
+
 设置 → Nova Archive：主动导入 ChatGPT 官方 Data Export 兼容 ZIP/JSON，在本地浏览、按标题搜索、阅读并导出单会话 HTML / Markdown / PDF。完整性取决于导入文件；Nova 不自动读取完整在线历史。数据保存在应用私有 SQLite；支持从兼容ZIP按明确引用恢复本地图片和附件，文档通过系统应用打开，可在Archive页删除档案及私有附件。当前已通过synthetic / fixture验证，真实附件人工验收仍待完成。详见 [Nova Archive](docs/nova-archive.md) 和 [附件恢复报告/APK](docs/archive-attachment-validation.md)。
 
 ## 构建与签名

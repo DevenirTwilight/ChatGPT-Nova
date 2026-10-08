@@ -1,0 +1,156 @@
+{
+  "sourceCommit": "e702a77a974ec5a762f1cc30f3dbae4d923461ea",
+  "android": 35,
+  "artifactZipSha256": "e13f1a3a22a2c4eed63fe67a6ac796fafb8f73acddc76a66d797bff9f1e26ee0",
+  "validation": "independent downloaded actual fixture outputs; not physical device or private export SQLite acceptance",
+  "archive": {
+    "archive-batch": 3,
+    "archive-research": 5,
+    "archive-asset-persistence": 7,
+    "archive-asset-reader": 3,
+    "archive-instrumentation": 20,
+    "archive-store-concurrency": 2,
+    "archive-seed": 1,
+    "archive-restart": 1,
+    "pdf": {
+      "sha256": "fa843408a5031857513c7c7197d1c53175faa79e8fd7d92b85916d6d075576ae",
+      "bytes": 219897,
+      "pages": 17,
+      "markersVerified": [
+        "ARCHIVE-FIRST",
+        "ARCHIVE-LAST",
+        "CODE-TAIL",
+        "TABLE-TAIL",
+        "\u4e2d\u6587",
+        "caf\u00e9",
+        "LongArchiveparagraph",
+        "No\u00ebl",
+        "E=mc^2",
+        "SCHEMA-OBJECT-TEXT",
+        "SCHEMA-RECAP",
+        "\u63a8\u7406\u6458\u8981",
+        "fictional.docx",
+        "RESEARCH-FIRST",
+        "RESEARCH-LAST",
+        "RESEARCH-CODE-TAIL",
+        "RESEARCH-TABLE-TAIL",
+        "AFTER-RESEARCH-REPLY",
+        "\u6309\u65f6\u95f4\u6062\u590d\u4f4d\u7f6e"
+      ],
+      "excludedMarkers": [
+        "OTHER-BRANCH",
+        "SYNTHETIC-HIDDEN-THOUGHT",
+        "RESEARCH-HIDDEN-ACTIVITY"
+      ],
+      "firstMarkerMethod": "pdf-text",
+      "imageDimensions": [
+        12,
+        8
+      ],
+      "actualImageRGB": [
+        24,
+        108,
+        150
+      ],
+      "inlineBeforeReportAfterOrderVerified": true
+    }
+  },
+  "stable": {
+    "legacy-disabled": 2,
+    "snapshot": 10,
+    "firefox-android": 1,
+    "web-regressions": 9,
+    "share-regressions": 5,
+    "input-regressions": 5,
+    "input-imeCommitText": 1,
+    "input-imePasteCommand": 1,
+    "input-longPressSystemPaste": 1,
+    "native-lifecycle": 1,
+    "native-restart": 1,
+    "gecko-upgrade-current": 1,
+    "gecko-upgrade-persistence": 1,
+    "gecko-upgrade-seed": 1,
+    "upgrade-current": 1,
+    "upgrade-persistence": 1,
+    "upgrade-seed": 1,
+    "pdf": {
+      "frozen-page.pdf": {
+        "sha256": "ab8c2374089fafe1741d4d9e3d787db111f5fdb50f6d82a79d85eac0d38408fe",
+        "bytes": 278244,
+        "pages": 31,
+        "markersVerified": [
+          "TAIL-SNAPSHOT-MARKER",
+          "CODE-LAST",
+          "TABLE-LAST",
+          "\u4e2d\u6587",
+          "caf\u00e9",
+          "Reference",
+          "Longparagraph",
+          "No\u00ebl",
+          "na\u00efve",
+          "fran\u00e7ais",
+          "E=mc^2",
+          "LONG-CODE-HEAD",
+          "LONG-CODE-TAIL",
+          "LONG-TABLE-TAIL"
+        ],
+        "excludedMarkers": [
+          "Aftersnapshotmarker",
+          "AFTER-TITLE",
+          "AFTER-TABLE",
+          "AFTER-BODY",
+          "CLIPPED-UI-CONTROL"
+        ],
+        "firstMarkerMethod": "pdf-text",
+        "imageDimensions": [
+          320,
+          120
+        ],
+        "actualImageRGB": null
+      },
+      "firefox-frozen.pdf": {
+        "sha256": "4777caa6fd8cc7dd9ad7a021444717ff7342486a44434329dbb20e58d3df271d",
+        "bytes": 356366,
+        "pages": 31,
+        "markersVerified": [
+          "TAIL-SNAPSHOT-MARKER",
+          "CODE-LAST",
+          "TABLE-LAST",
+          "\u4e2d\u6587",
+          "caf\u00e9",
+          "Reference",
+          "Longparagraph",
+          "No\u00ebl",
+          "na\u00efve",
+          "fran\u00e7ais",
+          "E=mc^2",
+          "LONG-CODE-HEAD",
+          "LONG-CODE-TAIL",
+          "LONG-TABLE-TAIL"
+        ],
+        "excludedMarkers": [
+          "Aftersnapshotmarker",
+          "AFTER-TITLE",
+          "AFTER-TABLE",
+          "AFTER-BODY",
+          "CLIPPED-UI-CONTROL"
+        ],
+        "firstMarkerMethod": "independent-first-page-render-OCR",
+        "imageDimensions": [
+          320,
+          120
+        ],
+        "actualImageRGB": null
+      }
+    }
+  },
+  "installedPackageMatchesVerifiedApk": true,
+  "firefoxSamePrintSource": true,
+  "runId": 37757051125,
+  "artifactId": 11541297988,
+  "actualBatchMethods": [
+    "allPagesAndDuplicateTitlesExportSeparatelyWithFiltering",
+    "cancelledTaskDoesNotClaimSuccessfulSavedOutput",
+    "nativeBatchEntryUsesOneSaveAndPreservesReportTimeline"
+  ]
+}
