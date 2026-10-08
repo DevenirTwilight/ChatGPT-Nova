@@ -1,3 +1,9 @@
+## GPT/Codex — Step AU：双向快捷导航授权与源码调查（2026-10-08）
+
+- 用户新要求：ChatGPT显示“跳转至Codex”，Codex显示“跳转至GPT”。基点d9c1229，实际生产e702；本轮独立于已完成批量导出。
+- 现有MainActivity单WebView/顶部菜单/官方HOME与公开WebView导航回调；将增加可见顶部快捷按钮，依据官方https://chatgpt.com的/codex或/codex/子路径切换到GPT HOME，其余ChatGPT路径切换到https://chatgpt.com/codex。外部页面不显示此按钮，严格主机/端口/userinfo与path边界；不读取DOM/账号/认证，不改网站状态。
+- 复用同WebView与既有返回历史；full navigation、SPA visited history与restore更新文字。尚未实现/验收；下一步实现及实际native双向点击/SPA/返回/旋转/外部页面回归，保持原版本签名/Archive/schema/默认Legacy禁用，不main/Release。每步交接push继续遵守AGENTS。
+
 ## Batch Export — Step AT：最终设备/实际文件验收与逐主题交付（2026-10-08）
 
 - 已完成用户授权的逐会话批量实现、自动核验与真实导出交付准备。production **e702a77a974ec5a762f1cc30f3dbae4d923461ea**；最终[37757051125](https://github.com/DevenirTwilight/ChatGPT-Nova/actions/runs/37757051125)所有job completed/success，同source。JVM112零fail-error-skip；API26 actual22；API35/36各Archive42（旧39+batch3）与Stable43全部OK。原失败d615/重复或延迟取消run均历史保留，不冒称它们通过。

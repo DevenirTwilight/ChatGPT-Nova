@@ -1,3 +1,7 @@
+## GPT/Codex navigation scope (2026-10-08)
+
+New authorization: visible context-dependent toolbar action on official ChatGPT/Codex pages. Fixed destinations ChatGPT HOME and /codex, exact official root origin/path segment detection, existing WebView/history, SPA and restore updates. No account/DOM/credential reads or new session container. Implementation and runtime acceptance pending; prior batch source e702 remains accepted baseline.
+
 ## Final separate batch export acceptance (2026-10-08)
 
 Source e702a77/run37757051125 all jobs success. Independent actual artifacts:112 JVM,22 native API26,42 Archive+43 Stable on each API35/36. Batch3 method logs verify201 across pages/filtered duplicates/cancel/single SAF/retained and completed rotation/report ordering; actual saved-byte verification passed. Downloaded prior HTML/MD/PRINT and actual17-page Archive PDFs plus31-page Stable/System/Firefox PDFs checked for full markers, time placement, excluded hidden/late changes, images and matching installed APK. This PDF evidence is unchanged single-conversation regression, not a silent bulk PDF claim.
