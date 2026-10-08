@@ -1,3 +1,9 @@
+## GPT/Codex — Step AW：签名包与既有JVM独立核验（2026-10-08）
+
+- production120596a21d06651c1ca97c1637e679b7bd7046e7，正式37782865844 build/lint成功；原Archive JVM artifact11552997859实际XML112零fail-error-skip/digest匹配。MainActivity路径自动触发Legacy37782865796，build成功，35/36仍进行。
+- 独立正式APK artifact11552298508 ZIPdigest匹配/fullapksig v2原cert/AXML package-code14-name/DEX revision120596/defaultLegacyfalse/既有Archive类/no测试.so签名秘密，2118829bytes/SHA2a71376baea3dabad3a3f55d99289a3728cf54349dc645eab4ac097c10373c47。实际DEX含两个跳转文字与固定CodexURL，证据navigation-120596-package.json。
+- API26新navigation1+旧Archive22，35/36 Stable44+Archive42、Legacy19+历史2ignore均尚待实际结果；包与原JVM不能证明真实点击/SPA/旋转。下一步独立核这些Native结果及新顶部截图、原导出文件回归，再交同版本更新包；不main/Release/版本/schema变更。
+
 ## GPT/Codex — Step AV：顶部双向快捷入口实现（2026-10-08）
 
 - 基点103e618；MainActivity顶部新增独立可见120dp action，ChatGPT官方root显示“跳转至 Codex”→https://chatgpt.com/codex，/codex或/codex/子路径显示“跳转至 GPT”→HOME。单WebView.loadUrl保留原返回历史/会话容器，不修改Cookie/账号信息；其他origin按钮隐藏，严格HTTPS/rootHost/443/nouserinfo/pathsegment，不因query或codex-other误认。

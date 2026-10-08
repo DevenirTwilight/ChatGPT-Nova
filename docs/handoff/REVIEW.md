@@ -1,3 +1,7 @@
+## Navigation package verified; native pending (2026-10-08)
+
+Source120596a formal37782865844 build/lint success and independent original Archive112 JVM XML/digest passed. APK2118829bytes/SHA2a71376baea3dabad3a3f55d99289a3728cf54349dc645eab4ac097c10373c47 original cert/content-v2/identity14/DEX source/Legacyfalse/navigation labels+fixed URL verified. New native navigation and old full regressions remain running (23 minSDK,44 Stable+42 Archive on35/36), plus triggered Legacy19+2 historical ignores. No real account, click or restoration acceptance claimed yet.
+
 ## GPT/Codex toolbar implementation pending runtime (2026-10-08)
 
 Top-level visible action uses exact public URL origin/path segment, fixed destinations in existing WebView, updates for full/SPA/restore/error navigation. Untrusted origins hidden; title space reserved without moving existing menu hitbox. Native1 added for actual clicks, back, SPA, rotation saved URL, external hide and origin/path boundaries; local test pages only. API26 and35/36 will run it with old suites preserved (23 minSDK /44 Stable+42 Archive). Build/runtime/signature verification pending; no account success claim or source-version change.
