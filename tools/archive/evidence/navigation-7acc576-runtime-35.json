@@ -1,0 +1,150 @@
+{
+  "sourceCommit": "7acc5766b849b232a2b70c92032dd8947387e19f",
+  "android": 35,
+  "artifactZipSha256": "a69103f2f2d21ec9e2af8e6b15cf4e28425f4d12f24f3cc0f960d4f327d99790",
+  "validation": "independent downloaded actual fixture outputs; not physical device or private export SQLite acceptance",
+  "archive": {
+    "archive-batch": 3,
+    "archive-research": 5,
+    "archive-asset-persistence": 7,
+    "archive-asset-reader": 3,
+    "archive-instrumentation": 20,
+    "archive-store-concurrency": 2,
+    "archive-seed": 1,
+    "archive-restart": 1,
+    "pdf": {
+      "sha256": "52ac70c1beda9b2445d54b1a1f87dc20f8d1ed3b3ab4dbf10d494e0d6e1a3435",
+      "bytes": 219897,
+      "pages": 17,
+      "markersVerified": [
+        "ARCHIVE-FIRST",
+        "ARCHIVE-LAST",
+        "CODE-TAIL",
+        "TABLE-TAIL",
+        "\u4e2d\u6587",
+        "caf\u00e9",
+        "LongArchiveparagraph",
+        "No\u00ebl",
+        "E=mc^2",
+        "SCHEMA-OBJECT-TEXT",
+        "SCHEMA-RECAP",
+        "\u63a8\u7406\u6458\u8981",
+        "fictional.docx",
+        "RESEARCH-FIRST",
+        "RESEARCH-LAST",
+        "RESEARCH-CODE-TAIL",
+        "RESEARCH-TABLE-TAIL",
+        "AFTER-RESEARCH-REPLY",
+        "\u6309\u65f6\u95f4\u6062\u590d\u4f4d\u7f6e"
+      ],
+      "excludedMarkers": [
+        "OTHER-BRANCH",
+        "SYNTHETIC-HIDDEN-THOUGHT",
+        "RESEARCH-HIDDEN-ACTIVITY"
+      ],
+      "firstMarkerMethod": "pdf-text",
+      "imageDimensions": [
+        12,
+        8
+      ],
+      "actualImageRGB": [
+        24,
+        108,
+        150
+      ],
+      "inlineBeforeReportAfterOrderVerified": true
+    }
+  },
+  "stable": {
+    "legacy-disabled": 2,
+    "snapshot": 10,
+    "firefox-android": 1,
+    "web-regressions": 9,
+    "share-regressions": 5,
+    "input-regressions": 5,
+    "input-imeCommitText": 1,
+    "input-imePasteCommand": 1,
+    "input-longPressSystemPaste": 1,
+    "gpt-codex-navigation": 1,
+    "native-lifecycle": 1,
+    "native-restart": 1,
+    "gecko-upgrade-current": 1,
+    "gecko-upgrade-persistence": 1,
+    "gecko-upgrade-seed": 1,
+    "upgrade-current": 1,
+    "upgrade-persistence": 1,
+    "upgrade-seed": 1,
+    "pdf": {
+      "frozen-page.pdf": {
+        "sha256": "025c5765b32111c60544cd416977aa1df400121415e2bccc490ecd1082541e26",
+        "bytes": 278243,
+        "pages": 31,
+        "markersVerified": [
+          "TAIL-SNAPSHOT-MARKER",
+          "CODE-LAST",
+          "TABLE-LAST",
+          "\u4e2d\u6587",
+          "caf\u00e9",
+          "Reference",
+          "Longparagraph",
+          "No\u00ebl",
+          "na\u00efve",
+          "fran\u00e7ais",
+          "E=mc^2",
+          "LONG-CODE-HEAD",
+          "LONG-CODE-TAIL",
+          "LONG-TABLE-TAIL"
+        ],
+        "excludedMarkers": [
+          "Aftersnapshotmarker",
+          "AFTER-TITLE",
+          "AFTER-TABLE",
+          "AFTER-BODY",
+          "CLIPPED-UI-CONTROL"
+        ],
+        "firstMarkerMethod": "pdf-text",
+        "imageDimensions": [
+          320,
+          120
+        ],
+        "actualImageRGB": null
+      },
+      "firefox-frozen.pdf": {
+        "sha256": "655c5b78df096b72d6a43b2e3b6b29e49956703960602eb005044e089e77e253",
+        "bytes": 356265,
+        "pages": 31,
+        "markersVerified": [
+          "TAIL-SNAPSHOT-MARKER",
+          "CODE-LAST",
+          "TABLE-LAST",
+          "\u4e2d\u6587",
+          "caf\u00e9",
+          "Reference",
+          "Longparagraph",
+          "No\u00ebl",
+          "na\u00efve",
+          "fran\u00e7ais",
+          "E=mc^2",
+          "LONG-CODE-HEAD",
+          "LONG-CODE-TAIL",
+          "LONG-TABLE-TAIL"
+        ],
+        "excludedMarkers": [
+          "Aftersnapshotmarker",
+          "AFTER-TITLE",
+          "AFTER-TABLE",
+          "AFTER-BODY",
+          "CLIPPED-UI-CONTROL"
+        ],
+        "firstMarkerMethod": "independent-first-page-render-OCR",
+        "imageDimensions": [
+          320,
+          120
+        ],
+        "actualImageRGB": null
+      }
+    }
+  },
+  "installedPackageMatchesVerifiedApk": true,
+  "firefoxSamePrintSource": true
+}

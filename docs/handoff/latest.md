@@ -1,3 +1,7 @@
+## GPT/Codex — Step BE：API35完整实际文件回归通过（2026-10-08）
+
+同source7acc576/正式37785028945 API35 job success，artifact11553804219独立ZIPdigest/source/API/installedAPK SHA一致；actual Stable44（新gpt-codex-navigation1全部断言运行）+Archive42，summary/checks零失败。实际HTML/MD/PRINT报告首尾/时间标签/前→报告→后、hidden排除、Unicode/长代码表格、17页Archive PDF实际12×8原色图、System/Firefox各31页PDF/320×120图/相同printsource/晚变更排除和必要首标题OCR通过，证据navigation-7acc576-runtime-35.json。native-smoke截图虽由测试生成，但脚本未拉取且后续升级测试卸载应用清理，最终artifact无此截图；不可声称独立视觉看过顶部。实际点击/visibility/accessibility断言通过，静态布局120dp入口与48dp菜单互不覆盖。API36仍待，不记整体验收；接下来核API36 actual结果后交原签名包，不main/Release/版号变化。
+
 ## GPT/Codex — Step BD：使用说明同步（2026-10-08）
 
 README顶部使用说明新增ChatGPT→Codex/Codex→GPT可见文字、Nova内切换、返回及内部导航/恢复时随地址更新。生产source仍7acc576、原签名候选已核；API26实际23/JVM112/Legacy35/36各19+2ignore通过。正式35/36完整Stable44+Archive42及文件/截图仍运行，本步骤仅文档skipci，不宣称总体验收或交付；下一步核最终实际产物，不main/Release/版号变化。
