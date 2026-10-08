@@ -30,13 +30,16 @@ public final class NativeUiTest extends FixtureActivity {
         waitFor("GPT shortcut", () -> shown("跳转至 Codex"));
         click("跳转至 Codex");
         waitFor("Codex destination", () -> "https://chatgpt.com/codex".equals(currentUrl()));
+        waitFor("Codex document committed", () -> "https://chatgpt.com/codex".equals(js("location.href")));
         waitFor("Codex shortcut", () -> shown("跳转至 GPT"));
         capture("codex-shortcut");
         click("跳转至 GPT");
         waitFor("GPT destination", () -> "https://chatgpt.com/".equals(currentUrl()));
+        waitFor("GPT document committed", () -> "https://chatgpt.com/".equals(js("location.href")));
         waitFor("GPT shortcut after click", () -> shown("跳转至 Codex"));
         main(() -> activity.onBackPressed());
         waitFor("back to Codex", () -> shown("跳转至 GPT") && "https://chatgpt.com/codex".equals(currentUrl()));
+        waitFor("back document committed", () -> "https://chatgpt.com/codex".equals(js("location.href")));
         js("history.pushState({}, '', '/c/fictional?next=/codex'); true");
         waitFor("SPA GPT path", () -> shown("跳转至 Codex"));
         js("history.pushState({}, '', '/codex/tasks/fictional'); true");

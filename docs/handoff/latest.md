@@ -1,3 +1,9 @@
+## GPT/Codex — Step AX：异步完成回调使用当前URL（2026-10-08）
+
+- 审查发现onPageFinished使用回调url，而同一次加载中SPA或后续导航可能已改变当前地址；改为getUrl实际当前地址（null才回退callback），避免迟来的完成回调把快捷按钮文字覆盖成旧页面。与原pageOrigin的既有当前URL读取一致，不读取私有数据。
+- Native双向/返回测试在开始SPA之前等待实际document location提交，避免对尚在加载的上一份document执行history.pushState而误测。本轮源改动仅一行production与三条有效同步条件；按钮/目的地/隐私/原断言均保留。
+- 120596候选正式/Legacy仍运行，将被本步骤新source替代；其签名/JVM证据只属旧candidate。当前代码尚待新正式/Legacy、minAPI26的实际入口测试与35/36回归，不先宣称通过。下一步核新结果再统一原签名包；不main/Release/版本改变。
+
 ## GPT/Codex — Step AW：签名包与既有JVM独立核验（2026-10-08）
 
 - production120596a21d06651c1ca97c1637e679b7bd7046e7，正式37782865844 build/lint成功；原Archive JVM artifact11552997859实际XML112零fail-error-skip/digest匹配。MainActivity路径自动触发Legacy37782865796，build成功，35/36仍进行。

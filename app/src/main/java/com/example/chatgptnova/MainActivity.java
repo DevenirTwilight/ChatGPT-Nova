@@ -539,7 +539,7 @@ public class MainActivity extends Activity {
             public void onPageFinished(WebView view, String url) {
                 if (view != webView) return;
                 progress.setVisibility(View.GONE);
-                displayOrigin(url);
+                displayOrigin(view.getUrl() == null ? url : view.getUrl());
                 CookieManager.getInstance().flush();
                 Uri pageOrigin = Uri.parse(view.getUrl() == null ? "" : view.getUrl());
                 if (isTrustedOrigin(pageOrigin) && "chatgpt.com".equals(pageOrigin.getHost())) {

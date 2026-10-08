@@ -1,3 +1,7 @@
+## Navigation asynchronous completion boundary (2026-10-08)
+
+Completion callback now reads actual WebView URL, falling back only if null, so a late original load callback cannot override a newer SPA path label. Native test waits for actual document location after both clicks/back before issuing SPA history changes. Previous120596 package/runtime candidate does not verify this final source; new formal/Legacy/native runs required. No private data or session manipulation added.
+
 ## Navigation package verified; native pending (2026-10-08)
 
 Source120596a formal37782865844 build/lint success and independent original Archive112 JVM XML/digest passed. APK2118829bytes/SHA2a71376baea3dabad3a3f55d99289a3728cf54349dc645eab4ac097c10373c47 original cert/content-v2/identity14/DEX source/Legacyfalse/navigation labels+fixed URL verified. New native navigation and old full regressions remain running (23 minSDK,44 Stable+42 Archive on35/36), plus triggered Legacy19+2 historical ignores. No real account, click or restoration acceptance claimed yet.
