@@ -1,3 +1,7 @@
+## GPT/Codex — Step AZ：旧WebView fixture语法兼容修复（2026-10-08）
+
+5775142正式37784092447 minAPI26再次在@Before fixture loaded超时，artifact11552964999独立digest匹配，1run/1fail，未执行跳转断言。共享fixture的ready检测使用旧WebView不支持的optional chaining，改成显式element非空guard，保留URL/ready断言、其他测试与全部导航断言。production不变；旧失败证据navigation-api26-second-failure.json保留。新source需重新完整CI/API26实际23、35/36 Stable44+Archive42及Legacy回归/签名验收，再交付，不main/Release/改版号。
+
 ## GPT/Codex — Step AY：API26测试前置Java兼容失败修复（2026-10-08）
 
 - 正式120596/37782865844 minAPI26 job failure，独立artifact11553281332/digest匹配，actual navigation-tests日志1run/1fail为@Before FixtureActivity.shell调用InputStream.readAllBytes（API26无此方法）NoSuchMethodError；0.042s即失败，尚未执行任何跳转断言。不能称按钮或SPA功能失败/通过。匿名failure证据navigation-api26-first-failure.json。

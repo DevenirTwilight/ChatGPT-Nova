@@ -1,0 +1,11 @@
+{
+  "source": "5775142e5ada8fedb99b06da47a31ce2d56e1d0f",
+  "run": 37784092447,
+  "artifact": 11552964999,
+  "zip_sha256": "7214be6906e3673ba4ac0aba114735a3754d660ecfaa5acfa23937d6929be49c",
+  "tests_run": 1,
+  "failures": 1,
+  "phase": "Before fixture setup, no navigation assertions",
+  "failure": "Timed out: fixture loaded",
+  "diagnosis": "Shared fixture readiness expression uses optional chaining unsupported by old API26 WebView. Replace with explicit element guard, retaining URL and readiness assertions."
+}

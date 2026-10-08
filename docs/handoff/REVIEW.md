@@ -1,3 +1,7 @@
+## API26 old-WebView fixture readiness compatibility (2026-10-08)
+
+5775142正式37784092447 minAPI26再次在@Before fixture loaded超时，artifact11552964999独立digest匹配，1run/1fail，未执行跳转断言。共享fixture的ready检测使用旧WebView不支持的optional chaining，改成显式element非空guard，保留URL/ready断言、其他测试与全部导航断言。production不变；旧失败证据navigation-api26-second-failure.json保留。新source需重新完整CI/API26实际23、35/36 Stable44+Archive42及Legacy回归/签名验收，再交付，不main/Release/改版号。
+
 ## API26 navigation fixture setup failure preserved (2026-10-08)
 
 Actual120596 minSDK artifact11553281332 failed before navigation assertions: InputStream.readAllBytes is absent on API26, used in shared fixture setup formerly35/36 only. Buffered Java8 read fixes test-only compatibility, keeping all assertions and errors visible. Other lock-screen APIs guarded. New formal/native/Legacy verification required; this early failure cannot establish product click/SPA behavior. Production current-URL fix fromb646 retained, original failure evidence committed.

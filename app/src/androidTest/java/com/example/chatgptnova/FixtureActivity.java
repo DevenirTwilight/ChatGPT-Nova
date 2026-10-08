@@ -189,7 +189,7 @@ abstract class FixtureActivity {
                 }
                 if (loaded.get() && evaluating.compareAndSet(false, true)) {
                     current.evaluateJavascript("location.href === " + org.json.JSONObject.quote(address)
-                            + " && document.getElementById('ready')?.textContent === 'ready'", answer -> {
+                            + " && document.getElementById('ready') && document.getElementById('ready').textContent === 'ready'", answer -> {
                         if (current == fixtureView.get()) {
                             result.set(answer);
                             evaluating.set(false);
