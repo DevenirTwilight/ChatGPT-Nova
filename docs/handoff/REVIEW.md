@@ -1,3 +1,7 @@
+## Final batch native API26 accepted (2026-10-08)
+
+Run37757051125/sourcee702 API26 actual22 methods all OK, including batch3:201 all pages/filtered duplicates, cancellation preserves DB/no success claim, native one-SAF ZIP/report timeline, same retained task and completed-state second rotation. Artifact11540581935 digest and actual logs independently checked. Old19 preserved. API35/36 actual42+Stable43/full saved PDF regressions still running, so overall final acceptance pending; no real physical device or real-input SQLite claim.
+
 ## Final e702 package verified (2026-10-08)
 
 Run37757051125 build/lint passed; independently downloaded112 JVM XML zero failures/errors/skips and original-signed2117745-byte APK verified. SHA6cba6c30915c70a2b21d77001472020634c97803b65daf548f83e83f1552f52e, revisione702, package/code14 unchanged, Batch/Task/Timeline/Research present, Legacyfalse, no test fixtures/native libraries/signing secrets. Actual final API26/35/36 batch3 and prior Archive/Stable/export files still running; no final device acceptance yet.

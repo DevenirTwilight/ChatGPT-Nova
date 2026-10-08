@@ -1,0 +1,26 @@
+{
+  "sourceCommit": "e702a77a974ec5a762f1cc30f3dbae4d923461ea",
+  "runId": 37757051125,
+  "artifactId": 11540581935,
+  "artifactSha256": "cb9d79e16f53e80552cd4c5513466d239312f90bd28b7300f8d25082b2c9d711",
+  "api": 26,
+  "nativeCounts": {
+    "tests.txt": 2,
+    "asset-tests.txt": 7,
+    "asset-reader-tests.txt": 3,
+    "store-concurrency-tests.txt": 2,
+    "research-tests.txt": 5,
+    "batch-tests.txt": 3
+  },
+  "nativeTotal": 22,
+  "actualBatchAssertions": [
+    "201 conversations across pages",
+    "duplicate titles and filtered two conversations",
+    "cancel preserves database and does not claim success",
+    "one SAF destination",
+    "retained same task on rotation",
+    "completed result survives second rotation",
+    "research report timeline in actual saved ZIP"
+  ],
+  "realUserAndroidInputValidated": false
+}

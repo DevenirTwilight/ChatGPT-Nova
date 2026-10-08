@@ -1,3 +1,9 @@
+## Batch Export — Step AS：最终源码API26实际批量入口与旧回归通过（2026-10-08）
+
+- production e702/最终run37757051125 archive-min-sdk job success。独立下载artifact11540581935 ZIPdigest匹配，实际native foundation2+assets7+Reader3+concurrency2+research5+batch3=22全OK；新3方法确实运行，证据batch-e702-api26.json。
+- 新实际断言包括201跨列表分页/当前筛选仅2同名独立目录、取消不改DB且不宣称成功、首页入口单次SAF真实保存ZIP含报告时间排列、旋转持有同一Task及完成后再次旋转提示保留。实际saved-output re-read在Task内通过；非仅纯Java或按钮callback。
+- 最终原签名APK/JVM112/真实host122与275原件已独立通过；API35/36 fullArchive42+Stable43和实际HTML/MD/PDF旧回归仍运行，当前不能记总体全部通过。下一步核新35/36成果，最终给更新包，不main/Release/改版号，用户物理设备/真实输入SQLite仍未验。
+
 ## Batch Export — Step AR：最终同源JVM与原签名包独立核验（2026-10-08）
 
 - production e702a77，独立dispatch37757051125 build/lint success，JVMartifact11540153994 ZIPdigest匹配/actualXML112零fail-error-skip。APK11540247734 digest匹配、2117745bytes/SHA2566cba6c30915c70a2b21d77001472020634c97803b65daf548f83e83f1552f52e，fullapksig v2原cert/AXML com.example.chatgptnova/code14/name/DEX revisione702/defaultLegacyfalse/Batch+Task+Timeline+Research类/无testfixtures.so签名秘密通过；证据batch-e702-package.json。
