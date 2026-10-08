@@ -231,6 +231,7 @@ public final class ArchiveActivity extends Activity {
     super.onActivityResult(req, result, data);
     if (req == BATCH_SAVE) {
       if (result == RESULT_OK && data != null && data.getData() != null) {
+        task = null;
         batchTask =
             new ArchiveBatchTask(
                 getApplicationContext(), data.getData(), batchQuery, batchEarliest, batchAll);
@@ -249,6 +250,8 @@ public final class ArchiveActivity extends Activity {
 
   void startImport(Uri uri) {
     if (ACTIVE.get() > 0 || (batchTask != null && !batchTask.done)) return;
+    batchTask = null;
+    batchExport.setEnabled(true);
     task = new Task(getApplicationContext(), uri);
     task.attach(this);
     task.start();
@@ -376,7 +379,7 @@ public final class ArchiveActivity extends Activity {
 
   @Override
   public Object onRetainNonConfigurationInstance() {
-    if (batchTask != null && !batchTask.done) {
+    if (batchTask != null) {
       batchTask.detach(this);
       return batchTask;
     }

@@ -116,6 +116,30 @@ public final class ArchiveBatchTest {
   }
 
   @Test
+  public void failureTitlesAreBoundedWithoutChangingDocumentTitle() throws Exception {
+    File f = File.createTempFile("batch-title-", ".zip");
+    String title = "主题".repeat(10000);
+    try {
+      try (ArchiveBatch b =
+          new ArchiveBatch(new FileOutputStream(f), new ArchiveImporter.Control())) {
+        b.failure(title, "A11_EXPORT_FAILED");
+        b.add(conversation("1", title), false, Collections.emptyMap());
+        b.finish();
+      }
+      ArchiveBatch.verify(f, new ArchiveImporter.Control());
+      try (ZipFile z = new ZipFile(f)) {
+        Map<String, Object> m =
+            ArchiveModel.object(ArchiveModel.JSON.fromJson(text(z, "manifest.json"), Map.class));
+        for (Object item : (List<?>) m.get("conversations"))
+          assertEquals(512, ((String) ArchiveModel.object(item).get("title")).length());
+        assertTrue(text(z, ArchiveBatch.directory(2, title) + "/conversation.md").contains(title));
+      }
+    } finally {
+      f.delete();
+    }
+  }
+
+  @Test
   public void cancellationNeverCreatesSuccessfulManifest() throws Exception {
     File f = File.createTempFile("batch-test-", ".zip");
     ArchiveImporter.Control control = new ArchiveImporter.Control();

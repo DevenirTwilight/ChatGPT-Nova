@@ -196,6 +196,27 @@ public final class ArchiveBatchTest {
       assertNotNull(task[0]);
       scenario.recreate();
       await(task[0]);
+      scenario.onActivity(
+          a -> {
+            try {
+              java.lang.reflect.Field f = ArchiveActivity.class.getDeclaredField("batchTask");
+              f.setAccessible(true);
+              assertSame(task[0], f.get(a));
+            } catch (Exception e) {
+              throw new AssertionError(e);
+            }
+          });
+      scenario.recreate();
+      scenario.onActivity(
+          a -> {
+            try {
+              java.lang.reflect.Field f = ArchiveActivity.class.getDeclaredField("status");
+              f.setAccessible(true);
+              assertTrue(((TextView) f.get(a)).getText().toString().contains("已逐会话导出并核验"));
+            } catch (Exception e) {
+              throw new AssertionError(e);
+            }
+          });
       File f = saved();
       try (ZipFile z = new ZipFile(f)) {
         String md = null;

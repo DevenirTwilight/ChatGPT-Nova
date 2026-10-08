@@ -9,6 +9,7 @@ import java.util.zip.*;
 /** Sequential local exports. No account access; each conversation owns its own directory. */
 public final class ArchiveBatch implements AutoCloseable {
   public static final int MAX_CONVERSATIONS = 10000;
+  private static final int MAX_FILES = 32000;
   private static final long MAX_BYTES = 512L * 1024 * 1024;
   private final ZipOutputStream zip;
   private final ArchiveImporter.Control control;
@@ -39,7 +40,7 @@ public final class ArchiveBatch implements AutoCloseable {
   public void failure(String title, String code) throws ArchiveError {
     checkCount();
     Map<String, Object> r = new LinkedHashMap<>();
-    r.put("title", title);
+    r.put("title", title.substring(0, Math.min(title.length(), 512)));
     r.put("status", "failed");
     r.put("error", code.matches("A\\d{2}_[A-Z_]+") ? code : "A11_EXPORT_FAILED");
     results.add(r);
@@ -103,7 +104,7 @@ public final class ArchiveBatch implements AutoCloseable {
         write(dir + "/" + e.getKey(), in);
       }
     Map<String, Object> r = new LinkedHashMap<>();
-    r.put("title", c.title);
+    r.put("title", c.title.substring(0, Math.min(c.title.length(), 512)));
     r.put("status", "exported");
     r.put("directory", dir);
     r.put("scope", selection.scope);
@@ -147,6 +148,7 @@ public final class ArchiveBatch implements AutoCloseable {
     } catch (NoSuchAlgorithmException e) {
       throw new AssertionError(e);
     }
+    if (hashes.size() >= MAX_FILES) throw new ArchiveError("A05_ARCHIVE_TOO_LARGE");
     zip.putNextEntry(new ZipEntry(name));
     byte[] buffer = new byte[32768];
     int n;
@@ -176,10 +178,9 @@ public final class ArchiveBatch implements AutoCloseable {
     manifest.put("failed", failed);
     manifest.put("conversations", results);
     manifest.put("sha256", new LinkedHashMap<>(hashes));
-    write(
-        "manifest.json",
-        new ByteArrayInputStream(
-            ArchiveModel.JSON.toJson(manifest).getBytes(StandardCharsets.UTF_8)));
+    byte[] manifestBytes = ArchiveModel.JSON.toJson(manifest).getBytes(StandardCharsets.UTF_8);
+    if (manifestBytes.length > 16L * 1024 * 1024) throw new ArchiveError("A05_ARCHIVE_TOO_LARGE");
+    write("manifest.json", new ByteArrayInputStream(manifestBytes));
     zip.finish();
     finished = true;
   }

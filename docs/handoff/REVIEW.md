@@ -1,3 +1,7 @@
+## Batch package and lifecycle boundary checkpoint (2026-10-08)
+
+acd3776 package independently verified with original certificate, unchanged identity/version14, DEX revision/defaultLegacyfalse, JVM XML111 passed. Native run still pending. Completed batch state previously lost on rotation; final fix retains it and adds actual native same-task/completion-text assertions. Manifest titles512, entries32000 and manifest16MiB now bounded, one added JVM test preserves full document title;112 JVM pass. New source requires new Android/package verification; prior package is not final acceptance.
+
 ## Batch Android compile failure retained (2026-10-08)
 
 Run37755821614/source d6151bc failed compilation because the new test referenced absent UiAutomator. Fix uses existing native Instrumentation UiAutomation, preserving test assertions and no added dependencies. a3d3 source push/dispatch runs were duplicates; push cancelled by concurrency. Android acceptance still pending; prior host122/111JVM results do not substitute. Original events were delayed, not proof that API writes cannot trigger CI.

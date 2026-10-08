@@ -1,0 +1,21 @@
+{
+  "sourceCommit": "acd37765835c7028e1eb36d65bfe33554f59e151",
+  "apkBytes": 2117413,
+  "apkSha256": "cc2d5a6c14a179179a955d8af6f3ae661e9284ee9a345c6e9caa864825cb02a3",
+  "certificateSha256": "f93221ee0d2be2b806233a0b3427ec9c14766100c1bab3208841e6203e2b4289",
+  "signature": "independent apksig full APK verified; v2 true",
+  "package": "com.example.chatgptnova",
+  "versionCode": "14",
+  "versionName": "1.4.0-scroll-trial",
+  "independentDexStaticValues": {
+    "APPLICATION_ID": "com.example.chatgptnova",
+    "BUILD_TYPE": "release",
+    "DEBUG": false,
+    "ENABLE_LEGACY_SCANNER": false,
+    "EXPORT_REVISION": "acd37765835c7028e1eb36d65bfe33554f59e151",
+    "VERSION_CODE": 14,
+    "VERSION_NAME": "1.4.0-scroll-trial"
+  },
+  "researchAdapterPresent": true,
+  "testFixturesNativeLibrariesSigningSecretsAbsent": true
+}

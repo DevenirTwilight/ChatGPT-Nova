@@ -1,3 +1,10 @@
+## Batch Export — Step AP：签名包核验及旋转/清单边界修正（2026-10-08）
+
+- acd3776正式37756097400 build/lint成功，独立JVMartifact11539973584 digest匹配、实际XML111/0failure-error-skip。APK11539968700独立ZIPdigest/fullapksig v2原cert/AXML package/code14/name/DEX acd3776/defaultLegacyfalse通过，2117413bytes/SHAcc2d5a6c14a179179a955d8af6f3ae661e9284ee9a345c6e9caa864825cb02a3；证据batch-acd377-package.json。该包未交用户，Android尚进行。
+- 审查发现完成后旋转只保留未done批量task，导致完成提示丢失；修正保留最新批量任务包括完成态，并在新import/export时清理前任务引用。native3现增加same task与完成态再次旋转实际提示断言；不删旧校验。
+- 清单限制标题512字符（独立文档完整标题不截断）、总成员32000、manifest16MiB，防异常标题/重复tiny附件使汇总无界。新增有意义JVM标题限额与原文保留，当前本地112全部通过；本source Android尚未运行，不能借acd3776 APK声称最终验收。
+- 文档docs/batch-export.md明确单次保存/逐主题独立文件/附件相对链接/失败取消/readback与预算；已核真实a3d3 host122/4/275，最终源码真实复跑与新API26/35/36仍待。本步新源码CI自动触发，不重复dispatch/main/Release/版本签名，最终统一交付。
+
 ## Batch Export — Step AO：Android fixture编译失败修复（2026-10-08）
 
 - d6151bc正式37755821614 build failure，真实error为新ArchiveBatchTest引用不存在androidx.test.uiautomator dependency；production未因该error验收。修复fixture用现有Instrumentation UiAutomation原生点击确认，不新增运行时或测试依赖，不删入口/旋转/SAF/时间顺序断言。
