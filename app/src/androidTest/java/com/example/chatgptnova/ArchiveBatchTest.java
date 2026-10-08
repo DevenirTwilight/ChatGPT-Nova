@@ -161,11 +161,23 @@ public final class ArchiveBatchTest {
               throw new AssertionError(e);
             }
           });
-      androidx.test.uiautomator.UiObject confirm =
-          androidx.test.uiautomator.UiDevice.getInstance(instrument)
-              .findObject(new androidx.test.uiautomator.UiSelector().text("当前分支"));
-      assertTrue(confirm.waitForExists(5000));
-      confirm.click();
+      long confirmUntil = SystemClock.uptimeMillis() + 5000;
+      boolean clicked = false;
+      while (!clicked && SystemClock.uptimeMillis() < confirmUntil) {
+        android.view.accessibility.AccessibilityNodeInfo root =
+            instrument.getUiAutomation().getRootInActiveWindow();
+        if (root != null) {
+          for (android.view.accessibility.AccessibilityNodeInfo n :
+              root.findAccessibilityNodeInfosByText("当前分支"))
+            if ("当前分支".contentEquals(n.getText()) && n.isClickable()) {
+              clicked =
+                  n.performAction(android.view.accessibility.AccessibilityNodeInfo.ACTION_CLICK);
+              break;
+            }
+        }
+        if (!clicked) SystemClock.sleep(20);
+      }
+      assertTrue("native branch confirmation", clicked);
       final ArchiveBatchTask[] task = {null};
       long end = SystemClock.uptimeMillis() + 10000;
       while (task[0] == null && SystemClock.uptimeMillis() < end) {

@@ -1,3 +1,7 @@
+## Batch Android compile failure retained (2026-10-08)
+
+Run37755821614/source d6151bc failed compilation because the new test referenced absent UiAutomator. Fix uses existing native Instrumentation UiAutomation, preserving test assertions and no added dependencies. a3d3 source push/dispatch runs were duplicates; push cancelled by concurrency. Android acceptance still pending; prior host122/111JVM results do not substitute. Original events were delayed, not proof that API writes cannot trigger CI.
+
 ## Independent real batch verification (2026-10-08)
 
 Actual private ZIP independently checked against original JSON:122 separate conversations,0failed;1897 plain messages/2554914 chars,4 research bodies/97577 chars exact;275 attachment files,0 missing references; all CRC/SHA matches. Evidence batch-aa236-real-local.json. This is host-only verification, excludes mixed attachment metadata text from plain-message count; Android checks remain pending. API writes produced no automatic run; authorized CLI workflow dispatch will target final source.

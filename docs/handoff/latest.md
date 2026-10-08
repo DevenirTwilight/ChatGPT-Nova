@@ -1,3 +1,9 @@
+## Batch Export — Step AO：Android fixture编译失败修复（2026-10-08）
+
+- d6151bc正式37755821614 build failure，真实error为新ArchiveBatchTest引用不存在androidx.test.uiautomator dependency；production未因该error验收。修复fixture用现有Instrumentation UiAutomation原生点击确认，不新增运行时或测试依赖，不删入口/旋转/SAF/时间顺序断言。
+- 前AN关于“API未自动产生workflow”的观察仅即时查询：实际push事件稍后到达，a3d3b06 push37755958040与人工dispatch37755958000重复，按现有concurrency前者取消；本步骤新source supersede，旧failure/取消保留，不再重复dispatch。CLI授权当前有效，不输出凭据。
+- a3d3b06真实host重新导出122/0fail/4reports/ZIP校验成功；文件后缀与即时取消修正已入生产，111 JVM通过。新native编译与API26/35/36/旧回归仍待本次自动CI。下一步核成功签名包与新native3实际结果，完整源码未通过前不交新APK。
+
 ## Batch Export — Step AN：真实逐份正文/附件独立核对与验收触发（2026-10-08）
 
 - 真实私有122独立会话/0失败，Python独立读取原JSON与实际ZIP：1897原始plain消息/2554914chars逐字包含，4研究正文97577chars逐字，275附件原件/0缺失引用，ZIP所有成员CRC/SHA通过。证据batch-aa236-real-local.json，仅aggregate；私有下载包已给用户，不进Git/CI。统计排除附件metadata混合段，不冒称全部原始节点/线上全历史。
