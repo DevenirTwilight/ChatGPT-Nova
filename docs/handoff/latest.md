@@ -1,3 +1,10 @@
+## GPT/Codex — Step BG：纠正旧基线重复实现与交付（2026-10-20）
+
+- 用户指出本会话把功能加在旧版本。核对远端分支、发布、源码与交接后确认：实际工作分支是 `feature/export-conversation`，纠偏前 HEAD `8c77eb60f9c3351b2a958d288f2e8c24d2c8fa19`；生产源码仍为 `7acc5766b849b232a2b70c92032dd8947387e19f`，版本 `1.4.0-scroll-trial / code14`。`main` 和 `fix/native-share-1.3.7` 均不能代替这条开发主线。顶部“跳转至 Codex / 跳转至 GPT”、SPA/恢复/返回已在 10 月 8 日实现并记录验收，无需再加重复菜单。
+- 本会话错误地从 `200b7898` 的 1.3.7 创建 `feature/chatgpt-codex-switch` / `27051e7` 和 [PR #4](https://github.com/DevenirTwilight/ChatGPT-Nova/pull/4)，并交付旧基线 Debug 包。该 PR 现已关闭且未合并，说明已更正；旧包/补丁/源码保留在仓库外作废目录，不再作为最新交付。失败原因是没有先核实当前开发分支及阅读其 AGENTS/交接，不能把旧基线构建成功当成最新版本完成。
+- 本轮独立从正式 run `37785028945` 的 artifact `11554036843` 取回原安装包，ZIP SHA、APK bytes/SHA 均与既有 `navigation-7acc576-package.json` 一致；再次执行 apksigner 完整验证通过，原证书 SHA256 `f93221ee0d2be2b806233a0b3427ec9c14766100c1bab3208841e6203e2b4289`，aapt 确认原 package `com.example.chatgptnova`、code14/name1.4.0-scroll-trial、min26/target35。恢复交付 `/workspace/nova-delivery/ChatGPT-Nova-navigation.apk`，SHA256 `3b77ebe1f85cf5926330e8c1204d90fe5e305ed87f5e923bff3dc89027dc30aa`，2118777 bytes；证据 `tools/archive/evidence/navigation-baseline-correction-2026-10-20.json`。
+- 本步只核源码/记录和既有安装包身份，**没有重新执行 Android/真实账号/物理设备测试**。BF 中 112 JVM、API26/35/36 等是历史验收，保持其原边界。最新生产源码、原签名/包名/版号/数据库/功能均不改；仅纠偏交接与匿名证据提交到当前工作分支，不合并 main、不公开 Release。后续先读 AGENTS 和本交接并核实际远端，禁止再按旧分支名或旧补丁推断产品基线。
+
 ## GPT/Codex — Step BF：最终完整验收与交付（2026-10-08）
 
 用户要求的顶部双向跳转已完成：ChatGPT root页面“跳转至 Codex”→固定/codex，Codex及task路径“跳转至 GPT”→HOME，单WebView、旧返回历史、SPA/恢复同步、外部origin隐藏。production7acc5766b849b232a2b70c92032dd8947387e19f；正式37785028945全部success（build/lint、112JVM、API26实际23、35/36各Stable44+Archive42），Legacy37785028769全部success（35/36各实际19、历史2忽略）。所有下载artifact独立digest/source/installedAPK SHA与日志核验；35/36 actual单会话HTML/MD/PRINT及17页Archive/31页System+Firefox PDF全部报告时间顺序/Unicode/长代码表格/图片原色与同源打印/隐藏排除通过，证据navigation-7acc576-runtime-35/36.json及package/api26/legacy.json。旧两次@Before兼容失败和取消历史保持；不将模拟页当真实账号成功。

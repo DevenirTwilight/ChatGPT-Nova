@@ -1,3 +1,9 @@
+## Baseline correction and recovered original-signed delivery (2026-10-20)
+
+用户纠正本会话使用旧基线：错误新建的 `27051e7`/PR#4 基于 1.3.7 `200b7898`，遗漏开发主线后续功能。PR#4 已关闭且未合并，旧 Debug 包作废。实际开发 HEAD 为 `feature/export-conversation` 的 `8c77eb6`，生产仍 `7acc576`、code14/name1.4.0-scroll-trial；源码已有顶部 ChatGPT/Codex 双向按钮、SPA/恢复/返回，保持现有实现，不追加重复菜单。
+
+本轮重新下载历史验收 run37785028945/artifact11554036843，ZIP SHA `1d1d73d14fdb4d6e36ed0c0102820dd0cfff0760b3ad6e4d1bd4a25295cd5e79`、APK 2118777 bytes/SHA `3b77ebe1f85cf5926330e8c1204d90fe5e305ed87f5e923bff3dc89027dc30aa` 与仓库证据一致；独立 apksigner 完整签名/原证书 f93221ee…、aapt 原包名/版本/min26/target35 核验通过。证据 navigation-baseline-correction-2026-10-20.json。APK 恢复至仓库外 nova-delivery，非新构建/新发布。本轮没有重跑 JVM/Android/真实账号/物理设备验收，下列历史结果不记为本轮执行。无 production/main/Release/版号/签名/schema 变更；按 AGENTS 在当前工作分支持续入库交接。
+
 ## Final GPT/Codex navigation acceptance and delivery (2026-10-08)
 
 用户要求的顶部双向跳转已完成：ChatGPT root页面“跳转至 Codex”→固定/codex，Codex及task路径“跳转至 GPT”→HOME，单WebView、旧返回历史、SPA/恢复同步、外部origin隐藏。production7acc5766b849b232a2b70c92032dd8947387e19f；正式37785028945全部success（build/lint、112JVM、API26实际23、35/36各Stable44+Archive42），Legacy37785028769全部success（35/36各实际19、历史2忽略）。所有下载artifact独立digest/source/installedAPK SHA与日志核验；35/36 actual单会话HTML/MD/PRINT及17页Archive/31页System+Firefox PDF全部报告时间顺序/Unicode/长代码表格/图片原色与同源打印/隐藏排除通过，证据navigation-7acc576-runtime-35/36.json及package/api26/legacy.json。旧两次@Before兼容失败和取消历史保持；不将模拟页当真实账号成功。

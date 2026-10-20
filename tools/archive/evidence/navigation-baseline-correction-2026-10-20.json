@@ -1,0 +1,33 @@
+{
+  "dateUtc": "2026-10-20",
+  "developmentBranch": "feature/export-conversation",
+  "inspectedDevelopmentHead": "8c77eb60f9c3351b2a958d288f2e8c24d2c8fa19",
+  "productionSourceCommit": "7acc5766b849b232a2b70c92032dd8947387e19f",
+  "obsoleteFeatureCommit": "27051e74f425ec2361f619fd1eb7d66c83e64d43",
+  "obsoleteBaseCommit": "200b7898b51cdac9e342e49e7e7a7059067d944f",
+  "obsoletePullRequest": {
+    "url": "https://github.com/DevenirTwilight/ChatGPT-Nova/pull/4",
+    "state": "closed",
+    "merged": false
+  },
+  "existingToolbarNavigationConfirmedInSource": true,
+  "newProductionChanges": false,
+  "artifactRunId": 37785028945,
+  "artifactId": 11554036843,
+  "downloadedArtifactZipSha256": "1d1d73d14fdb4d6e36ed0c0102820dd0cfff0760b3ad6e4d1bd4a25295cd5e79",
+  "apkBytes": 2118777,
+  "apkSha256": "3b77ebe1f85cf5926330e8c1204d90fe5e305ed87f5e923bff3dc89027dc30aa",
+  "matchesPreviouslyVerifiedPackageEvidence": true,
+  "independentApksignerVerifyPassed": true,
+  "certificateSha256": "f93221ee0d2be2b806233a0b3427ec9c14766100c1bab3208841e6203e2b4289",
+  "independentAaptPackageInspection": {
+    "package": "com.example.chatgptnova",
+    "versionCode": 14,
+    "versionName": "1.4.0-scroll-trial",
+    "minSdk": 26,
+    "targetSdk": 35
+  },
+  "jvmOrAndroidTestsRerunThisSession": false,
+  "realAccountOrPhysicalDeviceVerifiedThisSession": false,
+  "scope": "Repository/source/previous-evidence review, obsolete PR withdrawal, original artifact recovery and independent file/signature/package identity checks only. Prior Android acceptance is historical evidence, not rerun here."
+}
