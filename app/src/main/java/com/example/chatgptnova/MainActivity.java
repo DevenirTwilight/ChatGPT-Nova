@@ -58,6 +58,7 @@ public class MainActivity extends Activity {
     private static final int WEB_PERMISSIONS = 1002;
     private static final int SAVE_BLOB = 1005;
     private static final String HOME = "https://chatgpt.com/";
+    private static final String CODEX_HOME = "https://chatgpt.com/codex/cloud";
     private static final String LOGIN = "https://chatgpt.com/auth/login";
     private enum AccountUiState { UNKNOWN, SIGNED_OUT, SIGNED_IN }
     // Read only visible public controls. Never read input values, cookies,
@@ -828,6 +829,7 @@ public class MainActivity extends Activity {
             Menu items = overflowMenu.getMenu();
             items.add(0, 1, 0, "刷新");
             items.add(0, 2, 1, "ChatGPT 首页");
+            items.add(0, 8, 2, "Codex 首页");
             if (accountUiState == AccountUiState.SIGNED_OUT) items.add(0, 3, 2, "登录");
             items.add(0, 4, 3, "用浏览器打开");
             if (canShareCurrentPage()) items.add(0, 7, 4, "分享当前页面");
@@ -842,6 +844,9 @@ public class MainActivity extends Activity {
                         break;
                     case 2:
                         webView.loadUrl(HOME);
+                        break;
+                    case 8:
+                        webView.loadUrl(CODEX_HOME);
                         break;
                     case 3:
                         showLoginHelp(false);
